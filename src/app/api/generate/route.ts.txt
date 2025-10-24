@@ -1,0 +1,295 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// Demo mode - returns example code when API key is not configured
+const getDemoComponent = (prompt: string): string => {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  if (lowerPrompt.includes('contact') || lowerPrompt.includes('form')) {
+    return `"use client";
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export default function ContactForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submitted:', formData);
+    // Add your form submission logic here
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Contact Us</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              type="text"
+              name="name"
+              placeholder="Your Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              type="email"
+              name="email"
+              placeholder="Your Email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div>
+            <Textarea
+              name="message"
+              placeholder="Your Message"
+              value={formData.message}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            Send Message
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}`;
+  }
+
+  if (lowerPrompt.includes('card') || lowerPrompt.includes('profile')) {
+    return `"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+
+interface UserProfileProps {
+  name?: string;
+  email?: string;
+  avatar?: string;
+}
+
+export default function UserProfile({ 
+  name = "John Doe", 
+  email = "john@example.com",
+  avatar = "/placeholder-avatar.png"
+}: UserProfileProps) {
+  return (
+    <Card className="w-full max-w-sm mx-auto">
+      <CardHeader className="text-center">
+        <Avatar className="w-20 h-20 mx-auto mb-4">
+          <AvatarImage src={avatar} alt={name} />
+          <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <CardTitle>{name}</CardTitle>
+        <p className="text-muted-foreground">{email}</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Button className="w-full" variant="outline">
+          Edit Profile
+        </Button>
+        <Button className="w-full">
+          Send Message
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}`;
+  }
+
+  if (lowerPrompt.includes('dashboard')) {
+    return `"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+
+export default function Dashboard() {
+  const stats = [
+    { title: "Total Users", value: "1,234", change: "+12%" },
+    { title: "Revenue", value: "$45,678", change: "+8%" },
+    { title: "Orders", value: "892", change: "+23%" },
+    { title: "Growth", value: "12.5%", change: "+3%" }
+  ];
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {stats.map((stat, index) => (
+        <Card key={index}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stat.value}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600">{stat.change}</span> from last month
+            </p>
+            <Progress value={75} className="mt-2" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}`;
+  }
+
+  // Default component
+  return `"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+export default function GeneratedComponent() {
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>AI Generated Component</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p>This component was generated for: "{prompt}"</p>
+        <p className="text-sm text-muted-foreground">
+          Configure your OpenAI API key to get AI-powered generation!
+        </p>
+        <Button className="w-full">
+          Click Me
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}`;
+};
+
+export async function POST(request: NextRequest) {
+  try {
+    const { prompt } = await request.json();
+
+    if (!prompt) {
+      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+    }
+
+    // Check if API key is configured
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.log('No OpenAI API key found, using demo mode');
+      const demoCode = getDemoComponent(prompt);
+      
+      return NextResponse.json({
+        code: demoCode,
+        prompt: prompt,
+        timestamp: new Date().toISOString(),
+        model: "demo-mode",
+        isDemoMode: true
+      });
+    }
+
+    // Dynamically import OpenAI only when needed
+    const { default: OpenAI } = await import('openai');
+    
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    });
+
+    // AI prompt engineering for better React component generation
+    const systemPrompt = `You are an expert React/TypeScript developer. Generate clean, modern React components using:
+
+REQUIREMENTS:
+- Use TypeScript with proper interfaces
+- Use Tailwind CSS for styling (modern, clean design)
+- Include proper TypeScript types and interfaces
+- Use shadcn/ui components when appropriate
+- Add "use client" directive if using hooks
+- Make components responsive and accessible
+- Use modern React patterns (hooks, functional components)
+- Include proper error handling
+
+FORMATTING:
+- Return ONLY the component code
+- No explanations or markdown
+- No backticks or code fences
+- Ready to save as .tsx file
+
+STYLE GUIDELINES:
+- Clean, modern design
+- Proper spacing and typography
+- Subtle animations and hover effects
+- Professional appearance
+- Mobile-first responsive design
+
+Generate a React component based on this request: ${prompt}`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 2000,
+    });
+
+    const generatedCode = completion.choices[0]?.message?.content?.trim();
+
+    if (!generatedCode) {
+      return NextResponse.json({ error: 'Failed to generate code' }, { status: 500 });
+    }
+
+    // Basic validation
+    if (!generatedCode.includes('export') || !generatedCode.includes('function')) {
+      return NextResponse.json({ 
+        error: 'Generated code does not appear to be a valid React component' 
+      }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      code: generatedCode,
+      prompt: prompt,
+      timestamp: new Date().toISOString(),
+      model: "gpt-4",
+      isDemoMode: false
+    });
+
+  } catch (error) {
+    console.error('API Error:', error);
+    
+    // Fallback to demo mode on error
+    console.log('Falling back to demo mode due to error');
+    const demoCode = getDemoComponent(prompt || 'demo component');
+    
+    return NextResponse.json({
+      code: demoCode,
+      prompt: prompt || 'demo component',
+      timestamp: new Date().toISOString(),
+      model: "demo-mode-fallback",
+      isDemoMode: true,
+      error: 'OpenAI API error - showing demo component'
+    });
+  }
+}

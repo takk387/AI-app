@@ -1,0 +1,51 @@
+"use client";
+
+import { useState } from 'react';
+
+interface CodePreviewProps {
+  code: string;
+}
+
+export default function CodePreview({ code }: CodePreviewProps) {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute top-3 right-3 z-10">
+        <button
+          onClick={copyToClipboard}
+          className="px-3 py-1.5 text-sm border border-white/20 bg-black/50 backdrop-blur-sm text-white hover:bg-white/10 rounded-md transition-colors"
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      
+      <div className="bg-slate-900 rounded-lg border border-white/10 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-white/10">
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          </div>
+          <span className="text-sm text-slate-400">GeneratedComponent.tsx</span>
+        </div>
+        
+        <pre className="p-4 text-sm overflow-x-auto max-h-96 overflow-y-auto">
+          <code className="text-slate-100 whitespace-pre-wrap">
+            {code}
+          </code>
+        </pre>
+      </div>
+    </div>
+  );
+}

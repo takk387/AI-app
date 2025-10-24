@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(if exist \".next\" rmdir /s /q \".next\")",
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(wmic:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
