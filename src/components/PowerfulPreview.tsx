@@ -120,15 +120,21 @@ h1 {
   console.log('Sandpack files:', Object.keys(sandpackFiles));
   console.log('App.tsx exists:', !!sandpackFiles['App.tsx']);
   console.log('Dependencies:', dependencies);
+  
+  // Log first 200 chars of App.tsx to verify content
+  if (sandpackFiles['App.tsx']) {
+    console.log('App.tsx content preview:', sandpackFiles['App.tsx'].code.substring(0, 200));
+  }
 
   return (
     <div className="h-full w-full">
       <SandpackProvider
-        template="react"
+        template="static"
         theme="dark"
         files={sandpackFiles}
         customSetup={{
           dependencies,
+          environment: 'create-react-app',
         }}
         options={{
           autorun: true,
