@@ -280,9 +280,24 @@ export default function AIBuilder() {
       'application', 'project', 'build me', 'make me', 'create me'
     ];
     
+    // Meta questions about capabilities (asking ABOUT building, not requesting to build)
+    const metaQuestionPatterns = [
+      /how (big|large|complex|many).*(can|could|do) you (build|create|make)/i,
+      /what (can|could) you (build|create|make|generate)/i,
+      /what (kind|type|sort) of (app|project|thing)/i,
+      /(capabilities|limitations|able to|possible to)/i,
+      /how (does|do) (this|it|you) work/i,
+      /what (are|is) (your|the) (limits|capabilities|features)/i
+    ];
+    
     const input = userInput.toLowerCase();
-    const isQuestion = questionIndicators.some(indicator => input.includes(indicator)) &&
-                      !buildIndicators.some(indicator => input.includes(indicator));
+    
+    // Check if it's a meta question about capabilities
+    const isMetaQuestion = metaQuestionPatterns.some(pattern => pattern.test(userInput));
+    
+    const isQuestion = (questionIndicators.some(indicator => input.includes(indicator)) &&
+                      !buildIndicators.some(indicator => input.includes(indicator))) ||
+                      isMetaQuestion;
     
     // Detect potentially very large app requests and provide guidance
     const complexityIndicators = [
