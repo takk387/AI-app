@@ -25,6 +25,7 @@ interface FullAppPreviewProps {
 export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Memoize parsed app data
   const appData = useMemo(() => {
@@ -53,7 +54,11 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
   const currentFile = appData.files?.find(f => f.path === selectedFile);
 
   return (
-    <div className="h-full flex flex-col bg-slate-900 rounded-lg border border-white/10 overflow-hidden">
+    <div className={`flex flex-col bg-slate-900 rounded-lg border border-white/10 overflow-hidden ${
+      isFullscreen 
+        ? 'fixed inset-0 z-50 rounded-none' 
+        : 'h-full'
+    }`}>
       {/* Header with tabs */}
       <div className="flex items-center justify-between px-4 py-3 bg-black/30 border-b border-white/10">
         <div className="flex gap-2">
@@ -79,9 +84,29 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
           </button>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-          <span>Fully Interactive</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+            <span>Fully Interactive</span>
+          </div>
+          
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all flex items-center gap-2"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullscreen ? (
+              <>
+                <span className="text-lg">⤓</span>
+                <span className="text-sm font-medium">Exit</span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg">⤢</span>
+                <span className="text-sm font-medium">Fullscreen</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
