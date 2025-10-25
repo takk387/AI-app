@@ -113,12 +113,7 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
       {/* Content area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === 'preview' ? (
-          <div className="h-full w-full relative">
-            {/* Error help tip */}
-            <div className="absolute top-4 right-4 z-10 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-blue-300 max-w-xs backdrop-blur-sm">
-              <div className="font-semibold mb-1">💡 Tip</div>
-              <div>If you see a syntax error, just click "New Conversation" and regenerate - each AI generation is unique!</div>
-            </div>
+          <div className="h-full w-full">
             <PowerfulPreview appDataJson={appDataJson} />
           </div>
         ) : (
