@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import PowerfulPreview from './PowerfulPreview';
 
 interface AppFile {
@@ -26,6 +26,20 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Handle body overflow when entering/exiting fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
 
   // Memoize parsed app data
   const appData = useMemo(() => {
@@ -56,7 +70,7 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
   return (
     <div className={`flex flex-col bg-slate-900 overflow-hidden ${
       isFullscreen 
-        ? 'fixed inset-0 z-50' 
+        ? 'fixed inset-0 z-[100]' 
         : 'h-full rounded-lg border border-white/10'
     }`}>
       {/* Header with tabs - conditionally hide in fullscreen preview mode */}
@@ -116,7 +130,7 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
       {isFullscreen && activeTab === 'preview' && (
         <button
           onClick={() => setIsFullscreen(false)}
-          className="fixed top-4 right-4 z-[60] px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
+          className="fixed top-4 right-4 z-[110] px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
           title="Exit Fullscreen"
         >
           <span className="text-lg">⤓</span>
