@@ -597,38 +597,66 @@ REMEMBER:
     
     console.log('Parsed files:', files.length);
 
-    // Sanitize code to fix unterminated template literals
+    // Sanitize code to fix syntax errors from truncated responses
     files.forEach(file => {
       if (file.path.endsWith('.tsx') || file.path.endsWith('.ts') || file.path.endsWith('.jsx') || file.path.endsWith('.js')) {
         let code = file.content;
         
-        // Check for unterminated template literals at the end
-        // Count backticks - if odd number, we have an unterminated template
-        const backtickCount = (code.match(/`/g) || []).length;
-        if (backtickCount % 2 !== 0) {
-          // Find the last backtick and close the template literal
-          const lastBacktickIndex = code.lastIndexOf('`');
-          if (lastBacktickIndex !== -1) {
-            // Add closing backtick and comma if it looks like it's in an object/array
-            code = code + '`,';
-            console.log('Fixed unterminated template literal in', file.path);
-          }
-        }
-        
-        // Fix incomplete lines that end abruptly (likely truncated)
+        // Strategy: Find unclosed template literals by parsing more carefully
+        // Split by lines and track state
         const lines = code.split('\n');
-        const lastLine = lines[lines.length - 1].trim();
+        let inTemplateLiteral = false;
+        let templateStartLine = -1;
+        let fixed = false;
         
-        // If last line looks incomplete (no semicolon, comma, or closing bracket)
-        if (lastLine && !lastLine.match(/[;,}\])]$/)) {
-          // If it's in a template literal context (contains backtick without closing)
-          if (lastLine.includes('`') && !lastLine.endsWith('`')) {
-            code = code + '`';
-            console.log('Closed incomplete template literal in', file.path);
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          
+          // Count backticks not in strings or comments
+          // Simple heuristic: remove string literals first, then count backticks
+          const withoutStrings = line.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '');
+          const backticks = (withoutStrings.match(/`/g) || []).length;
+          
+          // Toggle state for each backtick
+          for (let j = 0; j < backticks; j++) {
+            if (!inTemplateLiteral) {
+              inTemplateLiteral = true;
+              templateStartLine = i;
+            } else {
+              inTemplateLiteral = false;
+              templateStartLine = -1;
+            }
           }
         }
         
-        file.content = code;
+        // If still in template literal at end, close it
+        if (inTemplateLiteral && templateStartLine >= 0) {
+          console.log(`Fixing unterminated template literal in ${file.path} starting at line ${templateStartLine + 1}`);
+          
+          // Add closing backtick at the end
+          const lastLine = lines[lines.length - 1];
+          
+          // If the last line looks like truncated text in a template
+          if (!lastLine.trim().endsWith('`') && !lastLine.trim().endsWith(',') && !lastLine.trim().endsWith(';')) {
+            code = code.trimEnd() + '`';
+            fixed = true;
+          }
+        }
+        
+        // Additional check: ensure proper closing of JSX elements
+        // Count opening and closing JSX tags
+        const openTags = (code.match(/<[A-Z][a-zA-Z0-9]*(?:\s|>)/g) || []).length;
+        const closeTags = (code.match(/<\/[A-Z][a-zA-Z0-9]*>/g) || []).length;
+        const selfClosing = (code.match(/<[A-Z][a-zA-Z0-9]*[^>]*\/>/g) || []).length;
+        
+        if (openTags > closeTags + selfClosing) {
+          console.log(`Warning: ${file.path} may have unclosed JSX tags. Open: ${openTags}, Close: ${closeTags}, Self-closing: ${selfClosing}`);
+        }
+        
+        if (fixed) {
+          file.content = code;
+          console.log(`Applied fix to ${file.path}`);
+        }
       }
     });
 
