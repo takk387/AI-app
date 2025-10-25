@@ -25,68 +25,100 @@ interface PowerfulPreviewProps {
 export default function PowerfulPreview({ appDataJson }: PowerfulPreviewProps) {
   const appData: FullAppData = JSON.parse(appDataJson);
 
-  // Convert files to Sandpack format
-  const sandpackFiles: Record<string, string> = {};
+  // Convert files to Sandpack format (NO leading slash for Sandpack)
+  const sandpackFiles: Record<string, { code: string }> = {};
   
   appData.files.forEach(file => {
     // Map file paths to Sandpack structure
     let sandpackPath = file.path;
     
-    // Handle different file structures
-    if (sandpackPath === 'src/App.tsx' || sandpackPath === 'App.tsx') {
-      sandpackPath = '/App.tsx';
-    } else if (sandpackPath === 'app/page.tsx' || sandpackPath === 'page.tsx') {
-      sandpackPath = '/App.tsx'; // Rename Next.js pages to App.tsx for React preview
-    } else if (sandpackPath.startsWith('src/')) {
-      sandpackPath = sandpackPath.substring(3); // Remove src/ prefix
+    // Handle different file structures - remove src/ prefix
+    if (sandpackPath.startsWith('src/')) {
+      sandpackPath = sandpackPath.substring(4); // Remove 'src/' (4 characters)
     }
     
-    // Start all paths with /
-    if (!sandpackPath.startsWith('/')) {
-      sandpackPath = '/' + sandpackPath;
+    // Ensure we map to App.tsx for the main file
+    if (sandpackPath === 'App.tsx' || sandpackPath === 'app/page.tsx' || sandpackPath === 'page.tsx') {
+      sandpackPath = 'App.tsx';
     }
     
-    sandpackFiles[sandpackPath] = file.content;
+    // Sandpack file format uses objects with 'code' property
+    sandpackFiles[sandpackPath] = { code: file.content };
   });
 
   // Ensure we have App.tsx
-  if (!sandpackFiles['/App.tsx']) {
+  if (!sandpackFiles['App.tsx']) {
     console.error('No App.tsx found in files:', Object.keys(sandpackFiles));
+    console.log('Original file paths:', appData.files.map(f => f.path));
   }
 
-  // Add index.js if not present
-  if (!sandpackFiles['/index.js'] && !sandpackFiles['/index.tsx']) {
-    sandpackFiles['/index.js'] = `import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import './styles.css';
+  // Add index.js - Sandpack format
+  if (!sandpackFiles['index.js'] && !sandpackFiles['index.tsx']) {
+    sandpackFiles['index.js'] = {
+      code: `import React, { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles.css";
 
-const root = createRoot(document.getElementById('root'));
-root.render(<App />);`;
+import App from "./App";
+
+const root = createRoot(document.getElementById("root"));
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);`
+    };
   }
 
-  // Add styles.css if not present (for Tailwind or custom styles)
-  if (!sandpackFiles['/styles.css']) {
-    sandpackFiles['/styles.css'] = `* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  // Add styles.css - Sandpack format
+  if (!sandpackFiles['styles.css']) {
+    sandpackFiles['styles.css'] = {
+      code: `body {
+  font-family: sans-serif;
+  -webkit-font-smoothing: auto;
+  -moz-font-smoothing: auto;
+  -moz-osx-font-smoothing: grayscale;
+  font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+  font-smooth: always;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  -webkit-font-smoothing: antialiased;
-}`;
+h1 {
+  font-size: 1.5rem;
+}`
+    };
+  }
+
+  // Add public/index.html with Tailwind CDN - Sandpack format
+  if (!sandpackFiles['public/index.html']) {
+    sandpackFiles['public/index.html'] = {
+      code: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${appData.name || 'App'}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`
+    };
   }
 
   // Merge user dependencies with required ones
   const dependencies = {
-    react: '^18.2.0',
-    'react-dom': '^18.2.0',
+    react: '^18.0.0',
+    'react-dom': '^18.0.0',
+    'react-scripts': '^5.0.0',
     ...appData.dependencies,
   };
 
   console.log('Sandpack files:', Object.keys(sandpackFiles));
+  console.log('App.tsx exists:', !!sandpackFiles['App.tsx']);
   console.log('Dependencies:', dependencies);
 
   return (
@@ -96,7 +128,12 @@ body {
         theme="dark"
         files={sandpackFiles}
         customSetup={{
-          dependencies: dependencies,
+          dependencies,
+        }}
+        options={{
+          autorun: true,
+          autoReload: true,
+          recompileMode: 'immediate',
         }}
       >
         <SandpackLayout className="h-full">
