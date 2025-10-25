@@ -127,7 +127,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full" style={{ minHeight: '400px' }}>
       <SandpackProvider
         template="react-ts"
         theme="dark"
@@ -142,7 +142,7 @@ h1, h2, h3, h4, h5, h6 {
           externalResources: ['https://cdn.tailwindcss.com'],
         }}
       >
-        <SandpackLayout className="h-full w-full">
+        <SandpackLayout style={{ height: '100%', width: '100%' }}>
           <SandpackPreview 
             showOpenInCodeSandbox={false}
             showRefreshButton={true}

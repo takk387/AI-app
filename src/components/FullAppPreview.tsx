@@ -139,7 +139,7 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
       )}
 
       {/* Content area */}
-      <div className={`overflow-hidden ${isFullscreen ? 'h-full w-full' : 'flex-1 min-h-0'}`}>
+      <div className={`${isFullscreen ? 'h-full w-full' : 'flex-1'} overflow-hidden`}>
         {activeTab === 'preview' ? (
           <div className="h-full w-full">
             <PowerfulPreview appDataJson={appDataJson} />
