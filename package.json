@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
+    "@codesandbox/sandpack-react": "^2.20.0",
     "jszip": "^3.10.1",
     "next": "13.5.4",
     "openai": "^6.5.0",
