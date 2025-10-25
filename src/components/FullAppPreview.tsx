@@ -54,64 +54,78 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
   const currentFile = appData.files?.find(f => f.path === selectedFile);
 
   return (
-    <div className={`flex flex-col bg-slate-900 rounded-lg border border-white/10 overflow-hidden ${
+    <div className={`flex flex-col bg-slate-900 overflow-hidden ${
       isFullscreen 
-        ? 'fixed inset-0 z-50 rounded-none h-screen' 
-        : 'h-full'
+        ? 'fixed inset-0 z-50' 
+        : 'h-full rounded-lg border border-white/10'
     }`}>
-      {/* Header with tabs */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/30 border-b border-white/10">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('preview')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'preview'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            👁️ Live Preview
-          </button>
-          <button
-            onClick={() => setActiveTab('code')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'code'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            💻 Code
-          </button>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <span>Fully Interactive</span>
+      {/* Header with tabs - conditionally hide in fullscreen preview mode */}
+      {!(isFullscreen && activeTab === 'preview') && (
+        <div className="flex items-center justify-between px-4 py-3 bg-black/30 border-b border-white/10">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('preview')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'preview'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              👁️ Live Preview
+            </button>
+            <button
+              onClick={() => setActiveTab('code')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'code'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              💻 Code
+            </button>
           </div>
           
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all flex items-center gap-2"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-          >
-            {isFullscreen ? (
-              <>
-                <span className="text-lg">⤓</span>
-                <span className="text-sm font-medium">Exit</span>
-              </>
-            ) : (
-              <>
-                <span className="text-lg">⤢</span>
-                <span className="text-sm font-medium">Fullscreen</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              <span>Fully Interactive</span>
+            </div>
+            
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all flex items-center gap-2"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? (
+                <>
+                  <span className="text-lg">⤓</span>
+                  <span className="text-sm font-medium">Exit</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg">⤢</span>
+                  <span className="text-sm font-medium">Fullscreen</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Floating exit button when in fullscreen preview mode */}
+      {isFullscreen && activeTab === 'preview' && (
+        <button
+          onClick={() => setIsFullscreen(false)}
+          className="fixed top-4 right-4 z-[60] px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
+          title="Exit Fullscreen"
+        >
+          <span className="text-lg">⤓</span>
+          <span className="text-sm font-medium">Exit Fullscreen</span>
+        </button>
+      )}
 
       {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className={`overflow-hidden ${isFullscreen ? 'h-screen' : 'flex-1 min-h-0'}`}>
         {activeTab === 'preview' ? (
           <div className="h-full w-full">
             <PowerfulPreview appDataJson={appDataJson} />
