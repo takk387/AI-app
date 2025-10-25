@@ -55,6 +55,7 @@ export default function AIBuilder() {
   // Image upload for AI-inspired designs
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // App library/history
   const [components, setComponents] = useState<GeneratedComponent[]>([]);
@@ -208,27 +209,40 @@ export default function AIBuilder() {
 
   // Handle image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🖼️ Image upload button clicked');
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('❌ No file selected');
+      return;
+    }
+
+    console.log('📁 File selected:', file.name, file.type, `${(file.size / 1024).toFixed(2)}KB`);
 
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
+      console.log('❌ Invalid file type:', file.type);
       alert('Please upload an image file');
       return;
     }
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
+      console.log('❌ File too large:', (file.size / 1024 / 1024).toFixed(2), 'MB');
       alert('Image size must be less than 5MB');
       return;
     }
 
+    console.log('✅ File validation passed, setting imageFile state');
     setImageFile(file);
 
     // Convert to base64 for preview
     const reader = new FileReader();
     reader.onloadend = () => {
+      console.log('✅ Image converted to base64, length:', (reader.result as string).length);
       setUploadedImage(reader.result as string);
+    };
+    reader.onerror = () => {
+      console.error('❌ Error reading file:', reader.error);
     };
     reader.readAsDataURL(file);
   };
@@ -237,6 +251,10 @@ export default function AIBuilder() {
   const removeImage = () => {
     setUploadedImage(null);
     setImageFile(null);
+    // Reset the file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const sendMessage = async () => {
@@ -503,6 +521,10 @@ export default function AIBuilder() {
       // Clear uploaded image after sending
       setUploadedImage(null);
       setImageFile(null);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -980,11 +1002,11 @@ export default function AIBuilder() {
                   >
                     <span className="text-xl">🖼️</span>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
-                      disabled={isGenerating}
                     />
                   </label>
 

@@ -455,8 +455,27 @@ REMEMBER:
       // Extract base64 data and media type from data URL
       const imageMatch = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
       if (imageMatch) {
-        const mediaType = imageMatch[1];
+        let mediaType = imageMatch[1];
         const base64Data = imageMatch[2];
+        
+        // Claude only accepts: image/jpeg, image/png, image/gif, image/webp
+        // Normalize media types
+        const validMediaTypes: { [key: string]: string } = {
+          'image/jpeg': 'image/jpeg',
+          'image/jpg': 'image/jpeg',
+          'image/png': 'image/png',
+          'image/gif': 'image/gif',
+          'image/webp': 'image/webp'
+        };
+        
+        // Normalize the media type
+        const normalizedType = validMediaTypes[mediaType.toLowerCase()];
+        if (!normalizedType) {
+          console.error('Unsupported image type:', mediaType);
+          throw new Error(`Unsupported image type: ${mediaType}. Please use JPEG, PNG, GIF, or WebP.`);
+        }
+        
+        console.log('Image media type:', normalizedType, 'Original:', mediaType);
         
         messages.push({ 
           role: 'user', 
@@ -465,7 +484,7 @@ REMEMBER:
               type: 'image',
               source: {
                 type: 'base64',
-                media_type: mediaType,
+                media_type: normalizedType,
                 data: base64Data
               }
             },
@@ -477,6 +496,7 @@ REMEMBER:
         });
       } else {
         // Fallback if image format is unexpected
+        console.error('Invalid image data URL format');
         messages.push({ role: 'user', content: prompt });
       }
     } else {
@@ -509,7 +529,9 @@ REMEMBER:
       
     console.log('Generated response length:', responseText.length, 'chars');
     console.log('Estimated tokens:', Math.round(tokenCount));
-    console.log('Response preview:', responseText.substring(0, 300));
+    console.log('Response preview (first 500 chars):', responseText.substring(0, 500));
+    console.log('Response has ===NAME===:', responseText.includes('===NAME==='));
+    console.log('Response has ===FILE:', responseText.includes('===FILE:'));
     
     if (!responseText) {
       throw new Error('No response from Claude');
@@ -527,13 +549,27 @@ REMEMBER:
     const setupMatch = responseText.match(/===SETUP===\s*([\s\S]*?)\s*===END===/);
 
     if (!nameMatch) {
-      console.error('Failed to parse NAME. Response preview:', responseText.substring(0, 500));
-      throw new Error('Invalid response format from Claude - missing NAME section');
+      console.error('Failed to parse NAME. Full response:', responseText);
+      return NextResponse.json({
+        error: 'Invalid response format from Claude - missing NAME section. The AI may have responded in an unexpected format. Please try rephrasing your request or try again.',
+        debug: {
+          responseLength: responseText.length,
+          hasNameMarker: responseText.includes('===NAME==='),
+          hasFileMarker: responseText.includes('===FILE:'),
+          preview: responseText.substring(0, 1000)
+        }
+      }, { status: 500 });
     }
     
     if (!descriptionMatch) {
       console.error('Failed to parse DESCRIPTION. Response preview:', responseText.substring(0, 500));
-      throw new Error('Invalid response format from Claude - missing DESCRIPTION section');
+      return NextResponse.json({
+        error: 'Invalid response format from Claude - missing DESCRIPTION section',
+        debug: {
+          responseLength: responseText.length,
+          preview: responseText.substring(0, 1000)
+        }
+      }, { status: 500 });
     }
     
     // Extract name, description, and app type

@@ -205,6 +205,66 @@ export default function ComponentPreview({
             jsx = jsx.replace(/className\s*=\s*'/g, "class='");
             jsx = jsx.replace(/className\s*=\s*\{/g, 'class={');
             
+            // Handle icon components (Lucide React icons) - convert to emoji or SVG placeholders
+            const iconMap: { [key: string]: string } = {
+              'Sparkles': '✨',
+              'Star': '⭐',
+              'Heart': '❤️',
+              'Check': '✓',
+              'X': '✕',
+              'Plus': '+',
+              'Minus': '-',
+              'Search': '🔍',
+              'Menu': '☰',
+              'User': '👤',
+              'Settings': '⚙️',
+              'Home': '🏠',
+              'Mail': '✉️',
+              'Phone': '📞',
+              'Calendar': '📅',
+              'Clock': '🕐',
+              'Lock': '🔒',
+              'Unlock': '🔓',
+              'Eye': '👁️',
+              'EyeOff': '🙈',
+              'ChevronRight': '›',
+              'ChevronLeft': '‹',
+              'ChevronUp': '⌃',
+              'ChevronDown': '⌄',
+              'ArrowRight': '→',
+              'ArrowLeft': '←',
+              'ArrowUp': '↑',
+              'ArrowDown': '↓',
+              'Download': '⬇',
+              'Upload': '⬆',
+              'Trash': '🗑️',
+              'Edit': '✏️',
+              'Save': '💾',
+              'Share': '🔗',
+              'Copy': '📋',
+              'Info': 'ℹ️',
+              'Alert': '⚠️',
+              'Bell': '🔔',
+              'Sun': '☀️',
+              'Moon': '🌙',
+              'Cloud': '☁️',
+              'Zap': '⚡',
+              'Gift': '🎁',
+              'Flag': '🚩'
+            };
+            
+            // Replace icon components with emoji/symbols
+            jsx = jsx.replace(/<([A-Z][a-z]+(?:[A-Z][a-z]+)*)([^>]*?)\/>/g, (match, compName, attrs) => {
+              if (iconMap[compName]) {
+                // Extract className if present
+                const classMatch = attrs.match(/class(?:Name)?\s*=\s*"([^"]*)"/);
+                const className = classMatch ? classMatch[1] : '';
+                return `<span class="${className}">${iconMap[compName]}</span>`;
+              }
+              // Not an icon, continue to next handler
+              return match;
+            });
+            
             // Handle component instances - convert to divs with their class
             // Example: <Button label="Click" onClick={...} /> becomes the button HTML
             jsx = jsx.replace(/<([A-Z]\w+)([^>]*?)\/>/g, (match, compName, attrs) => {
