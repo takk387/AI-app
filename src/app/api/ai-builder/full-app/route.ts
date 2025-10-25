@@ -70,6 +70,8 @@ For simple UI apps without backend needs:
 
 - **CRITICAL**: src/App.tsx MUST be PLAIN JSX (NO TypeScript syntax)
 - **CRITICAL**: Use double quotes "text" for all strings, NEVER single quotes/apostrophes 'text'
+- **CRITICAL**: Keep template literals SHORT (max 200 chars). For long text, use string concatenation with + operator
+- **CRITICAL**: Example of CORRECT long text: "Part 1 text here. " + "Part 2 text here. " + "Part 3 text here."
 - **CRITICAL**: In template literals, write "it is" instead of "it's", "you are" instead of "you're", etc.
 - NO interfaces, types, type annotations, or "as" assertions in App.tsx
 - All components inline within App.tsx file
