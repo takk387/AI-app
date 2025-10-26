@@ -57,13 +57,14 @@ Analyze the user's request and determine the appropriate architecture:
 IMPORTANT FOR COMPLEX/LONG APPS:
 - You have up to 8,192 output tokens available (model limit)
 - This is approximately 600-800 lines of well-structured code
-- If the user requests an EXTREMELY large app that would exceed this:
-  1. Build a complete, working version with CORE features
-  2. Use smart code organization (reusable components, utility functions)
-  3. Include a note in the description suggesting which features to add in follow-up requests
-  4. Example: "I've built the core e-commerce system. You can ask me to add: advanced filtering, wishlist, reviews system" etc.
-- For most apps, 8K tokens is MORE than enough for a feature-rich implementation
-- Prioritize working functionality over exhaustive features
+- **CRITICAL**: ALWAYS finish the code completely - NEVER let it cut off mid-line
+- If approaching token limit, simplify the implementation to fit
+- Build complete, working version with CORE features only
+- Use smart code organization (reusable components, utility functions)
+- Include note in description for features to add in follow-up requests
+- Example: "Core blog system complete. Can add: comments, likes, search" etc.
+- Prioritize COMPLETE working code over exhaustive features
+- Better to have 400 lines of complete code than 800 lines cut off mid-function
 
 🎨 FRONTEND-ONLY APPS (Preview Sandbox):
 For simple UI apps without backend needs:
@@ -536,6 +537,12 @@ REMEMBER:
       
     console.log('Generated response length:', responseText.length, 'chars');
     console.log('Estimated tokens:', Math.round(tokenCount));
+    
+    // Check if response might be truncated
+    if (Math.round(tokenCount) > 7500) {
+      console.warn('⚠️ Response approaching token limit - may be truncated!');
+    }
+    
     console.log('Response preview (first 500 chars):', responseText.substring(0, 500));
     console.log('Response has ===NAME===:', responseText.includes('===NAME==='));
     console.log('Response has ===FILE:', responseText.includes('===FILE:'));
@@ -600,10 +607,61 @@ REMEMBER:
     
     console.log('Parsed files:', files.length);
 
+    // Comprehensive sanitization function for truncated/malformed code
+    function sanitizeCode(code: string): string {
+      let sanitized = code;
+      
+      // Fix 1: Close unterminated string literals at end of file
+      const lines = sanitized.split('\n');
+      const lastLine = lines[lines.length - 1].trim();
+      
+      // Check if last line has unclosed double quote
+      const doubleQuoteCount = (lastLine.match(/(?<!\\)"/g) || []).length;
+      if (doubleQuoteCount % 2 !== 0) {
+        console.log('Fixing unterminated string at end of file');
+        lines[lines.length - 1] = lines[lines.length - 1] + '">'; // Close string and likely JSX tag
+      }
+      
+      // Check if last line has unclosed single quote
+      const singleQuoteCount = (lastLine.match(/(?<!\\)'/g) || []).length;
+      if (singleQuoteCount % 2 !== 0) {
+        console.log('Fixing unterminated single quote at end of file');
+        lines[lines.length - 1] = lines[lines.length - 1] + '\'>';
+      }
+      
+      // Fix 2: Close unterminated JSX tags
+      // If last line starts with < but doesn't end with > or />, complete it
+      if (lastLine.startsWith('<') && !lastLine.endsWith('>') && !lastLine.endsWith('/>')) {
+        console.log('Fixing incomplete JSX tag at end of file');
+        lines[lines.length - 1] = lines[lines.length - 1] + '>';
+      }
+      
+      sanitized = lines.join('\n');
+      
+      // Fix 3: Remove clearly broken last line if it's just a fragment
+      const finalLines = sanitized.split('\n');
+      const finalLastLine = finalLines[finalLines.length - 1].trim();
+      
+      // If last line is very short and looks incomplete, remove it
+      if (finalLastLine.length > 0 && finalLastLine.length < 10 && 
+          !finalLastLine.endsWith(';') && 
+          !finalLastLine.endsWith('}') && 
+          !finalLastLine.endsWith('>') &&
+          !finalLastLine.includes('export') &&
+          !finalLastLine.includes('import')) {
+        console.log('Removing broken fragment at end:', finalLastLine);
+        finalLines.pop();
+        sanitized = finalLines.join('\n');
+      }
+      
+      return sanitized;
+    }
+
     // Sanitize code to fix syntax errors from truncated responses
     files.forEach(file => {
       if (file.path.endsWith('.tsx') || file.path.endsWith('.ts') || file.path.endsWith('.jsx') || file.path.endsWith('.js')) {
-        let code = file.content;
+        // Apply comprehensive sanitization first
+        let code = sanitizeCode(file.content);
         
         // CRITICAL FIX: Replace all apostrophes with escaped versions in template literals
         // This prevents syntax errors from contractions like "it's", "don't", etc.
@@ -666,10 +724,9 @@ REMEMBER:
           console.log(`Warning: ${file.path} may have unclosed JSX tags. Open: ${openTags}, Close: ${closeTags}, Self-closing: ${selfClosing}`);
         }
         
-        if (fixed) {
-          file.content = code;
-          console.log(`Applied fix to ${file.path}`);
-        }
+        // Apply all fixes
+        file.content = code;
+        console.log(`Sanitized and fixed ${file.path}`);
       }
     });
 
