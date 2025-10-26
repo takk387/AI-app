@@ -127,7 +127,7 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   return (
-    <div className="w-full h-full" style={{ minHeight: '400px' }}>
+    <div className="w-full h-full" style={{ minHeight: '600px' }}>
       <SandpackProvider
         template="react-ts"
         theme="dark"

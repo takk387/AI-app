@@ -1161,7 +1161,7 @@ export default function AIBuilder() {
                     </div>
 
                     {activeTab === 'preview' && (
-                      <div className="h-[calc(100vh-250px)]">
+                      <div className="h-[calc(100vh-200px)]">
                         <FullAppPreview appDataJson={currentComponent.code} />
                       </div>
                     )}
