@@ -49,6 +49,12 @@ IMPORTANT: You are MODIFYING an existing app called "${currentAppName}".
 - MAJOR_CHANGE will require user approval before being applied
 - MINOR_CHANGE will be applied automatically
 
+**CRITICAL FOR MODIFICATIONS:**
+- You MUST use the EXACT SAME delimiter format as new apps (===NAME===, ===FILE:===, etc.)
+- NEVER respond conversationally without delimiters - the system will fail to parse your response
+- Even when modifying, you MUST include ALL required sections: NAME, DESCRIPTION, APP_TYPE, CHANGE_TYPE, CHANGE_SUMMARY, files, etc.
+- Treat modifications as "generating the updated version of the app" - use full delimiter format
+
 **CONSISTENCY IS KEY:**
 - Match the code style and architecture from previous stages
 - Extend existing data structures rather than creating new ones
