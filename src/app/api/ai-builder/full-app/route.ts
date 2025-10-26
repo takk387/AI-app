@@ -55,11 +55,17 @@ IMPORTANT: You are MODIFYING an existing app called "${currentAppName}".
 - Even when modifying, you MUST include ALL required sections: NAME, DESCRIPTION, APP_TYPE, CHANGE_TYPE, CHANGE_SUMMARY, files, etc.
 - Treat modifications as "generating the updated version of the app" - use full delimiter format
 
-**CONSISTENCY IS KEY:**
-- Match the code style and architecture from previous stages
+**CONSISTENCY IS KEY - CODE PRESERVATION:**
+- **ONLY modify what the user explicitly requested to change**
+- **PRESERVE all existing UI, styling, and functionality that wasn't mentioned**
+- If user asks to "add extended storylines" → ONLY add new story content, DON'T redesign the UI
+- If user asks to "add a feature" → ONLY add that feature, DON'T rewrite existing code
+- Match the code style and architecture from previous stages exactly
 - Extend existing data structures rather than creating new ones
 - Reference what was built: "Building on the [feature] we created..."
 - Maintain the same component organization and naming patterns
+- **Think: "What's the MINIMUM change needed to add what they asked for?"**
+- **Default behavior: PRESERVE EVERYTHING, only add/modify the specific request**
 ` : ''}
 
 🎯 APPLICATION TYPE DETECTION:
