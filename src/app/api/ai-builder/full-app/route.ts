@@ -84,6 +84,12 @@ For simple UI apps without backend needs:
   * Example: const msg = "Part 1 here. " + "Part 2 here."; then use {msg} in JSX
   * NEVER concatenate JSX tags: NEVER do return div-tag quote-plus-quote paragraph-tag
   * Normal JSX structure - only TEXT content goes in string variables
+- **CRITICAL CODE COMPLETION**:
+  * Every opening quote MUST have closing quote on same or next line
+  * Every className= MUST have complete value: className="complete-value"
+  * If approaching token limit, simplify features rather than truncate code
+  * Better to have 100 fewer lines than 1 incomplete line
+  * NEVER let code cut off mid-attribute or mid-string
 - NO interfaces, types, type annotations, or "as" assertions in App.tsx
 - All components inline within App.tsx file
 - Only import React hooks (useState, useEffect, etc.)
@@ -684,9 +690,24 @@ REMEMBER:
         // Apply comprehensive sanitization first
         let code = sanitizeCode(file.content);
         
+        // Validate and fix unbalanced quotes in JSX attributes
+        let lines = code.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          
+          // Check for JSX attributes with unbalanced quotes
+          if (line.includes('="')) {
+            const quoteCount = (line.match(/"/g) || []).length;
+            if (quoteCount % 2 === 1) {
+              lines[i] = line.trimEnd() + '"';
+              console.log(`[SANITIZE] Line ${i+1}: Auto-closed unterminated string in ${file.path}`);
+            }
+          }
+        }
+        code = lines.join('\n');
+        
         // Strategy: Find unclosed template literals by parsing more carefully
         // Split by lines and track state
-        const lines = code.split('\n');
         let inTemplateLiteral = false;
         let templateStartLine = -1;
         let fixed = false;
