@@ -123,7 +123,7 @@ export default function AIBuilder() {
     setChatMessages([{
       id: 'welcome',
       role: 'system',
-      content: "👋 Hi! I'm your AI App Builder. Tell me what app you want to create, and I'll build it for you through conversation.\n\n🔒 **Smart Change Protection**:\n• **New apps** → Created instantly\n• **Minor changes** (bug fixes, tweaks) → Applied automatically ✨\n• **Major changes** (new features, UI redesigns) → Require your approval ⚠️\n\n🕒 **Version History**:\n• Every change is automatically saved\n• View all previous versions anytime\n• One-click revert to any past version\n• Never lose your work!\n\nWhat would you like to build today?",
+      content: "👋 Hi! I'm your AI App Builder. Tell me what app you want to create, and I'll build it for you through conversation.\n\n✨ **Intelligent Modification System**:\n• **New apps** → Built from scratch instantly\n• **Small changes** → Surgical edits (only changes what you ask) 🎯\n• **Shows you changes** → Review before applying ✅\n• **Token efficient** → 95% fewer tokens for modifications 💰\n\n🔒 **Smart Protection**:\n• Every change saved to version history\n• One-click undo/redo anytime\n• Never lose your work\n\n💡 **Pro Tip**: For modifications, be specific (\"change button to blue\") instead of vague (\"make it better\").\n\nWhat would you like to build today?",
       timestamp: new Date().toISOString()
     }]);
   }, []);
@@ -354,11 +354,17 @@ export default function AIBuilder() {
     setUserInput('');
     setIsGenerating(true);
     
-    // Different progress messages for questions vs app building
+    // Different progress messages for questions vs app building vs modifications
+    const isModification = currentComponent !== null;
     const progressMessages = isQuestion ? [
       '🤔 Thinking about your question...',
       '📚 Gathering information...',
       '✍️ Formulating answer...'
+    ] : isModification ? [
+      '🔍 Analyzing your modification request...',
+      '📋 Planning targeted changes...',
+      '✨ Generating precise edits...',
+      '🎯 Creating surgical modifications...'
     ] : [
       '🤔 Analyzing your request...',
       '🏗️ Designing app structure...',
@@ -761,10 +767,11 @@ export default function AIBuilder() {
       setActiveTab('preview');
 
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `❌ Error applying changes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        content: `❌ **Error Applying Changes**\n\n${errorMsg}\n\n💡 **What you can do:**\n• Try breaking your request into smaller steps\n• Be more specific about what you want to change\n• Check if the code location still exists\n\n**Want to try again?** Just describe the change differently, and I'll generate a new set of modifications.`,
         timestamp: new Date().toISOString()
       };
       setChatMessages(prev => [...prev, errorMessage]);

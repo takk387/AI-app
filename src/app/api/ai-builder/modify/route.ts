@@ -230,7 +230,7 @@ Now generate the minimal diff to accomplish the user's request.`;
     // Add current modification request
     messages.push({ role: 'user', content: prompt });
 
-    // Use streaming for better handling
+    // Use streaming for better handling with timeout
     const stream = await anthropic.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096, // Much smaller than full-app since we're only sending diffs
@@ -239,13 +239,23 @@ Now generate the minimal diff to accomplish the user's request.`;
       messages: messages
     });
 
-    // Collect the full response
+    // Collect the full response with timeout
     let responseText = '';
+    const timeout = 45000; // 45 seconds
+    const startTime = Date.now();
     
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        responseText += chunk.delta.text;
+    try {
+      for await (const chunk of stream) {
+        if (Date.now() - startTime > timeout) {
+          throw new Error('AI response timeout - the modification was taking too long. Please try a simpler request or try again.');
+        }
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+          responseText += chunk.delta.text;
+        }
       }
+    } catch (streamError) {
+      console.error('Streaming error:', streamError);
+      throw new Error(streamError instanceof Error ? streamError.message : 'Failed to receive AI response');
     }
       
     console.log('Modification response length:', responseText.length, 'chars');
@@ -281,8 +291,9 @@ Now generate the minimal diff to accomplish the user's request.`;
       console.error('Response text:', responseText);
       
       return NextResponse.json({
-        error: 'Failed to parse modification response from AI. The AI may have responded in an unexpected format.',
-        debug: {
+        error: 'The AI had trouble understanding how to modify your app. This can happen with complex changes. Try breaking your request into smaller steps, or use simpler language.',
+        suggestion: 'Try asking for one change at a time, like "add a button" or "change the color to blue".',
+        technicalDetails: {
           responsePreview: responseText.substring(0, 500),
           parseError: parseError instanceof Error ? parseError.message : 'Unknown error'
         }
