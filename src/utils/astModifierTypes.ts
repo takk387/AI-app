@@ -65,6 +65,41 @@ export interface ModifyClassNameSpec {
 }
 
 /**
+ * JSX insertion position
+ */
+export type InsertPosition = 
+  | 'before'          // Before the target element
+  | 'after'           // After the target element
+  | 'inside_start'    // First child inside element
+  | 'inside_end';     // Last child inside element
+
+/**
+ * JSX insertion specification
+ */
+export interface InsertJSXSpec {
+  jsx: string;                  // JSX code to insert
+  position: InsertPosition;     // Where to insert
+}
+
+/**
+ * useEffect hook specification
+ */
+export interface UseEffectSpec {
+  body: string;                 // Effect body code
+  dependencies?: string[];      // Dependency array (empty = run once)
+  cleanup?: string;            // Optional cleanup function body
+}
+
+/**
+ * Prop modification specification
+ */
+export interface ModifyPropSpec {
+  name: string;                // Prop name
+  value?: string;              // New value (undefined = remove prop)
+  action: 'add' | 'update' | 'remove';
+}
+
+/**
  * Prop modification specification
  */
 export interface PropModification {

@@ -46,11 +46,36 @@ export interface ASTModifyClassNameOperation {
   rawTemplate?: string;         // Or raw template string (advanced)
 }
 
+export interface ASTInsertJSXOperation {
+  type: 'AST_INSERT_JSX';
+  targetElement: string;        // JSX element to find
+  jsx: string;                  // JSX code to insert
+  position: 'before' | 'after' | 'inside_start' | 'inside_end';
+}
+
+export interface ASTAddUseEffectOperation {
+  type: 'AST_ADD_USEEFFECT';
+  body: string;                 // Effect body code
+  dependencies?: string[];      // Dependency array
+  cleanup?: string;            // Optional cleanup function body
+}
+
+export interface ASTModifyPropOperation {
+  type: 'AST_MODIFY_PROP';
+  targetElement: string;        // JSX element to find
+  propName: string;            // Prop name
+  propValue?: string;          // New value (undefined = remove)
+  action: 'add' | 'update' | 'remove';
+}
+
 export type ASTOperation = 
   | ASTWrapElementOperation
   | ASTAddStateOperation
   | ASTAddImportOperation
-  | ASTModifyClassNameOperation;
+  | ASTModifyClassNameOperation
+  | ASTInsertJSXOperation
+  | ASTAddUseEffectOperation
+  | ASTModifyPropOperation;
 
 /**
  * Result of executing an AST operation
@@ -216,6 +241,109 @@ export async function executeASTOperation(
             success: true,
             code: result.code,
             operation: `Modified className on ${operation.targetElement}`
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_INSERT_JSX': {
+        // Find the target JSX element
+        const element = parser.findComponent(tree, operation.targetElement);
+        
+        if (!element) {
+          return {
+            success: false,
+            errors: [`Could not find JSX element: ${operation.targetElement}`]
+          };
+        }
+        
+        // Build insert spec
+        const insertSpec = {
+          jsx: operation.jsx,
+          position: operation.position
+        };
+        
+        // Apply JSX insertion
+        modifier.insertJSX(element, insertSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Inserted JSX ${operation.position} ${operation.targetElement}`
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_ADD_USEEFFECT': {
+        // Build useEffect spec
+        const effectSpec = {
+          body: operation.body,
+          dependencies: operation.dependencies,
+          cleanup: operation.cleanup
+        };
+        
+        // Add useEffect
+        modifier.addUseEffect(effectSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: 'Added useEffect hook'
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_MODIFY_PROP': {
+        // Find the target JSX element
+        const element = parser.findComponent(tree, operation.targetElement);
+        
+        if (!element) {
+          return {
+            success: false,
+            errors: [`Could not find JSX element: ${operation.targetElement}`]
+          };
+        }
+        
+        // Build prop spec
+        const propSpec = {
+          name: operation.propName,
+          value: operation.propValue,
+          action: operation.action
+        };
+        
+        // Apply prop modification
+        modifier.modifyProp(element, propSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Modified prop ${operation.propName} on ${operation.targetElement}`
           };
         } else {
           return {

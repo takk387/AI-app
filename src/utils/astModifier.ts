@@ -6,6 +6,9 @@ import type {
   WrapperSpec,
   StateVariableSpec,
   ModifyClassNameSpec,
+  InsertJSXSpec,
+  UseEffectSpec,
+  ModifyPropSpec,
   PropModification,
   ModificationResult,
   ASTModifierOptions,
@@ -497,6 +500,275 @@ export class ASTModifier {
           }
         }
       }
+    }
+    
+    return this;
+  }
+
+  /**
+   * Insert JSX at a specific position relative to an element
+   */
+  insertJSX(elementNode: Parser.SyntaxNode, spec: InsertJSXSpec): this {
+    if (!this.tree) return this;
+    
+    // Calculate indentation based on element position
+    const elementLineStart = this.originalCode.lastIndexOf('\n', elementNode.startIndex - 1) + 1;
+    const elementColumn = elementNode.startIndex - elementLineStart;
+    const baseIndentation = ' '.repeat(elementColumn);
+    
+    let insertPosition: number;
+    let newCode: string;
+    
+    switch (spec.position) {
+      case 'before':
+        // Insert before the element
+        insertPosition = elementNode.startIndex;
+        newCode = spec.jsx + '\n' + baseIndentation;
+        break;
+      
+      case 'after':
+        // Insert after the element
+        insertPosition = elementNode.endIndex;
+        newCode = '\n' + baseIndentation + spec.jsx;
+        break;
+      
+      case 'inside_start':
+        // Insert as first child inside element
+        // Find the opening element's closing bracket
+        for (const child of elementNode.children) {
+          if (child.type === 'jsx_opening_element') {
+            // Find the closing '>'
+            const closingBracket = child.children.find(c => c.text === '>');
+            if (closingBracket) {
+              insertPosition = closingBracket.endIndex;
+              newCode = '\n' + baseIndentation + this.options.indentation + spec.jsx;
+              this.modifications.push({
+                type: 'insert',
+                start: insertPosition,
+                end: insertPosition,
+                newCode,
+                priority: 600,
+                description: 'Insert JSX inside element (start)'
+              });
+              return this;
+            }
+          }
+        }
+        console.warn('Could not find opening element closing bracket');
+        return this;
+      
+      case 'inside_end':
+        // Insert as last child inside element
+        // Find the closing element
+        for (const child of elementNode.children) {
+          if (child.type === 'jsx_closing_element') {
+            insertPosition = child.startIndex;
+            newCode = '\n' + baseIndentation + this.options.indentation + spec.jsx + '\n' + baseIndentation;
+            this.modifications.push({
+              type: 'insert',
+              start: insertPosition,
+              end: insertPosition,
+              newCode,
+              priority: 600,
+              description: 'Insert JSX inside element (end)'
+            });
+            return this;
+          }
+        }
+        console.warn('Could not find closing element');
+        return this;
+    }
+    
+    this.modifications.push({
+      type: 'insert',
+      start: insertPosition,
+      end: insertPosition,
+      newCode,
+      priority: 600,
+      description: `Insert JSX ${spec.position}`
+    });
+    
+    return this;
+  }
+
+  /**
+   * Add a useEffect hook
+   */
+  addUseEffect(spec: UseEffectSpec): this {
+    if (!this.tree) return this;
+    
+    // Ensure useEffect is imported
+    this.addImport({
+      source: 'react',
+      namedImports: ['useEffect']
+    });
+    
+    // Find the function body to insert into
+    const functionNode = this.parser.findDefaultExportedFunction(this.tree);
+    if (!functionNode) {
+      console.warn('Could not find function to add useEffect to');
+      return this;
+    }
+    
+    // Find the function body
+    let bodyNode = functionNode.childForFieldName('body');
+    if (!bodyNode) {
+      for (const child of functionNode.children) {
+        if (child.type === 'statement_block') {
+          bodyNode = child;
+          break;
+        }
+      }
+    }
+    
+    if (!bodyNode) {
+      console.warn('Could not find function body');
+      return this;
+    }
+    
+    // Find insertion point (after state variables, before return)
+    // Look for the last useState or useEffect call, or use start of body
+    let insertPosition = bodyNode.startIndex + 1; // After opening brace
+    
+    // Try to find last hook call
+    const bodyText = bodyNode.text;
+    const hookMatches = [...bodyText.matchAll(/use(State|Effect|Memo|Callback|Ref)/g)];
+    if (hookMatches.length > 0) {
+      const lastHook = hookMatches[hookMatches.length - 1];
+      if (lastHook.index !== undefined) {
+        // Find the end of this statement (semicolon or newline)
+        const afterHook = bodyText.substring(lastHook.index);
+        const semicolonMatch = afterHook.match(/;/);
+        if (semicolonMatch && semicolonMatch.index !== undefined) {
+          insertPosition = bodyNode.startIndex + lastHook.index + semicolonMatch.index + 1;
+        }
+      }
+    }
+    
+    // Build useEffect code
+    const deps = spec.dependencies === undefined 
+      ? '' 
+      : spec.dependencies.length === 0 
+        ? '[]' 
+        : `[${spec.dependencies.join(', ')}]`;
+    
+    const cleanup = spec.cleanup 
+      ? `\n${this.options.indentation}${this.options.indentation}return () => {\n${this.options.indentation}${this.options.indentation}${this.options.indentation}${spec.cleanup}\n${this.options.indentation}${this.options.indentation}};`
+      : '';
+    
+    const effectCode = `\n${this.options.indentation}useEffect(() => {\n${this.options.indentation}${this.options.indentation}${spec.body}${cleanup}\n${this.options.indentation}}, ${deps});\n`;
+    
+    this.modifications.push({
+      type: 'insert',
+      start: insertPosition,
+      end: insertPosition,
+      newCode: effectCode,
+      priority: 750,
+      description: 'Add useEffect hook'
+    });
+    
+    return this;
+  }
+
+  /**
+   * Modify a prop on a JSX element
+   */
+  modifyProp(elementNode: Parser.SyntaxNode, spec: ModifyPropSpec): this {
+    if (!this.tree) return this;
+    
+    // Find the jsx_opening_element
+    let openingElement: Parser.SyntaxNode | null = null;
+    for (const child of elementNode.children) {
+      if (child.type === 'jsx_opening_element') {
+        openingElement = child;
+        break;
+      }
+    }
+    
+    if (!openingElement) {
+      console.warn('Could not find opening element');
+      return this;
+    }
+    
+    // Find the specific prop
+    let propNode: Parser.SyntaxNode | null = null;
+    for (const child of openingElement.children) {
+      if (child.type === 'jsx_attribute') {
+        const propName = child.childForFieldName('name');
+        if (propName && propName.text === spec.name) {
+          propNode = child;
+          break;
+        }
+      }
+    }
+    
+    switch (spec.action) {
+      case 'add':
+      case 'update':
+        if (!spec.value) {
+          console.warn('Value required for add/update action');
+          return this;
+        }
+        
+        if (propNode) {
+          // Update existing prop
+          this.modifications.push({
+            type: 'replace',
+            start: propNode.startIndex,
+            end: propNode.endIndex,
+            newCode: `${spec.name}={${spec.value}}`,
+            priority: 650,
+            description: `Update prop ${spec.name}`
+          });
+        } else {
+          // Add new prop
+          // Find where to insert (after tag name)
+          const tagName = openingElement.childForFieldName('name');
+          if (tagName) {
+            this.modifications.push({
+              type: 'insert',
+              start: tagName.endIndex,
+              end: tagName.endIndex,
+              newCode: ` ${spec.name}={${spec.value}}`,
+              priority: 650,
+              description: `Add prop ${spec.name}`
+            });
+          }
+        }
+        break;
+      
+      case 'remove':
+        if (propNode) {
+          // Remove the prop (including leading space)
+          const start = propNode.startIndex;
+          let end = propNode.endIndex;
+          
+          // Check if there's a space after the prop
+          if (this.originalCode[end] === ' ') {
+            end++;
+          } else if (start > 0 && this.originalCode[start - 1] === ' ') {
+            // Include leading space in deletion
+            this.modifications.push({
+              type: 'delete',
+              start: start - 1,
+              end: end,
+              newCode: '',
+              priority: 650,
+              description: `Remove prop ${spec.name}`
+            });
+            return this;
+          }
+          
+          this.modifications.push({
+            type: 'delete',
+            start: start,
+            end: end,
+            newCode: '',
+            priority: 650,
+            description: `Remove prop ${spec.name}`
+          });
+        }
+        break;
     }
     
     return this;
