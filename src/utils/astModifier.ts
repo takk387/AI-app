@@ -106,26 +106,42 @@ export class ASTModifier {
     
     if (existing) {
       // Merge with existing import
+      let hasChanges = false;
+      
       if (spec.defaultImport && !existing.defaultImport) {
         existing.defaultImport = spec.defaultImport;
+        hasChanges = true;
       }
       if (spec.namespaceImport && !existing.namespaceImport) {
         existing.namespaceImport = spec.namespaceImport;
+        hasChanges = true;
       }
       if (spec.namedImports) {
         if (!existing.namedImports) {
           existing.namedImports = [];
         }
         // Add new named imports, avoiding duplicates
+        // Parse existing named imports to extract just the name (not "name as alias")
+        const existingNames = existing.namedImports.map(imp => {
+          const match = imp.match(/^(\w+)(?:\s+as\s+\w+)?$/);
+          return match ? match[1] : imp;
+        });
+        
         for (const namedImport of spec.namedImports) {
-          if (!existing.namedImports.includes(namedImport)) {
+          // Extract name from potential "name as alias" format
+          const match = namedImport.match(/^(\w+)(?:\s+as\s+\w+)?$/);
+          const importName = match ? match[1] : namedImport;
+          
+          // Only add if not already present
+          if (!existingNames.includes(importName) && !existing.namedImports.includes(namedImport)) {
             existing.namedImports.push(namedImport);
+            hasChanges = true;
           }
         }
       }
       
-      // Schedule update only if not already scheduled
-      if (!this.scheduledImportUpdates.has(spec.source)) {
+      // Only schedule update if there were actual changes
+      if (hasChanges && !this.scheduledImportUpdates.has(spec.source)) {
         this.scheduleImportUpdate(spec.source);
         this.scheduledImportUpdates.add(spec.source);
       }
