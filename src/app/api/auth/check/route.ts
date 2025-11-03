@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const SITE_PASSWORD = process.env.SITE_PASSWORD || 'MySecurePassword123';
+const SITE_PASSWORD = process.env.SITE_PASSWORD;
 
 export async function GET() {
   try {
