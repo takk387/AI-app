@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { executeASTOperation, isASTOperation, type ASTOperation } from '@/utils/astExecutor';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -7,11 +8,29 @@ const anthropic = new Anthropic({
 
 // TypeScript interfaces for diff format
 interface DiffChange {
-  type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND';
+  type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND' 
+      | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT';
   line?: number;
   searchFor?: string;
   content?: string;
   replaceWith?: string;
+  // AST operation fields
+  targetElement?: string;
+  wrapperComponent?: string;
+  wrapperProps?: Record<string, string>;
+  name?: string;
+  setter?: string;
+  initialValue?: string;
+  source?: string;
+  defaultImport?: string;
+  namedImports?: string[];
+  namespaceImport?: string;
+  import?: {
+    source: string;
+    defaultImport?: string;
+    namedImports?: string[];
+    namespaceImport?: string;
+  };
 }
 
 interface FileDiff {
@@ -214,6 +233,105 @@ Your response:
 3. **ALWAYS use exact code snippets** in searchFor
 4. **ALWAYS preserve existing functionality** unless explicitly asked to change it
 5. **Response must be valid JSON** that can be parsed directly
+
+---
+
+🔧 **AST-BASED OPERATIONS (For Precise Structural Changes)**
+
+For complex React modifications that need surgical precision, use these AST operations instead of string-based REPLACE:
+
+**AST_WRAP_ELEMENT** - Wrap JSX element in a component (e.g., authentication wrapper)
+
+When to use: User wants to add authentication, authorization, error boundaries, providers
+Example use case: "add authentication", "protect this with login", "add auth guard"
+
+\`\`\`json
+{
+  "type": "AST_WRAP_ELEMENT",
+  "targetElement": "div",
+  "wrapperComponent": "AuthGuard",
+  "wrapperProps": {
+    "fallback": "LoginPage"
+  },
+  "import": {
+    "source": "@/components/AuthGuard",
+    "defaultImport": "AuthGuard"
+  }
+}
+\`\`\`
+
+**AST_ADD_STATE** - Add useState hook with auto-import
+
+When to use: User wants to add state management, track values, toggle features
+Example use case: "add a counter", "track user preferences", "add dark mode state"
+
+\`\`\`json
+{
+  "type": "AST_ADD_STATE",
+  "name": "isOpen",
+  "setter": "setIsOpen",
+  "initialValue": "false"
+}
+\`\`\`
+
+**AST_ADD_IMPORT** - Add import with automatic deduplication
+
+When to use: Need to import React hooks, external libraries, or components
+Example use case: When adding features that require new dependencies
+
+\`\`\`json
+{
+  "type": "AST_ADD_IMPORT",
+  "source": "react",
+  "namedImports": ["useState", "useEffect"]
+}
+\`\`\`
+
+**🎯 WHEN TO USE AST OPERATIONS:**
+
+Use AST operations for:
+- ✅ Wrapping components (AuthGuard, ErrorBoundary, Provider, etc.)
+- ✅ Adding React hooks (useState, useEffect, etc.)
+- ✅ Managing imports (especially with deduplication)
+- ✅ Structural JSX changes that need precision
+
+Use string-based operations for:
+- ✅ Changing text, colors, styling
+- ✅ Updating className values
+- ✅ Simple prop changes
+- ✅ Adding/removing small code snippets
+
+**Example: Adding Authentication**
+
+\`\`\`json
+{
+  "changeType": "MODIFICATION",
+  "summary": "Added authentication wrapper to protect app content",
+  "files": [
+    {
+      "path": "src/App.tsx",
+      "action": "MODIFY",
+      "changes": [
+        {
+          "type": "AST_WRAP_ELEMENT",
+          "targetElement": "div",
+          "wrapperComponent": "AuthGuard",
+          "import": {
+            "source": "@/components/AuthGuard",
+            "defaultImport": "AuthGuard"
+          }
+        },
+        {
+          "type": "AST_ADD_STATE",
+          "name": "isAuthenticated",
+          "setter": "setIsAuthenticated",
+          "initialValue": "false"
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
 
 ---
 

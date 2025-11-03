@@ -3,14 +3,36 @@
  * 
  * Applies targeted code modifications (diffs) to existing files
  * without rewriting entire files.
+ * 
+ * Now supports both string-based diffs and AST-based operations.
  */
 
+import { executeASTOperation, isASTOperation, type ASTOperation } from './astExecutor';
+
 interface DiffChange {
-  type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND';
+  type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND'
+      | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT';
   line?: number;
   searchFor?: string;
   content?: string;
   replaceWith?: string;
+  // AST operation fields
+  targetElement?: string;
+  wrapperComponent?: string;
+  wrapperProps?: Record<string, string>;
+  name?: string;
+  setter?: string;
+  initialValue?: string;
+  source?: string;
+  defaultImport?: string;
+  namedImports?: string[];
+  namespaceImport?: string;
+  import?: {
+    source: string;
+    defaultImport?: string;
+    namedImports?: string[];
+    namespaceImport?: string;
+  };
 }
 
 interface FileDiff {
@@ -28,11 +50,11 @@ interface ApplyDiffResult {
 /**
  * Main function to apply diffs to files
  */
-export function applyDiff(
+export async function applyDiff(
   currentFiles: Array<{ path: string; content: string }>,
   diffs: FileDiff[],
   dryRun: boolean = false
-): ApplyDiffResult {
+): Promise<ApplyDiffResult> {
   const result: ApplyDiffResult = {
     success: true,
     modifiedFiles: [],
@@ -88,7 +110,7 @@ export function applyDiff(
       // Apply each change in sequence
       for (const change of fileDiff.changes) {
         try {
-          fileContent = applyChange(fileContent, change);
+          fileContent = await applyChange(fileContent, change);
         } catch (error) {
           const errorMsg = `Failed to apply ${change.type} to ${fileDiff.path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
           result.errors.push(errorMsg);
@@ -116,8 +138,15 @@ export function applyDiff(
 
 /**
  * Apply a single change to file content
+ * Now supports both string-based and AST-based operations
  */
-function applyChange(content: string, change: DiffChange): string {
+async function applyChange(content: string, change: DiffChange): Promise<string> {
+  // Check if this is an AST operation
+  if (change.type.startsWith('AST_')) {
+    return await applyASTChange(content, change);
+  }
+  
+  // Handle traditional string-based operations
   switch (change.type) {
     case 'ADD_IMPORT':
       return addImport(content, change.content || '');
@@ -140,6 +169,39 @@ function applyChange(content: string, change: DiffChange): string {
     default:
       throw new Error(`Unknown change type: ${(change as any).type}`);
   }
+}
+
+/**
+ * Apply an AST-based change to file content
+ */
+async function applyASTChange(content: string, change: DiffChange): Promise<string> {
+  // Convert DiffChange to ASTOperation
+  const operation: ASTOperation = change as any;
+  
+  // Validate required fields based on operation type
+  if (change.type === 'AST_WRAP_ELEMENT') {
+    if (!change.targetElement || !change.wrapperComponent) {
+      throw new Error('AST_WRAP_ELEMENT requires targetElement and wrapperComponent');
+    }
+  } else if (change.type === 'AST_ADD_STATE') {
+    if (!change.name || !change.setter || !change.initialValue) {
+      throw new Error('AST_ADD_STATE requires name, setter, and initialValue');
+    }
+  } else if (change.type === 'AST_ADD_IMPORT') {
+    if (!change.source) {
+      throw new Error('AST_ADD_IMPORT requires source');
+    }
+  }
+  
+  // Execute the AST operation
+  const result = await executeASTOperation(content, operation);
+  
+  if (!result.success) {
+    const errors = result.errors?.join('; ') || 'Unknown AST operation error';
+    throw new Error(errors);
+  }
+  
+  return result.code || content;
 }
 
 /**
@@ -265,15 +327,15 @@ function append(content: string, appendContent: string): string {
 /**
  * Preview changes without applying them
  */
-export function previewDiff(
+export async function previewDiff(
   currentFiles: Array<{ path: string; content: string }>,
   diffs: FileDiff[]
-): {
+): Promise<{
   path: string;
   before: string;
   after: string;
   changes: Array<{ type: string; description: string }>;
-}[] {
+}[]> {
   const previews: Array<{
     path: string;
     before: string;
@@ -281,7 +343,7 @@ export function previewDiff(
     changes: Array<{ type: string; description: string }>;
   }> = [];
 
-  const result = applyDiff(currentFiles, diffs, true);
+  const result = await applyDiff(currentFiles, diffs, true);
 
   for (const modifiedFile of result.modifiedFiles) {
     const originalFile = currentFiles.find(f => f.path === modifiedFile.path);

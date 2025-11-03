@@ -900,7 +900,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
     setShowApprovalModal(false);
   };
 
-  const approveDiff = () => {
+  const approveDiff = async () => {
     if (!pendingDiff || !currentComponent) return;
 
     try {
@@ -912,7 +912,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
       }));
 
       // Apply diff
-      const result = applyDiff(currentFiles, pendingDiff.files);
+      const result = await applyDiff(currentFiles, pendingDiff.files);
 
       if (!result.success) {
         throw new Error(result.errors.join(', '));
