@@ -9,7 +9,7 @@ const anthropic = new Anthropic({
 // TypeScript interfaces for diff format
 interface DiffChange {
   type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND' 
-      | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT';
+      | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT' | 'AST_MODIFY_CLASSNAME';
   line?: number;
   searchFor?: string;
   content?: string;
@@ -31,6 +31,15 @@ interface DiffChange {
     namedImports?: string[];
     namespaceImport?: string;
   };
+  // AST_MODIFY_CLASSNAME fields
+  staticClasses?: string[];
+  template?: {
+    variable: string;
+    trueValue: string;
+    falseValue?: string;
+    operator?: '?' | '&&';
+  };
+  rawTemplate?: string;
 }
 
 interface FileDiff {
