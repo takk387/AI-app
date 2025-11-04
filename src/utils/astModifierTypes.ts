@@ -118,6 +118,25 @@ export interface UseCallbackSpec {
 }
 
 /**
+ * Action specification for useReducer
+ */
+export interface ReducerActionSpec {
+  type: string;                // Action type (e.g., 'INCREMENT', 'DECREMENT')
+  handler: string;             // Handler code (e.g., 'return { ...state, count: state.count + 1 }')
+}
+
+/**
+ * useReducer hook specification
+ */
+export interface UseReducerSpec {
+  name: string;                // State variable name (e.g., 'state')
+  dispatchName: string;        // Dispatch function name (e.g., 'dispatch')
+  reducerName: string;         // Reducer function name (e.g., 'reducer')
+  initialState: string;        // Initial state (e.g., '{ count: 0 }')
+  actions: ReducerActionSpec[]; // Array of actions to handle
+}
+
+/**
  * Prop modification specification
  */
 export interface ModifyPropSpec {

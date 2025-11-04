@@ -11,6 +11,7 @@ import type {
   UseRefSpec,
   UseMemoSpec,
   UseCallbackSpec,
+  UseReducerSpec,
   ModifyPropSpec,
   FunctionSpec,
   ConditionalWrapSpec,
@@ -870,6 +871,99 @@ export class ASTModifier {
       newCode: callbackCode,
       priority: 780, // Lower than memo (790) but higher than regular functions (700)
       description: `Add callback function ${spec.name}`
+    });
+    
+    return this;
+  }
+
+  /**
+   * Add a useReducer hook
+   */
+  addReducer(spec: UseReducerSpec): this {
+    if (!this.tree) return this;
+    
+    // Ensure useReducer is imported
+    this.addImport({
+      source: 'react',
+      namedImports: ['useReducer']
+    });
+    
+    // Find the function body to insert into
+    const functionNode = this.parser.findDefaultExportedFunction(this.tree);
+    if (!functionNode) {
+      console.warn('Could not find function to add useReducer to');
+      return this;
+    }
+    
+    // Find the function body
+    let bodyNode = functionNode.childForFieldName('body');
+    if (!bodyNode) {
+      for (const child of functionNode.children) {
+        if (child.type === 'statement_block') {
+          bodyNode = child;
+          break;
+        }
+      }
+    }
+    
+    if (!bodyNode) {
+      console.warn('Could not find function body');
+      return this;
+    }
+    
+    // Find insertion point for reducer function (after opening brace, before hooks)
+    const openBrace = bodyNode.children.find(c => c.type === '{');
+    if (!openBrace) return this;
+    
+    let reducerInsertPosition = openBrace.endIndex;
+    const hasNewlineAfterBrace = this.originalCode[reducerInsertPosition] === '\n';
+    
+    // Build reducer function with switch statement
+    const caseStatements = spec.actions.map(action => 
+      `${this.options.indentation}${this.options.indentation}case '${action.type}':\n${this.options.indentation}${this.options.indentation}${this.options.indentation}${action.handler}`
+    ).join('\n');
+    
+    const reducerFunction = `${hasNewlineAfterBrace ? '' : '\n'}${this.options.indentation}function ${spec.reducerName}(state, action) {\n${this.options.indentation}${this.options.indentation}switch (action.type) {\n${caseStatements}\n${this.options.indentation}${this.options.indentation}default:\n${this.options.indentation}${this.options.indentation}${this.options.indentation}return state;\n${this.options.indentation}${this.options.indentation}}\n${this.options.indentation}}\n`;
+    
+    // Add reducer function first (priority 796 - just above useReducer hook)
+    // This ensures reducer function appears BEFORE useReducer call in code
+    this.modifications.push({
+      type: 'insert',
+      start: reducerInsertPosition,
+      end: reducerInsertPosition,
+      newCode: reducerFunction,
+      priority: 796,
+      description: `Add reducer function ${spec.reducerName}`
+    });
+    
+    // Find insertion point for useReducer hook (after state/ref/memo hooks)
+    let hookInsertPosition = bodyNode.startIndex + 1; // After opening brace
+    
+    // Try to find last hook call (useState, useRef, useMemo - NOT useCallback or useReducer)
+    const bodyText = bodyNode.text;
+    const hookMatches = [...bodyText.matchAll(/use(State|Ref|Memo)/g)];
+    if (hookMatches.length > 0) {
+      const lastHook = hookMatches[hookMatches.length - 1];
+      if (lastHook.index !== undefined) {
+        const afterHook = bodyText.substring(lastHook.index);
+        const semicolonMatch = afterHook.match(/;/);
+        if (semicolonMatch && semicolonMatch.index !== undefined) {
+          hookInsertPosition = bodyNode.startIndex + lastHook.index + semicolonMatch.index + 1;
+        }
+      }
+    }
+    
+    // Build useReducer hook call
+    const reducerHookCode = `\n${this.options.indentation}const [${spec.name}, ${spec.dispatchName}] = useReducer(${spec.reducerName}, ${spec.initialState});\n`;
+    
+    // Add useReducer hook call (priority 795 - after useMemo, before useCallback)
+    this.modifications.push({
+      type: 'insert',
+      start: hookInsertPosition,
+      end: hookInsertPosition,
+      newCode: reducerHookCode,
+      priority: 795,
+      description: `Add useReducer hook for ${spec.name}`
     });
     
     return this;

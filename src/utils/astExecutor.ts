@@ -95,7 +95,19 @@ export interface ASTAddCallbackOperation {
   dependencies: string[];    // Dependency array (e.g., ['items', 'setItems'])
 }
 
-export type ASTOperation = 
+export interface ASTAddReducerOperation {
+  type: 'AST_ADD_REDUCER';
+  name: string;              // State variable name (e.g., 'state')
+  dispatchName: string;      // Dispatch function name (e.g., 'dispatch')
+  reducerName: string;       // Reducer function name (e.g., 'reducer')
+  initialState: string;      // Initial state (e.g., '{ count: 0 }')
+  actions: Array<{
+    type: string;            // Action type (e.g., 'INCREMENT')
+    handler: string;         // Handler code (e.g., 'return { ...state, count: state.count + 1 }')
+  }>;
+}
+
+export type ASTOperation =
   | ASTWrapElementOperation
   | ASTAddStateOperation
   | ASTAddImportOperation
@@ -106,7 +118,8 @@ export type ASTOperation =
   | ASTAddAuthenticationOperation
   | ASTAddRefOperation
   | ASTAddMemoOperation
-  | ASTAddCallbackOperation;
+  | ASTAddCallbackOperation
+  | ASTAddReducerOperation;
 
 /**
  * Result of executing an AST operation
@@ -459,6 +472,36 @@ export async function executeASTOperation(
             success: true,
             code: result.code,
             operation: `Added callback function: ${operation.name}`
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_ADD_REDUCER': {
+        // Build reducer spec
+        const reducerSpec = {
+          name: operation.name,
+          dispatchName: operation.dispatchName,
+          reducerName: operation.reducerName,
+          initialState: operation.initialState,
+          actions: operation.actions
+        };
+        
+        // Add reducer
+        modifier.addReducer(reducerSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Added useReducer with ${operation.actions.length} actions`
           };
         } else {
           return {
