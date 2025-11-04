@@ -57,30 +57,38 @@ export default function ComponentPreview({
     };
   }, [theme]);
 
+  // Helper function to extract JSX from code using multiple patterns
+  const extractJSX = useCallback((code: string): string => {
+    // Try patterns in order of specificity
+    const patterns = [
+      // Pattern 1: Demo function's return
+      /function\s+Demo\s*\([^)]*\)\s*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\);?\s*\}/,
+      // Pattern 2: Default export function's return
+      /export\s+default\s+function[^{]*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\);?\s*\}/,
+      // Pattern 3: return <...>
+      /return\s+(<[\s\S]*?>[\s\S]*?<\/\w+>)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = code.match(pattern);
+      if (match) return match[1].trim();
+    }
+    
+    // Pattern 4: Last return statement in the code
+    const allReturns = code.match(/return\s*\(\s*([\s\S]*?)\s*\);/g);
+    if (allReturns && allReturns.length > 0) {
+      const lastReturn = allReturns[allReturns.length - 1];
+      const match = lastReturn.match(/return\s*\(\s*([\s\S]*?)\s*\);/);
+      if (match) return match[1].trim();
+    }
+    
+    return '';
+  }, []);
+
   // Memoized function to handle JSX to HTML conversion
   const convertJsxToHtml = useCallback((jsxCode: string, props: Record<string, any>): string => {
     try {
-      // Try to extract JSX from return statement
-      let html = '';
-      
-      // Method 1: Extract from return statement
-      const returnMatch = jsxCode.match(/return\s*\(([\s\S]*?)\);?\s*}/);
-      if (returnMatch) {
-        html = returnMatch[1].trim();
-      } else {
-        // Method 2: Extract from arrow function return
-        const arrowMatch = jsxCode.match(/=>\s*\(([\s\S]*?)\)/);
-        if (arrowMatch) {
-          html = arrowMatch[1].trim();
-        } else {
-          // Method 3: Try to find JSX-like content
-          const jsxMatch = jsxCode.match(/<[A-Za-z][^>]*>[\s\S]*<\/[A-Za-z][^>]*>/);
-          if (jsxMatch) {
-            html = jsxMatch[0];
-          }
-        }
-      }
-
+      let html = extractJSX(jsxCode);
       if (!html) return '';
 
       // Convert JSX className to class
@@ -106,13 +114,21 @@ export default function ComponentPreview({
             return `${cssKey}: ${cssValue}`;
           });
           return `style="${styleEntries.join('; ')}"`;
-        } catch {
+        } catch (err) {
+          console.error('Style conversion error:', err);
           return '';
         }
       });
 
-      // Remove remaining React-specific syntax
-      html = html.replace(/\{[^}]+\}/g, '');
+      // Remove remaining React-specific syntax (surgically)
+      // Remove standalone variable references
+      html = html.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*)\}/g, '');
+      // Remove simple property access
+      html = html.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*\.[a-zA-Z_$][a-zA-Z0-9_$]*)\}/g, '');
+      // Remove function calls without JSX
+      html = html.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*\))\}/g, '');
+      
+      // Remove event handlers
       html = html.replace(/\s+on[A-Z]\w+={[^}]+}/g, '');
       
       // Clean up self-closing tags
@@ -123,7 +139,7 @@ export default function ComponentPreview({
       console.error('JSX to HTML conversion error:', err);
       return '';
     }
-  }, []);
+  }, [extractJSX]);
 
   // Function to render preview content
   useEffect(() => {
@@ -161,43 +177,12 @@ export default function ComponentPreview({
       // Extract JSX/HTML from the code for preview
       let htmlContent = '';
 
-      console.log('=== Processing code ===');
-      console.log('Code preview (first 500 chars):', code.substring(0, 500));
-      console.log('Live preview enabled:', livePreview);
-
       // Try to render with improved JSX to HTML conversion
       if (livePreview) {
         try {
-          // Extract the return statement JSX more carefully
-          // Try multiple patterns to find the JSX
-          let jsx = '';
+          let jsx = extractJSX(code);
           
-          // Look for Demo component or last return statement
-          // Pattern 1: Find Demo function's return
-          let returnMatch = code.match(/function\s+Demo\s*\([^)]*\)\s*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\);?\s*\}/);
-          
-          // Pattern 2: Find default export function's return
-          if (!returnMatch) {
-            returnMatch = code.match(/export\s+default\s+function[^{]*\{[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\);?\s*\}/);
-          }
-          
-          // Pattern 3: Last return statement in the code
-          if (!returnMatch) {
-            const allReturns = code.match(/return\s*\(\s*([\s\S]*?)\s*\);/g);
-            if (allReturns && allReturns.length > 0) {
-              const lastReturn = allReturns[allReturns.length - 1];
-              returnMatch = lastReturn.match(/return\s*\(\s*([\s\S]*?)\s*\);/);
-            }
-          }
-          
-          // Pattern 4: return <...>
-          if (!returnMatch) {
-            returnMatch = code.match(/return\s+(<[\s\S]*?>[\s\S]*?<\/\w+>)/);
-          }
-          
-          if (returnMatch) {
-            jsx = returnMatch[1].trim();
-            console.log('Extracted JSX:', jsx.substring(0, 200)); // Debug
+          if (jsx) {
             
             // Convert className to class (multiple patterns)
             jsx = jsx.replace(/className=/g, 'class=');
@@ -250,19 +235,65 @@ export default function ComponentPreview({
               'Cloud': '☁️',
               'Zap': '⚡',
               'Gift': '🎁',
-              'Flag': '🚩'
+              'Flag': '🚩',
+              'Database': '🗄️',
+              'Server': '🖥️',
+              'Code': '💻',
+              'Terminal': '⌨️',
+              'Folder': '📁',
+              'File': '📄',
+              'Image': '🖼️',
+              'Video': '📹',
+              'Music': '🎵',
+              'Book': '📖',
+              'Bookmark': '🔖',
+              'Tag': '🏷️',
+              'Package': '📦',
+              'Inbox': '📥',
+              'Send': '📤',
+              'Paperclip': '📎',
+              'Link': '🔗',
+              'ExternalLink': '↗️',
+              'Maximize': '⛶',
+              'Minimize': '−',
+              'MoreVertical': '⋮',
+              'MoreHorizontal': '⋯',
+              'Filter': '⚗️',
+              'Sort': '⇅',
+              'Refresh': '↻',
+              'Play': '▶',
+              'Pause': '⏸',
+              'Stop': '⏹',
+              'Volume': '🔊',
+              'Camera': '📷',
+              'Printer': '🖨️',
+              'Wifi': '📶',
+              'Bluetooth': '🔵',
+              'Battery': '🔋',
+              'Power': '⚡',
+              'Shield': '🛡️',
+              'Award': '🏆',
+              'Trophy': '🏆',
+              'Target': '🎯',
+              'Compass': '🧭',
+              'Map': '🗺️'
             };
             
             // Replace icon components with emoji/symbols
             jsx = jsx.replace(/<([A-Z][a-z]+(?:[A-Z][a-z]+)*)([^>]*?)\/>/g, (match, compName, attrs) => {
-              if (iconMap[compName]) {
+              const emoji = iconMap[compName];
+              
+              if (emoji) {
                 // Extract className if present
                 const classMatch = attrs.match(/class(?:Name)?\s*=\s*"([^"]*)"/);
                 const className = classMatch ? classMatch[1] : '';
-                return `<span class="${className}">${iconMap[compName]}</span>`;
+                return `<span class="${className}">${emoji}</span>`;
               }
-              // Not an icon, continue to next handler
-              return match;
+              
+              // Fallback for unmapped icons
+              const classMatch = attrs.match(/class(?:Name)?\s*=\s*"([^"]*)"/);
+              const className = classMatch ? classMatch[1] : 'inline-block w-4 h-4 text-gray-400';
+              return `<span class="${className}" title="${compName} icon">⬜</span>`;
             });
             
             // Handle component instances - convert to divs with their class
@@ -294,8 +325,13 @@ export default function ComponentPreview({
             jsx = jsx.replace(/\$\{price\}/g, '29.99');
             jsx = jsx.replace(/\$\{price\.toFixed\(2\)\}/g, '29.99');
             
-            // Remove ALL remaining curly brace expressions
-            jsx = jsx.replace(/\{[^}]*\}/g, '');
+            // Surgically remove simple variable references (preserves React patterns)
+            // Remove standalone variable references
+            jsx = jsx.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*)\}/g, '');
+            // Remove simple property access
+            jsx = jsx.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*\.[a-zA-Z_$][a-zA-Z0-9_$]*)\}/g, '');
+            // Remove function calls without JSX
+            jsx = jsx.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*\))\}/g, '');
             
             // Handle self-closing tags
             jsx = jsx.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>');
@@ -320,15 +356,13 @@ export default function ComponentPreview({
                   .filter(Boolean)
                   .join('; ');
                 return `style="${cssProps}"`;
-              } catch {
+              } catch (err) {
+                console.error('Style conversion error:', err);
                 return '';
               }
             });
             
-            console.log('Converted HTML:', jsx.substring(0, 200)); // Debug
             htmlContent = jsx;
-          } else {
-            console.warn('Could not find return statement in code');
           }
         } catch (err) {
           console.error('JSX conversion error:', err);
@@ -358,15 +392,7 @@ export default function ComponentPreview({
         `;
       }
 
-      // Debug logging
-      console.log('Raw HTML content:', htmlContent.substring(0, 300));
-      console.log('Has <div tags:', htmlContent.includes('<div'));
-      console.log('Has &lt; entities:', htmlContent.includes('&lt;'));
-      
       const sanitized = sanitizeHtml(htmlContent);
-      console.log('After sanitize:', sanitized.substring(0, 300));
-      console.log('Sanitized has <div:', sanitized.includes('<div'));
-      console.log('Sanitized has &lt;:', sanitized.includes('&lt;'));
       
       // Wrap the content in a container div
       const containerHtml = `
@@ -391,7 +417,6 @@ export default function ComponentPreview({
         </div>
       `;
 
-      console.log('Final container HTML:', containerHtml.substring(0, 500));
       setPreviewContent(containerHtml);
       setError(null);
     } catch (err) {

@@ -35,12 +35,19 @@ jsx = jsx.replace(/className=/g, 'class=');
 jsx = jsx.replace(/\{price\.toFixed\(2\)\}/g, '29.99');
 jsx = jsx.replace(/\{\$\{price\}\}/g, '$29.99');
 
-// Remove other templates
-jsx = jsx.replace(/\{[^}]+\}/g, '');
+// Surgically remove simple variable references (preserves React patterns)
+// Remove standalone variable references
+jsx = jsx.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*)\}/g, '');
+// Remove simple property access
+jsx = jsx.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*\.[a-zA-Z_$][a-zA-Z0-9_$]*)\}/g, '');
+// Remove function calls without JSX
+jsx = jsx.replace(/\{([a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*\))\}/g, '');
 
 // Handle self-closing tags
 jsx = jsx.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>');
 ```
+
+**Note:** Template removal is now surgical, preserving React patterns like conditional rendering `{condition && <Element>}` and array methods `{items.map(...)}` while only removing simple variable references.
 
 ### **2. Updated AI Prompt Instructions**
 
@@ -125,6 +132,14 @@ All should now render properly with:
 - Tailwind CSS styling applied
 - No raw JSX/template syntax visible
 - Professional appearance
+
+**Recent Improvements (November 2025):**
+- ✅ Removed 13+ debug console.log statements for cleaner production code
+- ✅ Improved template removal to be surgical (preserves React patterns)
+- ✅ Expanded icon library to 60+ icons with fallback support
+- ✅ Consolidated JSX extraction logic for maintainability
+- ✅ Improved code sanitization threshold (8 chars vs 15 chars)
+- ✅ Enhanced error handling for style conversions
 
 ---
 
@@ -304,5 +319,3 @@ export default function HomePage() {
 - ✅ No JSX rendering issues
 
 **Your AI App Builder preview is now 100% functional!** 🎉
-
-

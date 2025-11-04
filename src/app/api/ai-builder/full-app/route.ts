@@ -772,18 +772,21 @@ REMEMBER:
       const lines = sanitized.split('\n');
       const lastLine = lines[lines.length - 1].trim();
       
-      // If last line is very short and looks incomplete, remove it entirely
-      // This is safer than trying to "fix" it with assumptions
-      if (lastLine.length > 0 && lastLine.length < 15 && 
+      // Conservative approach: Only remove very short, incomplete-looking lines
+      // Threshold lowered to 8 chars to avoid removing valid short statements
+      if (lastLine.length > 0 && lastLine.length < 8 && 
           !lastLine.endsWith(';') && 
           !lastLine.endsWith('}') && 
           !lastLine.endsWith('>') &&
           !lastLine.endsWith('/>') &&
-          !lastLine.includes('export') &&
-          !lastLine.includes('import') &&
-          !lastLine.includes('const') &&
-          !lastLine.includes('let') &&
-          !lastLine.includes('var')) {
+          !lastLine.startsWith('export') &&
+          !lastLine.startsWith('import') &&
+          !lastLine.startsWith('const') &&
+          !lastLine.startsWith('let') &&
+          !lastLine.startsWith('var') &&
+          !lastLine.startsWith('return') &&
+          !lastLine.startsWith('function') &&
+          !lastLine.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*\s*=/)) {
         console.log('Removing incomplete fragment at end:', lastLine);
         lines.pop();
         sanitized = lines.join('\n');
