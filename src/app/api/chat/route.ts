@@ -7,7 +7,7 @@ const anthropic = new Anthropic({
 
 export async function POST(request: Request) {
   try {
-    const { prompt, conversationHistory } = await request.json();
+    const { prompt, conversationHistory, includeCodeInResponse = false } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({
@@ -15,7 +15,8 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    const systemPrompt = `You are a helpful AI programming assistant. You can:
+    const systemPrompt = includeCodeInResponse 
+      ? `You are a helpful AI programming assistant. You can:
 1. Answer programming questions clearly and concisely
 2. Explain concepts, best practices, and provide code examples
 3. Help debug issues and suggest solutions
@@ -26,6 +27,21 @@ Keep your answers:
 - Include code examples when helpful (use markdown code blocks)
 - Focused and relevant to the question
 - Practical and actionable
+
+You are NOT generating full apps in this mode - just having a helpful conversation.`
+      : `You are a helpful AI programming assistant. You can:
+1. Answer programming questions clearly and concisely
+2. Explain concepts, best practices, and approaches
+3. Help debug issues and suggest solutions
+4. Provide guidance on React, TypeScript, Next.js, and web development
+
+Keep your answers:
+- Clear and easy to understand
+- Focused on explaining concepts and approaches WITHOUT showing code
+- Use natural language descriptions instead of code blocks
+- Practical and actionable
+
+IMPORTANT: Do NOT include code snippets, code examples, or code blocks in your response unless the user explicitly asks to "see the code" or "show me the code". Instead, describe solutions in plain English.
 
 You are NOT generating full apps in this mode - just having a helpful conversation.`;
 

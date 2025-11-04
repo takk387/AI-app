@@ -133,31 +133,37 @@ export default function AIBuilder() {
     previousModeRef.current = currentMode;
 
     // Detect PLAN -> ACT transition with pending build request
-    if (previousMode === 'PLAN' && currentMode === 'ACT' && lastUserRequest && !isGenerating) {
-      // Check if the last request was a build/modification request (not just a question)
+    if (previousMode === 'PLAN' && currentMode === 'ACT' && !isGenerating) {
+      // Scan recent conversation history for build requests
       const buildIndicators = [
         'build', 'create', 'make', 'generate', 'design',
         'develop', 'code', 'write', 'implement', 'add',
         'change', 'modify', 'update', 'fix', 'remove'
       ];
       
-      const hasBuildIntent = buildIndicators.some(indicator => 
-        lastUserRequest.toLowerCase().includes(indicator)
+      // Check last 10 user messages for build intent
+      const recentUserMessages = chatMessages
+        .filter(msg => msg.role === 'user')
+        .slice(-10)
+        .reverse();
+      
+      const buildRequest = recentUserMessages.find(msg => 
+        buildIndicators.some(indicator => msg.content.toLowerCase().includes(indicator))
       );
 
-      if (hasBuildIntent) {
+      if (buildRequest) {
         // Add transition message
         const transitionMessage: ChatMessage = {
           id: Date.now().toString(),
           role: 'system',
-          content: `✅ **Switched to ACT Mode**\n\nImplementing: "${lastUserRequest}"`,
+          content: `✅ **Switched to ACT Mode**\n\nImplementing: "${buildRequest.content}"`,
           timestamp: new Date().toISOString()
         };
         
         setChatMessages(prev => [...prev, transitionMessage]);
         
         // Auto-trigger implementation - set input and trigger send
-        setUserInput(lastUserRequest);
+        setUserInput(buildRequest.content);
         
         // Automatically trigger send after a brief delay to ensure state updates
         setTimeout(() => {
@@ -181,7 +187,7 @@ export default function AIBuilder() {
       
       setChatMessages(prev => [...prev, transitionMessage]);
     }
-  }, [currentMode, lastUserRequest, isGenerating]);
+  }, [currentMode, isGenerating, chatMessages]);
 
   // Initialize client-side only
   useEffect(() => {
@@ -479,6 +485,23 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       return;
     }
 
+    // Convert to lowercase once for all checks
+    const input = userInput.toLowerCase();
+
+    // Detect if user is explicitly asking for code
+    const codeRequestIndicators = [
+      'show me the code', 'show code', 'give me the code',
+      'what is the code', "what's the code", 'display code',
+      'let me see the code', 'code for', 'view code',
+      'show implementation', 'show me how', 'code example',
+      'code snippet', 'share code', 'paste code',
+      'write code', 'provide code', 'code please'
+    ];
+    
+    const isRequestingCode = codeRequestIndicators.some(indicator => 
+      input.includes(indicator)
+    );
+    
     // Detect if this is a question or an app build request
     const questionIndicators = [
       'what', 'how', 'why', 'when', 'where', 'who', 'which',
@@ -515,8 +538,6 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       /how (does|do) (this|it|you) work/i,
       /what (are|is) (your|the) (limits|capabilities|features)/i
     ];
-    
-    const input = userInput.toLowerCase();
     
     // Check if it's a meta question about capabilities
     const isMetaQuestion = metaQuestionPatterns.some(pattern => pattern.test(userInput));
@@ -599,21 +620,6 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       // Determine whether to use diff system
       const useDiffSystem = isModification && !isQuestion;
       
-      // Check for mode mismatch - build request in PLAN mode
-      if (currentMode === 'PLAN' && !isQuestion && (hasBuildWords || hasShowGiveBuild)) {
-        const mismatchWarning: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'system',
-          content: `⚠️ **Mode Mismatch Detected**\n\nYou're in PLAN mode, but this looks like a build request.\n\n**To build apps:**\n1. Click the ⚡ **Act** button above\n2. I'll automatically start implementation\n\n**Want to discuss first?** Stay in Plan mode and I'll explain how I'd build it.`,
-          timestamp: new Date().toISOString()
-        };
-        setChatMessages(prev => [...prev, mismatchWarning]);
-        setIsGenerating(false);
-        if (progressInterval) clearInterval(progressInterval);
-        setGenerationProgress('');
-        return;
-      }
-      
       // Route based on Plan/Act mode
       let endpoint: string;
       if (currentMode === 'PLAN') {
@@ -641,18 +647,21 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       const requestBody: any = isQuestion ? {
         // For Q&A: just prompt and history (increased from 5 to 30 for better memory)
         prompt: userInput,
-        conversationHistory: chatMessages.slice(-30)
+        conversationHistory: chatMessages.slice(-30),
+        includeCodeInResponse: isRequestingCode
       } : useDiffSystem ? {
         // For modifications: use diff endpoint with enhanced history (increased from 15 to 50)
         prompt: userInput,
         currentAppState: currentComponent ? JSON.parse(currentComponent.code) : null,
-        conversationHistory: getEnhancedHistory()
+        conversationHistory: getEnhancedHistory(),
+        includeCodeInResponse: isRequestingCode
       } : {
         // For new apps: use full-app endpoint (increased from 10 to 50 for better memory)
         prompt: userInput,
         conversationHistory: chatMessages.slice(-50),
         isModification: false,
-        currentAppName: null
+        currentAppName: null,
+        includeCodeInResponse: isRequestingCode
       };
 
       // Add image if uploaded
@@ -858,9 +867,6 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
             }
             
             setActiveTab('preview');
-            
-            // Auto-reset to PLAN mode after implementation
-            setCurrentMode('PLAN');
           }
         }
       }
@@ -959,9 +965,6 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
 
       setChatMessages(prev => [...prev, approvalMessage]);
       setActiveTab('preview');
-      
-      // Auto-reset to PLAN mode after approving changes
-      setCurrentMode('PLAN');
       
     } catch (error) {
       console.error('Error applying changes:', error);
@@ -1067,9 +1070,6 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
 
       setChatMessages(prev => [...prev, successMessage]);
       setActiveTab('preview');
-      
-      // Auto-reset to PLAN mode after applying diff
-      setCurrentMode('PLAN');
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
