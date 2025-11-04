@@ -117,6 +117,23 @@ export default function AIBuilder() {
     nextStages: string[];
   } | null>(null);
 
+  // NEW: Stage plan tracking for new app builds
+  const [newAppStagePlan, setNewAppStagePlan] = useState<{
+    totalPhases: number;
+    currentPhase: number;
+    phases: Array<{
+      number: number;
+      name: string;
+      description: string;
+      features: string[];
+      status: 'pending' | 'building' | 'complete';
+    }>;
+  } | null>(null);
+  
+  // Staging consent modal for new apps
+  const [showNewAppStagingModal, setShowNewAppStagingModal] = useState(false);
+  const [pendingNewAppRequest, setPendingNewAppRequest] = useState<string>('');
+
   // Ref for auto-scrolling chat
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -313,6 +330,53 @@ export default function AIBuilder() {
   const sendMessage = async () => {
     if (!userInput.trim() || isGenerating) return;
 
+    // NEW: Check if user is starting a phased build OR continuing to next phase
+    const lastMsg = chatMessages[chatMessages.length - 1];
+    const isReadyToStartPhase = lastMsg?.role === 'assistant' && 
+      lastMsg?.content.includes('Type **\'start\'** or **\'begin\'**') &&
+      newAppStagePlan &&
+      newAppStagePlan.phases.every(p => p.status === 'pending');
+
+    const isReadyToContinuePhase = lastMsg?.role === 'assistant' &&
+      lastMsg?.content.includes('Phase') &&
+      lastMsg?.content.includes('Complete!') &&
+      lastMsg?.content.includes('**Ready to continue?**') &&
+      newAppStagePlan &&
+      newAppStagePlan.phases.some(p => p.status === 'pending');
+
+    if (isReadyToStartPhase && (userInput.toLowerCase() === 'start' || userInput.toLowerCase() === 'begin')) {
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: userInput,
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, userMessage]);
+      setUserInput('');
+
+      // Build Phase 1
+      const phase1 = newAppStagePlan.phases[0];
+      const buildPrompt = `Build ${phase1.name}: ${phase1.description}. Features to implement: ${phase1.features.join(', ')}`;
+      
+      // Update phase status to building
+      setNewAppStagePlan(prev => prev ? {
+        ...prev,
+        currentPhase: 1,
+        phases: prev.phases.map(p => 
+          p.number === 1 ? { ...p, status: 'building' } : p
+        )
+      } : null);
+
+      // Set input to build prompt and trigger build
+      setUserInput(buildPrompt);
+      // Use setTimeout to allow state to update before calling sendMessage again
+      setTimeout(() => {
+        const sendBtn = document.querySelector('[data-send-button="true"]') as HTMLButtonElement;
+        if (sendBtn) sendBtn.click();
+      }, 100);
+      return;
+    }
+
     // Check if user recently consented to staging (prevent redundant detection)
     const recentlyConsented = chatMessages.slice(-10).some((msg, idx, arr) => {
       if (msg.content.includes('Complex Modification Detected')) {
@@ -326,7 +390,6 @@ export default function AIBuilder() {
     });
 
     // Handle stage checkpoint responses
-    const lastMsg = chatMessages[chatMessages.length - 1];
     const isAtStageCheckpoint = lastMsg?.role === 'assistant' &&
       lastMsg?.content.includes('Stage Complete') && 
       lastMsg?.content.includes('Happy with this stage');
@@ -516,28 +579,48 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
     
     const isQuestion = (hasQuestionWords && !hasBuildWords && !hasShowGiveBuild) || isMetaQuestion;
     
-    // Detect potentially very large app requests and provide guidance
-    const complexityIndicators = [
+    // NEW: Detect complex new app builds that should use staged approach
+    const newAppComplexityIndicators = [
       'complete', 'full-featured', 'comprehensive', 'all features',
       'everything', 'entire', 'full', 'advanced', 'complex',
-      'with authentication', 'with backend', 'with database',
-      'multiple pages', 'full stack', 'production-ready'
+      'with authentication', 'with auth', 'with backend', 'with database',
+      'multiple pages', 'full stack', 'production-ready',
+      'e-commerce', 'social media', 'social network', 'marketplace',
+      'cms', 'content management', 'blog platform', 'forum'
     ];
     
     const wordCount = userInput.split(' ').length;
-    const hasComplexityIndicators = complexityIndicators.some(indicator => 
+    const hasNewAppComplexityIndicators = newAppComplexityIndicators.some(indicator => 
       input.includes(indicator)
     );
     
-    // If request seems very complex, add a helpful note
-    if ((wordCount > 50 || hasComplexityIndicators) && !currentComponent && !isQuestion) {
-      const helpMessage: ChatMessage = {
-        id: Date.now().toString() + '_help',
-        role: 'system',
-        content: "💡 **Tip**: I'll build a working app with core features. For very large apps, I can generate the foundation first, then you can request additional features in follow-up messages. This ensures everything works perfectly!",
-        timestamp: new Date().toISOString()
-      };
-      setChatMessages(prev => [...prev, helpMessage]);
+    // Check if this is a complex NEW app request (not a modification)
+    const isComplexNewApp = !currentComponent && 
+      !isQuestion && 
+      (wordCount > 40 || hasNewAppComplexityIndicators) &&
+      !isGenerating;
+    
+    // If complex new app detected, offer staged building
+    if (isComplexNewApp && currentMode === 'ACT') {
+      // Check if user hasn't already been prompted recently
+      const recentlyPromptedForStaging = chatMessages.slice(-10).some(msg =>
+        msg.content.includes('Build in Phases?')
+      );
+      
+      if (!recentlyPromptedForStaging) {
+        setPendingNewAppRequest(userInput);
+        setShowNewAppStagingModal(true);
+        
+        const userMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: userInput,
+          timestamp: new Date().toISOString()
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+        setUserInput('');
+        return; // Wait for user decision
+      }
     }
 
     const userMessage: ChatMessage = {
@@ -808,6 +891,45 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
 
           // Create or update the app
           if (data.files && data.files.length > 0) {
+            // NEW: Check if this was a phased build completion
+            if (newAppStagePlan && !isModification) {
+              const currentPhaseNum = newAppStagePlan.currentPhase;
+              const updatedPlan = {
+                ...newAppStagePlan,
+                phases: newAppStagePlan.phases.map(p => 
+                  p.number === currentPhaseNum ? { ...p, status: 'complete' as const } : p
+                )
+              };
+              setNewAppStagePlan(updatedPlan);
+              
+              // Check if there are more phases
+              const nextPhase = updatedPlan.phases.find(p => p.status === 'pending');
+              if (nextPhase) {
+                // Add message prompting for next phase
+                setTimeout(() => {
+                  const nextPhaseMessage: ChatMessage = {
+                    id: (Date.now() + 10).toString(),
+                    role: 'assistant',
+                    content: `✅ **Phase ${currentPhaseNum} Complete!**\n\n**Next up - Phase ${nextPhase.number}: ${nextPhase.name}**\n${nextPhase.description}\n\nFeatures to add:\n${nextPhase.features.map(f => `  • ${f}`).join('\n')}\n\n**Ready to continue?** Type **'continue'** or **'next'** to build Phase ${nextPhase.number}, or ask me to adjust Phase ${currentPhaseNum} first.`,
+                    timestamp: new Date().toISOString()
+                  };
+                  setChatMessages(prev => [...prev, nextPhaseMessage]);
+                }, 1000);
+              } else {
+                // All phases complete!
+                setTimeout(() => {
+                  const completionMessage: ChatMessage = {
+                    id: (Date.now() + 10).toString(),
+                    role: 'assistant',
+                    content: `🎉 **All ${newAppStagePlan.totalPhases} Phases Complete!**\n\nYour app is fully built with all requested features. Test it out and let me know if you'd like any adjustments!`,
+                    timestamp: new Date().toISOString()
+                  };
+                  setChatMessages(prev => [...prev, completionMessage]);
+                  setNewAppStagePlan(null); // Clear phase plan
+                }, 1000);
+              }
+            }
+            
             // If modifying, save current state to undo stack BEFORE making changes
             if (isModification && currentComponent) {
               const previousVersion: AppVersion = {
@@ -2219,6 +2341,165 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 onApprove={approveDiff}
                 onReject={rejectDiff}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New App Staging Consent Modal */}
+      {showNewAppStagingModal && pendingNewAppRequest && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          onClick={() => {}}
+        >
+          <div
+            className="bg-slate-900 rounded-2xl border border-purple-500/30 max-w-2xl w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-purple-500/30 bg-purple-500/10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <span className="text-3xl">🏗️</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Build in Phases?</h3>
+                  <p className="text-sm text-purple-200/80">Large app detected - suggested phased approach</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="px-6 py-5">
+              <div className="mb-6">
+                <label className="text-sm font-medium text-slate-300 mb-2 block">
+                  Your request:
+                </label>
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
+                  <p className="text-white text-sm leading-relaxed">
+                    "{pendingNewAppRequest}"
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">💡</span>
+                  <div>
+                    <p className="text-sm font-medium text-blue-200 mb-2">
+                      Why Build in Phases?
+                    </p>
+                    <ul className="text-xs text-blue-200/70 leading-relaxed space-y-1.5">
+                      <li>✅ Each phase gets fully working code you can test</li>
+                      <li>✅ See progress step-by-step with live previews</li>
+                      <li>✅ Guide the direction after each phase</li>
+                      <li>✅ Avoids overwhelming single-build approach</li>
+                      <li>✅ Better quality - each piece is refined before moving on</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <p className="text-sm font-medium text-purple-200 mb-2">
+                      How It Works
+                    </p>
+                    <ol className="text-xs text-purple-200/70 leading-relaxed space-y-1.5">
+                      <li>1. I'll analyze and break your request into 2-4 logical phases</li>
+                      <li>2. Build Phase 1 (foundation + core features)</li>
+                      <li>3. You review, test, and approve before Phase 2</li>
+                      <li>4. Repeat until your complete app is ready</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">⚡</span>
+                  <div>
+                    <p className="text-sm font-medium text-green-200 mb-1">
+                      Or Build All at Once?
+                    </p>
+                    <p className="text-xs text-green-200/70 leading-relaxed">
+                      I can also generate everything in one go. This is faster but gives you less control over the direction, and the result might need more refinement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex gap-3">
+              <button
+                onClick={() => {
+                  // User wants all-at-once build
+                  setShowNewAppStagingModal(false);
+                  setPendingNewAppRequest('');
+                  // Continue with normal single build by resetting the input and letting sendMessage() proceed
+                  setUserInput(pendingNewAppRequest);
+                  // Don't call sendMessage here - let user click send button
+                }}
+                className="flex-1 px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-all"
+              >
+                ⚡ Build All at Once
+              </button>
+              <button
+                onClick={async () => {
+                  // User wants phased build - call plan-phases API
+                  setShowNewAppStagingModal(false);
+                  setIsGenerating(true);
+                  
+                  try {
+                    const response = await fetch('/api/ai-builder/plan-phases', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        prompt: pendingNewAppRequest,
+                        conversationHistory: chatMessages.slice(-20)
+                      })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                      throw new Error(data.error);
+                    }
+
+                    // Store the phase plan
+                    setNewAppStagePlan(data);
+
+                    // Show phase plan to user
+                    const phasePlanMessage: ChatMessage = {
+                      id: Date.now().toString(),
+                      role: 'assistant',
+                      content: `🏗️ **${data.totalPhases}-Phase Build Plan Created**\n\n${data.phases.map((p: any) => 
+                        `**Phase ${p.number}: ${p.name}**\n${p.description}\n${p.features.map((f: string) => `  • ${f}`).join('\n')}`
+                      ).join('\n\n')}\n\n**Ready to start?** I'll begin with Phase 1. You can review and approve each phase before moving to the next.\n\nType **'start'** or **'begin'** to build Phase 1!`,
+                      timestamp: new Date().toISOString()
+                    };
+
+                    setChatMessages(prev => [...prev, phasePlanMessage]);
+                  } catch (error) {
+                    const errorMessage: ChatMessage = {
+                      id: Date.now().toString(),
+                      role: 'assistant',
+                      content: `❌ Failed to create phase plan: ${error instanceof Error ? error.message : 'Unknown error'}. Let's try building all at once instead.`,
+                      timestamp: new Date().toISOString()
+                    };
+                    setChatMessages(prev => [...prev, errorMessage]);
+                  } finally {
+                    setIsGenerating(false);
+                    setPendingNewAppRequest('');
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-medium transition-all shadow-lg"
+              >
+                🏗️ Build in Phases (Recommended)
+              </button>
             </div>
           </div>
         </div>
