@@ -127,67 +127,35 @@ export default function AIBuilder() {
     }
   }, [chatMessages]);
 
-  // Detect mode transitions and auto-trigger implementation
+  // Detect mode transitions and show helpful messages
   useEffect(() => {
     const previousMode = previousModeRef.current;
     previousModeRef.current = currentMode;
 
-    // Detect PLAN -> ACT transition with pending build request
-    if (previousMode === 'PLAN' && currentMode === 'ACT' && !isGenerating) {
-      // Scan recent conversation history for build requests
-      const buildIndicators = [
-        'build', 'create', 'make', 'generate', 'design',
-        'develop', 'code', 'write', 'implement', 'add',
-        'change', 'modify', 'update', 'fix', 'remove'
-      ];
-      
-      // Check last 10 user messages for build intent
-      const recentUserMessages = chatMessages
-        .filter(msg => msg.role === 'user')
-        .slice(-10)
-        .reverse();
-      
-      const buildRequest = recentUserMessages.find(msg => 
-        buildIndicators.some(indicator => msg.content.toLowerCase().includes(indicator))
-      );
-
-      if (buildRequest) {
-        // Add transition message
-        const transitionMessage: ChatMessage = {
-          id: Date.now().toString(),
-          role: 'system',
-          content: `✅ **Switched to ACT Mode**\n\nImplementing: "${buildRequest.content}"`,
-          timestamp: new Date().toISOString()
-        };
-        
-        setChatMessages(prev => [...prev, transitionMessage]);
-        
-        // Auto-trigger implementation - set input and trigger send
-        setUserInput(buildRequest.content);
-        
-        // Automatically trigger send after a brief delay to ensure state updates
-        setTimeout(() => {
-          // Programmatically click the send button
-          const sendButton = document.querySelector('[data-send-button="true"]') as HTMLButtonElement;
-          if (sendButton && !sendButton.disabled) {
-            sendButton.click();
-          }
-        }, 800);
-      }
-    }
-
-    // Detect ACT -> PLAN transition after completion
-    if (previousMode === 'ACT' && currentMode === 'PLAN') {
+    // Detect PLAN -> ACT transition
+    if (previousMode === 'PLAN' && currentMode === 'ACT') {
       const transitionMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'system',
-        content: `💭 **Switched to PLAN Mode**\n\nI'm ready to discuss and plan. Ask me questions or describe what you'd like to build next.`,
+        content: `⚡ **Switched to ACT Mode**\n\nReady to build! I'll read the plan we discussed and implement it.\n\n**To build:** Type "build it" or "implement the plan" and I'll create your app based on our conversation.`,
         timestamp: new Date().toISOString()
       };
       
       setChatMessages(prev => [...prev, transitionMessage]);
     }
-  }, [currentMode, isGenerating, chatMessages]);
+
+    // Detect ACT -> PLAN transition
+    if (previousMode === 'ACT' && currentMode === 'PLAN') {
+      const transitionMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'system',
+        content: `💭 **Switched to PLAN Mode**\n\nLet's plan your next feature or discuss improvements. I won't generate code in this mode - we'll design the requirements first.`,
+        timestamp: new Date().toISOString()
+      };
+      
+      setChatMessages(prev => [...prev, transitionMessage]);
+    }
+  }, [currentMode]);
 
   // Initialize client-side only
   useEffect(() => {
@@ -196,7 +164,7 @@ export default function AIBuilder() {
     setChatMessages([{
       id: 'welcome',
       role: 'system',
-      content: "👋 Hi! I'm your AI App Builder. Tell me what app you want to create, and I'll build it for you through conversation.\n\n✨ **Intelligent Modification System**:\n• **New apps** → Built from scratch instantly\n• **Small changes** → Surgical edits (only changes what you ask) 🎯\n• **Shows you changes** → Review before applying ✅\n• **Token efficient** → 95% fewer tokens for modifications 💰\n\n🔒 **Smart Protection**:\n• Every change saved to version history\n• One-click undo/redo anytime\n• Never lose your work\n\n💡 **Pro Tip**: For modifications, be specific (\"change button to blue\") instead of vague (\"make it better\").\n\nWhat would you like to build today?",
+      content: "👋 Hi! I'm your AI App Builder.\n\n🎯 **How It Works:**\n\n**💭 PLAN Mode** (Current):\n• Discuss what you want to build\n• I'll help design the requirements and architecture\n• No code generated - just planning and roadmapping\n• Ask questions, refine ideas, create specifications\n\n**⚡ ACT Mode:**\n• I'll read our plan and build the app\n• Generates working code based on our discussion\n• Can modify existing apps with surgical precision\n\n**🔒 Smart Protection:**\n• Every change saved to version history\n• One-click undo/redo anytime\n• Review changes before applying\n\n💡 **Start by telling me what you want to build, and we'll plan it together!**",
       timestamp: new Date().toISOString()
     }]);
   }, []);
@@ -623,7 +591,7 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       // Route based on Plan/Act mode
       let endpoint: string;
       if (currentMode === 'PLAN') {
-        // In PLAN mode, always use chat endpoint for conversational responses
+        // In PLAN mode, ALWAYS use chat endpoint - never build code
         endpoint = '/api/chat';
       } else {
         // In ACT mode, use normal routing logic
@@ -648,7 +616,8 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
         // For Q&A: just prompt and history (increased from 5 to 30 for better memory)
         prompt: userInput,
         conversationHistory: chatMessages.slice(-30),
-        includeCodeInResponse: isRequestingCode
+        includeCodeInResponse: isRequestingCode,
+        mode: currentMode
       } : useDiffSystem ? {
         // For modifications: use diff endpoint with enhanced history (increased from 15 to 50)
         prompt: userInput,
