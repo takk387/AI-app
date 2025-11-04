@@ -71,6 +71,8 @@ export default function AIBuilder() {
   
   // Plan/Act Mode Toggle
   const [currentMode, setCurrentMode] = useState<'PLAN' | 'ACT'>('PLAN');
+  const [lastUserRequest, setLastUserRequest] = useState<string>('');
+  const previousModeRef = useRef<'PLAN' | 'ACT'>('PLAN');
   
   // Image upload for AI-inspired designs
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -124,6 +126,62 @@ export default function AIBuilder() {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages]);
+
+  // Detect mode transitions and auto-trigger implementation
+  useEffect(() => {
+    const previousMode = previousModeRef.current;
+    previousModeRef.current = currentMode;
+
+    // Detect PLAN -> ACT transition with pending build request
+    if (previousMode === 'PLAN' && currentMode === 'ACT' && lastUserRequest && !isGenerating) {
+      // Check if the last request was a build/modification request (not just a question)
+      const buildIndicators = [
+        'build', 'create', 'make', 'generate', 'design',
+        'develop', 'code', 'write', 'implement', 'add',
+        'change', 'modify', 'update', 'fix', 'remove'
+      ];
+      
+      const hasBuildIntent = buildIndicators.some(indicator => 
+        lastUserRequest.toLowerCase().includes(indicator)
+      );
+
+      if (hasBuildIntent) {
+        // Add transition message
+        const transitionMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'system',
+          content: `✅ **Switched to ACT Mode**\n\nImplementing: "${lastUserRequest}"`,
+          timestamp: new Date().toISOString()
+        };
+        
+        setChatMessages(prev => [...prev, transitionMessage]);
+        
+        // Auto-trigger implementation - set input and trigger send
+        setUserInput(lastUserRequest);
+        
+        // Automatically trigger send after a brief delay to ensure state updates
+        setTimeout(() => {
+          // Programmatically click the send button
+          const sendButton = document.querySelector('[data-send-button="true"]') as HTMLButtonElement;
+          if (sendButton && !sendButton.disabled) {
+            sendButton.click();
+          }
+        }, 800);
+      }
+    }
+
+    // Detect ACT -> PLAN transition after completion
+    if (previousMode === 'ACT' && currentMode === 'PLAN') {
+      const transitionMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'system',
+        content: `💭 **Switched to PLAN Mode**\n\nI'm ready to discuss and plan. Ask me questions or describe what you'd like to build next.`,
+        timestamp: new Date().toISOString()
+      };
+      
+      setChatMessages(prev => [...prev, transitionMessage]);
+    }
+  }, [currentMode, lastUserRequest, isGenerating]);
 
   // Initialize client-side only
   useEffect(() => {
@@ -500,6 +558,9 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       timestamp: new Date().toISOString()
     };
 
+    // Store the last user request for mode transition detection
+    setLastUserRequest(userInput);
+
     setChatMessages(prev => [...prev, userMessage]);
     setUserInput('');
     setIsGenerating(true);
@@ -537,6 +598,21 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
     try {
       // Determine whether to use diff system
       const useDiffSystem = isModification && !isQuestion;
+      
+      // Check for mode mismatch - build request in PLAN mode
+      if (currentMode === 'PLAN' && !isQuestion && (hasBuildWords || hasShowGiveBuild)) {
+        const mismatchWarning: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'system',
+          content: `⚠️ **Mode Mismatch Detected**\n\nYou're in PLAN mode, but this looks like a build request.\n\n**To build apps:**\n1. Click the ⚡ **Act** button above\n2. I'll automatically start implementation\n\n**Want to discuss first?** Stay in Plan mode and I'll explain how I'd build it.`,
+          timestamp: new Date().toISOString()
+        };
+        setChatMessages(prev => [...prev, mismatchWarning]);
+        setIsGenerating(false);
+        if (progressInterval) clearInterval(progressInterval);
+        setGenerationProgress('');
+        return;
+      }
       
       // Route based on Plan/Act mode
       let endpoint: string;
@@ -1464,6 +1540,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                   <button
                     onClick={sendMessage}
                     disabled={isGenerating || (!userInput.trim() && !uploadedImage)}
+                    data-send-button="true"
                     className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
                   >
                     {isGenerating ? '⏳' : '🚀'}
