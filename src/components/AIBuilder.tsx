@@ -377,6 +377,43 @@ export default function AIBuilder() {
       return;
     }
 
+    // Handle "continue" or "next" for phase progression
+    if (isReadyToContinuePhase && (userInput.toLowerCase() === 'continue' || userInput.toLowerCase() === 'next')) {
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: userInput,
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, userMessage]);
+      setUserInput('');
+
+      // Find next pending phase
+      const nextPhase = newAppStagePlan.phases.find(p => p.status === 'pending');
+      
+      if (nextPhase) {
+        // Build prompt for next phase
+        const buildPrompt = `Build ${nextPhase.name}: ${nextPhase.description}. Features to implement: ${nextPhase.features.join(', ')}`;
+        
+        // Update phase status to 'building'
+        setNewAppStagePlan(prev => prev ? {
+          ...prev,
+          currentPhase: nextPhase.number,
+          phases: prev.phases.map(p => 
+            p.number === nextPhase.number ? { ...p, status: 'building' } : p
+          )
+        } : null);
+
+        // Auto-trigger build
+        setUserInput(buildPrompt);
+        setTimeout(() => {
+          const sendBtn = document.querySelector('[data-send-button="true"]') as HTMLButtonElement;
+          if (sendBtn) sendBtn.click();
+        }, 100);
+      }
+      return;
+    }
+
     // Check if user recently consented to staging (prevent redundant detection)
     const recentlyConsented = chatMessages.slice(-10).some((msg, idx, arr) => {
       if (msg.content.includes('Complex Modification Detected')) {
@@ -892,7 +929,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
           // Create or update the app
           if (data.files && data.files.length > 0) {
             // NEW: Check if this was a phased build completion
-            if (newAppStagePlan && !isModification) {
+            if (newAppStagePlan) {
               const currentPhaseNum = newAppStagePlan.currentPhase;
               const updatedPlan = {
                 ...newAppStagePlan,
@@ -1181,10 +1218,17 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Detect if this is a pattern matching error
+      const isPatternError = errorMsg.toLowerCase().includes('search pattern not found') || 
+                             errorMsg.toLowerCase().includes('failed to apply');
+      
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `❌ **Error Applying Changes**\n\n${errorMsg}\n\n💡 **What you can do:**\n• Try breaking your request into smaller steps\n• Be more specific about what you want to change\n• Check if the code location still exists\n\n**Want to try again?** Just describe the change differently, and I'll generate a new set of modifications.`,
+        content: isPatternError 
+          ? `❌ **Modification Failed - Pattern Not Found**\n\n${errorMsg}\n\n**Why this happened:**\nThe code structure I was looking for doesn't match the current file exactly. This often happens when:\n• Previous changes altered the code structure\n• Auto-formatting changed spacing/indentation\n• The code evolved differently than expected\n\n💡 **Your options:**\n\n1. **Retry with file reading** (Recommended)\n   Type: "try again" - I'll read the current file and generate better matches\n\n2. **Break it down**\n   Describe just ONE specific change (e.g., "change button color to blue")\n\n3. **Different approach**\n   Try describing what you want differently\n\n4. **Skip this change**\n   Move on to something else`
+          : `❌ **Error Applying Changes**\n\n${errorMsg}\n\n💡 **What you can do:**\n• Try breaking your request into smaller steps\n• Be more specific about what you want to change\n• Type "try again" to retry with better file reading\n\n**Want to try again?** Just describe the change differently, and I'll generate a new set of modifications.`,
         timestamp: new Date().toISOString()
       };
       setChatMessages(prev => [...prev, errorMessage]);

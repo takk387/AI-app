@@ -676,6 +676,20 @@ Now generate the minimal diff to accomplish the user's request.`;
 
     console.log('Generating modifications with Claude Sonnet 4.5...');
 
+    // Extract current file contents for AI reference
+    let fileContentsSection = '';
+    if (currentAppState && currentAppState.files && Array.isArray(currentAppState.files)) {
+      fileContentsSection = '\n\n📁 **CURRENT FILE CONTENTS** (Read these EXACTLY for your SEARCH blocks):\n\n';
+      currentAppState.files.forEach((file: any) => {
+        fileContentsSection += `\n${'='.repeat(60)}\n`;
+        fileContentsSection += `FILE: ${file.path}\n`;
+        fileContentsSection += `${'='.repeat(60)}\n`;
+        fileContentsSection += file.content;
+        fileContentsSection += `\n${'='.repeat(60)}\n`;
+      });
+      fileContentsSection += '\n⚠️ CRITICAL: Your SEARCH blocks must match the code above EXACTLY (character-for-character, including all whitespace and indentation).\n';
+    }
+
     // Build conversation context
     const messages: any[] = [];
 
@@ -689,8 +703,12 @@ Now generate the minimal diff to accomplish the user's request.`;
       });
     }
 
-    // Add current modification request
-    messages.push({ role: 'user', content: prompt });
+    // Add current modification request WITH file contents
+    const enhancedPrompt = fileContentsSection 
+      ? `${fileContentsSection}\n\n🎯 **USER REQUEST:**\n${prompt}`
+      : prompt;
+    
+    messages.push({ role: 'user', content: enhancedPrompt });
 
     // Use streaming for better handling with timeout
     const stream = await anthropic.messages.stream({
