@@ -9,6 +9,7 @@ import type {
   InsertJSXSpec,
   UseEffectSpec,
   UseRefSpec,
+  UseMemoSpec,
   ModifyPropSpec,
   FunctionSpec,
   ConditionalWrapSpec,
@@ -728,6 +729,76 @@ export class ASTModifier {
       newCode: refCode,
       priority: 800, // Same priority as state variables
       description: `Add ref variable ${spec.name}`
+    });
+    
+    return this;
+  }
+
+  /**
+   * Add a useMemo hook
+   */
+  addMemo(spec: UseMemoSpec): this {
+    if (!this.tree) return this;
+    
+    // Ensure useMemo is imported
+    this.addImport({
+      source: 'react',
+      namedImports: ['useMemo']
+    });
+    
+    // Find the function body to insert into
+    const functionNode = this.parser.findDefaultExportedFunction(this.tree);
+    if (!functionNode) {
+      console.warn('Could not find function to add useMemo to');
+      return this;
+    }
+    
+    // Find the function body
+    let bodyNode = functionNode.childForFieldName('body');
+    if (!bodyNode) {
+      for (const child of functionNode.children) {
+        if (child.type === 'statement_block') {
+          bodyNode = child;
+          break;
+        }
+      }
+    }
+    
+    if (!bodyNode) {
+      console.warn('Could not find function body');
+      return this;
+    }
+    
+    // Find insertion point (after state/ref variables, before functions)
+    // Look for the last state/ref declaration
+    let insertPosition = bodyNode.startIndex + 1; // After opening brace
+    
+    // Try to find last hook call (useState, useRef, or useMemo)
+    const bodyText = bodyNode.text;
+    const hookMatches = [...bodyText.matchAll(/use(State|Ref|Memo)/g)];
+    if (hookMatches.length > 0) {
+      const lastHook = hookMatches[hookMatches.length - 1];
+      if (lastHook.index !== undefined) {
+        // Find the end of this statement (semicolon)
+        const afterHook = bodyText.substring(lastHook.index);
+        const semicolonMatch = afterHook.match(/;/);
+        if (semicolonMatch && semicolonMatch.index !== undefined) {
+          insertPosition = bodyNode.startIndex + lastHook.index + semicolonMatch.index + 1;
+        }
+      }
+    }
+    
+    // Build useMemo code
+    const deps = `[${spec.dependencies.join(', ')}]`;
+    const memoCode = `\n${this.options.indentation}const ${spec.name} = useMemo(() => ${spec.computation}, ${deps});\n`;
+    
+    this.modifications.push({
+      type: 'insert',
+      start: insertPosition,
+      end: insertPosition,
+      newCode: memoCode,
+      priority: 790, // Slightly lower than state/ref but higher than functions
+      description: `Add memoized variable ${spec.name}`
     });
     
     return this;

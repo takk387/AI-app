@@ -99,6 +99,15 @@ export interface UseRefSpec {
 }
 
 /**
+ * useMemo hook specification
+ */
+export interface UseMemoSpec {
+  name: string;                // Memoized variable name (e.g., 'filteredItems')
+  computation: string;         // Computation to memoize (e.g., 'items.filter(i => i.active)')
+  dependencies: string[];      // Dependency array (e.g., ['items', 'searchTerm'])
+}
+
+/**
  * Prop modification specification
  */
 export interface ModifyPropSpec {

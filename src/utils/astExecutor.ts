@@ -80,6 +80,13 @@ export interface ASTAddRefOperation {
   initialValue: string;      // Initial value (e.g., 'null' or 'undefined')
 }
 
+export interface ASTAddMemoOperation {
+  type: 'AST_ADD_MEMO';
+  name: string;              // Memoized variable name (e.g., 'filteredItems')
+  computation: string;       // Computation to memoize (e.g., 'items.filter(i => i.active)')
+  dependencies: string[];    // Dependency array (e.g., ['items', 'searchTerm'])
+}
+
 export type ASTOperation = 
   | ASTWrapElementOperation
   | ASTAddStateOperation
@@ -89,7 +96,8 @@ export type ASTOperation =
   | ASTAddUseEffectOperation
   | ASTModifyPropOperation
   | ASTAddAuthenticationOperation
-  | ASTAddRefOperation;
+  | ASTAddRefOperation
+  | ASTAddMemoOperation;
 
 /**
  * Result of executing an AST operation
@@ -385,6 +393,34 @@ export async function executeASTOperation(
             success: true,
             code: result.code,
             operation: `Added ref variable: ${operation.name}`
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_ADD_MEMO': {
+        // Build memo spec
+        const memoSpec = {
+          name: operation.name,
+          computation: operation.computation,
+          dependencies: operation.dependencies
+        };
+        
+        // Add memo
+        modifier.addMemo(memoSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Added memoized variable: ${operation.name}`
           };
         } else {
           return {
