@@ -10,7 +10,8 @@ const anthropic = new Anthropic({
 interface DiffChange {
   type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND' 
       | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT' | 'AST_MODIFY_CLASSNAME'
-      | 'AST_INSERT_JSX' | 'AST_ADD_USEEFFECT' | 'AST_MODIFY_PROP' | 'AST_ADD_AUTHENTICATION';
+      | 'AST_INSERT_JSX' | 'AST_ADD_USEEFFECT' | 'AST_MODIFY_PROP' | 'AST_ADD_AUTHENTICATION'
+      | 'AST_ADD_REF' | 'AST_ADD_MEMO' | 'AST_ADD_CALLBACK' | 'AST_ADD_REDUCER';
   line?: number;
   searchFor?: string;
   content?: string;
@@ -52,6 +53,22 @@ interface DiffChange {
   propName?: string;
   propValue?: string;
   action?: 'add' | 'update' | 'remove';
+  // AST_ADD_REF fields
+  // name and initialValue already defined above
+  // AST_ADD_MEMO fields
+  computation?: string;
+  // name and dependencies already defined above
+  // AST_ADD_CALLBACK fields
+  params?: string[];
+  // name, body, and dependencies already defined above
+  // AST_ADD_REDUCER fields
+  dispatchName?: string;
+  reducerName?: string;
+  // name and initialState already defined above
+  actions?: Array<{
+    type: string;
+    handler: string;
+  }>;
 }
 
 interface FileDiff {
@@ -520,24 +537,362 @@ Your response:
 - ❌ OLD WAY: Pattern matching failed across stages
 - ✅ NEW WAY: Uses AST structure, no pattern matching
 
+**AST_ADD_REF** - Add useRef hook for DOM references and persistent values
+
+When to use: DOM manipulation, focus management, storing mutable values that don't trigger re-renders
+Example use case: "focus the input on load", "track previous value", "store timer reference", "access DOM element"
+
+Features:
+- Auto-imports useRef from React
+- Smart positioning (places with other hooks at top of component)
+- No re-renders when ref value changes
+- Perfect for DOM references and mutable values
+
+\`\`\`json
+{
+  "type": "AST_ADD_REF",
+  "name": "inputRef",
+  "initialValue": "null"
+}
+\`\`\`
+
+**Common Use Cases:**
+
+1. **Focus Management** - Auto-focus input on mount:
+\`\`\`json
+{
+  "type": "AST_ADD_REF",
+  "name": "inputRef",
+  "initialValue": "null"
+}
+\`\`\`
+Then add useEffect to focus:
+\`\`\`json
+{
+  "type": "AST_ADD_USEEFFECT",
+  "body": "inputRef.current?.focus();",
+  "dependencies": []
+}
+\`\`\`
+
+2. **Store Timer/Interval** - For cleanup:
+\`\`\`json
+{
+  "type": "AST_ADD_REF",
+  "name": "timerRef",
+  "initialValue": "null"
+}
+\`\`\`
+
+3. **Track Previous Value** - Compare with current:
+\`\`\`json
+{
+  "type": "AST_ADD_REF",
+  "name": "prevCountRef",
+  "initialValue": "0"
+}
+\`\`\`
+
+**When NOT to use:**
+- ❌ For state that should trigger re-renders (use AST_ADD_STATE instead)
+- ❌ For derived values from props/state (use AST_ADD_MEMO instead)
+
+**AST_ADD_MEMO** - Add useMemo hook for expensive computations
+
+When to use: Expensive calculations, filtered/sorted lists, derived data, complex object creation
+Example use case: "optimize filtering", "cache calculation", "memoize sorted list", "expensive computation"
+
+Features:
+- Auto-imports useMemo from React
+- Smart positioning (after useState/useRef, before useCallback)
+- Only recalculates when dependencies change
+- Prevents unnecessary re-computations
+
+\`\`\`json
+{
+  "type": "AST_ADD_MEMO",
+  "name": "filteredItems",
+  "computation": "items.filter(item => item.active)",
+  "dependencies": ["items"]
+}
+\`\`\`
+
+**Common Use Cases:**
+
+1. **Filter Lists** - Expensive filtering:
+\`\`\`json
+{
+  "type": "AST_ADD_MEMO",
+  "name": "filteredUsers",
+  "computation": "users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()))",
+  "dependencies": ["users", "searchTerm"]
+}
+\`\`\`
+
+2. **Sort Data** - Expensive sorting:
+\`\`\`json
+{
+  "type": "AST_ADD_MEMO",
+  "name": "sortedItems",
+  "computation": "items.sort((a, b) => b.date - a.date)",
+  "dependencies": ["items"]
+}
+\`\`\`
+
+3. **Complex Calculations** - Aggregate/compute:
+\`\`\`json
+{
+  "type": "AST_ADD_MEMO",
+  "name": "totalPrice",
+  "computation": "cart.reduce((sum, item) => sum + item.price * item.quantity, 0)",
+  "dependencies": ["cart"]
+}
+\`\`\`
+
+4. **Derived State** - Compute from multiple sources:
+\`\`\`json
+{
+  "type": "AST_ADD_MEMO",
+  "name": "isValid",
+  "computation": "email.length > 0 && password.length >= 8 && acceptedTerms",
+  "dependencies": ["email", "password", "acceptedTerms"]
+}
+\`\`\`
+
+**When NOT to use:**
+- ❌ For simple calculations (no need to memoize \`count * 2\`)
+- ❌ For functions passed to child components (use AST_ADD_CALLBACK instead)
+
+**AST_ADD_CALLBACK** - Add useCallback hook for memoized functions
+
+When to use: Event handlers passed to child components, functions in dependency arrays, preventing child re-renders
+Example use case: "optimize child re-renders", "memoize event handler", "stable function reference"
+
+Features:
+- Auto-imports useCallback from React
+- Smart positioning (after useMemo, before regular functions)
+- Prevents unnecessary child component re-renders
+- Stable function reference across renders
+
+\`\`\`json
+{
+  "type": "AST_ADD_CALLBACK",
+  "name": "handleClick",
+  "params": ["id"],
+  "body": "setSelectedId(id);",
+  "dependencies": []
+}
+\`\`\`
+
+**Common Use Cases:**
+
+1. **Event Handlers for Child Components** - Prevent re-renders:
+\`\`\`json
+{
+  "type": "AST_ADD_CALLBACK",
+  "name": "handleItemClick",
+  "params": ["id"],
+  "body": "setSelectedId(id);\\nconsole.log('Selected:', id);",
+  "dependencies": []
+}
+\`\`\`
+
+2. **Functions with Dependencies** - Access state/props:
+\`\`\`json
+{
+  "type": "AST_ADD_CALLBACK",
+  "name": "handleAddToCart",
+  "params": ["productId"],
+  "body": "setCart([...cart, { id: productId, quantity: 1 }]);",
+  "dependencies": ["cart"]
+}
+\`\`\`
+
+3. **Async Operations** - API calls:
+\`\`\`json
+{
+  "type": "AST_ADD_CALLBACK",
+  "name": "fetchUserData",
+  "params": ["userId"],
+  "body": "const response = await fetch(\`/api/users/\${userId}\`);\\nconst data = await response.json();\\nsetUser(data);",
+  "dependencies": []
+}
+\`\`\`
+
+4. **Form Handlers** - Input changes:
+\`\`\`json
+{
+  "type": "AST_ADD_CALLBACK",
+  "name": "handleInputChange",
+  "params": ["e"],
+  "body": "const { name, value } = e.target;\\nsetFormData(prev => ({ ...prev, [name]: value }));",
+  "dependencies": []
+}
+\`\`\`
+
+**When NOT to use:**
+- ❌ For functions only used inside the component (regular functions are fine)
+- ❌ When the function doesn't depend on props/state (define outside component)
+
+**AST_ADD_REDUCER** - Add useReducer hook with complete reducer function
+
+When to use: Complex state logic, multiple related state updates, state transitions, form management
+Example use case: "complex form", "todo list", "multi-step wizard", "state machine"
+
+Features:
+- Auto-imports useReducer from React
+- Creates complete reducer function with switch statement
+- Adds useReducer hook call
+- Smart positioning (reducer function first, then hook)
+- Handles multiple action types automatically
+
+\`\`\`json
+{
+  "type": "AST_ADD_REDUCER",
+  "name": "state",
+  "dispatchName": "dispatch",
+  "reducerName": "reducer",
+  "initialState": "{ count: 0, loading: false }",
+  "actions": [
+    {
+      "type": "INCREMENT",
+      "handler": "return { ...state, count: state.count + 1 };"
+    },
+    {
+      "type": "DECREMENT", 
+      "handler": "return { ...state, count: state.count - 1 };"
+    },
+    {
+      "type": "RESET",
+      "handler": "return { count: 0, loading: false };"
+    }
+  ]
+}
+\`\`\`
+
+**What this generates:**
+
+\`\`\`typescript
+function reducer(state, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      return { ...state, count: state.count + 1 };
+    case 'DECREMENT':
+      return { ...state, count: state.count - 1 };
+    case 'RESET':
+      return { count: 0, loading: false };
+    default:
+      return state;
+  }
+}
+
+const [state, dispatch] = useReducer(reducer, { count: 0, loading: false });
+\`\`\`
+
+**Common Use Cases:**
+
+1. **Counter with Multiple Actions** - Up/down/reset:
+\`\`\`json
+{
+  "type": "AST_ADD_REDUCER",
+  "name": "state",
+  "dispatchName": "dispatch",
+  "reducerName": "counterReducer",
+  "initialState": "{ count: 0 }",
+  "actions": [
+    { "type": "INCREMENT", "handler": "return { count: state.count + 1 };" },
+    { "type": "DECREMENT", "handler": "return { count: state.count - 1 };" },
+    { "type": "RESET", "handler": "return { count: 0 };" }
+  ]
+}
+\`\`\`
+
+2. **Todo List** - Add/remove/toggle/clear:
+\`\`\`json
+{
+  "type": "AST_ADD_REDUCER",
+  "name": "state",
+  "dispatchName": "dispatch",
+  "reducerName": "todoReducer",
+  "initialState": "{ todos: [], filter: 'all' }",
+  "actions": [
+    { "type": "ADD_TODO", "handler": "return { ...state, todos: [...state.todos, action.payload] };" },
+    { "type": "REMOVE_TODO", "handler": "return { ...state, todos: state.todos.filter(t => t.id !== action.payload) };" },
+    { "type": "TOGGLE_TODO", "handler": "return { ...state, todos: state.todos.map(t => t.id === action.payload ? { ...t, completed: !t.completed } : t) };" }
+  ]
+}
+\`\`\`
+
+3. **Form State** - Complex form with validation:
+\`\`\`json
+{
+  "type": "AST_ADD_REDUCER",
+  "name": "formState",
+  "dispatchName": "formDispatch",
+  "reducerName": "formReducer",
+  "initialState": "{ values: {}, errors: {}, touched: {}, isSubmitting: false }",
+  "actions": [
+    { "type": "SET_FIELD", "handler": "return { ...state, values: { ...state.values, [action.field]: action.value } };" },
+    { "type": "SET_ERROR", "handler": "return { ...state, errors: { ...state.errors, [action.field]: action.error } };" },
+    { "type": "SET_TOUCHED", "handler": "return { ...state, touched: { ...state.touched, [action.field]: true } };" },
+    { "type": "SUBMIT_START", "handler": "return { ...state, isSubmitting: true };" },
+    { "type": "SUBMIT_END", "handler": "return { ...state, isSubmitting: false };" }
+  ]
+}
+\`\`\`
+
+4. **Loading/Error States** - Async operations:
+\`\`\`json
+{
+  "type": "AST_ADD_REDUCER",
+  "name": "state",
+  "dispatchName": "dispatch",
+  "reducerName": "asyncReducer",
+  "initialState": "{ data: null, loading: false, error: null }",
+  "actions": [
+    { "type": "FETCH_START", "handler": "return { data: null, loading: true, error: null };" },
+    { "type": "FETCH_SUCCESS", "handler": "return { data: action.payload, loading: false, error: null };" },
+    { "type": "FETCH_ERROR", "handler": "return { data: null, loading: false, error: action.payload };" }
+  ]
+}
+\`\`\`
+
+**When NOT to use:**
+- ❌ For simple state (use AST_ADD_STATE instead - it's simpler)
+- ❌ When state updates are independent (multiple useState is clearer)
+- ✅ USE when: Multiple related state values, complex update logic, state transitions
+
 **🎯 WHEN TO USE AST OPERATIONS:**
 
 Use AST operations for:
-- ✅ Wrapping components (AuthGuard, ErrorBoundary, Provider, etc.)
-- ✅ Adding React hooks (useState, useEffect, etc.)
-- ✅ Managing imports (especially with deduplication)
-- ✅ Structural JSX changes that need precision
-- ✅ **className modifications (ALWAYS use AST for this!)**
-- ✅ **Inserting JSX elements (use AST_INSERT_JSX, not INSERT_AFTER)**
-- ✅ **Adding useEffect hooks (use AST_ADD_USEEFFECT, not manual insertion)**
-- ✅ **Modifying props (use AST_MODIFY_PROP, not REPLACE)**
+- ✅ **Wrapping components** - Use AST_WRAP_ELEMENT for AuthGuard, ErrorBoundary, Provider
+- ✅ **Adding React hooks:**
+  - AST_ADD_STATE for useState
+  - AST_ADD_USEEFFECT for useEffect with cleanup
+  - AST_ADD_REF for useRef (DOM refs, mutable values)
+  - AST_ADD_MEMO for useMemo (expensive computations)
+  - AST_ADD_CALLBACK for useCallback (memoized functions)
+  - AST_ADD_REDUCER for useReducer (complex state logic)
+- ✅ **Managing imports** - Use AST_ADD_IMPORT for automatic deduplication
+- ✅ **Structural JSX changes** - Use AST_INSERT_JSX for reliable positioning
+- ✅ **className modifications** - ALWAYS use AST_MODIFY_CLASSNAME for dynamic classes
+- ✅ **Modifying props** - Use AST_MODIFY_PROP for add/update/remove
+- ✅ **Complete features** - Use AST_ADD_AUTHENTICATION for full auth system
+
+**CRITICAL: Choose the right AST operation for React hooks:**
+- Simple state? → AST_ADD_STATE (useState)
+- Side effects? → AST_ADD_USEEFFECT (useEffect)
+- DOM reference? → AST_ADD_REF (useRef)
+- Expensive computation? → AST_ADD_MEMO (useMemo)
+- Event handler for child? → AST_ADD_CALLBACK (useCallback)
+- Complex state logic? → AST_ADD_REDUCER (useReducer)
 
 Use string-based operations for:
 - ✅ Changing text content (simple text replacements)
-- ✅ Minor code tweaks
+- ✅ Minor code tweaks (variable names, constants)
 - ❌ NOT for JSX insertion (use AST_INSERT_JSX)
 - ❌ NOT for className changes (use AST_MODIFY_CLASSNAME)
-- ❌ NOT for adding hooks (use AST_ADD_USEEFFECT)
+- ❌ NOT for adding any hooks (use appropriate AST_ADD_* operation)
 - ❌ NOT for prop changes (use AST_MODIFY_PROP)
 
 **Example: Adding Authentication**
