@@ -612,26 +612,43 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
         return unique.slice(-50);
       };
 
-      const requestBody: any = isQuestion ? {
-        // For Q&A: just prompt and history (increased from 5 to 30 for better memory)
-        prompt: userInput,
-        conversationHistory: chatMessages.slice(-30),
-        includeCodeInResponse: isRequestingCode,
-        mode: currentMode
-      } : useDiffSystem ? {
-        // For modifications: use diff endpoint with enhanced history (increased from 15 to 50)
-        prompt: userInput,
-        currentAppState: currentComponent ? JSON.parse(currentComponent.code) : null,
-        conversationHistory: getEnhancedHistory(),
-        includeCodeInResponse: isRequestingCode
-      } : {
-        // For new apps: use full-app endpoint (increased from 10 to 50 for better memory)
-        prompt: userInput,
-        conversationHistory: chatMessages.slice(-50),
-        isModification: false,
-        currentAppName: null,
-        includeCodeInResponse: isRequestingCode
-      };
+      // Build request body based on endpoint and mode
+      let requestBody: any;
+      
+      if (currentMode === 'PLAN') {
+        // In PLAN mode, always send to chat endpoint with PLAN mode flag
+        requestBody = {
+          prompt: userInput,
+          conversationHistory: chatMessages.slice(-30),
+          includeCodeInResponse: isRequestingCode,
+          mode: 'PLAN'
+        };
+      } else if (isQuestion) {
+        // ACT mode Q&A
+        requestBody = {
+          prompt: userInput,
+          conversationHistory: chatMessages.slice(-30),
+          includeCodeInResponse: isRequestingCode,
+          mode: 'ACT'
+        };
+      } else if (useDiffSystem) {
+        // ACT mode modifications
+        requestBody = {
+          prompt: userInput,
+          currentAppState: currentComponent ? JSON.parse(currentComponent.code) : null,
+          conversationHistory: getEnhancedHistory(),
+          includeCodeInResponse: isRequestingCode
+        };
+      } else {
+        // ACT mode new apps
+        requestBody = {
+          prompt: userInput,
+          conversationHistory: chatMessages.slice(-50),
+          isModification: false,
+          currentAppName: null,
+          includeCodeInResponse: isRequestingCode
+        };
+      }
 
       // Add image if uploaded
       if (uploadedImage) {
