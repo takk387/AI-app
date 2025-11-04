@@ -64,7 +64,7 @@ interface DiffChange {
   // AST_ADD_REDUCER fields
   dispatchName?: string;
   reducerName?: string;
-  // name and initialState already defined above
+  initialState?: string;
   actions?: Array<{
     type: string;
     handler: string;
