@@ -1,8 +1,8 @@
 # 🚀 Future Implementation TODO List
 **AI App Builder - Unimplemented Features & Improvements**
 
-Last Updated: November 2, 2025  
-Current Status: Phase 2 Complete ✅ | Tree-sitter Research Complete ✅
+Last Updated: November 4, 2025  
+Current Status: Phase 2 Complete ✅ | Phase 5 (AST) Complete ✅ | Phased Build System ✅
 
 ---
 
@@ -25,13 +25,14 @@ Current Status: Phase 2 Complete ✅ | Tree-sitter Research Complete ✅
 - **Tree-sitter integration research** completed with detailed implementation plan
 
 ### ⚠️ KNOWN LIMITATIONS
-- Complex modifications (authentication) fail due to AI generating incomplete diffs
-- REPLACE operations produce "undefined" for structural changes
-- Staged modifications can't complete full flow (blocked by auth complexity)
+- ~~Complex modifications (authentication)~~ ✅ FIXED via AST_ADD_AUTHENTICATION (Phase 5)
+- ~~REPLACE operations produce "undefined"~~ ✅ FIXED via AST operations
+- Some edge cases in complex modifications may still need refinement
+- Testing AST system across more real-world scenarios ongoing
 
 ---
 
-## 🔥 PRIORITY 1: IMMEDIATE QUICK WINS (< 1 Hour)
+## � PRIORITY 1: IMMEDIATE QUICK WINS (< 1 Hour)
 
 ### 1. Document System Capabilities
 **Time:** 30-60 minutes  
@@ -106,9 +107,11 @@ if (isComplexModification) {
 
 ## ⚡ PRIORITY 2: SHORT-TERM IMPROVEMENTS (1-3 Days)
 
-### 4. Create Feature Templates
+### 4. Create Feature Templates ⚠️ OPTIONAL
 **Time:** 30 minutes per template  
-**Impact:** HIGH - Bypasses modification limitations
+**Impact:** MEDIUM - Nice-to-have for quick starts
+
+**Note:** With AST_ADD_AUTHENTICATION working, templates are now optional quick-start tools rather than critical workarounds.
 
 **Templates to create:**
 - [ ] `templates/todo-with-auth.json` - Todo app with authentication
@@ -141,9 +144,14 @@ if (isComplexModification) {
 
 ---
 
-### 5. Code Blocks System (Alternative to AST)
-**Time:** 2-3 days  
-**Impact:** HIGH - Fixes complex modification issues
+### 5. ~~Code Blocks System~~ ❌ OBSOLETE
+**Status:** NOT NEEDED - Replaced by AST system
+
+**Time:** ~~2-3 days~~  
+**Impact:** ~~HIGH~~ → N/A (Problem solved by AST_ADD_AUTHENTICATION)
+
+**Why obsolete:**
+This was a workaround proposed BEFORE Tree-sitter/AST implementation. Since Phase 5 is complete with AST_ADD_AUTHENTICATION working reliably, this band-aid approach is no longer needed.
 
 **Implementation approach:**
 
@@ -209,18 +217,13 @@ export function applyAuthBlock(code: string): string {
 }
 ```
 
-**Tasks:**
-- [ ] Create code blocks for common features
-- [ ] Build block application logic
-- [ ] Integrate with modification system
-- [ ] Test with various app structures
-- [ ] Add error handling
-
 ---
 
-### 6. "Start from Template" UI
+### 6. "Start from Template" UI ⚠️ OPTIONAL
 **Time:** 2-3 hours  
-**Impact:** HIGH - Better UX for complex features
+**Impact:** MEDIUM - Nice-to-have (not critical with AST working)
+
+**Note:** With AST_ADD_AUTHENTICATION working reliably, templates are now optional enhancements for quick starts rather than workarounds for broken functionality.
 
 **File:** `src/components/AIBuilder.tsx`
 
