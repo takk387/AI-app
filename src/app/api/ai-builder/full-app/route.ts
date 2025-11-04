@@ -177,6 +177,19 @@ EXTENSION OPPORTUNITIES:
 For simple UI apps without backend needs:
 
 - **CRITICAL**: src/App.tsx MUST be PLAIN JSX (NO TypeScript syntax)
+- **CRITICAL COMPONENT SYNTAX**: Helper components MUST use correct syntax
+  * **NEVER use nested function declarations** - function HelperName() {} inside another function is INVALID
+  * **Option 1 (PREFERRED)**: Declare helper components BEFORE the main export
+    - Example: function TodoItem(props) { return <div>...</div>; } then export default function App() { }
+    - Helper functions go ABOVE the export default line
+  * **Option 2**: Use arrow functions for helpers INSIDE main component
+    - Example: const TodoItem = (props) => { return <div>...</div>; }
+    - Arrow functions are ALLOWED inside other functions
+  * **WRONG - Will cause SyntaxError**: function keyword inside another function
+    - DO NOT write: export default function App() { function Helper() {} }
+    - THIS CAUSES: "SyntaxError: Unexpected keyword 'function'"
+  * **Rule**: Multiple helper components? Declare them ALL before export default function App()
+  * **Remember**: Nested function declarations = SYNTAX ERROR in strict mode
 - **CRITICAL LAYOUT**: Root container MUST fill viewport and expand content
   * ALWAYS use: \`<div className="min-h-screen flex flex-col bg-[color] p-4">\`
   * The \`flex flex-col\` makes content expand to fill available space
