@@ -173,7 +173,7 @@ Both endpoints use **Claude Sonnet 4.5** (latest model):
 | Endpoint | Model | Max Tokens | Purpose |
 |----------|-------|------------|---------|
 | `/api/chat` | claude-sonnet-4-5-20250929 | 4,096 | Q&A conversations |
-| `/api/ai-builder/full-app` | claude-sonnet-4-5-20250929 | 8,192 | App generation |
+| `/api/ai-builder/full-app` | claude-sonnet-4-5-20250929 | 16,384 | App generation (doubled for complex apps) |
 
 ---
 

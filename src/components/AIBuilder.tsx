@@ -433,7 +433,7 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
       'explain', 'tell me', 'can you', 'could you', 'would you',
       'should i', 'is it', 'are there', 'do i', 'does', 'did',
       '?', 'help me understand', 'difference between',
-      'show me', 'give me', 'i want to know', 'i need help',
+      'i want to know', 'i need help',
       'wondering', 'curious', 'question', 'asking',
       'vs', 'versus', 'better than', 'best way',
       'recommend', 'suggestion', 'advice', 'opinion',
@@ -443,9 +443,16 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
     const buildIndicators = [
       'build', 'create', 'make', 'generate', 'design',
       'develop', 'code', 'write', 'implement', 'add feature',
-      'app that', 'component for', 'page with', 'website',
-      'application', 'project', 'build me', 'make me', 'create me'
+      'app', 'application', 'website', 'component', 'page',
+      'dashboard', 'calculator', 'game', 'timer', 'counter',
+      'todo', 'form', 'modal', 'navbar', 'sidebar',
+      'app that', 'component for', 'page with',
+      'project', 'build me', 'make me', 'create me'
     ];
+    
+    // Handle "show me X" / "give me X" where X is an app/component
+    const showGivePattern = /(show me|give me)\s+(a|an)?\s*(app|dashboard|calculator|game|timer|counter|todo|website|component|page|form|modal)/i;
+    const hasShowGiveBuild = showGivePattern.test(userInput);
     
     // Meta questions about capabilities (asking ABOUT building, not requesting to build)
     const metaQuestionPatterns = [
@@ -462,9 +469,11 @@ Reply **'proceed'** to continue with staged implementation, or **'cancel'** to t
     // Check if it's a meta question about capabilities
     const isMetaQuestion = metaQuestionPatterns.some(pattern => pattern.test(userInput));
     
-    const isQuestion = (questionIndicators.some(indicator => input.includes(indicator)) &&
-                      !buildIndicators.some(indicator => input.includes(indicator))) ||
-                      isMetaQuestion;
+    // Determine if this is a question or build request
+    const hasQuestionWords = questionIndicators.some(indicator => input.includes(indicator));
+    const hasBuildWords = buildIndicators.some(indicator => input.includes(indicator));
+    
+    const isQuestion = (hasQuestionWords && !hasBuildWords && !hasShowGiveBuild) || isMetaQuestion;
     
     // Detect potentially very large app requests and provide guidance
     const complexityIndicators = [
