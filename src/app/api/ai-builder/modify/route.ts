@@ -117,12 +117,22 @@ export async function POST(request: Request) {
    - Don't rewrite entire files - use surgical edits
    - Think: "What's the SMALLEST change to accomplish this?"
 
-2. **DIFF FORMAT REQUIRED**
+2. **COMPONENT SYNTAX RULES** (Critical for React/JSX files)
+   - **NEVER use nested function declarations** - function HelperName() {} inside another function is INVALID
+   - **Correct Pattern 1**: Declare helper components BEFORE the main export
+     * Example: function TodoItem(props) { return <div>...</div>; } goes ABOVE export default function App()
+   - **Correct Pattern 2**: Use arrow functions for helpers INSIDE main component
+     * Example: const TodoItem = (props) => { return <div>...</div>; }
+   - **WRONG - Will cause SyntaxError**: export default function App() { function Helper() {} }
+   - **Error message if violated**: "SyntaxError: Unexpected keyword 'function'"
+   - **Remember**: Nested function declarations = SYNTAX ERROR in strict mode (React uses strict mode)
+
+3. **DIFF FORMAT REQUIRED**
    - You MUST respond in the exact JSON diff format below
    - NO conversational text, NO markdown, ONLY valid JSON
    - Each change must be precise and targeted
 
-3. **CHANGE TYPES AVAILABLE**
+4. **CHANGE TYPES AVAILABLE**
    - ADD_IMPORT: Add import at top of file
    - INSERT_AFTER: Insert code after a specific line/pattern
    - INSERT_BEFORE: Insert code before a specific line/pattern  
