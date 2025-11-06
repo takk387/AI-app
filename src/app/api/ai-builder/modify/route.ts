@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { executeASTOperation, isASTOperation, type ASTOperation } from '@/utils/astExecutor';
+import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -1151,7 +1152,86 @@ Now generate the minimal diff to accomplish the user's request.`;
       }, { status: 500 });
     }
 
-    return NextResponse.json(diffResponse);
+    // ============================================================================
+    // VALIDATION LAYER - Validate code snippets in diff instructions
+    // ============================================================================
+    console.log('🔍 Validating code snippets in modification instructions...');
+    
+    const validationErrors: Array<{ file: string; change: number; errors: ValidationError[] }> = [];
+    let totalSnippets = 0;
+    let validatedSnippets = 0;
+    let errorsFound = 0;
+    
+    // Validate code snippets in each file's changes
+    diffResponse.files.forEach(fileDiff => {
+      // Only validate .tsx/.ts/.jsx/.js files
+      if (!fileDiff.path.match(/\.(tsx|ts|jsx|js)$/)) {
+        return;
+      }
+      
+      fileDiff.changes.forEach((change, index) => {
+        // Collect code snippets to validate
+        const snippetsToValidate: Array<{ field: string; code: string }> = [];
+        
+        if (change.content) snippetsToValidate.push({ field: 'content', code: change.content });
+        if (change.replaceWith) snippetsToValidate.push({ field: 'replaceWith', code: change.replaceWith });
+        if (change.jsx) snippetsToValidate.push({ field: 'jsx', code: change.jsx });
+        if (change.body) snippetsToValidate.push({ field: 'body', code: change.body });
+        
+        snippetsToValidate.forEach(({ field, code }) => {
+          totalSnippets++;
+          const validation = validateGeneratedCode(code, fileDiff.path);
+          
+          if (!validation.valid) {
+            console.log(`⚠️ Found ${validation.errors.length} error(s) in ${fileDiff.path} change #${index + 1} (${field})`);
+            errorsFound += validation.errors.length;
+            
+            // Attempt auto-fix
+            const fixedCode = autoFixCode(code, validation.errors);
+            if (fixedCode !== code) {
+              console.log(`✅ Auto-fixed errors in ${field}`);
+              // Update the change with fixed code
+              if (field === 'content') change.content = fixedCode;
+              else if (field === 'replaceWith') change.replaceWith = fixedCode;
+              else if (field === 'jsx') change.jsx = fixedCode;
+              else if (field === 'body') change.body = fixedCode;
+              
+              validatedSnippets++;
+            } else {
+              // Couldn't auto-fix, add to errors
+              validationErrors.push({
+                file: fileDiff.path,
+                change: index + 1,
+                errors: validation.errors
+              });
+            }
+          } else {
+            validatedSnippets++;
+          }
+        });
+      });
+    });
+    
+    // Log validation summary
+    if (totalSnippets > 0) {
+      console.log(`📊 Validation Summary:`);
+      console.log(`   Code snippets checked: ${totalSnippets}`);
+      console.log(`   Errors found: ${errorsFound}`);
+      console.log(`   Successfully validated/fixed: ${validatedSnippets}`);
+      console.log(`   Remaining issues: ${validationErrors.length}`);
+    }
+    
+    // Add validation warnings if errors remain
+    const validationWarnings = validationErrors.length > 0 ? {
+      hasWarnings: true,
+      message: `Code validation detected ${validationErrors.length} issue(s) in modification instructions. Review before applying.`,
+      details: validationErrors
+    } : undefined;
+
+    return NextResponse.json({
+      ...diffResponse,
+      ...(validationWarnings && { validationWarnings })
+    });
     
   } catch (error) {
     console.error('Error in modify route:', error);
