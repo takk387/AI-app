@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -892,6 +893,76 @@ REMEMBER:
       }
     });
 
+    // ============================================================================
+    // VALIDATION LAYER - Catch common errors before they reach users
+    // ============================================================================
+    console.log('🔍 Validating generated code...');
+    
+    const validationErrors: Array<{ file: string; errors: ValidationError[] }> = [];
+    let totalErrors = 0;
+    let autoFixedCount = 0;
+    
+    files.forEach(file => {
+      // Only validate code files
+      if (file.path.endsWith('.tsx') || file.path.endsWith('.ts') || 
+          file.path.endsWith('.jsx') || file.path.endsWith('.js')) {
+        
+        const validation = validateGeneratedCode(file.content, file.path);
+        
+        if (!validation.valid) {
+          console.log(`⚠️ Found ${validation.errors.length} error(s) in ${file.path}`);
+          totalErrors += validation.errors.length;
+          
+          // Log errors for debugging
+          validation.errors.forEach(err => {
+            console.log(`  - Line ${err.line}: ${err.message}`);
+          });
+          
+          // Attempt auto-fix
+          const fixedCode = autoFixCode(file.content, validation.errors);
+          if (fixedCode !== file.content) {
+            console.log(`✅ Auto-fixed errors in ${file.path}`);
+            file.content = fixedCode;
+            autoFixedCount += validation.errors.filter(e => e.type === 'UNCLOSED_STRING').length;
+            
+            // Re-validate after fix
+            const revalidation = validateGeneratedCode(fixedCode, file.path);
+            if (!revalidation.valid) {
+              // Some errors couldn't be auto-fixed
+              validationErrors.push({
+                file: file.path,
+                errors: revalidation.errors
+              });
+            }
+          } else {
+            // No auto-fix possible, add to errors
+            validationErrors.push({
+              file: file.path,
+              errors: validation.errors
+            });
+          }
+        }
+      }
+    });
+    
+    // Log validation summary
+    if (totalErrors > 0) {
+      console.log(`📊 Validation Summary:`);
+      console.log(`   Total errors found: ${totalErrors}`);
+      console.log(`   Auto-fixed: ${autoFixedCount}`);
+      console.log(`   Remaining: ${totalErrors - autoFixedCount}`);
+    } else {
+      console.log(`✅ All code validated successfully - no errors found`);
+    }
+    
+    // If critical errors remain after auto-fix, add them to response
+    // (but don't block the response - let user see the code with warnings)
+    const validationWarnings = validationErrors.length > 0 ? {
+      hasWarnings: true,
+      message: `Code validation detected ${totalErrors - autoFixedCount} potential issue(s). The code has been generated but may need manual review.`,
+      details: validationErrors
+    } : undefined;
+    
     // Parse dependencies
     const dependencies: Record<string, string> = {};
     if (dependenciesMatch) {
@@ -913,7 +984,8 @@ REMEMBER:
       changeSummary: changeSummaryMatch ? changeSummaryMatch[1].trim() : '',
       files,
       dependencies,
-      setupInstructions: setupMatch ? setupMatch[1].trim() : 'Run npm install && npm run dev'
+      setupInstructions: setupMatch ? setupMatch[1].trim() : 'Run npm install && npm run dev',
+      ...(validationWarnings && { validationWarnings })
     };
 
     return NextResponse.json(appData);
