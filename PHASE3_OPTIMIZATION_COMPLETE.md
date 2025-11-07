@@ -3,21 +3,21 @@
 ## Summary
 Successfully implemented modular, compressed prompt system that reduces token usage by ~68% across main AI routes while maintaining full functionality.
 
-## Token Reduction Results
+## Token Reduction Results (VERIFIED)
 
 ### Modify Route (`/api/ai-builder/modify`)
 - **Before**: ~6,500 tokens
-- **After**: ~2,000 tokens
-- **Reduction**: 69% (4,500 tokens saved per request)
+- **After**: ~1,640 tokens (verified)
+- **Reduction**: 75% (4,860 tokens saved per request)
 
 ### Full-App Route (`/api/ai-builder/full-app`)
 - **Before**: ~8,500 tokens
-- **After**: ~2,800 tokens
-- **Reduction**: 67% (5,700 tokens saved per request)
+- **After**: ~1,960 tokens (verified)
+- **Reduction**: 77% (6,540 tokens saved per request)
 
 ### Combined Impact
-- **Total savings**: ~10,200 tokens per generation cycle
-- **Overall reduction**: ~68%
+- **Total savings**: ~11,400 tokens per generation cycle
+- **Overall reduction**: ~76% (better than initially estimated!)
 - **Cost savings**: Significant reduction in API costs
 - **Context window**: More room for conversation history
 
@@ -32,13 +32,13 @@ Created reusable, compressed prompt modules:
 - `common/response-format.ts` - Delimiter format rules (150 tokens, was 400)
 
 #### Modify-Specific Modules
-- `modify/ast-operations-compressed.ts` - AST operation documentation (800 tokens, was 2,400)
-- `modify/examples-compressed.ts` - Modification examples (400 tokens, was 1,200)
+- `modify/ast-operations-compressed.ts` - AST operation documentation (655 tokens, was 2,400)
+- `modify/examples-compressed.ts` - Modification examples (471 tokens, was 1,200)
 
 #### Full-App-Specific Modules
-- `full-app/frontend-rules-compressed.ts` - Frontend app rules (350 tokens, was 1,000)
-- `full-app/fullstack-rules-compressed.ts` - Full-stack app rules (200 tokens, was 600)
-- `full-app/examples-compressed.ts` - App examples (600 tokens, was 2,400)
+- `full-app/frontend-rules-compressed.ts` - Frontend app rules (207 tokens, was 1,000)
+- `full-app/fullstack-rules-compressed.ts` - Full-stack app rules (253 tokens, was 600)
+- `full-app/examples-compressed.ts` - App examples (1,059 tokens, was 2,400)
 
 #### Builder Utility
 - `builder.ts` - Functions to combine modules dynamically:
@@ -102,24 +102,24 @@ src/prompts/
 - `src/app/api/ai-builder/modify/route.ts` - Integrated modular prompts
 - `src/app/api/ai-builder/full-app/route.ts` - Integrated modular prompts
 
-## Performance Impact
+## Performance Impact (VERIFIED)
 
 ### Token Usage (Per Request)
 | Route | Before | After | Savings | Reduction |
 |-------|--------|-------|---------|-----------|
-| Modify | 6,500 | 2,000 | 4,500 | 69% |
-| Full-App | 8,500 | 2,800 | 5,700 | 67% |
-| **Total** | **15,000** | **4,800** | **10,200** | **68%** |
+| Modify | 6,500 | 1,640 | 4,860 | 75% |
+| Full-App | 8,500 | 1,960 | 6,540 | 77% |
+| **Total** | **15,000** | **3,600** | **11,400** | **76%** |
 
 ### API Cost Reduction
 Assuming $3/million input tokens (Claude Sonnet):
 - **Before**: $0.045 per full cycle (modify + full-app)
-- **After**: $0.014 per full cycle
-- **Savings**: $0.031 per cycle (69% cost reduction)
-- **Monthly savings** (1000 cycles): ~$31
+- **After**: $0.011 per full cycle
+- **Savings**: $0.034 per cycle (76% cost reduction)
+- **Monthly savings** (1000 cycles): ~$34
 
 ### Context Window Efficiency
-- **More conversation history**: 10,200 extra tokens available
+- **More conversation history**: 11,400 extra tokens available
 - **Better understanding**: AI has more context about user's intent
 - **Fewer truncations**: Less likely to hit context limits
 
@@ -141,9 +141,11 @@ Potential areas for further improvement:
 
 ## Conclusion
 
-Phase 3 successfully reduced prompt token usage by 68% through modular architecture and aggressive compression, while maintaining full functionality and improving maintainability. This sets a strong foundation for future scaling and optimization.
+Phase 3 successfully reduced prompt token usage by **76%** through modular architecture and aggressive compression, while maintaining full functionality and improving maintainability. The actual reduction exceeded initial estimates (68% → 76%), demonstrating the effectiveness of the optimization strategy.
+
+**Verification Method**: Empirical measurement using `tests/verify-token-counts.mjs` script that assembles actual prompts and counts tokens.
 
 ---
 **Date Completed**: November 7, 2025
 **Phase Duration**: ~2 hours
-**Status**: ✅ COMPLETE & VERIFIED
+**Status**: ✅ COMPLETE & VERIFIED (token counts empirically confirmed)

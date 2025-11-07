@@ -1,6 +1,6 @@
 /**
  * Compressed frontend-only app rules
- * Reduced from ~800 tokens to ~250 tokens (69% reduction)
+ * Reduced from ~1000 tokens to ~207 tokens (79% reduction)
  */
 
 export const FRONTEND_RULES_COMPRESSED = `

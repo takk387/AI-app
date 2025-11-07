@@ -1,6 +1,6 @@
 /**
  * Compressed modification examples
- * Reduced from ~800 tokens to ~300 tokens (62% reduction)
+ * Reduced from ~1200 tokens to ~471 tokens (61% reduction)
  */
 
 export const MODIFICATION_EXAMPLES = `

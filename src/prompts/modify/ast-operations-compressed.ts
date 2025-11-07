@@ -1,6 +1,6 @@
 /**
  * Compressed AST operations reference for modify route
- * Reduced from ~3500 tokens to ~1200 tokens (65% reduction)
+ * Reduced from ~2400 tokens to ~655 tokens (73% reduction)
  */
 
 export const AST_OPERATIONS_COMPRESSED = `

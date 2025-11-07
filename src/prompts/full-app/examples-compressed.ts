@@ -1,6 +1,6 @@
 /**
  * Compressed full-app examples
- * Reduced from ~2400 tokens to ~600 tokens (75% reduction)
+ * Reduced from ~2400 tokens to ~1059 tokens (56% reduction)
  */
 
 export const FULLAPP_EXAMPLES_COMPRESSED = `

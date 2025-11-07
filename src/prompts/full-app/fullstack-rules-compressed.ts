@@ -1,6 +1,6 @@
 /**
  * Compressed full-stack app rules
- * Reduced from ~600 tokens to ~200 tokens (67% reduction)
+ * Reduced from ~600 tokens to ~253 tokens (58% reduction)
  */
 
 export const FULLSTACK_RULES_COMPRESSED = `
