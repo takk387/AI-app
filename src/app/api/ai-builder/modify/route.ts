@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { executeASTOperation, isASTOperation, type ASTOperation } from '@/utils/astExecutor';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildModifyPrompt } from '@/prompts/builder';
+import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -94,8 +95,20 @@ interface DiffResponse {
 }
 
 export async function POST(request: Request) {
+  // ============================================================================
+  // ANALYTICS - Phase 4: Track request metrics
+  // ============================================================================
+  const requestId = generateRequestId();
+  const perfTracker = new PerformanceTracker();
+  
   try {
     const { prompt, currentAppState, conversationHistory } = await request.json();
+    perfTracker.checkpoint('request_parsed');
+    
+    // Log request start after parsing body
+    analytics.logRequestStart('ai-builder/modify', requestId, {
+      hasConversationHistory: !!conversationHistory,
+    });
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({
@@ -163,9 +176,12 @@ ${JSON.stringify(currentAppState, null, 2)}`;
 
     // Build compressed prompt using modular sections from src/prompts/
     const systemPrompt = buildModifyPrompt(baseInstructions);
+    const estimatedPromptTokens = Math.round(systemPrompt.length / 4);
 
     console.log('✅ Phase 3: Using compressed modular prompts');
-    console.log('📊 Token estimate:', Math.round(systemPrompt.length / 4), 'tokens');
+    console.log('📊 Token estimate:', estimatedPromptTokens, 'tokens');
+    
+    perfTracker.checkpoint('prompt_built');
 
     console.log('Generating modifications with Claude Sonnet 4.5...');
 
@@ -204,8 +220,9 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     messages.push({ role: 'user', content: enhancedPrompt });
 
     // Use streaming for better handling with timeout
+    const modelName = 'claude-sonnet-4-5-20250929';
     const stream = await anthropic.messages.stream({
-      model: 'claude-sonnet-4-5-20250929',
+      model: modelName,
       max_tokens: 4096,
       temperature: 0.7,
       system: [
@@ -217,9 +234,14 @@ ${JSON.stringify(currentAppState, null, 2)}`;
       ],
       messages: messages
     });
+    
+    perfTracker.checkpoint('ai_request_sent');
 
     // Collect the full response with timeout
     let responseText = '';
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cachedTokens = 0;
     const timeout = 45000; // 45 seconds
     const startTime = Date.now();
     
@@ -231,10 +253,26 @@ ${JSON.stringify(currentAppState, null, 2)}`;
         if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
           responseText += chunk.delta.text;
         }
+        // Capture token usage from final message
+        if (chunk.type === 'message_stop') {
+          const finalMessage = await stream.finalMessage();
+          inputTokens = finalMessage.usage.input_tokens || 0;
+          outputTokens = finalMessage.usage.output_tokens || 0;
+          // @ts-ignore - cache_read_input_tokens might not be in types yet
+          cachedTokens = finalMessage.usage.cache_read_input_tokens || 0;
+        }
       }
     } catch (streamError) {
       console.error('Streaming error:', streamError);
+      analytics.logRequestError(requestId, streamError as Error, 'ai_error');
       throw new Error(streamError instanceof Error ? streamError.message : 'Failed to receive AI response');
+    }
+    
+    perfTracker.checkpoint('ai_response_received');
+    
+    // Log token usage
+    if (inputTokens > 0 || outputTokens > 0) {
+      analytics.logTokenUsage(requestId, inputTokens, outputTokens, cachedTokens);
     }
       
     console.log('Modification response length:', responseText.length, 'chars');
@@ -268,6 +306,11 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     } catch (parseError) {
       console.error('Failed to parse diff response:', parseError);
       console.error('Response text:', responseText);
+      
+      analytics.logRequestError(requestId, parseError as Error, 'parsing_error', {
+        modelUsed: modelName,
+        responseLength: responseText.length,
+      });
       
       return NextResponse.json({
         error: 'The AI had trouble understanding how to modify your app. This can happen with complex changes. Try breaking your request into smaller steps, or use simpler language.',
@@ -346,7 +389,12 @@ ${JSON.stringify(currentAppState, null, 2)}`;
       console.log(`   Errors found: ${errorsFound}`);
       console.log(`   Successfully validated/fixed: ${validatedSnippets}`);
       console.log(`   Remaining issues: ${validationErrors.length}`);
+      
+      // Log validation to analytics
+      analytics.logValidation(requestId, errorsFound, errorsFound - validationErrors.length);
     }
+    
+    perfTracker.checkpoint('validation_complete');
     
     // Add validation warnings if errors remain
     const validationWarnings = validationErrors.length > 0 ? {
@@ -354,6 +402,27 @@ ${JSON.stringify(currentAppState, null, 2)}`;
       message: `Code validation detected ${validationErrors.length} issue(s) in modification instructions. Review before applying.`,
       details: validationErrors
     } : undefined;
+    
+    perfTracker.checkpoint('response_prepared');
+    
+    // Log successful completion
+    analytics.logRequestComplete(requestId, {
+      modelUsed: modelName,
+      promptLength: estimatedPromptTokens,
+      responseLength: responseText.length,
+      validationRan: totalSnippets > 0,
+      validationIssuesFound: errorsFound,
+      validationIssuesFixed: errorsFound - validationErrors.length,
+      metadata: {
+        filesModified: diffResponse.files.length,
+        totalChanges: diffResponse.files.reduce((sum, f) => sum + f.changes.length, 0),
+        hasStaging: !!diffResponse.stagePlan,
+      },
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      perfTracker.log('Modify Route');
+    }
 
     return NextResponse.json({
       ...diffResponse,
@@ -362,6 +431,14 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     
   } catch (error) {
     console.error('Error in modify route:', error);
+    
+    // Log error to analytics
+    analytics.logRequestError(
+      requestId,
+      error as Error,
+      categorizeError(error as Error)
+    );
+    
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate modifications' },
       { status: 500 }

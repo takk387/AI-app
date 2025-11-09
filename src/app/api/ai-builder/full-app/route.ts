@@ -2,14 +2,29 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildFullAppPrompt } from '@/prompts/builder';
+import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 export async function POST(request: Request) {
+  // ============================================================================
+  // ANALYTICS - Phase 4: Track request metrics
+  // ============================================================================
+  const requestId = generateRequestId();
+  const perfTracker = new PerformanceTracker();
+  
   try {
     const { prompt, conversationHistory, isModification, currentAppName, image, hasImage } = await request.json();
+    perfTracker.checkpoint('request_parsed');
+    
+    // Log request start after parsing body
+    analytics.logRequestStart('ai-builder/full-app', requestId, {
+      hasConversationHistory: !!conversationHistory,
+      isModification: !!isModification,
+      hasImage: !!hasImage,
+    });
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({
@@ -51,10 +66,13 @@ MODIFICATION MODE for "${currentAppName}":
 
     // Build compressed prompt using modular sections from src/prompts/
     const systemPrompt = buildFullAppPrompt(baseInstructions, hasImage, isModification);
+    const estimatedPromptTokens = Math.round(systemPrompt.length / 4);
 
     console.log('✅ Phase 3: Using compressed modular prompts');
-    console.log('📊 Token estimate:', Math.round(systemPrompt.length / 4), 'tokens');
+    console.log('📊 Token estimate:', estimatedPromptTokens, 'tokens');
     console.log('Generating app with prompt:', prompt);
+    
+    perfTracker.checkpoint('prompt_built');
 
     // Build conversation context
     const messages: any[] = [];
@@ -119,8 +137,9 @@ MODIFICATION MODE for "${currentAppName}":
 
     console.log('Generating full app with Claude Sonnet 4.5...');
 
+    const modelName = 'claude-sonnet-4-5-20250929';
     const stream = await anthropic.messages.stream({
-      model: 'claude-sonnet-4-5-20250929',
+      model: modelName,
       max_tokens: 16384,
       temperature: 0.7,
       system: [
@@ -132,21 +151,45 @@ MODIFICATION MODE for "${currentAppName}":
       ],
       messages: messages
     });
+    
+    perfTracker.checkpoint('ai_request_sent');
 
     let responseText = '';
-    let tokenCount = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cachedTokens = 0;
     
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        responseText += chunk.delta.text;
-        tokenCount += chunk.delta.text.length / 4;
+    try {
+      for await (const chunk of stream) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+          responseText += chunk.delta.text;
+        }
+        // Capture token usage from final message
+        if (chunk.type === 'message_stop') {
+          const finalMessage = await stream.finalMessage();
+          inputTokens = finalMessage.usage.input_tokens || 0;
+          outputTokens = finalMessage.usage.output_tokens || 0;
+          // @ts-ignore - cache_read_input_tokens might not be in types yet
+          cachedTokens = finalMessage.usage.cache_read_input_tokens || 0;
+        }
       }
+    } catch (streamError) {
+      console.error('Streaming error:', streamError);
+      analytics.logRequestError(requestId, streamError as Error, 'ai_error');
+      throw new Error(streamError instanceof Error ? streamError.message : 'Failed to receive AI response');
+    }
+    
+    perfTracker.checkpoint('ai_response_received');
+    
+    // Log token usage
+    if (inputTokens > 0 || outputTokens > 0) {
+      analytics.logTokenUsage(requestId, inputTokens, outputTokens, cachedTokens);
     }
       
     console.log('Generated response length:', responseText.length, 'chars');
-    console.log('Estimated tokens:', Math.round(tokenCount));
+    console.log('Estimated output tokens:', outputTokens);
     
-    if (Math.round(tokenCount) > 15000) {
+    if (outputTokens > 15000) {
       console.warn('⚠️ Response approaching 16K token limit - may be truncated!');
     }
     
@@ -162,9 +205,14 @@ MODIFICATION MODE for "${currentAppName}":
     const changeSummaryMatch = responseText.match(/===CHANGE_SUMMARY===\s*([\s\S]*?)\s*===/);
     const dependenciesMatch = responseText.match(/===DEPENDENCIES===\s*([\s\S]*?)\s*===/);
     const setupMatch = responseText.match(/===SETUP===\s*([\s\S]*?)\s*===END===/);
-
     if (!nameMatch || !descriptionMatch) {
       console.error('Failed to parse response');
+      
+      analytics.logRequestError(requestId, 'Failed to parse delimiter-based response', 'parsing_error', {
+        modelUsed: modelName,
+        responseLength: responseText.length,
+      });
+      
       return NextResponse.json({
         error: 'Invalid response format from Claude',
         debug: {
@@ -193,6 +241,7 @@ MODIFICATION MODE for "${currentAppName}":
     }
     
     console.log('Parsed files:', files.length);
+    perfTracker.checkpoint('response_parsed');
 
     // Validation layer
     console.log('🔍 Validating generated code...');
@@ -239,9 +288,14 @@ MODIFICATION MODE for "${currentAppName}":
       console.log(`   Total errors found: ${totalErrors}`);
       console.log(`   Auto-fixed: ${autoFixedCount}`);
       console.log(`   Remaining: ${totalErrors - autoFixedCount}`);
+      
+      // Log validation to analytics
+      analytics.logValidation(requestId, totalErrors, autoFixedCount);
     } else {
       console.log(`✅ All code validated successfully`);
     }
+    
+    perfTracker.checkpoint('validation_complete');
     
     const validationWarnings = validationErrors.length > 0 ? {
       hasWarnings: true,
@@ -262,21 +316,56 @@ MODIFICATION MODE for "${currentAppName}":
       }
     }
 
+    const changeType = changeTypeMatch ? changeTypeMatch[1].trim().split('\n')[0].trim() : 'NEW_APP';
+    
     const appData = {
       name: name,
       description: descriptionText,
       appType: appType,
-      changeType: changeTypeMatch ? changeTypeMatch[1].trim().split('\n')[0].trim() : 'NEW_APP',
+      changeType: changeType,
       changeSummary: changeSummaryMatch ? changeSummaryMatch[1].trim() : '',
       files,
       dependencies,
       setupInstructions: setupMatch ? setupMatch[1].trim() : 'Run npm install && npm run dev',
       ...(validationWarnings && { validationWarnings })
     };
+    
+    perfTracker.checkpoint('response_prepared');
+    
+    // Log successful completion
+    analytics.logRequestComplete(requestId, {
+      modelUsed: modelName,
+      promptLength: estimatedPromptTokens,
+      responseLength: responseText.length,
+      validationRan: true,
+      validationIssuesFound: totalErrors,
+      validationIssuesFixed: autoFixedCount,
+      metadata: {
+        appName: name,
+        appType: appType,
+        changeType: changeType,
+        isModification: isModification,
+        hasImage: hasImage,
+        filesGenerated: files.length,
+        hasDependencies: Object.keys(dependencies).length > 0,
+      },
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      perfTracker.log('Full-App Route');
+    }
 
     return NextResponse.json(appData);
   } catch (error) {
     console.error('Error in full app builder route:', error);
+    
+    // Log error to analytics
+    analytics.logRequestError(
+      requestId,
+      error as Error,
+      categorizeError(error as Error)
+    );
+    
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate app' },
       { status: 500 }

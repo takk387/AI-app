@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
+import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 export async function POST(request: Request) {
+  // ============================================================================
+  // ANALYTICS - Phase 4: Track request metrics
+  // ============================================================================
+  const requestId = generateRequestId();
+  const perfTracker = new PerformanceTracker();
+  
   try {
     const { prompt, conversationHistory } = await request.json();
+    perfTracker.checkpoint('request_parsed');
+    
+    // Log request start after parsing body
+    analytics.logRequestStart('ai-builder', requestId, {
+      hasConversationHistory: !!conversationHistory,
+    });
 
     console.log('Environment check:', {
       hasKey: !!process.env.ANTHROPIC_API_KEY,
@@ -117,9 +130,11 @@ CRITICAL RULES:
     messages.push({ role: 'user', content: prompt });
 
     console.log('Generating component with Claude Sonnet 4.5...');
+    perfTracker.checkpoint('prompt_built');
 
+    const modelName = 'claude-sonnet-4-5-20250929';
     const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: modelName,
       max_tokens: 4096,
       temperature: 0.7,
       system: [
@@ -131,6 +146,19 @@ CRITICAL RULES:
       ],
       messages: messages,
     });
+    
+    perfTracker.checkpoint('ai_response_received');
+    
+    // Log token usage
+    if (completion.usage) {
+      analytics.logTokenUsage(
+        requestId,
+        completion.usage.input_tokens || 0,
+        completion.usage.output_tokens || 0,
+        // @ts-ignore - cache_read_input_tokens might not be in types yet
+        completion.usage.cache_read_input_tokens || 0
+      );
+    }
 
     const responseText = completion.content[0].type === 'text' ? completion.content[0].text : '';
     if (!responseText) {
@@ -147,6 +175,12 @@ CRITICAL RULES:
     if (!nameMatch || !explanationMatch || !codeMatch) {
       console.error('Failed to parse response');
       console.log('Response preview:', responseText.substring(0, 500));
+      
+      analytics.logRequestError(requestId, 'Failed to parse delimiter-based response', 'parsing_error', {
+        modelUsed: modelName,
+        responseLength: responseText.length,
+      });
+      
       throw new Error('Invalid response format from AI. Please try again.');
     }
 
@@ -160,6 +194,7 @@ CRITICAL RULES:
       name: aiResponse.name,
       codeLength: aiResponse.code.length
     });
+    perfTracker.checkpoint('response_parsed');
     
     // Ensure code is a string
     if (aiResponse.code && typeof aiResponse.code === 'object') {
@@ -213,6 +248,38 @@ CRITICAL RULES:
     } else {
       console.log(`✅ Component validated successfully - no errors found`);
     }
+    
+    perfTracker.checkpoint('validation_complete');
+    
+    // Log validation to analytics
+    const totalErrors = validation.valid ? 0 : validation.errors.length;
+    const fixedErrors = validationWarnings ? 
+      totalErrors - (validationWarnings.errors?.length || 0) : 
+      totalErrors;
+    
+    if (totalErrors > 0) {
+      analytics.logValidation(requestId, totalErrors, fixedErrors);
+    }
+    
+    perfTracker.checkpoint('response_prepared');
+    
+    // Log successful completion
+    analytics.logRequestComplete(requestId, {
+      modelUsed: modelName,
+      promptLength: Math.round(systemPrompt.length / 4),
+      responseLength: responseText.length,
+      validationRan: true,
+      validationIssuesFound: totalErrors,
+      validationIssuesFixed: fixedErrors,
+      metadata: {
+        componentName: aiResponse.name,
+        codeLength: aiResponse.code.length,
+      },
+    });
+    
+    if (process.env.NODE_ENV === 'development') {
+      perfTracker.log('AI Builder Route');
+    }
 
     return NextResponse.json({
       ...aiResponse,
@@ -221,6 +288,13 @@ CRITICAL RULES:
   } catch (error) {
     console.error('Error in AI builder route:', error);
     console.error('Error details:', JSON.stringify(error, null, 2));
+    
+    // Log error to analytics
+    analytics.logRequestError(
+      requestId,
+      error as Error,
+      categorizeError(error as Error)
+    );
     
     // If model not found, provide helpful error message
     if (error instanceof Error) {
