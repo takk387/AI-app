@@ -8,7 +8,9 @@
     "start": "next start",
     "test": "npx tsx tests/code-validator.test.ts && npx tsx tests/retry-logic.test.ts",
     "test:validator": "npx tsx tests/code-validator.test.ts",
-    "test:retry": "npx tsx tests/retry-logic.test.ts"
+    "test:retry": "npx tsx tests/retry-logic.test.ts",
+    "test:integration": "jest tests/integration-modify-route.test.ts",
+    "test:all": "npm test && npm run test:integration"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
