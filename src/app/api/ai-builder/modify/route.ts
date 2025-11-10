@@ -3,7 +3,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import { executeASTOperation, isASTOperation, type ASTOperation } from '@/utils/astExecutor';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildModifyPrompt } from '@/prompts/builder';
-import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
+import { analytics, generateRequestId, categorizeError, PerformanceTracker, type ErrorCategory } from '@/utils/analytics';
+import { 
+  generateRetryStrategy, 
+  type RetryContext, 
+  DEFAULT_RETRY_CONFIG,
+  type RetryConfig 
+} from '@/utils/retryLogic';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
