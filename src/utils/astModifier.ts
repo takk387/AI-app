@@ -15,6 +15,9 @@ import type {
   ModifyPropSpec,
   FunctionSpec,
   ConditionalWrapSpec,
+  ReplaceFunctionBodySpec,
+  DeleteElementSpec,
+  MergeImportsSpec,
   ModificationResult,
   ASTModifierOptions,
   NodePosition,
@@ -1297,6 +1300,405 @@ export class ASTModifier {
     }
     
     return this;
+  }
+
+  /**
+   * Replace the body of an existing function
+   */
+  replaceFunctionBody(spec: ReplaceFunctionBodySpec): this {
+    if (!this.tree) return this;
+    
+    // Find the function to modify
+    const functionNode = this.findFunction(spec.functionName);
+    if (!functionNode) {
+      console.warn(`Could not find function: ${spec.functionName}`);
+      return this;
+    }
+    
+    // Find the function body
+    let bodyNode = functionNode.childForFieldName('body');
+    if (!bodyNode) {
+      for (const child of functionNode.children) {
+        if (child.type === 'statement_block') {
+          bodyNode = child;
+          break;
+        }
+      }
+    }
+    
+    if (!bodyNode) {
+      console.warn(`Could not find body for function: ${spec.functionName}`);
+      return this;
+    }
+    
+    // Find the opening and closing braces
+    const openBrace = bodyNode.children.find(c => c.text === '{');
+    const closeBrace = bodyNode.children.find(c => c.text === '}');
+    
+    if (!openBrace || !closeBrace) {
+      console.warn('Could not find function braces');
+      return this;
+    }
+    
+    // Calculate indentation based on function position
+    const functionLineStart = this.originalCode.lastIndexOf('\n', functionNode.startIndex - 1) + 1;
+    const functionColumn = functionNode.startIndex - functionLineStart;
+    const baseIndentation = ' '.repeat(functionColumn);
+    
+    // Build new function body with proper indentation
+    const newBody = `{\n${baseIndentation}${this.options.indentation}${spec.newBody}\n${baseIndentation}}`;
+    
+    this.modifications.push({
+      type: 'replace',
+      start: bodyNode.startIndex,
+      end: bodyNode.endIndex,
+      newCode: newBody,
+      priority: 600,
+      description: `Replace body of function ${spec.functionName}`
+    });
+    
+    return this;
+  }
+  
+  /**
+   * Delete a JSX element or other code element
+   */
+  deleteElement(spec: DeleteElementSpec): this {
+    if (!this.tree) return this;
+    
+    // Find the element to delete
+    const element = this.findElementToDelete(spec);
+    if (!element) {
+      console.warn(`Could not find element to delete: ${spec.elementType}`);
+      return this;
+    }
+    
+    // Calculate deletion range including potential surrounding whitespace
+    let deleteStart = element.startIndex;
+    let deleteEnd = element.endIndex;
+    
+    // Check for leading whitespace/newline to include in deletion
+    while (deleteStart > 0 && (this.originalCode[deleteStart - 1] === ' ' || this.originalCode[deleteStart - 1] === '\t')) {
+      deleteStart--;
+    }
+    
+    // Check for leading newline
+    if (deleteStart > 0 && this.originalCode[deleteStart - 1] === '\n') {
+      deleteStart--;
+    }
+    
+    // Check for trailing newline to maintain formatting
+    if (deleteEnd < this.originalCode.length && this.originalCode[deleteEnd] === '\n') {
+      deleteEnd++;
+    }
+    
+    this.modifications.push({
+      type: 'delete',
+      start: deleteStart,
+      end: deleteEnd,
+      newCode: '',
+      priority: 400,
+      description: `Delete ${spec.elementType} element`
+    });
+    
+    return this;
+  }
+  
+  /**
+   * Merge imports from the same source
+   */
+  mergeImports(spec: MergeImportsSpec): this {
+    if (!this.tree) return this;
+    
+    const sourceImports = this.findImportsForSource(spec.source);
+    if (sourceImports.length <= 1) {
+      // Nothing to merge
+      return this;
+    }
+    
+    switch (spec.strategy) {
+      case 'combine':
+        this.combineImports(sourceImports, spec.source);
+        break;
+      case 'deduplicate':
+        this.deduplicateImports(sourceImports, spec.source);
+        break;
+      case 'organize':
+        this.organizeImports(sourceImports, spec.source);
+        break;
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Helper method to find a function by name
+   */
+  private findFunction(functionName: string): Parser.SyntaxNode | null {
+    if (!this.tree) return null;
+    
+    // Look for function declarations and arrow functions
+    const query = `
+      (function_declaration name: (identifier) @name (#eq? @name "${functionName}"))
+      (variable_declarator name: (identifier) @name value: (arrow_function) (#eq? @name "${functionName}"))
+      (variable_declarator name: (identifier) @name value: (function) (#eq? @name "${functionName}"))
+    `;
+    
+    try {
+      // Fallback: manually search the tree
+      return this.searchForFunction(this.tree.rootNode, functionName);
+    } catch {
+      return this.searchForFunction(this.tree.rootNode, functionName);
+    }
+  }
+  
+  /**
+   * Recursively search for a function by name
+   */
+  private searchForFunction(node: Parser.SyntaxNode, functionName: string): Parser.SyntaxNode | null {
+    // Check if this is a function declaration
+    if (node.type === 'function_declaration') {
+      const nameNode = node.childForFieldName('name');
+      if (nameNode && nameNode.text === functionName) {
+        return node;
+      }
+    }
+    
+    // Check if this is a variable declaration with arrow function
+    if (node.type === 'variable_declarator') {
+      const nameNode = node.childForFieldName('name');
+      const valueNode = node.childForFieldName('value');
+      if (nameNode && nameNode.text === functionName && 
+          valueNode && (valueNode.type === 'arrow_function' || valueNode.type === 'function')) {
+        return node;
+      }
+    }
+    
+    // Recursively search children
+    for (const child of node.children) {
+      const result = this.searchForFunction(child, functionName);
+      if (result) return result;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Helper method to find element to delete based on spec
+   */
+  private findElementToDelete(spec: DeleteElementSpec): Parser.SyntaxNode | null {
+    if (!this.tree) return null;
+    
+    return this.searchForElementToDelete(this.tree.rootNode, spec);
+  }
+  
+  /**
+   * Recursively search for element to delete
+   */
+  private searchForElementToDelete(node: Parser.SyntaxNode, spec: DeleteElementSpec): Parser.SyntaxNode | null {
+    // Check if this node matches our criteria
+    if (this.matchesElementSpec(node, spec)) {
+      return node;
+    }
+    
+    // Recursively search children
+    for (const child of node.children) {
+      const result = this.searchForElementToDelete(child, spec);
+      if (result) return result;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Check if a node matches the deletion spec
+   */
+  private matchesElementSpec(node: Parser.SyntaxNode, spec: DeleteElementSpec): boolean {
+    // Check element type
+    const nodeType = node.type;
+    
+    // For JSX elements, check if it matches the target
+    if (nodeType === 'jsx_element' || nodeType === 'jsx_self_closing_element') {
+      const openingElement = nodeType === 'jsx_element' ? 
+        node.children.find(c => c.type === 'jsx_opening_element') : node;
+      
+      if (openingElement) {
+        const tagName = openingElement.childForFieldName('name');
+        if (tagName && tagName.text === spec.elementType) {
+          // Check additional criteria if specified
+          if (spec.identifier) {
+            return this.hasMatchingIdentifier(node, spec.identifier);
+          }
+          if (spec.content) {
+            return node.text.includes(spec.content);
+          }
+          return true;
+        }
+      }
+    }
+    
+    // For other elements, check by type
+    if (nodeType.includes(spec.elementType) || nodeType === spec.elementType) {
+      if (spec.content) {
+        return node.text.includes(spec.content);
+      }
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Check if element has matching identifier (className, id, etc.)
+   */
+  private hasMatchingIdentifier(node: Parser.SyntaxNode, identifier: string): boolean {
+    // Look for className or id attributes
+    for (const child of node.children) {
+      if (child.type === 'jsx_opening_element' || child.type === 'jsx_self_closing_element') {
+        for (const attr of child.children) {
+          if (attr.type === 'jsx_attribute') {
+            const attrName = attr.childForFieldName('name');
+            const attrValue = attr.childForFieldName('value');
+            
+            if (attrName && (attrName.text === 'className' || attrName.text === 'id')) {
+              if (attrValue && attrValue.text.includes(identifier)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  
+  /**
+   * Find all imports for a specific source
+   */
+  private findImportsForSource(source: string): Parser.SyntaxNode[] {
+    if (!this.tree) return [];
+    
+    const imports: Parser.SyntaxNode[] = [];
+    const importNodes = this.parser.findImports(this.tree);
+    
+    for (const importNode of importNodes) {
+      const importInfo = this.parser.getImportInfo(importNode);
+      if (importInfo && importInfo.source === source) {
+        imports.push(importNode);
+      }
+    }
+    
+    return imports;
+  }
+  
+  /**
+   * Combine multiple imports into one
+   */
+  private combineImports(imports: Parser.SyntaxNode[], source: string): void {
+    if (imports.length <= 1) return;
+    
+    // Collect all import parts
+    let defaultImport: string | undefined;
+    let namespaceImport: string | undefined;
+    const namedImports: string[] = [];
+    
+    for (const importNode of imports) {
+      const importInfo = this.parser.getImportInfo(importNode);
+      if (importInfo) {
+        for (const imp of importInfo.imports) {
+          if (imp.isDefault && !defaultImport) {
+            defaultImport = imp.name;
+          } else if (imp.isNamespace && !namespaceImport) {
+            namespaceImport = imp.alias || imp.name;
+          } else if (!imp.isDefault && !imp.isNamespace) {
+            const importName = imp.alias ? `${imp.name} as ${imp.alias}` : imp.name;
+            if (!namedImports.includes(importName)) {
+              namedImports.push(importName);
+            }
+          }
+        }
+      }
+    }
+    
+    // Generate combined import
+    const combinedSpec: ImportSpec = { source };
+    if (defaultImport) combinedSpec.defaultImport = defaultImport;
+    if (namespaceImport) combinedSpec.namespaceImport = namespaceImport;
+    if (namedImports.length > 0) combinedSpec.namedImports = namedImports;
+    
+    const combinedImport = this.generateImportCode(combinedSpec);
+    
+    // Replace first import with combined version
+    this.modifications.push({
+      type: 'replace',
+      start: imports[0].startIndex,
+      end: imports[0].endIndex,
+      newCode: combinedImport,
+      priority: 1000,
+      description: `Combine imports from ${source}`
+    });
+    
+    // Delete the rest
+    for (let i = 1; i < imports.length; i++) {
+      const importNode = imports[i];
+      let deleteStart = importNode.startIndex;
+      let deleteEnd = importNode.endIndex;
+      
+      // Include trailing newline
+      if (deleteEnd < this.originalCode.length && this.originalCode[deleteEnd] === '\n') {
+        deleteEnd++;
+      }
+      
+      this.modifications.push({
+        type: 'delete',
+        start: deleteStart,
+        end: deleteEnd,
+        newCode: '',
+        priority: 999,
+        description: `Remove duplicate import from ${source}`
+      });
+    }
+  }
+  
+  /**
+   * Deduplicate imports (remove exact duplicates)
+   */
+  private deduplicateImports(imports: Parser.SyntaxNode[], source: string): void {
+    const seen = new Set<string>();
+    
+    for (const importNode of imports) {
+      const importText = importNode.text.trim();
+      
+      if (seen.has(importText)) {
+        // This is a duplicate, delete it
+        let deleteStart = importNode.startIndex;
+        let deleteEnd = importNode.endIndex;
+        
+        // Include trailing newline
+        if (deleteEnd < this.originalCode.length && this.originalCode[deleteEnd] === '\n') {
+          deleteEnd++;
+        }
+        
+        this.modifications.push({
+          type: 'delete',
+          start: deleteStart,
+          end: deleteEnd,
+          newCode: '',
+          priority: 999,
+          description: `Remove duplicate import from ${source}`
+        });
+      } else {
+        seen.add(importText);
+      }
+    }
+  }
+  
+  /**
+   * Organize imports (sort and group)
+   */
+  private organizeImports(imports: Parser.SyntaxNode[], source: string): void {
+    // For now, just combine them in a logical order
+    this.combineImports(imports, source);
   }
 
   /**

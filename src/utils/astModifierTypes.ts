@@ -166,6 +166,32 @@ export interface ConditionalWrapSpec {
 }
 
 /**
+ * Function body replacement specification
+ */
+export interface ReplaceFunctionBodySpec {
+  functionName: string;        // Function name to find (e.g., 'handleLogin')
+  newBody: string;            // New function body code
+  preserveParams?: boolean;    // Keep existing parameters (default: true)
+}
+
+/**
+ * Element deletion specification
+ */
+export interface DeleteElementSpec {
+  elementType: string;         // Type of element to delete (e.g., 'div', 'button')
+  identifier?: string;         // Optional identifier (className, id, etc.)
+  content?: string;            // Optional content to match
+}
+
+/**
+ * Import merge specification
+ */
+export interface MergeImportsSpec {
+  source: string;              // Source to merge imports for
+  strategy: 'combine' | 'deduplicate' | 'organize'; // Merge strategy
+}
+
+/**
  * Result of a modification operation
  */
 export interface ModificationResult {

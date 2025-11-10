@@ -107,6 +107,26 @@ export interface ASTAddReducerOperation {
   }>;
 }
 
+export interface ASTReplaceFunctionBodyOperation {
+  type: 'AST_REPLACE_FUNCTION_BODY';
+  functionName: string;      // Function name to find (e.g., 'handleLogin')
+  newBody: string;          // New function body code
+  preserveParams?: boolean; // Keep existing parameters (default: true)
+}
+
+export interface ASTDeleteElementOperation {
+  type: 'AST_DELETE_ELEMENT';
+  elementType: string;       // Type of element to delete (e.g., 'div', 'button')
+  identifier?: string;       // Optional identifier (className, id, etc.)
+  content?: string;          // Optional content to match
+}
+
+export interface ASTMergeImportsOperation {
+  type: 'AST_MERGE_IMPORTS';
+  source: string;            // Source to merge imports for
+  strategy: 'combine' | 'deduplicate' | 'organize'; // Merge strategy
+}
+
 export type ASTOperation =
   | ASTWrapElementOperation
   | ASTAddStateOperation
@@ -119,7 +139,10 @@ export type ASTOperation =
   | ASTAddRefOperation
   | ASTAddMemoOperation
   | ASTAddCallbackOperation
-  | ASTAddReducerOperation;
+  | ASTAddReducerOperation
+  | ASTReplaceFunctionBodyOperation
+  | ASTDeleteElementOperation
+  | ASTMergeImportsOperation;
 
 /**
  * Result of executing an AST operation
@@ -554,7 +577,7 @@ export async function executeASTOperation(
         modifier.addFunction({
           name: 'handleLogout',
           params: [],
-          body: `setIsLoggedIn(false);\n    ${includeEmail ? 'setEmail(\'\');\n    ' : ''}setPassword('');`,
+          body: `setIsLoggedIn(false);\\n    ${includeEmail ? "setEmail('');\\n    " : ""}setPassword('');`,
           isArrow: true
         });
         
@@ -630,6 +653,89 @@ export async function executeASTOperation(
             success: true,
             code: result.code,
             operation: 'Added authentication system with login/logout'
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_REPLACE_FUNCTION_BODY': {
+        // Build replace function body spec
+        const replaceFunctionSpec = {
+          functionName: operation.functionName,
+          newBody: operation.newBody,
+          preserveParams: operation.preserveParams
+        };
+        
+        // Replace function body
+        modifier.replaceFunctionBody(replaceFunctionSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Replaced body of function ${operation.functionName}`
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_DELETE_ELEMENT': {
+        // Build delete element spec
+        const deleteSpec = {
+          elementType: operation.elementType,
+          identifier: operation.identifier,
+          content: operation.content
+        };
+        
+        // Delete element
+        modifier.deleteElement(deleteSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Deleted ${operation.elementType} element`
+          };
+        } else {
+          return {
+            success: false,
+            errors: result.errors
+          };
+        }
+      }
+      
+      case 'AST_MERGE_IMPORTS': {
+        // Build merge imports spec
+        const mergeSpec = {
+          source: operation.source,
+          strategy: operation.strategy
+        };
+        
+        // Merge imports
+        modifier.mergeImports(mergeSpec);
+        
+        // Generate modified code
+        const result = await modifier.generate();
+        
+        if (result.success) {
+          return {
+            success: true,
+            code: result.code,
+            operation: `Merged imports from ${operation.source} using ${operation.strategy} strategy`
           };
         } else {
           return {
