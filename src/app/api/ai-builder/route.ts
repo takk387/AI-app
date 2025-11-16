@@ -234,7 +234,7 @@ CRITICAL RULES:
     console.log('🔍 Validating generated component...');
     
     // Assume TypeScript component (this route generates .tsx components)
-    const validation = validateGeneratedCode(aiResponse.code, 'Component.tsx');
+    const validation = await validateGeneratedCode(aiResponse.code, 'Component.tsx');
     
     let validationWarnings;
     
@@ -253,7 +253,7 @@ CRITICAL RULES:
         aiResponse.code = fixedCode;
         
         // Re-validate after fix
-        const revalidation = validateGeneratedCode(fixedCode, 'Component.tsx');
+        const revalidation = await validateGeneratedCode(fixedCode, 'Component.tsx');
         if (!revalidation.valid) {
           // Some errors couldn't be auto-fixed
           validationWarnings = {
