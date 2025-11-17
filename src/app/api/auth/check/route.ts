@@ -5,7 +5,7 @@ const SITE_PASSWORD = process.env.SITE_PASSWORD;
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const authCookie = cookieStore.get('site-auth');
 
     if (authCookie?.value === SITE_PASSWORD) {

@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
+  
+  // IMPORTANT: Disable Turbopack to maintain webpack compatibility
+  // Required for tree-sitter native bindings
+  turbo: false,
+  
   webpack: (config, { isServer }) => {
     // Fix for tree-sitter native bindings
     if (isServer) {
