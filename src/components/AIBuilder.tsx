@@ -1494,16 +1494,17 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
-      <header className="border-b border-white/10 bg-black/30 backdrop-blur-xl sticky top-0 z-50 shadow-lg shadow-black/20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <header className="border-b border-white/10 glass-panel sticky top-0 z-50 shadow-2xl shadow-black/40 animate-gradient">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 animate-gradient"></div>
+        <div className="max-w-7xl mx-auto px-6 py-4 relative">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all hover:scale-110">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/60 hover:shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-12 active:scale-95">
                 <span className="text-2xl">✨</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">AI App Builder</h1>
+                <h1 className="text-xl font-bold gradient-text bg-animate">AI App Builder</h1>
                 <p className="text-xs text-slate-400">Build complete apps through conversation</p>
               </div>
             </div>
@@ -1513,23 +1514,23 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
               {currentComponent && currentComponent.versions && currentComponent.versions.length > 0 && (
                 <button
                   onClick={() => setShowVersionHistory(!showVersionHistory)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-blue-500/20"
+                  className="px-4 py-2 rounded-lg glass-panel border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-110 active:scale-95 hover:shadow-xl hover:shadow-blue-500/40 hover:border-blue-500/50 group"
                 >
-                  <span>🕒</span>
+                  <span className="group-hover:scale-125 transition-transform duration-300">🕒</span>
                   <span className="hidden sm:inline">History</span>
-                  <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
                     {currentComponent.versions.length}
                   </span>
                 </button>
               )}
               <button
                 onClick={() => setShowLibrary(!showLibrary)}
-                className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-purple-500/20"
+                className="px-4 py-2 rounded-lg glass-panel border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-110 active:scale-95 hover:shadow-xl hover:shadow-purple-500/40 hover:border-purple-500/50 group"
               >
-                <span>📂</span>
+                <span className="group-hover:scale-125 transition-transform duration-300">📂</span>
                 <span className="hidden sm:inline">My Apps</span>
                 {components.length > 0 && (
-                  <span className="bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
                     {components.length}
                   </span>
                 )}
@@ -1596,15 +1597,15 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                     key={message.id}
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
                   >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-lg transition-all duration-300 hover:shadow-xl ${
-                        message.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : message.role === 'system'
-                          ? 'bg-purple-600/20 text-purple-200 border border-purple-500/30'
-                          : 'bg-white/10 text-slate-200 border border-white/10'
-                      }`}
-                    >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
+                      message.role === 'user'
+                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-blue-500/30 hover:shadow-blue-500/50'
+                        : message.role === 'system'
+                        ? 'glass-panel text-purple-200 border border-purple-500/40 shadow-purple-500/20 hover:shadow-purple-500/40 hover:border-purple-500/60'
+                        : 'glass-panel text-slate-200 border border-white/20 hover:border-white/30'
+                    }`}
+                  >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       {message.componentPreview && (
                         <button
@@ -1687,15 +1688,16 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="Describe what you want to build or change..."
                     disabled={isGenerating}
-                    className="flex-1 px-4 py-3 rounded-xl bg-slate-900/80 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/20"
+                    className="flex-1 px-4 py-3 rounded-xl glass-panel border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500/60 disabled:opacity-50 transition-all duration-300 focus:shadow-xl focus:shadow-blue-500/30 focus:scale-[1.01] hover:border-white/30"
                   />
                   <button
                     onClick={sendMessage}
                     disabled={isGenerating || (!userInput.trim() && !uploadedImage)}
                     data-send-button="true"
-                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500"
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold shadow-xl shadow-blue-500/40 hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 active:scale-95 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 relative overflow-hidden group"
                   >
-                    {isGenerating ? '⏳' : '🚀'}
+                    <span className="relative z-10">{isGenerating ? '⏳' : '🚀'}</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                   </button>
                 </div>
               </div>
