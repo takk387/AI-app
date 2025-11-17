@@ -15,6 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
     "@codesandbox/sandpack-react": "^2.20.0",
+    "@supabase/supabase-js": "^2.81.1",
     "jszip": "^3.10.1",
     "next": "^15.5.6",
     "openai": "^6.5.0",
