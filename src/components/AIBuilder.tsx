@@ -1806,16 +1806,6 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                   </div>
                 ) : (
                   <>
-                    {/* Component Info */}
-                    <div className="mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        {currentComponent.name}
-                      </h3>
-                      <p className="text-sm text-slate-400">
-                        {currentComponent.description}
-                      </p>
-                    </div>
-
                     {activeTab === 'preview' && (
                       <div className="h-[calc(100vh-200px)]">
                         <FullAppPreview appDataJson={currentComponent.code} />
