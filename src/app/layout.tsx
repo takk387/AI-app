@@ -19,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900`}>
+    <html lang="en">
+      <body className={`${inter.className} bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900`}>
         <AuthGuard>
           <div className="min-h-screen">
             {children}

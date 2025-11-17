@@ -1485,14 +1485,14 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
   // Prevent hydration errors by only rendering after client mount
   if (!isClient) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-slate-400">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
       <header className="border-b border-white/10 glass-panel sticky top-0 z-50 shadow-2xl shadow-black/40 animate-gradient">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 animate-gradient"></div>
