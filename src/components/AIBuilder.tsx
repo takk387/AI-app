@@ -9,6 +9,22 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/types/supabase';
 
+// Storage components and services
+import { 
+  FileCard, 
+  FileGrid, 
+  FileFilters, 
+  FileUploader, 
+  FileActions, 
+  StorageStats 
+} from './storage';
+import { StorageService } from '@/services/StorageService';
+import type { 
+  FileMetadata, 
+  StorageStats as StorageStatsType,
+  FileId 
+} from '@/types/storage';
+
 // Base44-inspired layout with conversation-first design + your dark colors
 
 interface ChatMessage {
@@ -178,6 +194,23 @@ export default function AIBuilder() {
   // Staging consent modal for new apps
   const [showNewAppStagingModal, setShowNewAppStagingModal] = useState(false);
   const [pendingNewAppRequest, setPendingNewAppRequest] = useState<string>('');
+
+  // Storage state
+  const [contentTab, setContentTab] = useState<'apps' | 'files'>('apps');
+  const [storageFiles, setStorageFiles] = useState<FileMetadata[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [fileSearchQuery, setFileSearchQuery] = useState('');
+  const [fileTypeFilter, setFileTypeFilter] = useState('all');
+  const [fileSortBy, setFileSortBy] = useState<'name' | 'size' | 'created_at' | 'updated_at'>('created_at');
+  const [fileSortOrder, setFileSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [storageStats, setStorageStats] = useState<StorageStatsType | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
+
+  // Initialize StorageService with browser client (reuse existing supabase client)
+  const supabase = createClient();
+  const [storageService] = useState(() => new StorageService(supabase));
 
   // Ref for auto-scrolling chat
   const chatContainerRef = useRef<HTMLDivElement>(null);
