@@ -545,7 +545,12 @@ export class StorageService {
     // Add timestamp to prevent collisions
     const timestamp = Date.now();
     const extension = getFileExtension(filename);
-    const nameWithoutExt = sanitized.substring(0, sanitized.length - extension.length - 1);
+    
+    // Calculate name without extension (only subtract dot if extension exists)
+    const nameWithoutExt = extension
+      ? sanitized.substring(0, sanitized.length - extension.length - 1)
+      : sanitized;
+    
     const uniqueFilename = extension
       ? `${nameWithoutExt}_${timestamp}.${extension}`
       : `${sanitized}_${timestamp}`;
