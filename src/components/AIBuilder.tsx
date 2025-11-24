@@ -2340,12 +2340,20 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 <FileFilters
                   searchQuery={fileSearchQuery}
                   onSearchChange={setFileSearchQuery}
-                  typeFilter={fileTypeFilter}
-                  onTypeFilterChange={setFileTypeFilter}
+                  selectedType={fileTypeFilter}
+                  onTypeChange={setFileTypeFilter}
                   sortBy={fileSortBy}
-                  onSortByChange={setFileSortBy}
                   sortOrder={fileSortOrder}
-                  onSortOrderChange={setFileSortOrder}
+                  onSortChange={(newSortBy, newSortOrder) => {
+                    setFileSortBy(newSortBy);
+                    setFileSortOrder(newSortOrder);
+                  }}
+                  onClearFilters={() => {
+                    setFileSearchQuery('');
+                    setFileTypeFilter('all');
+                    setFileSortBy('created_at');
+                    setFileSortOrder('desc');
+                  }}
                 />
               )}
             </div>
