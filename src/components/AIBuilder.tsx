@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import CodePreview from './CodePreview';
 import FullAppPreview from './FullAppPreview';
 import DiffPreview from './DiffPreview';
@@ -209,9 +209,11 @@ export default function AIBuilder() {
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
   const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
 
-  // Initialize StorageService with browser client (reuse existing supabase client)
-  const supabase = createClient();
-  const [storageService] = useState(() => new StorageService(supabase));
+  // Initialize StorageService with browser client (dependency injection pattern)
+  const [storageService] = useState(() => {
+    const supabase = createClient();
+    return new StorageService(supabase);
+  });
 
   // Ref for auto-scrolling chat
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -1694,7 +1696,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
   };
 
   // File management functions
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     if (!user) {
       setStorageFiles([]);
       return;
@@ -1757,7 +1759,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
     } finally {
       setLoadingFiles(false);
     }
-  };
+  }, [user, storageService, fileSortBy, fileSortOrder]);
 
   const handleFileUpload = async (files: File[]) => {
     if (!user || files.length === 0) return;
