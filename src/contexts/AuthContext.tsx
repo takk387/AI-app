@@ -36,33 +36,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    try {
-      const supabase = getSupabase();
-      
-      // Get initial session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }).catch(err => {
-        console.error("Error getting session:", err);
-        setLoading(false);
-      });
+    let mounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
+    
+    const initAuth = async () => {
+      try {
+        const supabase = getSupabase();
+        
+        // Get initial session with retry logic
+        let retries = 0;
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 500;
+        
+        const loadSession = async (): Promise<void> => {
+          try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+              console.error("Session error:", error);
+              throw error;
+            }
+            
+            if (mounted) {
+              // Set both user and loading together to minimize race conditions
+              setUser(session?.user ?? null);
+              // Small delay to ensure state is propagated before components react
+              await new Promise(resolve => setTimeout(resolve, 50));
+              setLoading(false);
+            }
+          } catch (err) {
+            console.error("Error getting session (attempt " + (retries + 1) + "):", err);
+            
+            // Retry if session loading fails
+            if (retries < MAX_RETRIES) {
+              retries++;
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+              return loadSession();
+            } else {
+              // After all retries, set loading to false
+              if (mounted) {
+                setLoading(false);
+              }
+            }
+          }
+        };
+        
+        await loadSession();
 
-      // Listen for auth changes
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      });
-
-      return () => subscription.unsubscribe();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to initialize authentication';
-      console.error("Auth initialization error:", message);
-      setError(message);
-      setLoading(false);
-    }
+        // Listen for auth changes
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (mounted) {
+            setUser(session?.user ?? null);
+            // Don't set loading to false here - it should already be false
+            // This prevents unnecessary re-renders
+          }
+        });
+        
+        subscription = data.subscription;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Failed to initialize authentication';
+        console.error("Auth initialization error:", message);
+        if (mounted) {
+          setError(message);
+          setLoading(false);
+        }
+      }
+    };
+    
+    initAuth();
+    
+    return () => {
+      mounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

@@ -411,9 +411,28 @@ export default function AIBuilder() {
 
   // Load components from Supabase database (with localStorage fallback)
   useEffect(() => {
+    let mounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 300;
+    
     const loadApps = async () => {
       // Wait for auth to finish loading
       if (authLoading) return;
+      
+      // If auth is done loading but user is null, wait and retry
+      // This handles the race condition where authLoading becomes false
+      // before the user state is fully populated
+      if (!user && retryCount < MAX_RETRIES) {
+        retryCount++;
+        console.log(`[LoadApps] No user found, retry ${retryCount}/${MAX_RETRIES}...`);
+        setTimeout(() => {
+          if (mounted) loadApps();
+        }, RETRY_DELAY);
+        return;
+      }
+      
+      if (!mounted) return;
       
       setLoadingApps(true);
       setDbSyncError(null);
@@ -503,6 +522,10 @@ export default function AIBuilder() {
     };
     
     loadApps();
+    
+    return () => {
+      mounted = false;
+    };
   }, [user, authLoading]);
 
   // Save components to localStorage
