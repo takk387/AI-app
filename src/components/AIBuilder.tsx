@@ -358,9 +358,10 @@ export default function AIBuilder() {
       const supabase = createClient();
       const dbData = componentToDb(component, user.id);
       
+      // Upsert without onConflict parameter - let Supabase handle it automatically
       const { error } = await supabase
         .from('generated_apps')
-        .upsert(dbData, { onConflict: 'id' });
+        .upsert(dbData);
       
       if (error) {
         console.error('Error saving to database:', error);
