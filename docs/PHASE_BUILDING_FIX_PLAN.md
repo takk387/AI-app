@@ -816,26 +816,26 @@ Improves user experience:
 ## 7. Implementation Checklist
 
 ### Backend
-- [ ] Add flexible regex parsing with fallback
-- [ ] Switch to streaming API in plan-phases route
-- [ ] Add timeout handling (60s for phase planning, 120s for Phase 1)
-- [ ] Add phase complexity estimation
-- [ ] Add auto-split for large phases
-- [ ] Add truncation detection
-- [ ] Add graceful recovery from truncation
-- [ ] Implement retry logic with correction prompts
-- [ ] Add phase-specific retry strategies to retryLogic.ts
-- [ ] Add phase context chain for Phase 2+
-- [ ] Add detailed error messages with context
-- [ ] Update system prompt for clearer format requirements
+- [x] Add flexible regex parsing with fallback
+- [x] Switch to streaming API in plan-phases route
+- [x] Add timeout handling (60s for phase planning, 120s for Phase 1)
+- [x] Add phase complexity estimation
+- [x] Add auto-split for large phases
+- [x] Add truncation detection
+- [x] Add graceful recovery from truncation
+- [x] Implement retry logic with correction prompts
+- [x] Add phase-specific retry strategies to retryLogic.ts
+- [x] Add phase context chain for Phase 2+
+- [x] Add detailed error messages with context
+- [x] Update system prompt for clearer format requirements
 
 ### Frontend
-- [ ] Replace modal with inline phase display
-- [ ] Add phase progress indicator
+- [x] Replace modal with inline phase display
+- [x] Add phase progress indicator
 - [ ] Simplify "start building" flow (one-click)
-- [ ] Pass phase context to backend
-- [ ] Show split notification when phase is auto-split
-- [ ] Show recovery progress on truncation
+- [x] Pass phase context to backend
+- [x] Show split notification when phase is auto-split
+- [x] Show recovery progress on truncation
 - [ ] Add better error messages for phase failures
 
 ### Testing

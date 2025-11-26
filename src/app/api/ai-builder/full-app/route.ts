@@ -11,7 +11,8 @@ import {
 import { 
   generateFullApp, 
   type GenerationContext, 
-  type GenerationError 
+  type GenerationError,
+  type PhaseContext
 } from './generation-logic';
 
 const anthropic = new Anthropic({
@@ -26,7 +27,19 @@ export async function POST(request: Request) {
   const perfTracker = new PerformanceTracker();
   
   try {
-    const { prompt, conversationHistory, isModification, currentAppName, image, hasImage } = await request.json();
+    const { 
+      prompt, 
+      conversationHistory, 
+      isModification, 
+      currentAppName, 
+      image, 
+      hasImage,
+      // NEW: Phase building context
+      isPhaseBuilding,
+      phaseContext: rawPhaseContext,
+      currentAppState
+    } = await request.json();
+    
     perfTracker.checkpoint('request_parsed');
     
     // Log request start after parsing body
@@ -34,6 +47,8 @@ export async function POST(request: Request) {
       hasConversationHistory: !!conversationHistory,
       isModification: !!isModification,
       hasImage: !!hasImage,
+      isPhaseBuilding: !!isPhaseBuilding,
+      phaseNumber: rawPhaseContext?.phaseNumber,
     });
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -151,6 +166,15 @@ MODIFICATION MODE for "${currentAppName}":
     const modelName = 'claude-sonnet-4-5-20250929';
     const maxRetries = DEFAULT_RETRY_CONFIG.maxAttempts;
     
+    // Build phase context if this is a phased build
+    const phaseContext: PhaseContext | undefined = isPhaseBuilding && rawPhaseContext ? {
+      phaseNumber: rawPhaseContext.phaseNumber || 1,
+      previousPhaseCode: rawPhaseContext.previousPhaseCode || null,
+      allPhases: rawPhaseContext.allPhases || [],
+      completedPhases: rawPhaseContext.completedPhases || [],
+      cumulativeFeatures: rawPhaseContext.cumulativeFeatures || [],
+    } : undefined;
+    
     let result: any;
     let lastError: GenerationError | null = null;
     let attemptNumber = 1;
@@ -164,6 +188,7 @@ MODIFICATION MODE for "${currentAppName}":
           messages,
           modelName,
           correctionPrompt: undefined, // Will be set below if retry
+          phaseContext, // Pass phase context for multi-phase builds
         };
         
         // If this is a retry, add correction prompt

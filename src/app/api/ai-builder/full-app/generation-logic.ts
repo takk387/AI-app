@@ -1,6 +1,7 @@
 /**
  * AI Generation Logic for Full-App Route
  * Phase 5.2: Extracted for retry support
+ * Phase Building Fix: Added size management, truncation detection, and recovery
  * 
  * Separates AI generation logic from route handler to enable intelligent retries
  */
@@ -9,12 +10,47 @@ import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import type { ErrorCategory } from '@/utils/analytics';
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
+
 export interface GenerationContext {
   anthropic: Anthropic;
   systemPrompt: string;
   messages: any[];
   modelName: string;
   correctionPrompt?: string;  // Added for retry with specific fixes
+  phaseContext?: PhaseContext; // Added for multi-phase builds
+}
+
+export interface PhaseContext {
+  phaseNumber: number;
+  previousPhaseCode: string | null;
+  allPhases: Phase[];
+  completedPhases: number[];
+  cumulativeFeatures: string[];
+}
+
+export interface Phase {
+  number: number;
+  name: string;
+  description: string;
+  features: string[];
+  status: 'pending' | 'building' | 'complete';
+}
+
+export interface PhaseComplexity {
+  level: 'small' | 'medium' | 'large' | 'too_large';
+  estimatedTokens: number;
+  shouldSplit: boolean;
+  complexFeatureCount: number;
+}
+
+export interface TruncationInfo {
+  isTruncated: boolean;
+  reason: string;
+  lastCompleteFile: string | null;
+  salvageableFiles: number;
 }
 
 export interface GenerationResult {
@@ -33,6 +69,7 @@ export interface GenerationResult {
   validationErrors: Array<{ file: string; errors: ValidationError[] }>;
   totalErrors: number;
   autoFixedCount: number;
+  truncationInfo?: TruncationInfo;
 }
 
 export interface GenerationError extends Error {
@@ -41,6 +78,334 @@ export interface GenerationError extends Error {
   validationDetails?: any;
 }
 
+// ============================================================================
+// FIX 3.3.1: PHASE COMPLEXITY ESTIMATION
+// ============================================================================
+
+const COMPLEX_FEATURE_PATTERNS = [
+  'authentication', 'auth', 'login', 'signup', 'sign up', 'register',
+  'database', 'backend', 'api', 'server',
+  'payment', 'stripe', 'checkout', 'billing',
+  'real-time', 'realtime', 'websocket', 'socket', 'chat',
+  'file upload', 'image upload', 'storage', 'upload',
+  'email', 'notification', 'push',
+  'dashboard', 'analytics', 'charts', 'graphs',
+  'search', 'filter', 'pagination',
+  'drag and drop', 'dnd', 'sortable',
+  'form validation', 'multi-step', 'wizard'
+];
+
+/**
+ * Estimate the complexity of a phase based on its features
+ */
+export function estimatePhaseComplexity(phase: Phase): PhaseComplexity {
+  const featureCount = phase.features.length;
+  
+  // Count complex features
+  const complexFeatures = phase.features.filter(f => 
+    COMPLEX_FEATURE_PATTERNS.some(pattern => 
+      f.toLowerCase().includes(pattern)
+    )
+  );
+  const complexFeatureCount = complexFeatures.length;
+  
+  // Estimation heuristics (tokens per feature)
+  const baseTokensPerFeature = 1500;
+  const complexFeatureMultiplier = 2.5;
+  
+  const estimatedTokens = 
+    (featureCount - complexFeatureCount) * baseTokensPerFeature +
+    complexFeatureCount * baseTokensPerFeature * complexFeatureMultiplier;
+  
+  // Determine complexity level
+  if (estimatedTokens > 14000 || featureCount > 5 || complexFeatureCount > 1) {
+    return { level: 'too_large', estimatedTokens, shouldSplit: true, complexFeatureCount };
+  }
+  if (estimatedTokens > 10000 || featureCount > 3 || complexFeatureCount > 0) {
+    return { level: 'large', estimatedTokens, shouldSplit: false, complexFeatureCount };
+  }
+  if (estimatedTokens > 5000 || featureCount > 2) {
+    return { level: 'medium', estimatedTokens, shouldSplit: false, complexFeatureCount };
+  }
+  return { level: 'small', estimatedTokens, shouldSplit: false, complexFeatureCount };
+}
+
+// ============================================================================
+// FIX 3.3.2: AUTO-SPLIT LARGE PHASES
+// ============================================================================
+
+/**
+ * Split a phase into smaller sub-phases if it's too large
+ */
+export function splitPhaseIfNeeded(phase: Phase): Phase[] {
+  const complexity = estimatePhaseComplexity(phase);
+  
+  if (!complexity.shouldSplit) {
+    return [phase];
+  }
+  
+  console.log(`⚠️ Phase ${phase.number} is too large (${complexity.estimatedTokens} estimated tokens). Splitting...`);
+  
+  // Separate complex features from simple ones
+  const complexFeatures: string[] = [];
+  const simpleFeatures: string[] = [];
+  
+  phase.features.forEach(feature => {
+    const isComplex = COMPLEX_FEATURE_PATTERNS.some(pattern => 
+      feature.toLowerCase().includes(pattern)
+    );
+    if (isComplex) {
+      complexFeatures.push(feature);
+    } else {
+      simpleFeatures.push(feature);
+    }
+  });
+  
+  const splitPhases: Phase[] = [];
+  
+  // First sub-phase: simple features (foundation)
+  if (simpleFeatures.length > 0) {
+    splitPhases.push({
+      number: phase.number,
+      name: `${phase.name} (Core)`,
+      description: `${phase.description} - Core functionality`,
+      features: simpleFeatures.slice(0, 3),
+      status: 'pending'
+    });
+    
+    // Additional simple features if any
+    if (simpleFeatures.length > 3) {
+      splitPhases.push({
+        number: phase.number + 0.5,
+        name: `${phase.name} (Extended)`,
+        description: `${phase.description} - Additional features`,
+        features: simpleFeatures.slice(3),
+        status: 'pending'
+      });
+    }
+  }
+  
+  // Complex features get their own phases
+  complexFeatures.forEach((feature, idx) => {
+    splitPhases.push({
+      number: phase.number + 0.5 + (idx + 1) * 0.1,
+      name: `${phase.name} (${feature.split(' ').slice(0, 2).join(' ')})`,
+      description: feature,
+      features: [feature],
+      status: 'pending'
+    });
+  });
+  
+  console.log(`✅ Split into ${splitPhases.length} sub-phases`);
+  return splitPhases;
+}
+
+// ============================================================================
+// FIX 3.3.3: TRUNCATION DETECTION
+// ============================================================================
+
+/**
+ * Detect if the response was truncated
+ */
+export function detectTruncation(
+  responseText: string, 
+  files: Array<{ path: string; content: string }>
+): TruncationInfo {
+  // Check 1: Missing end delimiter
+  if (responseText.includes('===FILE:') && !responseText.includes('===END===')) {
+    return {
+      isTruncated: true,
+      reason: 'Missing ===END=== delimiter - response cut off',
+      lastCompleteFile: findLastCompleteFile(files),
+      salvageableFiles: countCompleteFiles(files)
+    };
+  }
+  
+  // Check 2: Unbalanced braces in any file
+  for (const file of files) {
+    const openBraces = (file.content.match(/{/g) || []).length;
+    const closeBraces = (file.content.match(/}/g) || []).length;
+    
+    if (openBraces !== closeBraces && Math.abs(openBraces - closeBraces) > 2) {
+      return {
+        isTruncated: true,
+        reason: `Unbalanced braces in ${file.path} (${openBraces} open, ${closeBraces} close)`,
+        lastCompleteFile: findLastCompleteFile(files.slice(0, -1)),
+        salvageableFiles: countCompleteFiles(files.slice(0, -1))
+      };
+    }
+  }
+  
+  // Check 3: Incomplete JSX in TSX/JSX files
+  for (const file of files) {
+    if (file.path.endsWith('.tsx') || file.path.endsWith('.jsx')) {
+      const openTags = (file.content.match(/<[A-Z][a-zA-Z]*(?:\s|>)/g) || []).length;
+      const closeTags = (file.content.match(/<\/[A-Z][a-zA-Z]*>/g) || []).length;
+      const selfClosing = (file.content.match(/<[A-Z][a-zA-Z]*[^>]*\/>/g) || []).length;
+      
+      if (openTags > closeTags + selfClosing + 3) {
+        return {
+          isTruncated: true,
+          reason: `Incomplete JSX in ${file.path} (${openTags} opening tags, ${closeTags + selfClosing} closing)`,
+          lastCompleteFile: findLastCompleteFile(files.slice(0, -1)),
+          salvageableFiles: countCompleteFiles(files.slice(0, -1))
+        };
+      }
+    }
+  }
+  
+  // Check 4: File ends mid-string
+  for (const file of files) {
+    const lastLine = file.content.trim().split('\n').pop() || '';
+    const unbalancedQuotes = (lastLine.match(/"/g) || []).length % 2 !== 0 ||
+                            (lastLine.match(/'/g) || []).length % 2 !== 0 ||
+                            (lastLine.match(/`/g) || []).length % 2 !== 0;
+    
+    if (unbalancedQuotes && !lastLine.endsWith(';') && !lastLine.endsWith('}') && !lastLine.endsWith('>')) {
+      return {
+        isTruncated: true,
+        reason: `File ${file.path} ends mid-string or mid-statement`,
+        lastCompleteFile: findLastCompleteFile(files.slice(0, -1)),
+        salvageableFiles: countCompleteFiles(files.slice(0, -1))
+      };
+    }
+  }
+  
+  return { isTruncated: false, reason: '', lastCompleteFile: null, salvageableFiles: files.length };
+}
+
+function findLastCompleteFile(files: Array<{ path: string; content: string }>): string | null {
+  for (let i = files.length - 1; i >= 0; i--) {
+    const file = files[i];
+    const openBraces = (file.content.match(/{/g) || []).length;
+    const closeBraces = (file.content.match(/}/g) || []).length;
+    if (Math.abs(openBraces - closeBraces) <= 1) {
+      return file.path;
+    }
+  }
+  return files.length > 0 ? files[0].path : null;
+}
+
+function countCompleteFiles(files: Array<{ path: string; content: string }>): number {
+  return files.filter(file => {
+    const openBraces = (file.content.match(/{/g) || []).length;
+    const closeBraces = (file.content.match(/}/g) || []).length;
+    return Math.abs(openBraces - closeBraces) <= 1;
+  }).length;
+}
+
+// ============================================================================
+// FIX 3.3.5: DYNAMIC TOKEN BUDGET
+// ============================================================================
+
+interface TokenBudget {
+  max_tokens: number;
+  thinking_budget: number;
+  timeout: number;
+}
+
+const TOKEN_BUDGETS = {
+  // Phase 1 needs more tokens (building foundation)
+  foundation: {
+    max_tokens: 16384,
+    thinking_budget: 16000,
+    timeout: 120000  // 2 minutes
+  },
+  // Later phases need less (additive changes)
+  additive: {
+    max_tokens: 12000,
+    thinking_budget: 10000,
+    timeout: 90000   // 1.5 minutes
+  },
+  // Small modifications
+  small: {
+    max_tokens: 8000,
+    thinking_budget: 8000,
+    timeout: 60000   // 1 minute
+  }
+};
+
+/**
+ * Get appropriate token budget based on phase number and complexity
+ */
+export function getTokenBudget(phaseNumber: number, complexity?: PhaseComplexity): TokenBudget {
+  if (phaseNumber === 1) {
+    return TOKEN_BUDGETS.foundation;
+  }
+  
+  if (complexity) {
+    if (complexity.level === 'small') {
+      return TOKEN_BUDGETS.small;
+    }
+    if (complexity.level === 'too_large' || complexity.level === 'large') {
+      return TOKEN_BUDGETS.foundation;
+    }
+  }
+  
+  return TOKEN_BUDGETS.additive;
+}
+
+// ============================================================================
+// FIX 3.6: PHASE CONTINUATION LOGIC (CONTEXT CHAIN)
+// ============================================================================
+
+/**
+ * Build a prompt that includes context from previous phases
+ */
+export function buildPhasePrompt(phase: Phase, context: PhaseContext): string {
+  if (context.phaseNumber === 1 || !context.previousPhaseCode) {
+    // First phase: Build from scratch
+    return `Build ${phase.name}: ${phase.description}
+    
+Features to implement:
+${phase.features.map(f => `- ${f}`).join('\n')}
+
+This is Phase 1 - create the foundation app with these features.`;
+  }
+  
+  // Subsequent phases: Build on existing code
+  try {
+    const existingApp = JSON.parse(context.previousPhaseCode);
+    const existingFiles = existingApp.files?.map((f: any) => f.path).join(', ') || 'none';
+    
+    return `Continue building the app. This is Phase ${context.phaseNumber}.
+
+EXISTING APP (from Phase ${context.phaseNumber - 1}):
+- Files: ${existingFiles}
+- Features already implemented: ${context.cumulativeFeatures.join(', ') || 'foundation'}
+
+YOUR TASK FOR THIS PHASE:
+${phase.name}: ${phase.description}
+
+NEW FEATURES TO ADD:
+${phase.features.map(f => `- ${f}`).join('\n')}
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT recreate existing files unless modifying them
+2. PRESERVE all existing functionality
+3. ADD the new features incrementally
+4. Reference existing components/functions where appropriate
+
+EXISTING CODE FOR REFERENCE (first 3 files):
+${existingApp.files?.slice(0, 3).map((f: any) => `
+=== ${f.path} ===
+${f.content.substring(0, 1500)}${f.content.length > 1500 ? '...(truncated)' : ''}
+`).join('\n') || '(no existing files)'}`;
+  } catch (e) {
+    // Fallback if parsing fails
+    return `Build ${phase.name}: ${phase.description}
+    
+Features to implement:
+${phase.features.map(f => `- ${f}`).join('\n')}
+
+This is Phase ${context.phaseNumber} - add these features to the existing app.`;
+  }
+}
+
+// ============================================================================
+// MAIN GENERATION FUNCTION
+// ============================================================================
+
 /**
  * Generate full application from AI with validation
  */
@@ -48,7 +413,11 @@ export async function generateFullApp(
   context: GenerationContext,
   attemptNumber: number = 1
 ): Promise<GenerationResult> {
-  const { anthropic, systemPrompt, messages, modelName, correctionPrompt } = context;
+  const { anthropic, systemPrompt, messages, modelName, correctionPrompt, phaseContext } = context;
+  
+  // Determine token budget based on phase
+  const phaseNumber = phaseContext?.phaseNumber || 1;
+  const tokenBudget = getTokenBudget(phaseNumber);
   
   // Add correction prompt if this is a retry
   const enhancedMessages = correctionPrompt && attemptNumber > 1
@@ -57,17 +426,18 @@ export async function generateFullApp(
   
   console.log(attemptNumber > 1 
     ? `🔄 Retry attempt ${attemptNumber} with correction prompt`
-    : 'Generating full app with Claude Sonnet 4.5...'
+    : `Generating ${phaseNumber === 1 ? 'foundation' : `phase ${phaseNumber}`} with Claude Sonnet 4.5...`
   );
+  console.log(`📊 Token budget: max=${tokenBudget.max_tokens}, thinking=${tokenBudget.thinking_budget}, timeout=${tokenBudget.timeout}ms`);
   
-  // Use streaming API
+  // Use streaming API with dynamic token budget
   const stream = await anthropic.messages.stream({
     model: modelName,
-    max_tokens: 16384,
+    max_tokens: tokenBudget.max_tokens,
     temperature: 1,  // Required for extended thinking
     thinking: {
       type: 'enabled',
-      budget_tokens: 16000
+      budget_tokens: tokenBudget.thinking_budget
     },
     system: [
       {
@@ -79,19 +449,20 @@ export async function generateFullApp(
     messages: enhancedMessages
   });
   
-  // Collect response with timeout
+  // Collect response with dynamic timeout
   let responseText = '';
   let inputTokens = 0;
   let outputTokens = 0;
   let cachedTokens = 0;
-  const timeout = 90000; // 90 seconds (increased for extended thinking on full apps)
+  const timeout = tokenBudget.timeout;
   const startTime = Date.now();
   
   try {
     for await (const chunk of stream) {
       if (Date.now() - startTime > timeout) {
-        const error = new Error('AI response timeout - the full app generation was taking too long. Please try a simpler request or try again.') as GenerationError;
+        const error = new Error(`AI response timeout after ${timeout/1000}s - the generation was taking too long. Please try a simpler request or try again.`) as GenerationError;
         error.category = 'timeout_error';
+        error.originalResponse = responseText; // Include partial response for recovery
         throw error;
       }
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
@@ -107,6 +478,10 @@ export async function generateFullApp(
       }
     }
   } catch (streamError) {
+    // If it's already our timeout error, re-throw
+    if (streamError instanceof Error && streamError.message.includes('timeout')) {
+      throw streamError;
+    }
     console.error('Streaming error:', streamError);
     const error = new Error(streamError instanceof Error ? streamError.message : 'Failed to receive AI response') as GenerationError;
     error.category = 'ai_error';
@@ -114,10 +489,12 @@ export async function generateFullApp(
   }
   
   console.log('Generated response length:', responseText.length, 'chars');
-  console.log('Estimated output tokens:', outputTokens);
+  console.log('Output tokens:', outputTokens);
   
-  if (outputTokens > 15000) {
-    console.warn('⚠️ Response approaching 16K token limit - may be truncated!');
+  // Warn if approaching token limit
+  const tokenLimitPercentage = (outputTokens / tokenBudget.max_tokens) * 100;
+  if (tokenLimitPercentage > 90) {
+    console.warn(`⚠️ Response used ${tokenLimitPercentage.toFixed(1)}% of token limit - may be truncated!`);
   }
   
   if (!responseText) {
@@ -171,6 +548,26 @@ export async function generateFullApp(
     error.category = 'parsing_error';
     error.originalResponse = responseText;
     throw error;
+  }
+
+  // ============================================================================
+  // FIX 3.3.3: TRUNCATION DETECTION
+  // ============================================================================
+  
+  const truncationInfo = detectTruncation(responseText, files);
+  
+  if (truncationInfo.isTruncated) {
+    console.warn(`⚠️ TRUNCATION DETECTED: ${truncationInfo.reason}`);
+    console.warn(`   Salvageable files: ${truncationInfo.salvageableFiles}/${files.length}`);
+    console.warn(`   Last complete file: ${truncationInfo.lastCompleteFile || 'none'}`);
+    
+    // Filter to only complete files
+    if (truncationInfo.salvageableFiles > 0 && truncationInfo.salvageableFiles < files.length) {
+      const completeFiles = files.slice(0, truncationInfo.salvageableFiles);
+      console.log(`📁 Keeping ${completeFiles.length} complete files, discarding ${files.length - completeFiles.length} incomplete`);
+      files.length = 0;
+      files.push(...completeFiles);
+    }
   }
 
   // ============================================================================
@@ -266,5 +663,6 @@ export async function generateFullApp(
     validationErrors,
     totalErrors,
     autoFixedCount,
+    truncationInfo: truncationInfo.isTruncated ? truncationInfo : undefined,
   };
 }

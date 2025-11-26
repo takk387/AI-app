@@ -118,6 +118,76 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
   };
 }
 
+// ============================================================================
+// FIX 4.1: INLINE PHASE PROGRESS COMPONENT
+// ============================================================================
+
+interface PhaseProgressCardProps {
+  phases: Array<{
+    number: number;
+    name: string;
+    description: string;
+    features: string[];
+    status: 'pending' | 'building' | 'complete';
+  }>;
+  currentPhase: number;
+  onBuildPhase?: (phase: any) => void;
+}
+
+const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({ phases, currentPhase, onBuildPhase }) => (
+  <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 border border-purple-500/30 mb-4">
+    <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+      <span>🏗️</span> Build Plan ({phases.length} Phases)
+    </h3>
+    <div className="space-y-2">
+      {phases.map((phase, idx) => (
+        <div 
+          key={idx}
+          className={`p-3 rounded-lg border transition-all ${
+            phase.status === 'complete' 
+              ? 'bg-green-500/20 border-green-500/30' 
+              : phase.status === 'building'
+              ? 'bg-blue-500/20 border-blue-500/30 animate-pulse'
+              : 'bg-white/5 border-white/10 hover:bg-white/10'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-white font-medium text-sm">
+              Phase {phase.number}: {phase.name}
+            </span>
+            <div className="flex items-center gap-2">
+              {phase.status === 'pending' && idx === currentPhase && onBuildPhase && (
+                <button
+                  onClick={() => onBuildPhase(phase)}
+                  className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-all hover:scale-105"
+                >
+                  Build
+                </button>
+              )}
+              {phase.status === 'complete' && <span className="text-green-400">✅</span>}
+              {phase.status === 'building' && <span className="text-blue-400 animate-spin">⏳</span>}
+              {phase.status === 'pending' && idx !== currentPhase && <span className="text-slate-500">⏸️</span>}
+            </div>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">{phase.description}</p>
+          {phase.features && phase.features.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {phase.features.slice(0, 3).map((feature, fIdx) => (
+                <span key={fIdx} className="text-xs bg-white/10 px-2 py-0.5 rounded text-slate-300">
+                  {feature.length > 25 ? feature.substring(0, 25) + '...' : feature}
+                </span>
+              ))}
+              {phase.features.length > 3 && (
+                <span className="text-xs text-slate-500">+{phase.features.length - 3} more</span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export default function AIBuilder() {
   // Authentication
   const { user, loading: authLoading, sessionReady } = useAuth();
@@ -219,6 +289,47 @@ export default function AIBuilder() {
 
   // Ref for auto-scrolling chat
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // ============================================================================
+  // FIX 4.3: NOTIFICATION HELPER FUNCTIONS
+  // ============================================================================
+  
+  // Show when phase is auto-split
+  const showPhaseSplitNotification = useCallback((originalPhase: any, splitPhases: any[]) => {
+    const notification: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: `⚠️ **Phase ${originalPhase.number} Split**\n\nThe phase was too large, so I've split it into ${splitPhases.length} parts:\n${splitPhases.map((p: any) => `- ${p.name}`).join('\n')}\n\nThis ensures each part generates complete, working code.`,
+      timestamp: new Date().toISOString()
+    };
+    setChatMessages(prev => [...prev, notification]);
+  }, []);
+
+  // Show truncation recovery progress
+  const showRecoveryProgress = useCallback((truncationReason: string, recovering: boolean) => {
+    const notification: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: recovering 
+        ? `🔄 **Recovery in Progress**\n\nDetected: ${truncationReason}\n\nSalvaging completed files and retrying remaining features...`
+        : `❌ **Generation Incomplete**\n\n${truncationReason}\n\nTrying a smaller approach...`,
+      timestamp: new Date().toISOString()
+    };
+    setChatMessages(prev => [...prev, notification]);
+  }, []);
+
+  // Show phase completion notification
+  const showPhaseCompleteNotification = useCallback((phaseNumber: number, totalPhases: number) => {
+    const notification: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: phaseNumber === totalPhases
+        ? `🎉 **All ${totalPhases} Phases Complete!**\n\nYour app is fully built. Test it out and let me know if you'd like any adjustments!`
+        : `✅ **Phase ${phaseNumber} Complete!**\n\nReady for Phase ${phaseNumber + 1}. Type **'continue'** or **'next'** to proceed.`,
+      timestamp: new Date().toISOString()
+    };
+    setChatMessages(prev => [...prev, notification]);
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -2129,6 +2240,27 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
 
               {/* Chat Messages */}
               <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* FIX 4.1: Inline Phase Progress Display */}
+                {newAppStagePlan && newAppStagePlan.phases && newAppStagePlan.phases.length > 0 && (
+                  <PhaseProgressCard
+                    phases={newAppStagePlan.phases}
+                    currentPhase={newAppStagePlan.currentPhase - 1}
+                    onBuildPhase={(phase) => {
+                      // Build the phase when clicked
+                      const buildPrompt = `Build ${phase.name}: ${phase.description}. Features to implement: ${phase.features.join(', ')}`;
+                      setUserInput(buildPrompt);
+                      // Update status to building
+                      setNewAppStagePlan(prev => prev ? {
+                        ...prev,
+                        currentPhase: phase.number,
+                        phases: prev.phases.map(p => 
+                          p.number === phase.number ? { ...p, status: 'building' as const } : p
+                        )
+                      } : null);
+                    }}
+                  />
+                )}
+                
                 {chatMessages.map((message) => (
                   <div
                     key={message.id}

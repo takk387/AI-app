@@ -32,6 +32,15 @@ export interface RetryResult {
   retryDelay?: number;        // Milliseconds to wait before retry
 }
 
+// Phase-specific error categories
+export type PhaseErrorCategory = ErrorCategory | 'phase_extraction_error' | 'phase_too_large' | 'phase_truncation';
+
+export interface PhaseRetryContext extends RetryContext {
+  errorCategory: PhaseErrorCategory;
+  phaseNumber?: number;
+  estimatedTokens?: number;
+}
+
 // ============================================================================
 // RETRY DECISION ENGINE
 // ============================================================================
@@ -437,4 +446,144 @@ Your searchFor must be EXACTLY:
 Notice: Same indentation, same spacing, same everything.
 
 Now retry with EXACT pattern matching:`;
+}
+
+// ============================================================================
+// PHASE-SPECIFIC RETRY STRATEGIES (Fix 3.4)
+// ============================================================================
+
+/**
+ * Generate phase extraction error correction prompt
+ */
+export function generatePhaseExtractionPrompt(context: PhaseRetryContext): string {
+  return `
+⚠️ PREVIOUS ATTEMPT FAILED - PHASE EXTRACTION ERROR
+
+**Error**: ${context.previousError}
+
+**Problem**: Your phase plan response could not be parsed.
+
+**REQUIRED FORMAT** (follow EXACTLY):
+
+===TOTAL_PHASES===
+[number between 2 and 5]
+===PHASE:1===
+NAME: [5 words max]
+DESCRIPTION: [One sentence, 20 words max]
+FEATURES:
+- [Feature 1]
+- [Feature 2]
+===PHASE:2===
+NAME: [5 words max]
+DESCRIPTION: [One sentence, 20 words max]
+FEATURES:
+- [Feature 1]
+===END_PHASES===
+
+**CRITICAL RULES**:
+1. ✅ Start IMMEDIATELY with ===TOTAL_PHASES=== (no preamble)
+2. ✅ Use EXACT delimiters shown above
+3. ✅ Keep NAME short (5 words max)
+4. ✅ Keep DESCRIPTION to ONE sentence
+5. ✅ Features as bullet points with "-"
+6. ✅ End with ===END_PHASES===
+
+Now, please retry with the EXACT format above:`;
+}
+
+/**
+ * Generate phase too large correction prompt
+ */
+export function generatePhaseTooLargePrompt(context: PhaseRetryContext): string {
+  return `
+⚠️ PREVIOUS ATTEMPT FAILED - PHASE TOO LARGE
+
+**Error**: ${context.previousError}
+${context.phaseNumber ? `**Phase**: ${context.phaseNumber}` : ''}
+${context.estimatedTokens ? `**Estimated Tokens**: ${context.estimatedTokens}` : ''}
+
+**Problem**: The phase has too many features and will exceed token limits.
+
+**SOLUTION**: Break this phase into smaller sub-phases.
+
+**RULES FOR SPLITTING**:
+1. ✅ Maximum 3-4 features per phase
+2. ✅ Complex features (auth, database, payments) should be isolated
+3. ✅ Each phase must produce working code
+4. ✅ Phase 1 must be a functional foundation
+
+**EXAMPLE SPLIT**:
+Original: "Build e-commerce with auth, products, cart, checkout, payments"
+
+Better:
+- Phase 1: Basic product listing and display
+- Phase 2: Shopping cart functionality  
+- Phase 3: User authentication
+- Phase 4: Checkout and payments
+
+Now, please provide a phase plan with smaller, focused phases:`;
+}
+
+/**
+ * Generate phase truncation recovery prompt
+ */
+export function generatePhaseTruncationPrompt(context: PhaseRetryContext): string {
+  return `
+⚠️ PREVIOUS ATTEMPT FAILED - RESPONSE TRUNCATED
+
+**Error**: ${context.previousError}
+${context.phaseNumber ? `**Phase**: ${context.phaseNumber}` : ''}
+
+**Problem**: The generated code was cut off before completion.
+
+**RECOVERY STRATEGY**:
+1. ✅ Generate FEWER files this time
+2. ✅ Focus on the CORE functionality only
+3. ✅ Defer secondary features to next phase
+4. ✅ Keep each file under 200 lines
+
+**WHAT TO PRIORITIZE**:
+- Main component/page file
+- Essential styles
+- Core logic
+
+**WHAT TO DEFER**:
+- Utility functions (can add later)
+- Animation/transitions
+- Edge case handling
+- Comments/documentation
+
+Now, please retry with a MORE FOCUSED output:`;
+}
+
+/**
+ * Generate retry strategy for phase-specific errors
+ */
+export function generatePhaseRetryStrategy(context: PhaseRetryContext): RetryResult {
+  // Check if retry is allowed
+  if (context.attemptNumber >= 2) {
+    return { shouldRetry: false };
+  }
+  
+  let correctionPrompt: string;
+  
+  switch (context.errorCategory) {
+    case 'phase_extraction_error':
+      correctionPrompt = generatePhaseExtractionPrompt(context);
+      break;
+    case 'phase_too_large':
+      correctionPrompt = generatePhaseTooLargePrompt(context);
+      break;
+    case 'phase_truncation':
+      correctionPrompt = generatePhaseTruncationPrompt(context);
+      break;
+    default:
+      correctionPrompt = generateGenericErrorPrompt(context);
+  }
+  
+  return {
+    shouldRetry: true,
+    correctionPrompt,
+    retryDelay: 500,
+  };
 }
