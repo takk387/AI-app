@@ -2197,6 +2197,21 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 </button>
               )}
               <button
+                onClick={() => {
+                  setCurrentComponent(null);
+                  setChatMessages([{
+                    role: 'assistant',
+                    content: "👋 Hi! I'm your AI App Builder. Tell me what app you want to create, and I'll build it for you through conversation.\n\n✨ **What would you like to build today?**"
+                  }]);
+                  setGeneratedCode('');
+                  setActiveFile(null);
+                }}
+                className="px-4 py-2 rounded-lg glass-panel border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-110 active:scale-95 hover:shadow-xl hover:shadow-green-500/40 hover:border-green-500/50 group"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">✨</span>
+                <span className="hidden sm:inline">New App</span>
+              </button>
+              <button
                 onClick={() => setShowLibrary(!showLibrary)}
                 className="px-4 py-2 rounded-lg glass-panel border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-110 active:scale-95 hover:shadow-xl hover:shadow-purple-500/40 hover:border-purple-500/50 group"
               >
