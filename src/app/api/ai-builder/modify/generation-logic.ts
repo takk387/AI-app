@@ -58,7 +58,7 @@ export async function generateModifications(
   // Use streaming for better handling with timeout
   const stream = await anthropic.messages.stream({
     model: modelName,
-    max_tokens: 4096,
+    max_tokens: 20000,  // Must be > budget_tokens (10000 thinking + 10000 response)
     temperature: 1,  // Required for extended thinking
     thinking: {
       type: 'enabled',

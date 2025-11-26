@@ -103,7 +103,7 @@ You are NOT generating full apps in this mode - just having a helpful conversati
 
     const completion = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 4096,
+      max_tokens: 10000,  // Must be > budget_tokens (5000 thinking + 5000 response)
       temperature: 1,  // Required for extended thinking
       thinking: {
         type: 'enabled',

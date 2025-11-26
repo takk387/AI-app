@@ -306,20 +306,21 @@ interface TokenBudget {
 
 const TOKEN_BUDGETS = {
   // Phase 1 needs more tokens (building foundation)
+  // max_tokens must be > thinking_budget to leave room for response
   foundation: {
-    max_tokens: 16384,
+    max_tokens: 32000,    // 16000 thinking + 16000 response
     thinking_budget: 16000,
     timeout: 120000  // 2 minutes
   },
   // Later phases need less (additive changes)
   additive: {
-    max_tokens: 12000,
+    max_tokens: 20000,    // 10000 thinking + 10000 response
     thinking_budget: 10000,
     timeout: 90000   // 1.5 minutes
   },
   // Small modifications
   small: {
-    max_tokens: 8000,
+    max_tokens: 16000,    // 8000 thinking + 8000 response
     thinking_budget: 8000,
     timeout: 60000   // 1 minute
   }

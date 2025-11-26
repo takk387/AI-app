@@ -137,7 +137,7 @@ CRITICAL RULES:
     // Use streaming for better responsiveness and timeout handling
     const stream = await anthropic.messages.stream({
       model: modelName,
-      max_tokens: 4096,
+      max_tokens: 16000,  // Must be > budget_tokens (8000 thinking + 8000 response)
       temperature: 1,  // Required for extended thinking
       thinking: {
         type: 'enabled',
