@@ -47,6 +47,23 @@ interface AppVersion {
   changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE';
 }
 
+// Shared type definitions for phase building
+type PhaseStatus = 'pending' | 'building' | 'complete';
+
+interface Phase {
+  number: number;
+  name: string;
+  description: string;
+  features: string[];
+  status: PhaseStatus;
+}
+
+interface StagePlan {
+  totalPhases: number;
+  currentPhase: number;
+  phases: Phase[];
+}
+
 interface GeneratedComponent {
   id: string;
   name: string;
@@ -55,19 +72,9 @@ interface GeneratedComponent {
   timestamp: string;
   isFavorite: boolean;
   conversationHistory: ChatMessage[];
-  versions?: AppVersion[]; // Version history
-  // FIX: Persist phase build progress to survive page refresh
-  stagePlan?: {
-    totalPhases: number;
-    currentPhase: number;
-    phases: Array<{
-      number: number;
-      name: string;
-      description: string;
-      features: string[];
-      status: 'pending' | 'building' | 'complete';
-    }>;
-  } | null;
+  versions?: AppVersion[];
+  /** Phase build progress - null when complete or not applicable */
+  stagePlan?: StagePlan | null;
 }
 
 interface PendingChange {
@@ -118,8 +125,17 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
   };
 }
 
+// Type for the metadata stored in database
+interface DbMetadata {
+  isFavorite?: boolean;
+  conversationHistory?: ChatMessage[];
+  versions?: AppVersion[];
+  timestamp?: string;
+  stagePlan?: StagePlan | null;
+}
+
 function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
-  const metadata = dbApp.metadata as any || {};
+  const metadata = (dbApp.metadata as DbMetadata) || {};
   return {
     id: dbApp.id,
     name: dbApp.title,
@@ -129,8 +145,7 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
     isFavorite: metadata.isFavorite || false,
     conversationHistory: metadata.conversationHistory || [],
     versions: metadata.versions || [],
-    // FIX: Restore phase build plan from Supabase
-    stagePlan: metadata.stagePlan || null
+    stagePlan: metadata.stagePlan ?? null
   };
 }
 
@@ -139,15 +154,9 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
 // ============================================================================
 
 interface PhaseProgressCardProps {
-  phases: Array<{
-    number: number;
-    name: string;
-    description: string;
-    features: string[];
-    status: 'pending' | 'building' | 'complete';
-  }>;
+  phases: Phase[];
   currentPhase: number;
-  onBuildPhase?: (phase: any) => void;
+  onBuildPhase?: (phase: Phase) => void;
 }
 
 const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({ phases, currentPhase, onBuildPhase }) => (
@@ -266,18 +275,8 @@ export default function AIBuilder() {
     nextStages: string[];
   } | null>(null);
 
-  // NEW: Stage plan tracking for new app builds
-  const [newAppStagePlan, setNewAppStagePlan] = useState<{
-    totalPhases: number;
-    currentPhase: number;
-    phases: Array<{
-      number: number;
-      name: string;
-      description: string;
-      features: string[];
-      status: 'pending' | 'building' | 'complete';
-    }>;
-  } | null>(null);
+  // Stage plan tracking for new app builds (uses shared StagePlan type)
+  const [newAppStagePlan, setNewAppStagePlan] = useState<StagePlan | null>(null);
   
   // Staging consent modal for new apps
   const [showNewAppStagingModal, setShowNewAppStagingModal] = useState(false);
@@ -1905,12 +1904,9 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
     setChatMessages(comp.conversationHistory);
     setShowLibrary(false);
     setActiveTab('preview');
-    // FIX: Restore phase build plan if the component has one in progress
-    if (comp.stagePlan && comp.stagePlan.phases.some(p => p.status === 'pending')) {
-      setNewAppStagePlan(comp.stagePlan);
-    } else {
-      setNewAppStagePlan(null);
-    }
+    // Restore phase build plan if the component has one in progress
+    const hasPendingPhases = comp.stagePlan?.phases?.some(p => p.status === 'pending') ?? false;
+    setNewAppStagePlan(hasPendingPhases ? comp.stagePlan! : null);
   };
 
   const downloadCode = () => {
