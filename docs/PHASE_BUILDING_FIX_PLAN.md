@@ -1,12 +1,59 @@
 # Phase Building Fix Plan
 
-## Overview
+## 1. Overview
 
 This document outlines the plan to fix the **phase building system** which currently has reliability issues causing it to fail silently and fall back to single-build mode.
 
+### Solution Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     PHASE BUILDING FLOW                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User Request                                                   │
+│       │                                                         │
+│       ▼                                                         │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐       │
+│  │ Complexity  │────▶│ Plan Phases │────▶│   Parse     │       │
+│  │ Detection   │     │    API      │     │  Response   │       │
+│  └─────────────┘     └─────────────┘     └─────────────┘       │
+│                             │                   │               │
+│                             │                   ▼               │
+│                             │           ┌─────────────┐         │
+│                             │           │   Retry?    │         │
+│                             │           └─────────────┘         │
+│                             │                   │               │
+│                             ▼                   ▼               │
+│                      ┌─────────────┐     ┌─────────────┐       │
+│                      │  Estimate   │     │  Fallback   │       │
+│                      │ Complexity  │     │   Parser    │       │
+│                      └─────────────┘     └─────────────┘       │
+│                             │                                   │
+│                             ▼                                   │
+│                      ┌─────────────┐                           │
+│                      │ Auto-Split  │                           │
+│                      │ if needed   │                           │
+│                      └─────────────┘                           │
+│                             │                                   │
+│                             ▼                                   │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐       │
+│  │  Phase 1    │────▶│  Phase 2    │────▶│  Phase N    │       │
+│  │   Build     │     │   Build     │     │   Build     │       │
+│  │ (foundation)│     │ (+ context) │     │ (+ context) │       │
+│  └─────────────┘     └─────────────┘     └─────────────┘       │
+│        │                   │                   │               │
+│        ▼                   ▼                   ▼               │
+│  ┌─────────────────────────────────────────────────────┐       │
+│  │          Truncation Detection & Recovery            │       │
+│  └─────────────────────────────────────────────────────┘       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
-## Current Issues
+## 2. Current Issues
 
 ### Issue 1: Fragile Regex Parsing
 
@@ -36,7 +83,7 @@ const completion = await anthropic.messages.create({...});
 - Can timeout on complex planning requests
 - No progress feedback to user
 
-### Issue 3: Weak Error Handling
+### Issue 3: Weak Error Handling & Retry
 
 **Current Code:**
 ```typescript
@@ -66,11 +113,26 @@ conversationHistory.forEach((msg: any) => {
 - No limit on history size (could exceed context window)
 - Important planning context may be lost
 
+### Issue 5: Oversized Phases (No Size Management)
+
+**Problem:**
+- No pre-generation complexity estimation
+- Phases can timeout (90s limit) or exceed token limit (16K)
+- No auto-split for large phases
+- No truncation detection or recovery
+
+### Issue 6: Phase 2+ Lacks Context
+
+**Problem:**
+- Phase 2 doesn't know what Phase 1 created
+- Each phase builds independently instead of incrementally
+- Features may be duplicated or lost between phases
+
 ---
 
-## Fix Plan
+## 3. Backend Fixes
 
-### Fix 1: More Flexible Regex + Fallback Parsing
+### Fix 3.1: Flexible Regex + Fallback Parsing
 
 **New Approach:**
 ```typescript
@@ -93,7 +155,7 @@ if (phases.length === 0) {
 }
 ```
 
-### Fix 2: Switch to Streaming API
+### Fix 3.2: Streaming API with Timeout
 
 **New Code:**
 ```typescript
@@ -110,16 +172,225 @@ const stream = await anthropic.messages.stream({
 });
 
 let responseText = '';
+const timeout = 60000; // 60 seconds for phase planning
+const startTime = Date.now();
+
 for await (const chunk of stream) {
+  if (Date.now() - startTime > timeout) {
+    throw new Error('Phase planning timeout - request too complex');
+  }
   if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
     responseText += chunk.delta.text;
   }
 }
 ```
 
-### Fix 3: Retry Logic with Correction Prompt
+### Fix 3.3: Phase Size Management
 
-**New Code:**
+#### 3.3.1 Pre-Generation Complexity Estimation
+
+```typescript
+interface PhaseComplexity {
+  level: 'small' | 'medium' | 'large' | 'too_large';
+  estimatedTokens: number;
+  shouldSplit: boolean;
+}
+
+function estimatePhaseComplexity(phase: Phase): PhaseComplexity {
+  const featureCount = phase.features.length;
+  
+  // Complex features that typically require more code
+  const complexFeaturePatterns = [
+    'authentication', 'auth', 'login', 'signup',
+    'database', 'backend', 'api',
+    'payment', 'stripe', 'checkout',
+    'real-time', 'websocket', 'chat',
+    'file upload', 'image', 'storage'
+  ];
+  
+  const complexFeatures = phase.features.filter(f => 
+    complexFeaturePatterns.some(pattern => f.toLowerCase().includes(pattern))
+  ).length;
+  
+  // Estimation heuristics
+  const baseTokensPerFeature = 1500;
+  const complexFeatureMultiplier = 2.5;
+  
+  const estimatedTokens = 
+    (featureCount - complexFeatures) * baseTokensPerFeature +
+    complexFeatures * baseTokensPerFeature * complexFeatureMultiplier;
+  
+  if (estimatedTokens > 14000 || featureCount > 5 || complexFeatures > 1) {
+    return { level: 'too_large', estimatedTokens, shouldSplit: true };
+  }
+  if (estimatedTokens > 10000 || featureCount > 3 || complexFeatures > 0) {
+    return { level: 'large', estimatedTokens, shouldSplit: false };
+  }
+  if (estimatedTokens > 5000 || featureCount > 2) {
+    return { level: 'medium', estimatedTokens, shouldSplit: false };
+  }
+  return { level: 'small', estimatedTokens, shouldSplit: false };
+}
+```
+
+#### 3.3.2 Auto-Split Large Phases
+
+```typescript
+function splitPhaseIfNeeded(phase: Phase): Phase[] {
+  const complexity = estimatePhaseComplexity(phase);
+  
+  if (!complexity.shouldSplit) {
+    return [phase];
+  }
+  
+  console.log(`⚠️ Phase ${phase.number} is too large (${complexity.estimatedTokens} estimated tokens). Splitting...`);
+  
+  // Split features into two groups
+  const midpoint = Math.ceil(phase.features.length / 2);
+  const featuresA = phase.features.slice(0, midpoint);
+  const featuresB = phase.features.slice(midpoint);
+  
+  return [
+    {
+      ...phase,
+      name: `${phase.name} (Part A)`,
+      description: `${phase.description} - Core functionality`,
+      features: featuresA,
+      status: 'pending'
+    },
+    {
+      number: phase.number + 0.5,
+      name: `${phase.name} (Part B)`,
+      description: `${phase.description} - Additional features`,
+      features: featuresB,
+      status: 'pending'
+    }
+  ];
+}
+```
+
+#### 3.3.3 Truncation Detection
+
+```typescript
+function detectTruncation(responseText: string, files: any[]): {
+  isTruncated: boolean;
+  reason: string;
+  lastCompleteFile: string | null;
+} {
+  // Check 1: Missing end delimiter
+  if (responseText.includes('===FILE:') && !responseText.includes('===END===')) {
+    return {
+      isTruncated: true,
+      reason: 'Missing ===END=== delimiter',
+      lastCompleteFile: findLastCompleteFile(files)
+    };
+  }
+  
+  // Check 2: Unbalanced braces in any file
+  for (const file of files) {
+    const openBraces = (file.content.match(/{/g) || []).length;
+    const closeBraces = (file.content.match(/}/g) || []).length;
+    
+    if (openBraces !== closeBraces) {
+      return {
+        isTruncated: true,
+        reason: `Unbalanced braces in ${file.path} (${openBraces} open, ${closeBraces} close)`,
+        lastCompleteFile: findLastCompleteFile(files.slice(0, -1))
+      };
+    }
+  }
+  
+  // Check 3: Incomplete JSX
+  for (const file of files) {
+    if (file.path.endsWith('.tsx') || file.path.endsWith('.jsx')) {
+      const openTags = (file.content.match(/<[A-Z][a-zA-Z]*(?:\s|>)/g) || []).length;
+      const closeTags = (file.content.match(/<\/[A-Z][a-zA-Z]*>/g) || []).length;
+      const selfClosing = (file.content.match(/<[A-Z][a-zA-Z]*[^>]*\/>/g) || []).length;
+      
+      if (openTags > closeTags + selfClosing + 2) {
+        return {
+          isTruncated: true,
+          reason: `Incomplete JSX in ${file.path}`,
+          lastCompleteFile: findLastCompleteFile(files.slice(0, -1))
+        };
+      }
+    }
+  }
+  
+  return { isTruncated: false, reason: '', lastCompleteFile: null };
+}
+
+function findLastCompleteFile(files: any[]): string | null {
+  for (let i = files.length - 1; i >= 0; i--) {
+    const file = files[i];
+    const openBraces = (file.content.match(/{/g) || []).length;
+    const closeBraces = (file.content.match(/}/g) || []).length;
+    if (openBraces === closeBraces) {
+      return file.path;
+    }
+  }
+  return null;
+}
+```
+
+#### 3.3.4 Graceful Recovery
+
+```typescript
+async function handleOversizedPhase(
+  phase: Phase,
+  error: 'timeout' | 'truncation' | 'token_limit',
+  partialResponse?: string
+): Promise<Phase[]> {
+  console.log(`⚠️ Phase ${phase.number} failed due to ${error}. Attempting recovery...`);
+  
+  if (error === 'truncation' && partialResponse) {
+    const truncationInfo = detectTruncation(partialResponse, []);
+    
+    if (truncationInfo.lastCompleteFile) {
+      const completedFeatures = estimateCompletedFeatures(partialResponse, phase);
+      const remainingFeatures = phase.features.filter(f => !completedFeatures.includes(f));
+      
+      return [{
+        ...phase,
+        features: remainingFeatures,
+        name: `${phase.name} (Continued)`,
+        status: 'pending'
+      }];
+    }
+  }
+  
+  // Default: Split the phase and retry
+  return splitPhaseIfNeeded(phase);
+}
+```
+
+#### 3.3.5 Dynamic Token Budget
+
+```typescript
+const tokenBudgetByPhase = {
+  // Phase 1 needs more tokens (building foundation)
+  foundation: {
+    max_tokens: 16384,
+    thinking_budget: 16000,
+    timeout: 120000  // 2 minutes
+  },
+  // Later phases need less (additive changes)
+  additive: {
+    max_tokens: 12000,
+    thinking_budget: 10000,
+    timeout: 60000   // 1 minute
+  }
+};
+
+function getTokenBudget(phaseNumber: number) {
+  return phaseNumber === 1 
+    ? tokenBudgetByPhase.foundation 
+    : tokenBudgetByPhase.additive;
+}
+```
+
+### Fix 3.4: Retry Logic with Correction Prompts
+
 ```typescript
 async function extractPhasesWithRetry(
   responseText: string,
@@ -128,12 +399,10 @@ async function extractPhasesWithRetry(
 ): Promise<Phase[]> {
   // Try primary parsing
   let phases = parsePhasesStrict(responseText);
-  
   if (phases.length > 0) return phases;
   
   // Try lenient parsing
   phases = parsePhasesLenient(responseText);
-  
   if (phases.length > 0) return phases;
   
   // Retry with correction prompt
@@ -175,16 +444,82 @@ ${responseText.substring(0, 3000)}`
 }
 ```
 
-### Fix 4: Better Error Messages
+#### Phase-Specific Retry Prompts (add to retryLogic.ts)
 
-**New Error Handling:**
 ```typescript
-// Instead of generic error
-if (phases.length === 0) {
-  throw new Error('Failed to extract phases from response');
+// New error category
+export type PhaseErrorCategory = ErrorCategory | 'phase_extraction_error' | 'phase_too_large';
+
+// Phase extraction correction prompt
+function generatePhaseExtractionPrompt(context: RetryContext): string {
+  return `
+⚠️ PREVIOUS ATTEMPT FAILED - PHASE EXTRACTION ERROR
+
+**Error**: ${context.previousError}
+
+**Problem**: Your phase plan response could not be parsed.
+
+**REQUIRED FORMAT** (follow EXACTLY):
+
+===TOTAL_PHASES===
+[number between 2 and 5]
+===PHASE:1===
+NAME: [5 words max]
+DESCRIPTION: [One sentence, 20 words max]
+FEATURES:
+- [Feature 1]
+- [Feature 2]
+===PHASE:2===
+NAME: [5 words max]
+DESCRIPTION: [One sentence, 20 words max]
+FEATURES:
+- [Feature 1]
+===END_PHASES===
+
+**CRITICAL RULES**:
+1. ✅ Start IMMEDIATELY with ===TOTAL_PHASES=== (no preamble)
+2. ✅ Use EXACT delimiters shown above
+3. ✅ Keep NAME short (5 words max)
+4. ✅ Keep DESCRIPTION to ONE sentence
+5. ✅ Features as bullet points with "-"
+6. ✅ End with ===END_PHASES===
+
+Now, please retry with the EXACT format above:`;
 }
 
-// Use detailed error with context
+// Phase too large correction prompt
+function generatePhaseTooLargePrompt(context: RetryContext): string {
+  return `
+⚠️ PREVIOUS ATTEMPT FAILED - PHASE TOO LARGE
+
+**Error**: ${context.previousError}
+
+**Problem**: The phase has too many features and will exceed token limits.
+
+**SOLUTION**: Break this phase into smaller sub-phases.
+
+**RULES FOR SPLITTING**:
+1. ✅ Maximum 3-4 features per phase
+2. ✅ Complex features (auth, database, payments) should be isolated
+3. ✅ Each phase must produce working code
+4. ✅ Phase 1 must be a functional foundation
+
+**EXAMPLE SPLIT**:
+Original: "Build e-commerce with auth, products, cart, checkout, payments"
+
+Better:
+- Phase 1: Basic product listing and display
+- Phase 2: Shopping cart functionality  
+- Phase 3: User authentication
+- Phase 4: Checkout and payments
+
+Now, please provide a phase plan with smaller, focused phases:`;
+}
+```
+
+### Fix 3.5: Better Error Messages
+
+```typescript
 if (phases.length === 0) {
   const errorDetails = {
     responseLength: responseText.length,
@@ -203,20 +538,60 @@ if (phases.length === 0) {
 }
 ```
 
----
+### Fix 3.6: Phase Continuation Logic (Context Chain)
 
-## Chat Prompt Improvements
-
-### Current System Prompt Issues
-
-The current prompt in `plan-phases/route.ts` is good but could be improved:
-
-**Current:**
 ```typescript
-const systemPrompt = `You are an expert software architect. Analyze the conversation and extract a clear, actionable phase plan...`
+interface PhaseContext {
+  phaseNumber: number;
+  previousPhaseCode: string | null;  // JSON stringified app from previous phase
+  allPhases: Phase[];                 // Full phase plan for reference
+  completedPhases: number[];          // Which phases are done
+  cumulativeFeatures: string[];       // All features implemented so far
+}
+
+function buildPhasePrompt(phase: Phase, context: PhaseContext): string {
+  if (context.phaseNumber === 1) {
+    // First phase: Build from scratch
+    return `Build ${phase.name}: ${phase.description}
+    
+Features to implement:
+${phase.features.map(f => `- ${f}`).join('\n')}
+
+This is Phase 1 - create the foundation app with these features.`;
+  }
+  
+  // Subsequent phases: Build on existing code
+  const existingApp = JSON.parse(context.previousPhaseCode!);
+  const existingFiles = existingApp.files.map((f: any) => f.path).join(', ');
+  
+  return `Continue building the app. This is Phase ${context.phaseNumber}.
+
+EXISTING APP (from Phase ${context.phaseNumber - 1}):
+- Files: ${existingFiles}
+- Features already implemented: ${context.cumulativeFeatures.join(', ')}
+
+YOUR TASK FOR THIS PHASE:
+${phase.name}: ${phase.description}
+
+NEW FEATURES TO ADD:
+${phase.features.map(f => `- ${f}`).join('\n')}
+
+CRITICAL INSTRUCTIONS:
+1. DO NOT recreate existing files unless modifying them
+2. PRESERVE all existing functionality
+3. ADD the new features incrementally
+4. Reference existing components/functions where appropriate
+
+EXISTING CODE FOR REFERENCE:
+${existingApp.files.slice(0, 3).map((f: any) => `
+=== ${f.path} ===
+${f.content.substring(0, 1000)}${f.content.length > 1000 ? '...(truncated)' : ''}
+`).join('\n')}`;
+}
 ```
 
-**Enhanced Prompt:**
+### Fix 3.7: Enhanced System Prompt
+
 ```typescript
 const systemPrompt = `You are an expert software architect creating a phased implementation plan.
 
@@ -283,31 +658,11 @@ IMPORTANT: Start your response with ===TOTAL_PHASES=== - no introduction or expl
 
 ---
 
-## Frontend Improvements (AIBuilder.tsx)
+## 4. Frontend Fixes
 
-### Issue: Phase Modal UX
+### Fix 4.1: Replace Modal with Inline Phase Display
 
-**Current Flow:**
-1. User types complex request
-2. Modal appears asking "Build in Phases?"
-3. User clicks "Build in Phases"
-4. API called, phases extracted
-5. Phases displayed in chat
-6. User types "start" to begin
-
-**Problem:** Too many steps, confusing flow
-
-**Improved Flow:**
-1. User types complex request
-2. System detects complexity, shows inline message with phases
-3. User sees "Build Phase 1?" button directly
-4. One click starts building
-
-### Code Changes for AIBuilder.tsx
-
-**Add inline phase display instead of modal:**
 ```typescript
-// Replace modal approach with inline phase cards
 const PhaseProgressCard = ({ phases, currentPhase, onBuildPhase }) => (
   <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 border border-purple-500/30">
     <h3 className="text-white font-bold mb-3 flex items-center gap-2">
@@ -348,24 +703,140 @@ const PhaseProgressCard = ({ phases, currentPhase, onBuildPhase }) => (
 );
 ```
 
+### Fix 4.2: Pass Phase Context to Backend
+
+```typescript
+const buildPhaseWithContext = async (phase: Phase) => {
+  const phaseContext: PhaseContext = {
+    phaseNumber: phase.number,
+    previousPhaseCode: currentComponent?.code || null,
+    allPhases: newAppStagePlan?.phases || [],
+    completedPhases: newAppStagePlan?.phases
+      .filter(p => p.status === 'complete')
+      .map(p => p.number) || [],
+    cumulativeFeatures: newAppStagePlan?.phases
+      .filter(p => p.status === 'complete')
+      .flatMap(p => p.features) || []
+  };
+  
+  const buildPrompt = buildPhasePrompt(phase, phaseContext);
+  
+  const response = await fetch('/api/ai-builder/full-app', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: buildPrompt,
+      conversationHistory: chatMessages.slice(-20),
+      isPhaseBuilding: true,
+      phaseContext,
+      currentAppState: phaseContext.previousPhaseCode 
+        ? JSON.parse(phaseContext.previousPhaseCode) 
+        : null
+    })
+  });
+  
+  // ... handle response
+};
+```
+
+### Fix 4.3: Split/Recovery Notifications
+
+```typescript
+// Show when phase is auto-split
+const showPhaseSplitNotification = (originalPhase: Phase, splitPhases: Phase[]) => {
+  const notification: ChatMessage = {
+    id: Date.now().toString(),
+    role: 'system',
+    content: `⚠️ **Phase ${originalPhase.number} Split**\n\nThe phase was too large, so I've split it into ${splitPhases.length} parts:\n${splitPhases.map(p => `- ${p.name}`).join('\n')}\n\nThis ensures each part generates complete, working code.`,
+    timestamp: new Date().toISOString()
+  };
+  setChatMessages(prev => [...prev, notification]);
+};
+
+// Show truncation recovery progress
+const showRecoveryProgress = (truncationReason: string, recovering: boolean) => {
+  const notification: ChatMessage = {
+    id: Date.now().toString(),
+    role: 'system',
+    content: recovering 
+      ? `🔄 **Recovery in Progress**\n\nDetected: ${truncationReason}\n\nSalvaging completed files and retrying remaining features...`
+      : `❌ **Generation Incomplete**\n\n${truncationReason}\n\nTrying a smaller approach...`,
+    timestamp: new Date().toISOString()
+  };
+  setChatMessages(prev => [...prev, notification]);
+};
+```
+
 ---
 
-## Implementation Checklist
+## 5. Implementation Order
 
-### Backend Fixes
+### Priority 1: Core Reliability (Do First)
+These fixes unblock everything else:
+1. ✅ Fix 3.1: Flexible Regex + Fallback Parsing
+2. ✅ Fix 3.2: Streaming API with Timeout
+3. ✅ Fix 3.5: Better Error Messages
+
+### Priority 2: Size Management (Do Second)
+Prevents failures before they happen:
+4. ✅ Fix 3.3.1: Complexity Estimation
+5. ✅ Fix 3.3.2: Auto-Split Large Phases
+6. ✅ Fix 3.3.5: Dynamic Token Budget
+
+### Priority 3: Recovery (Do Third)
+Handles failures gracefully:
+7. ✅ Fix 3.3.3: Truncation Detection
+8. ✅ Fix 3.3.4: Graceful Recovery
+9. ✅ Fix 3.4: Retry Logic with Correction Prompts
+
+### Priority 4: Multi-Phase (Do Fourth)
+Enables building complex apps across phases:
+10. ✅ Fix 3.6: Phase Continuation Logic
+11. ✅ Fix 4.2: Pass Phase Context to Backend
+
+### Priority 5: UX Polish (Do Last)
+Improves user experience:
+12. ✅ Fix 3.7: Enhanced System Prompt
+13. ✅ Fix 4.1: Replace Modal with Inline Display
+14. ✅ Fix 4.3: Split/Recovery Notifications
+
+---
+
+## 6. Files to Modify
+
+| File | Changes | Priority |
+|------|---------|----------|
+| `/src/app/api/ai-builder/plan-phases/route.ts` | Streaming, retry logic, better parsing, timeout | 1 |
+| `/src/utils/retryLogic.ts` | Add phase-specific retry strategies | 2 |
+| `/src/app/api/ai-builder/full-app/generation-logic.ts` | Truncation detection, token budget | 2 |
+| `/src/components/AIBuilder.tsx` | Inline phase display, context passing, notifications | 3 |
+
+---
+
+## 7. Implementation Checklist
+
+### Backend
 - [ ] Add flexible regex parsing with fallback
 - [ ] Switch to streaming API in plan-phases route
+- [ ] Add timeout handling (60s for phase planning, 120s for Phase 1)
+- [ ] Add phase complexity estimation
+- [ ] Add auto-split for large phases
+- [ ] Add truncation detection
+- [ ] Add graceful recovery from truncation
 - [ ] Implement retry logic with correction prompts
+- [ ] Add phase-specific retry strategies to retryLogic.ts
+- [ ] Add phase context chain for Phase 2+
 - [ ] Add detailed error messages with context
 - [ ] Update system prompt for clearer format requirements
-- [ ] Add timeout handling (60s for phase planning)
 
-### Frontend Fixes
+### Frontend
 - [ ] Replace modal with inline phase display
 - [ ] Add phase progress indicator
-- [ ] Simplify "start building" flow
+- [ ] Simplify "start building" flow (one-click)
+- [ ] Pass phase context to backend
+- [ ] Show split notification when phase is auto-split
+- [ ] Show recovery progress on truncation
 - [ ] Add better error messages for phase failures
-- [ ] Show phase details before building
 
 ### Testing
 - [ ] Test with simple app requests (should skip phasing)
@@ -373,20 +844,13 @@ const PhaseProgressCard = ({ phases, currentPhase, onBuildPhase }) => (
 - [ ] Test phase extraction with various Claude output formats
 - [ ] Test retry logic when parsing fails
 - [ ] Test user flow from request to Phase 1 complete
+- [ ] Test oversized phase handling (>5 features)
+- [ ] Test truncation recovery
+- [ ] Test Phase 2+ context chain
 
 ---
 
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `/src/app/api/ai-builder/plan-phases/route.ts` | Streaming, retry logic, better parsing |
-| `/src/components/AIBuilder.tsx` | Inline phase display, simplified flow |
-| `/src/utils/retryLogic.ts` | Add phase-specific retry strategies |
-
----
-
-## Success Metrics
+## 8. Success Metrics
 
 | Metric | Current | Target |
 |--------|---------|--------|
@@ -394,10 +858,11 @@ const PhaseProgressCard = ({ phases, currentPhase, onBuildPhase }) => (
 | User completes phased build | ~30% | >70% |
 | Average phases per complex app | N/A | 3-4 |
 | Time to first working app | N/A | <60s |
+| Recovery success rate | 0% | >80% |
 
 ---
 
-## Rollback Plan
+## 9. Rollback Plan
 
 If phase building continues to fail:
 
@@ -407,9 +872,11 @@ If phase building continues to fail:
 
 ---
 
-## Future Enhancements
+## 10. Future Enhancements
 
 1. **Parallel phase building** - Build independent phases simultaneously
 2. **Phase templates** - Pre-defined phase structures for common app types
 3. **Phase editing** - Let users modify phase plan before building
 4. **Phase caching** - Cache successful phase plans for similar requests
+5. **Partial response salvaging** - Save completed files from truncated response
+6. **Progressive enhancement** - Start with minimal Phase 1, add features via modification endpoint
