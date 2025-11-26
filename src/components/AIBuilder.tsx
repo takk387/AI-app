@@ -120,7 +120,7 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
 
 export default function AIBuilder() {
   // Authentication
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, sessionReady } = useAuth();
   
   // Core state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -412,27 +412,18 @@ export default function AIBuilder() {
   // Load components from Supabase database (with localStorage fallback)
   useEffect(() => {
     let mounted = true;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-    const RETRY_DELAY = 300;
     
     const loadApps = async () => {
-      // Wait for auth to finish loading
-      if (authLoading) return;
-      
-      // If auth is done loading but user is null, wait and retry
-      // This handles the race condition where authLoading becomes false
-      // before the user state is fully populated
-      if (!user && retryCount < MAX_RETRIES) {
-        retryCount++;
-        console.log(`[LoadApps] No user found, retry ${retryCount}/${MAX_RETRIES}...`);
-        setTimeout(() => {
-          if (mounted) loadApps();
-        }, RETRY_DELAY);
+      // Wait for session to be definitively checked
+      // sessionReady only becomes true AFTER we know the auth state
+      if (!sessionReady) {
+        console.log('[LoadApps] Waiting for session to be ready...');
         return;
       }
       
       if (!mounted) return;
+      
+      console.log('[LoadApps] Session ready, user:', user?.id || 'anonymous');
       
       setLoadingApps(true);
       setDbSyncError(null);
@@ -498,6 +489,20 @@ export default function AIBuilder() {
             // Cache merged result in localStorage
             if (typeof window !== 'undefined') {
               localStorage.setItem('ai_components', JSON.stringify(mergedComponents));
+              
+              // Restore the last active app if one was saved
+              const lastAppId = localStorage.getItem('current_app_id');
+              if (lastAppId && mergedComponents.length > 0) {
+                const lastApp = mergedComponents.find(c => c.id === lastAppId);
+                if (lastApp) {
+                  console.log('[LoadApps] Restoring last active app:', lastApp.name);
+                  setCurrentComponent(lastApp);
+                  if (lastApp.conversationHistory && lastApp.conversationHistory.length > 0) {
+                    setChatMessages(lastApp.conversationHistory);
+                  }
+                  setActiveTab('preview');
+                }
+              }
             }
           }
         } else {
@@ -506,7 +511,22 @@ export default function AIBuilder() {
             const stored = localStorage.getItem('ai_components');
             if (stored) {
               try {
-                setComponents(JSON.parse(stored));
+                const parsedComponents = JSON.parse(stored);
+                setComponents(parsedComponents);
+                
+                // Restore the last active app if one was saved
+                const lastAppId = localStorage.getItem('current_app_id');
+                if (lastAppId && parsedComponents.length > 0) {
+                  const lastApp = parsedComponents.find((c: GeneratedComponent) => c.id === lastAppId);
+                  if (lastApp) {
+                    console.log('[LoadApps] Restoring last active app:', lastApp.name);
+                    setCurrentComponent(lastApp);
+                    if (lastApp.conversationHistory && lastApp.conversationHistory.length > 0) {
+                      setChatMessages(lastApp.conversationHistory);
+                    }
+                    setActiveTab('preview');
+                  }
+                }
               } catch (e) {
                 console.error('Error loading components from localStorage:', e);
               }
@@ -526,7 +546,7 @@ export default function AIBuilder() {
     return () => {
       mounted = false;
     };
-  }, [user, authLoading]);
+  }, [sessionReady, user?.id]); // Only re-run when session is ready or user changes
 
   // Save components to localStorage
   useEffect(() => {
@@ -534,6 +554,18 @@ export default function AIBuilder() {
       localStorage.setItem('ai_components', JSON.stringify(components));
     }
   }, [components]);
+
+  // Save current app ID to localStorage for restoration on refresh
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (currentComponent) {
+        localStorage.setItem('current_app_id', currentComponent.id);
+      } else {
+        // Don't remove the ID when currentComponent is null during loading
+        // Only remove it if user explicitly creates a new conversation
+      }
+    }
+  }, [currentComponent?.id]);
 
   // Load files when user authenticates or when storage tab is active
   useEffect(() => {
@@ -1239,7 +1271,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
             }
             
             let newComponent: GeneratedComponent = {
-              id: isModification ? currentComponent.id : Date.now().toString(),
+              id: isModification ? currentComponent.id : crypto.randomUUID(),
               name: data.name || extractComponentName(userInput),
               code: JSON.stringify(data, null, 2),
               description: userInput,
@@ -1639,7 +1671,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
     const descriptionSuffix = versionToFork ? ` (forked from v${versionToFork.versionNumber})` : ' (forked)';
 
     const forkedApp: GeneratedComponent = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: `${sourceApp.name} - Fork`,
       code: codeToFork,
       description: sourceApp.description + descriptionSuffix,
@@ -1647,7 +1679,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
       isFavorite: false,
       conversationHistory: [],
       versions: [{
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         versionNumber: 1,
         code: codeToFork,
         description: `Forked from ${sourceApp.name}`,

@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  sessionReady: boolean; // True only after we've definitively checked auth state
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionReady, setSessionReady] = useState(false); // Distinguishes "still loading" from "confirmed auth state"
   const [error, setError] = useState<string | null>(null);
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
@@ -58,10 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
             
             if (mounted) {
-              // Set both user and loading together to minimize race conditions
+              // Set user first
               setUser(session?.user ?? null);
               // Small delay to ensure state is propagated before components react
               await new Promise(resolve => setTimeout(resolve, 50));
+              // Mark session as definitively checked - this is the key flag
+              // that tells consumers "we know the auth state now"
+              setSessionReady(true);
               setLoading(false);
             }
           } catch (err) {
@@ -73,10 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
               return loadSession();
             } else {
-              // After all retries, set loading to false
-              if (mounted) {
-                setLoading(false);
-              }
+            // After all retries, set loading to false and mark session as checked
+            // (user remains null, but we've definitively tried)
+            if (mounted) {
+              setSessionReady(true);
+              setLoading(false);
+            }
             }
           }
         };
@@ -98,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Auth initialization error:", message);
         if (mounted) {
           setError(message);
+          setSessionReady(true); // Even on error, we've checked
           setLoading(false);
         }
       }
@@ -182,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider value={{ user, loading, sessionReady, signIn, signUp, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
