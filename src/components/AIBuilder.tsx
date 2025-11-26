@@ -2200,8 +2200,10 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 onClick={() => {
                   setCurrentComponent(null);
                   setChatMessages([{
+                    id: crypto.randomUUID(),
                     role: 'assistant',
-                    content: "👋 Hi! I'm your AI App Builder. Tell me what app you want to create, and I'll build it for you through conversation.\n\n✨ **What would you like to build today?**"
+                    content: "👋 Hi! I'm your AI App Builder. Tell me what app you want to create, and I'll build it for you through conversation.\n\n✨ **What would you like to build today?**",
+                    timestamp: new Date()
                   }]);
                   setGeneratedCode('');
                   setActiveFile(null);
