@@ -35,8 +35,12 @@ export interface RetryResult {
 // Phase-specific error categories
 export type PhaseErrorCategory = ErrorCategory | 'phase_extraction_error' | 'phase_too_large' | 'phase_truncation';
 
-export interface PhaseRetryContext extends RetryContext {
-  errorCategory: PhaseErrorCategory;
+export interface PhaseRetryContext {
+  attemptNumber: number;      // Current attempt (1-based)
+  previousError: string;      // Error message from previous attempt
+  errorCategory: PhaseErrorCategory; // Phase-specific categorized error type
+  originalResponse?: string;  // AI's problematic response
+  validationDetails?: any;    // Validation error details
   phaseNumber?: number;
   estimatedTokens?: number;
 }
@@ -264,7 +268,7 @@ Now, please retry with a MUCH simpler, focused modification:`;
 /**
  * Generic correction prompt for other errors
  */
-function generateGenericErrorPrompt(context: RetryContext): string {
+function generateGenericErrorPrompt(context: RetryContext | PhaseRetryContext): string {
   return `
 ⚠️ PREVIOUS ATTEMPT FAILED
 

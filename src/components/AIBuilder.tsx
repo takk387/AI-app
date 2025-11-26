@@ -56,6 +56,18 @@ interface GeneratedComponent {
   isFavorite: boolean;
   conversationHistory: ChatMessage[];
   versions?: AppVersion[]; // Version history
+  // FIX: Persist phase build progress to survive page refresh
+  stagePlan?: {
+    totalPhases: number;
+    currentPhase: number;
+    phases: Array<{
+      number: number;
+      name: string;
+      description: string;
+      features: string[];
+      status: 'pending' | 'building' | 'complete';
+    }>;
+  } | null;
 }
 
 interface PendingChange {
@@ -97,7 +109,9 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
       isFavorite: component.isFavorite,
       conversationHistory: component.conversationHistory,
       versions: component.versions || [],
-      timestamp: component.timestamp
+      timestamp: component.timestamp,
+      // FIX: Persist phase build plan to Supabase
+      stagePlan: component.stagePlan || null
     } as unknown as Database['public']['Tables']['generated_apps']['Row']['metadata'],
     is_public: false,
     version: (component.versions?.length || 0) + 1
@@ -114,7 +128,9 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
     timestamp: metadata.timestamp || dbApp.created_at,
     isFavorite: metadata.isFavorite || false,
     conversationHistory: metadata.conversationHistory || [],
-    versions: metadata.versions || []
+    versions: metadata.versions || [],
+    // FIX: Restore phase build plan from Supabase
+    stagePlan: metadata.stagePlan || null
   };
 }
 
@@ -1389,7 +1405,14 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
               timestamp: new Date().toISOString(),
               isFavorite: isModification ? currentComponent.isFavorite : false,
               conversationHistory: [...chatMessages, userMessage, aiAppMessage],
-              versions: isModification ? currentComponent.versions : []
+              versions: isModification ? currentComponent.versions : [],
+              // FIX: Persist phase build plan state with the component
+              stagePlan: newAppStagePlan ? {
+                ...newAppStagePlan,
+                phases: newAppStagePlan.phases.map(p => 
+                  p.number === newAppStagePlan.currentPhase ? { ...p, status: 'complete' as const } : p
+                )
+              } : null
             };
             
             // Save version for this change
@@ -1882,6 +1905,12 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
     setChatMessages(comp.conversationHistory);
     setShowLibrary(false);
     setActiveTab('preview');
+    // FIX: Restore phase build plan if the component has one in progress
+    if (comp.stagePlan && comp.stagePlan.phases.some(p => p.status === 'pending')) {
+      setNewAppStagePlan(comp.stagePlan);
+    } else {
+      setNewAppStagePlan(null);
+    }
   };
 
   const downloadCode = () => {
