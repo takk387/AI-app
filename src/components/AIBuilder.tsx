@@ -3231,7 +3231,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
             className="bg-slate-900 rounded-2xl border border-purple-500/30 max-w-2xl w-full shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
+            {/* Modal hHeader */}
             <div className="px-6 py-5 border-b border-purple-500/30 bg-purple-500/10">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
