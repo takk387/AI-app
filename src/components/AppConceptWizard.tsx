@@ -114,8 +114,8 @@ export function AppConceptWizard({
   useEffect(() => {
     if (autoSaver.hasDraft() && !initialConcept) {
       const metadata = autoSaver.getMetadata();
-      if (metadata) {
-        setDraftAge(formatDraftAge(metadata.savedAt));
+      if (metadata && metadata.exists && metadata.timestamp) {
+        setDraftAge(formatDraftAge(metadata.timestamp));
         setShowDraftPrompt(true);
       }
     }

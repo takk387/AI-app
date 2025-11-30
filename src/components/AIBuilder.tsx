@@ -5,6 +5,8 @@ import CodePreview from './CodePreview';
 import FullAppPreview from './FullAppPreview';
 import DiffPreview from './DiffPreview';
 import AppConceptWizard from './AppConceptWizard';
+import ConversationalAppWizard from './ConversationalAppWizard';
+import { ToastProvider } from './Toast';
 import type { AppConcept, ImplementationPlan, BuildPhase } from '../types/appConcept';
 import { exportAppAsZip, downloadBlob, parseAppFiles, getDeploymentInstructions, type DeploymentInstructions } from '../utils/exportApp';
 import { createClient } from '@/utils/supabase/client';
@@ -286,6 +288,7 @@ export default function AIBuilder() {
 
   // App Concept Wizard state
   const [showConceptWizard, setShowConceptWizard] = useState(false);
+  const [showConversationalWizard, setShowConversationalWizard] = useState(false);
   const [appConcept, setAppConcept] = useState<AppConcept | null>(null);
   const [implementationPlan, setImplementationPlan] = useState<ImplementationPlan | null>(null);
 
@@ -2361,6 +2364,7 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
   }
 
   return (
+    <ToastProvider>
     <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
       <header className="border-b border-white/10 glass-panel sticky top-0 z-50 shadow-2xl shadow-black/40 animate-gradient">
@@ -2380,13 +2384,22 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
 
             {/* Actions */}
             <div className="flex items-center gap-3">
-              {/* Plan App Button - Opens Wizard */}
+              {/* Plan App Button - Opens Step Wizard */}
               <button
                 onClick={() => setShowConceptWizard(true)}
                 className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:shadow-purple-500/40 group"
               >
                 <span className="group-hover:scale-125 transition-transform duration-300">🚀</span>
                 <span className="hidden sm:inline">Plan App</span>
+              </button>
+              {/* Conversational Wizard Button */}
+              <button
+                onClick={() => setShowConversationalWizard(true)}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:shadow-emerald-500/40 group"
+                title="Chat-based app planning wizard"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">🧙‍♂️</span>
+                <span className="hidden sm:inline">Wizard</span>
               </button>
               {currentComponent && currentComponent.versions && currentComponent.versions.length > 0 && (
                 <button
@@ -3736,6 +3749,15 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
           onCancel={() => setShowConceptWizard(false)}
         />
       )}
+
+      {/* Conversational App Wizard Modal */}
+      {showConversationalWizard && (
+        <ConversationalAppWizard
+          onComplete={handleConceptComplete}
+          onCancel={() => setShowConversationalWizard(false)}
+        />
+      )}
     </div>
+    </ToastProvider>
   );
 }

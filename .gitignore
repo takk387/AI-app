@@ -76,3 +76,4 @@ lpt9
 .cache/
 temp/
 tmp/
+.env.local

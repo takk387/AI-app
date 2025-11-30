@@ -8,11 +8,22 @@ interface Toast {
   id: string;
   type: ToastType;
   message: string;
+  description?: string;
+  duration?: number;
+}
+
+/**
+ * Toast input type for showToast - supports object-based API
+ */
+interface ToastInput {
+  type: ToastType;
+  message: string;
+  description?: string;
   duration?: number;
 }
 
 interface ToastContextType {
-  showToast: (type: ToastType, message: string, duration?: number) => void;
+  showToast: ((toast: ToastInput) => void) & ((type: ToastType, message: string, duration?: number) => void);
   hideToast: (id: string) => void;
 }
 
@@ -104,17 +115,32 @@ interface ToastProviderProps {
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((type: ToastType, message: string, duration = 4000) => {
+  // Support both API styles: showToast(type, message, duration) and showToast({ type, message, duration })
+  const showToast = useCallback((typeOrToast: ToastType | ToastInput, message?: string, duration = 4000) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const newToast: Toast = {
-      id,
-      type,
-      message,
-      duration
-    };
+    
+    let newToast: Toast;
+    if (typeof typeOrToast === 'object') {
+      // Object-based API: showToast({ type, message, duration })
+      newToast = {
+        id,
+        type: typeOrToast.type,
+        message: typeOrToast.message,
+        description: typeOrToast.description,
+        duration: typeOrToast.duration ?? 4000
+      };
+    } else {
+      // Legacy API: showToast(type, message, duration)
+      newToast = {
+        id,
+        type: typeOrToast,
+        message: message || '',
+        duration
+      };
+    }
 
     setToasts((prev) => [...prev, newToast]);
-  }, []);
+  }, []) as ToastContextType['showToast'];
 
   const hideToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
