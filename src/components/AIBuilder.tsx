@@ -256,6 +256,11 @@ export default function AIBuilder() {
   // CUSTOM HOOKS
   // ============================================================================
   
+  // Memoized error handler for database sync to prevent infinite loops
+  const handleDbError = useCallback((error: string) => {
+    setDbSyncError(error);
+  }, [setDbSyncError]);
+  
   // Database sync hook
   const {
     saveComponent: saveComponentToDb,
@@ -265,7 +270,7 @@ export default function AIBuilder() {
     error: dbError,
   } = useDatabaseSync({
     userId: user?.id || null,
-    onError: (error) => setDbSyncError(error),
+    onError: handleDbError,
   });
   
   // Version control hook
@@ -504,11 +509,10 @@ export default function AIBuilder() {
     loadApps();
     
     return () => { mounted = false; };
-  // Note: This effect should only run when sessionReady, user, or loadComponentsFromDb changes.
-  // The Zustand setters (setComponents, etc.) called inside loadApps are stable and don't need 
-  // to be in the dependency array, which is why eslint is disabled here.
+  // Note: This effect should only run when sessionReady or user changes.
+  // loadComponentsFromDb is stable after we memoized handleDbError.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionReady, user?.id, loadComponentsFromDb]);
+  }, [sessionReady, user?.id]);
 
   // Save components to localStorage
   useEffect(() => {
