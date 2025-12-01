@@ -15,6 +15,18 @@ import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/types/supabase';
 
+// Modal components
+import {
+  LibraryModal,
+  ApprovalModal,
+  VersionHistoryModal,
+  DeploymentModal,
+  DiffPreviewModal,
+  StagingConsentModal,
+  CompareVersionsModal,
+  PhasedBuildPanel,
+} from './modals';
+
 // Storage components and services
 import { 
   FileCard, 
@@ -2918,996 +2930,161 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
         </ResizablePanelGroup>
       </div>
 
-      {/* App Library Sidebar */}
-      {showLibrary && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setShowLibrary(false)}
-        >
-          <div
-            className="bg-slate-900 rounded-2xl border border-white/10 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Library Header */}
-            <div className="px-6 py-4 border-b border-white/10 bg-black/20">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <span>📂</span>
-                  <span>My Content</span>
-                  <span className="text-sm font-normal text-slate-400">
-                    ({contentTab === 'apps' ? components.length : storageFiles.length})
-                  </span>
-                </h2>
-                <button
-                  onClick={() => setShowLibrary(false)}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-all"
-                >
-                  <span className="text-slate-400 text-xl">✕</span>
-                </button>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setContentTab('apps')}
-                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    contentTab === 'apps'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                  }`}
-                >
-                  🚀 Apps ({components.length})
-                </button>
-                <button
-                  onClick={() => setContentTab('files')}
-                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    contentTab === 'files'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                  }`}
-                >
-                  📁 Files ({storageFiles.length})
-                </button>
-              </div>
-
-              {/* Search */}
-              {contentTab === 'apps' ? (
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search apps..."
-                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  id="app-search"
-                  name="app-search"
-                  autoComplete="off"
-                />
-              ) : (
-                <FileFilters
-                  searchQuery={fileSearchQuery}
-                  onSearchChange={setFileSearchQuery}
-                  selectedType={fileTypeFilter}
-                  onTypeChange={setFileTypeFilter}
-                  sortBy={fileSortBy}
-                  sortOrder={fileSortOrder}
-                  onSortChange={(newSortBy, newSortOrder) => {
-                    setFileSortBy(newSortBy);
-                    setFileSortOrder(newSortOrder);
-                  }}
-                  onClearFilters={() => {
-                    setFileSearchQuery('');
-                    setFileTypeFilter('all');
-                    setFileSortBy('created_at');
-                    setFileSortOrder('desc');
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Library Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {contentTab === 'apps' ? (
-                // Apps Tab Content
-                filteredComponents.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">📭</div>
-                  <p className="text-slate-400">
-                    {searchQuery ? 'No components found' : 'No components yet. Start building!'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredComponents.map((comp) => (
-                    <div
-                      key={comp.id}
-                      className="bg-white/5 rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-all cursor-pointer group"
-                      onClick={() => loadComponent(comp)}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                          {comp.name}
-                        </h3>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(comp.id);
-                            }}
-                            className="text-xl hover:scale-125 transition-transform"
-                          >
-                            {comp.isFavorite ? '⭐' : '☆'}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleExportApp(comp);
-                            }}
-                            className="text-lg hover:scale-125 transition-transform text-green-400 hover:text-green-300"
-                            title="Export & Deploy"
-                            disabled={exportingApp?.id === comp.id}
-                          >
-                            {exportingApp?.id === comp.id ? '⏳' : '📦'}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm(`Delete "${comp.name}"?`)) {
-                                deleteComponent(comp.id);
-                              }
-                            }}
-                            className="text-lg hover:scale-125 transition-transform text-red-400 hover:text-red-300"
-                            title="Delete app"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-sm text-slate-400 line-clamp-2 mb-3">
-                        {comp.description}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span>{new Date(comp.timestamp).toLocaleDateString()}</span>
-                        <span className="text-blue-400">→ Load</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-              ) : (
-                // Files Tab Content
-                <>
-                  {!user ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-4">
-                      <div className="text-6xl mb-4">🔒</div>
-                      <h3 className="text-xl font-semibold text-white mb-2">
-                        Sign In Required
-                      </h3>
-                      <p className="text-slate-400 text-center max-w-md">
-                        Please sign in to access file storage
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* File Uploader */}
-                      <FileUploader
-                        onUpload={handleFileUpload}
-                        maxFileSize={10 * 1024 * 1024}
-                        allowedTypes={[]}
-                        allowedExtensions={[]}
-                        disabled={!user}
-                      />
-
-                      {/* Storage Stats */}
-                      {storageStats && (
-                        <StorageStats stats={storageStats} />
-                      )}
-
-                      {/* File Grid */}
-                      <FileGrid
-                        files={filteredFiles}
-                        selectedFiles={selectedFiles}
-                        onSelectFile={(file) => handleFileSelect(file.id)}
-                        onDownload={handleFileDownload}
-                        onDelete={(file) => handleFileDelete(file.id as FileId)}
-                        loadingFileIds={deletingFiles}
-                        isLoading={loadingFiles}
-                      />
-
-                      {/* Bulk Actions */}
-                      {selectedFiles.size > 0 && (
-                        <div className="fixed bottom-6 right-6 bg-slate-800 rounded-xl border border-white/20 shadow-2xl p-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-white text-sm">
-                              {selectedFiles.size} selected
-                            </span>
-                            <button
-                              onClick={handleBulkDelete}
-                              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all"
-                            >
-                              🗑️ Delete Selected
-                            </button>
-                            <button
-                              onClick={() => setSelectedFiles(new Set())}
-                              className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-all"
-                            >
-                              Clear Selection
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* App Library Modal */}
+      <LibraryModal
+        isOpen={showLibrary}
+        onClose={() => setShowLibrary(false)}
+        components={components}
+        filteredComponents={filteredComponents}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onLoadComponent={loadComponent}
+        onToggleFavorite={toggleFavorite}
+        onDeleteComponent={deleteComponent}
+        onExportComponent={handleExportApp}
+        exportingAppId={exportingApp?.id}
+        contentTab={contentTab}
+        onContentTabChange={setContentTab}
+        storageFiles={storageFiles}
+        filteredFiles={filteredFiles}
+        fileSearchQuery={fileSearchQuery}
+        onFileSearchChange={setFileSearchQuery}
+        fileTypeFilter={fileTypeFilter}
+        onFileTypeFilterChange={setFileTypeFilter}
+        fileSortBy={fileSortBy}
+        fileSortOrder={fileSortOrder}
+        onSortChange={(newSortBy, newSortOrder) => {
+          setFileSortBy(newSortBy);
+          setFileSortOrder(newSortOrder);
+        }}
+        selectedFiles={selectedFiles}
+        onFileSelect={handleFileSelect}
+        onFileUpload={handleFileUpload}
+        onFileDownload={handleFileDownload}
+        onFileDelete={handleFileDelete}
+        onBulkDelete={handleBulkDelete}
+        onClearSelection={() => setSelectedFiles(new Set())}
+        loadingFiles={loadingFiles}
+        deletingFiles={deletingFiles}
+        storageStats={storageStats}
+        user={user}
+      />
 
       {/* Change Approval Modal */}
-      {showApprovalModal && pendingChange && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => {}}
-        >
-          <div
-            className="bg-slate-900 rounded-2xl border border-yellow-500/30 max-w-2xl w-full shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-yellow-500/30 bg-yellow-500/10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                  <span className="text-3xl">⚠️</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Approve Changes?</h3>
-                  <p className="text-sm text-yellow-200/80">Review the proposed modifications to your app</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Content */}
-            <div className="px-6 py-5">
-              <div className="mb-6">
-                <label className="text-sm font-medium text-slate-300 mb-2 block">
-                  What's changing:
-                </label>
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
-                  <p className="text-white text-sm leading-relaxed">
-                    {pendingChange.changeDescription}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">💡</span>
-                  <div>
-                    <p className="text-sm font-medium text-blue-200 mb-1">
-                      Why approval is needed
-                    </p>
-                    <p className="text-xs text-blue-200/70 leading-relaxed">
-                      This change will modify your existing app. Approving ensures you won't accidentally lose features you like. 
-                      You can reject this change and request something different instead.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Preview of files being changed */}
-              <div className="mb-6">
-                <label className="text-sm font-medium text-slate-300 mb-2 block">
-                  Files affected:
-                </label>
-                <div className="bg-slate-800/50 rounded-lg p-3 border border-white/10 max-h-32 overflow-y-auto">
-                  {(() => {
-                    try {
-                      const parsedData = JSON.parse(pendingChange.newCode);
-                      return (
-                        <div className="space-y-1">
-                          {parsedData.files?.map((file: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
-                              <span className="text-blue-400">📄</span>
-                              <span>{file.path}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    } catch {
-                      return <p className="text-xs text-slate-400">Unable to parse file list</p>;
-                    }
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex gap-3">
-              <button
-                onClick={rejectChange}
-                className="flex-1 px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-all"
-              >
-                ❌ Reject Changes
-              </button>
-              <button
-                onClick={approveChange}
-                className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium transition-all shadow-lg"
-              >
-                ✅ Approve & Apply
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ApprovalModal
+        isOpen={showApprovalModal}
+        pendingChange={pendingChange}
+        onApprove={approveChange}
+        onReject={rejectChange}
+      />
 
       {/* Version History Modal */}
-      {showVersionHistory && currentComponent && currentComponent.versions && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => setShowVersionHistory(false)}
-        >
-          <div
-            className="bg-slate-900 rounded-2xl border border-blue-500/30 max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-blue-500/30 bg-blue-500/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                    <span className="text-3xl">🕒</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Version History</h3>
-                    <p className="text-sm text-blue-200/80">{currentComponent.name} - {currentComponent.versions.length} versions</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowVersionHistory(false)}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-all"
-                >
-                  <span className="text-slate-400 text-xl">✕</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Version List */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-3">
-                {[...currentComponent.versions].reverse().map((version, idx) => {
-                  const isCurrentVersion = idx === 0;
-                  const changeTypeColors = {
-                    NEW_APP: 'bg-purple-500/20 border-purple-500/30 text-purple-200',
-                    MAJOR_CHANGE: 'bg-orange-500/20 border-orange-500/30 text-orange-200',
-                    MINOR_CHANGE: 'bg-green-500/20 border-green-500/30 text-green-200'
-                  };
-                  const changeTypeIcons = {
-                    NEW_APP: '🚀',
-                    MAJOR_CHANGE: '⚡',
-                    MINOR_CHANGE: '✨'
-                  };
-                  
-                  return (
-                    <div
-                      key={version.id}
-                      className={`p-4 rounded-xl border transition-all ${
-                        isCurrentVersion
-                          ? 'bg-blue-500/20 border-blue-500/40'
-                          : 'bg-slate-800/50 border-white/10 hover:bg-slate-800 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl">
-                            {isCurrentVersion ? '📍' : '📌'}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-white font-semibold">
-                                Version {version.versionNumber}
-                              </h4>
-                              {isCurrentVersion && (
-                                <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-xs font-medium">
-                                  Current
-                                </span>
-                              )}
-                              <span className={`px-2 py-0.5 rounded-full border text-xs font-medium ${changeTypeColors[version.changeType]}`}>
-                                {changeTypeIcons[version.changeType]} {version.changeType.replace('_', ' ')}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-400">
-                              {new Date(version.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          {!isCurrentVersion && (
-                            <>
-                              <button
-                                onClick={() => handleForkApp(currentComponent, version)}
-                                className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-medium transition-all"
-                                title="Fork this version"
-                              >
-                                🍴 Fork
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`Revert to Version ${version.versionNumber}? Your current version will be saved.`)) {
-                                    revertToVersion(version);
-                                  }
-                                }}
-                                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-all"
-                              >
-                                🔄 Revert
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-slate-300 leading-relaxed mb-3">
-                        {version.description}
-                      </p>
-                      
-                      {/* Compare button */}
-                      {!isCurrentVersion && currentComponent.versions && currentComponent.versions.length > 1 && (
-                        <button
-                          onClick={() => {
-                            const currentVer = currentComponent.versions?.find(v => 
-                              v.versionNumber === Math.max(...(currentComponent.versions?.map(v => v.versionNumber) || []))
-                            );
-                            if (currentVer) {
-                              handleCompareVersions(version, currentVer);
-                            }
-                          }}
-                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                        >
-                          🔍 Compare with current
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-white/10 bg-black/20">
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span>💡</span>
-                <p>
-                  Click "Revert" to restore a previous version. Your current version will be preserved in history.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <VersionHistoryModal
+        isOpen={showVersionHistory}
+        onClose={() => setShowVersionHistory(false)}
+        currentComponent={currentComponent}
+        onRevertToVersion={revertToVersion}
+        onForkVersion={handleForkApp}
+        onCompareVersions={handleCompareVersions}
+      />
 
       {/* Deployment Instructions Modal */}
-      {showDeploymentModal && deploymentInstructions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-white/10 shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-green-500/20 to-blue-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">📦</span>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">App Exported Successfully!</h2>
-                    <p className="text-sm text-slate-300 mt-1">Ready to deploy to production</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowDeploymentModal(false);
-                    setDeploymentInstructions(null);
-                  }}
-                  className="text-slate-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-6 py-6 overflow-y-auto max-h-[60vh]">
-              <div className="space-y-6">
-                {/* Success Message */}
-                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">✅</span>
-                    <div>
-                      <h3 className="text-white font-semibold mb-1">Download Started</h3>
-                      <p className="text-sm text-slate-300">
-                        Your app has been packaged as a ZIP file with all necessary files, including package.json, configuration files, and a README with deployment instructions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Deployment Options */}
-                <div>
-                  <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                    <span>🚀</span> Deployment Options
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <button
-                      onClick={() => setDeploymentInstructions(getDeploymentInstructions('vercel', exportingApp?.name || 'app'))}
-                      className={`p-4 rounded-xl border transition-all ${
-                        deploymentInstructions.platform === 'vercel'
-                          ? 'bg-black/40 border-blue-500/50'
-                          : 'bg-white/5 border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">▲</div>
-                      <div className="text-white font-medium">Vercel</div>
-                      <div className="text-xs text-slate-400 mt-1">Recommended</div>
-                    </button>
-                    <button
-                      onClick={() => setDeploymentInstructions(getDeploymentInstructions('netlify', exportingApp?.name || 'app'))}
-                      className={`p-4 rounded-xl border transition-all ${
-                        deploymentInstructions.platform === 'netlify'
-                          ? 'bg-black/40 border-blue-500/50'
-                          : 'bg-white/5 border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">◆</div>
-                      <div className="text-white font-medium">Netlify</div>
-                      <div className="text-xs text-slate-400 mt-1">Easy Deploy</div>
-                    </button>
-                    <button
-                      onClick={() => setDeploymentInstructions(getDeploymentInstructions('github', exportingApp?.name || 'app'))}
-                      className={`p-4 rounded-xl border transition-all ${
-                        deploymentInstructions.platform === 'github'
-                          ? 'bg-black/40 border-blue-500/50'
-                          : 'bg-white/5 border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">🐙</div>
-                      <div className="text-white font-medium">GitHub</div>
-                      <div className="text-xs text-slate-400 mt-1">Version Control</div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Instructions */}
-                <div>
-                  <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                    <span>📋</span> Deployment Steps
-                  </h3>
-                  <div className="bg-black/20 rounded-xl border border-white/10 p-4">
-                    <ol className="space-y-3">
-                      {deploymentInstructions.steps.map((step, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-xs text-blue-400 font-medium">
-                            {index + 1}
-                          </span>
-                          <span className="text-sm text-slate-300 leading-relaxed pt-0.5">
-                            {step}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-
-                    {deploymentInstructions.cliCommand && (
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-slate-400">Quick Deploy Command:</span>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(deploymentInstructions.cliCommand || '');
-                              alert('Command copied to clipboard!');
-                            }}
-                            className="text-xs text-blue-400 hover:text-blue-300"
-                          >
-                            Copy
-                          </button>
-                        </div>
-                        <code className="block px-3 py-2 rounded-lg bg-black/40 text-green-400 text-sm font-mono">
-                          {deploymentInstructions.cliCommand}
-                        </code>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Additional Resources */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl">💡</span>
-                    <div className="text-sm text-slate-300">
-                      <p className="font-semibold text-white mb-1">Tip:</p>
-                      <p>
-                        For the best experience, we recommend deploying to Vercel. It's optimized for Next.js apps and provides automatic deployments, preview URLs, and zero-config setup.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <span>📦</span>
-                <span>Check your downloads folder for the ZIP file</span>
-              </div>
-              <button
-                onClick={() => {
-                  setShowDeploymentModal(false);
-                  setDeploymentInstructions(null);
-                }}
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-all"
-              >
-                Got it!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeploymentModal
+        isOpen={showDeploymentModal}
+        onClose={() => {
+          setShowDeploymentModal(false);
+          setDeploymentInstructions(null);
+        }}
+        deploymentInstructions={deploymentInstructions}
+        onPlatformChange={(platform) => setDeploymentInstructions(getDeploymentInstructions(platform, exportingApp?.name || 'app'))}
+        appName={exportingApp?.name}
+      />
 
       {/* Diff Preview Modal */}
-      {showDiffPreview && pendingDiff && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
-          onClick={() => {}}
-        >
-          <div
-            className="bg-slate-900 rounded-2xl border border-blue-500/30 max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-6 py-5 border-b border-blue-500/30 bg-blue-500/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                    <span className="text-3xl">🔍</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Review Changes</h3>
-                    <p className="text-sm text-blue-200/80">Smart targeted modifications</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setPendingDiff(null);
-                    setShowDiffPreview(false);
-                  }}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-all"
-                >
-                  <span className="text-slate-400 text-xl">✕</span>
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[70vh]">
-              <DiffPreview
-                summary={pendingDiff.summary}
-                files={pendingDiff.files}
-                onApprove={approveDiff}
-                onReject={rejectDiff}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <DiffPreviewModal
+        isOpen={showDiffPreview}
+        onClose={() => {
+          setPendingDiff(null);
+          setShowDiffPreview(false);
+        }}
+        pendingDiff={pendingDiff}
+        onApprove={approveDiff}
+        onReject={rejectDiff}
+      />
 
       {/* New App Staging Consent Modal */}
-      {showNewAppStagingModal && pendingNewAppRequest && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={() => {}}
-        >
-          <div
-            className="bg-slate-900 rounded-2xl border border-purple-500/30 max-w-2xl w-full shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal hHeader */}
-            <div className="px-6 py-5 border-b border-purple-500/30 bg-purple-500/10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <span className="text-3xl">🏗️</span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Build in Phases?</h3>
-                  <p className="text-sm text-purple-200/80">Large app detected - suggested phased approach</p>
-                </div>
-              </div>
-            </div>
+      <StagingConsentModal
+        isOpen={showNewAppStagingModal}
+        pendingRequest={pendingNewAppRequest}
+        onBuildAllAtOnce={() => {
+          setShowNewAppStagingModal(false);
+          setPendingNewAppRequest('');
+          setUserInput(pendingNewAppRequest);
+        }}
+        onBuildInPhases={async () => {
+          setShowNewAppStagingModal(false);
+          setIsGenerating(true);
+          
+          try {
+            const response = await fetch('/api/ai-builder/plan-phases', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: pendingNewAppRequest,
+                conversationHistory: chatMessages.slice(-20)
+              })
+            });
 
-            {/* Modal Content */}
-            <div className="px-6 py-5">
-              <div className="mb-6">
-                <label className="text-sm font-medium text-slate-300 mb-2 block">
-                  Your request:
-                </label>
-                <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
-                  <p className="text-white text-sm leading-relaxed">
-                    "{pendingNewAppRequest}"
-                  </p>
-                </div>
-              </div>
+            const data = await response.json();
 
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">💡</span>
-                  <div>
-                    <p className="text-sm font-medium text-blue-200 mb-2">
-                      Why Build in Phases?
-                    </p>
-                    <ul className="text-xs text-blue-200/70 leading-relaxed space-y-1.5">
-                      <li>✅ Each phase gets fully working code you can test</li>
-                      <li>✅ See progress step-by-step with live previews</li>
-                      <li>✅ Guide the direction after each phase</li>
-                      <li>✅ Avoids overwhelming single-build approach</li>
-                      <li>✅ Better quality - each piece is refined before moving on</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+            if (data.error) {
+              throw new Error(data.error);
+            }
 
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🎯</span>
-                  <div>
-                    <p className="text-sm font-medium text-purple-200 mb-2">
-                      How It Works
-                    </p>
-                    <ol className="text-xs text-purple-200/70 leading-relaxed space-y-1.5">
-                      <li>1. I'll analyze and break your request into 2-4 logical phases</li>
-                      <li>2. Build Phase 1 (foundation + core features)</li>
-                      <li>3. You review, test, and approve before Phase 2</li>
-                      <li>4. Repeat until your complete app is ready</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
+            setNewAppStagePlan(data);
 
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">⚡</span>
-                  <div>
-                    <p className="text-sm font-medium text-green-200 mb-1">
-                      Or Build All at Once?
-                    </p>
-                    <p className="text-xs text-green-200/70 leading-relaxed">
-                      I can also generate everything in one go. This is faster but gives you less control over the direction, and the result might need more refinement.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            const phasePlanMessage: ChatMessage = {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `🏗️ **${data.totalPhases}-Phase Build Plan Created**\n\n${data.phases.map((p: { number: number; name: string; description: string; features: string[] }) => 
+                `**Phase ${p.number}: ${p.name}**\n${p.description}\n${p.features.map((f: string) => `  • ${f}`).join('\n')}`
+              ).join('\n\n')}\n\n**Ready to start?** I'll begin with Phase 1. You can review and approve each phase before moving to the next.\n\nType **'start'** or **'begin'** to build Phase 1!`,
+              timestamp: new Date().toISOString()
+            };
 
-            {/* Modal Actions */}
-            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex gap-3">
-              <button
-                onClick={() => {
-                  // User wants all-at-once build
-                  setShowNewAppStagingModal(false);
-                  setPendingNewAppRequest('');
-                  // Continue with normal single build by resetting the input and letting sendMessage() proceed
-                  setUserInput(pendingNewAppRequest);
-                  // Don't call sendMessage here - let user click send button
-                }}
-                className="flex-1 px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-all"
-              >
-                ⚡ Build All at Once
-              </button>
-              <button
-                onClick={async () => {
-                  // User wants phased build - call plan-phases API
-                  setShowNewAppStagingModal(false);
-                  setIsGenerating(true);
-                  
-                  try {
-                    const response = await fetch('/api/ai-builder/plan-phases', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        prompt: pendingNewAppRequest,
-                        conversationHistory: chatMessages.slice(-20)
-                      })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.error) {
-                      throw new Error(data.error);
-                    }
-
-                    // Store the phase plan
-                    setNewAppStagePlan(data);
-
-                    // Show phase plan to user
-                    const phasePlanMessage: ChatMessage = {
-                      id: Date.now().toString(),
-                      role: 'assistant',
-                      content: `🏗️ **${data.totalPhases}-Phase Build Plan Created**\n\n${data.phases.map((p: any) => 
-                        `**Phase ${p.number}: ${p.name}**\n${p.description}\n${p.features.map((f: string) => `  • ${f}`).join('\n')}`
-                      ).join('\n\n')}\n\n**Ready to start?** I'll begin with Phase 1. You can review and approve each phase before moving to the next.\n\nType **'start'** or **'begin'** to build Phase 1!`,
-                      timestamp: new Date().toISOString()
-                    };
-
-                    setChatMessages(prev => [...prev, phasePlanMessage]);
-                  } catch (error) {
-                    const errorMessage: ChatMessage = {
-                      id: Date.now().toString(),
-                      role: 'assistant',
-                      content: `❌ Failed to create phase plan: ${error instanceof Error ? error.message : 'Unknown error'}. Let's try building all at once instead.`,
-                      timestamp: new Date().toISOString()
-                    };
-                    setChatMessages(prev => [...prev, errorMessage]);
-                  } finally {
-                    setIsGenerating(false);
-                    setPendingNewAppRequest('');
-                  }
-                }}
-                className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white font-medium transition-all shadow-lg"
-              >
-                🏗️ Build in Phases (Recommended)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            setChatMessages(prev => [...prev, phasePlanMessage]);
+          } catch (error) {
+            const errorMessage: ChatMessage = {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `❌ Failed to create phase plan: ${error instanceof Error ? error.message : 'Unknown error'}. Let's try building all at once instead.`,
+              timestamp: new Date().toISOString()
+            };
+            setChatMessages(prev => [...prev, errorMessage]);
+          } finally {
+            setIsGenerating(false);
+            setPendingNewAppRequest('');
+          }
+        }}
+      />
 
       {/* Compare Versions Modal */}
-      {showCompareModal && compareVersions.v1 && compareVersions.v2 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-white/10 shadow-2xl max-w-6xl w-full max-h-[85vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-purple-500/20 to-blue-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">🔍</span>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Compare Versions</h2>
-                    <p className="text-sm text-slate-300 mt-1">
-                      Version {compareVersions.v1.versionNumber} vs Version {compareVersions.v2.versionNumber}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowCompareModal(false);
-                    setCompareVersions({ v1: null, v2: null });
-                  }}
-                  className="text-slate-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-6 py-6 overflow-y-auto max-h-[70vh]">
-              <div className="grid grid-cols-2 gap-6">
-                {/* Version 1 */}
-                <div className="space-y-3">
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">📌</span>
-                      <div>
-                        <h3 className="text-white font-semibold">Version {compareVersions.v1.versionNumber}</h3>
-                        <p className="text-xs text-slate-400">
-                          {new Date(compareVersions.v1.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-300">{compareVersions.v1.description}</p>
-                  </div>
-                  
-                  <div className="bg-black/20 rounded-xl border border-white/10 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white font-semibold text-sm">Code Preview</h4>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(compareVersions.v1?.code || '');
-                          alert('Code copied to clipboard!');
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                    <pre className="text-xs text-slate-300 overflow-auto max-h-[400px] p-3 bg-black/40 rounded-lg">
-                      <code>{compareVersions.v1.code.substring(0, 1000)}...</code>
-                    </pre>
-                  </div>
-                </div>
-
-                {/* Version 2 */}
-                <div className="space-y-3">
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">📍</span>
-                      <div>
-                        <h3 className="text-white font-semibold">Version {compareVersions.v2.versionNumber}</h3>
-                        <p className="text-xs text-slate-400">
-                          {new Date(compareVersions.v2.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-300">{compareVersions.v2.description}</p>
-                  </div>
-                  
-                  <div className="bg-black/20 rounded-xl border border-white/10 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white font-semibold text-sm">Code Preview</h4>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(compareVersions.v2?.code || '');
-                          alert('Code copied to clipboard!');
-                        }}
-                        className="text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                    <pre className="text-xs text-slate-300 overflow-auto max-h-[400px] p-3 bg-black/40 rounded-lg">
-                      <code>{compareVersions.v2.code.substring(0, 1000)}...</code>
-                    </pre>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-xl">
-                <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <span>⚡</span> Quick Actions
-                </h4>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Revert to Version ${compareVersions.v1?.versionNumber}?`)) {
-                        if (compareVersions.v1) revertToVersion(compareVersions.v1);
-                        setShowCompareModal(false);
-                      }
-                    }}
-                    className="flex-1 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition-all"
-                  >
-                    🔄 Revert to Version {compareVersions.v1.versionNumber}
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (compareVersions.v1 && currentComponent) {
-                        handleForkApp(currentComponent, compareVersions.v1);
-                        setShowCompareModal(false);
-                      }
-                    }}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white text-sm font-medium transition-all"
-                  >
-                    🍴 Fork Version {compareVersions.v1.versionNumber}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <span>💡</span>
-                <span>Compare code changes between versions</span>
-              </div>
-              <button
-                onClick={() => {
-                  setShowCompareModal(false);
-                  setCompareVersions({ v1: null, v2: null });
-                }}
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-all"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CompareVersionsModal
+        isOpen={showCompareModal}
+        onClose={() => {
+          setShowCompareModal(false);
+          setCompareVersions({ v1: null, v2: null });
+        }}
+        version1={compareVersions.v1}
+        version2={compareVersions.v2}
+        onRevertToVersion={revertToVersion}
+        onForkVersion={(version) => {
+          if (currentComponent) {
+            handleForkApp(currentComponent, version);
+          }
+        }}
+        currentComponent={currentComponent}
+      />
 
       {/* App Concept Wizard Modal */}
       {showConceptWizard && (
@@ -3932,114 +3109,37 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
       />
 
       {/* Advanced Phased Build Panel */}
-      {showAdvancedPhasedBuild && buildPhases.isPhasedMode && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20"
-          onClick={() => setShowAdvancedPhasedBuild(false)}
-        >
-          <div
-            className="bg-slate-900 rounded-2xl border border-white/10 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Panel Header */}
-            <div className="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-orange-500/10 to-amber-500/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                    <span className="text-2xl">🏗️</span>
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Phase-Driven Build</h2>
-                    <p className="text-sm text-slate-400">
-                      {buildPhases.progress.percentComplete}% complete • {buildPhases.progress.estimatedTimeRemaining} remaining
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowAdvancedPhasedBuild(false)}
-                  className="p-2 rounded-lg hover:bg-white/10 transition-all"
-                >
-                  <span className="text-slate-400 text-xl">✕</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Panel Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Phase Progress Indicator */}
-              <PhaseProgressIndicator
-                phases={buildPhases.phases}
-                progress={buildPhases.progress}
-                onPhaseClick={handleViewPhaseDetails}
-              />
-
-              {/* Control Panel and Validation */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Phase Control Panel */}
-                <PhaseControlPanel
-                  phases={buildPhases.phases}
-                  progress={buildPhases.progress}
-                  isBuilding={buildPhases.isBuilding}
-                  isPaused={buildPhases.isPaused}
-                  onStartBuild={handleStartAdvancedPhasedBuild}
-                  onPauseBuild={buildPhases.pauseBuild}
-                  onResumeBuild={buildPhases.resumeBuild}
-                  onSkipPhase={(phaseId) => {
-                    if (buildPhases.currentPhase?.id === phaseId) {
-                      buildPhases.skipCurrentPhase();
-                    }
-                  }}
-                  onRetryPhase={(phaseId) => {
-                    if (buildPhases.currentPhase?.id === phaseId) {
-                      buildPhases.retryCurrentPhase();
-                    }
-                  }}
-                  onViewPhaseDetails={handleViewPhaseDetails}
-                />
-
-                {/* Validation Dashboard */}
-                {buildPhases.currentPhase && (
-                  <ValidationDashboard
-                    phase={buildPhases.currentPhase}
-                    onRunValidation={handleRunValidation}
-                    onProceedAnyway={buildPhases.proceedToNextPhase}
-                    onRetryPhase={buildPhases.retryCurrentPhase}
-                    isValidating={isValidating}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Panel Footer */}
-            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <span>💡</span>
-                <span>Each phase focuses on specific aspects of your app for better quality.</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    buildPhases.resetBuild();
-                    setShowAdvancedPhasedBuild(false);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-all"
-                >
-                  Reset Build
-                </button>
-                {buildPhases.currentPhase && buildPhases.currentPhase.status === 'pending' && (
-                  <button
-                    onClick={async () => {
-                      await buildPhases.executeCurrentPhase();
-                    }}
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-sm font-medium transition-all"
-                  >
-                    Build Current Phase
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      {buildPhases.isPhasedMode && (
+        <PhasedBuildPanel
+          isOpen={showAdvancedPhasedBuild}
+          onClose={() => setShowAdvancedPhasedBuild(false)}
+          phases={buildPhases.phases}
+          progress={buildPhases.progress}
+          currentPhase={buildPhases.currentPhase}
+          isBuilding={buildPhases.isBuilding}
+          isPaused={buildPhases.isPaused}
+          isValidating={isValidating}
+          onStartBuild={handleStartAdvancedPhasedBuild}
+          onPauseBuild={buildPhases.pauseBuild}
+          onResumeBuild={buildPhases.resumeBuild}
+          onSkipPhase={(phaseId) => {
+            if (buildPhases.currentPhase?.id === phaseId) {
+              buildPhases.skipCurrentPhase();
+            }
+          }}
+          onRetryPhase={(phaseId) => {
+            if (buildPhases.currentPhase?.id === phaseId) {
+              buildPhases.retryCurrentPhase();
+            }
+          }}
+          onViewPhaseDetails={handleViewPhaseDetails}
+          onRunValidation={handleRunValidation}
+          onResetBuild={buildPhases.resetBuild}
+          onExecuteCurrentPhase={async () => {
+            await buildPhases.executeCurrentPhase();
+          }}
+          onProceedToNextPhase={buildPhases.proceedToNextPhase}
+        />
       )}
 
       {/* Phase Detail View Modal */}
