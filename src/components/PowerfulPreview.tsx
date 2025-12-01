@@ -105,64 +105,7 @@ h1, h2, h3, h4, h5, h6 {
     };
   }
 
-  // Add capture.js - Screenshot capture script
-  sandpackFiles['/capture.js'] = {
-    code: `// Screenshot capture script for AI debugging
-window.capturePreview = async function() {
-  try {
-    const root = document.getElementById('root');
-    if (!root) throw new Error('Root element not found');
-    
-    // Wait for html2canvas to be available
-    if (typeof html2canvas === 'undefined') {
-      throw new Error('html2canvas not loaded');
-    }
-    
-    // Use html2canvas to capture
-    const canvas = await html2canvas(root, {
-      scale: 1,
-      logging: false,
-      useCORS: true
-    });
-    
-    // Convert to JPEG with compression
-    let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    
-    // Scale down if too large
-    const maxWidth = 1200;
-    if (canvas.width > maxWidth) {
-      const scaledCanvas = document.createElement('canvas');
-      const ratio = maxWidth / canvas.width;
-      scaledCanvas.width = maxWidth;
-      scaledCanvas.height = canvas.height * ratio;
-      const ctx = scaledCanvas.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
-      dataUrl = scaledCanvas.toDataURL('image/jpeg', 0.8);
-    }
-    
-    // Send to parent
-    window.parent.postMessage({
-      type: 'sandpack-captured',
-      dataUrl: dataUrl,
-      success: true
-    }, '*');
-  } catch (error) {
-    // Send diagnostics on failure
-    window.parent.postMessage({
-      type: 'sandpack-captured',
-      success: false,
-      diagnostics: {
-        error: error.message,
-        viewport: { width: window.innerWidth, height: window.innerHeight },
-        rootFound: !!document.getElementById('root'),
-        html2canvasLoaded: typeof html2canvas !== 'undefined'
-      }
-    }, '*');
-  }
-};`
-  };
-
-  // Add public/index.html with Tailwind CDN and capture script
+  // Add public/index.html with Tailwind CDN and inline capture script
   sandpackFiles['/public/index.html'] = {
     code: `<!DOCTYPE html>
 <html lang="en">
@@ -175,7 +118,55 @@ window.capturePreview = async function() {
   </head>
   <body>
     <div id="root"></div>
-    <script src="/capture.js"></script>
+    <script>
+      // Screenshot capture script - inline to ensure it loads
+      window.capturePreview = async function() {
+        try {
+          const root = document.getElementById('root');
+          if (!root) throw new Error('Root element not found');
+          
+          if (typeof html2canvas === 'undefined') {
+            throw new Error('html2canvas not loaded');
+          }
+          
+          const canvas = await html2canvas(root, {
+            scale: 1,
+            logging: false,
+            useCORS: true
+          });
+          
+          let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          
+          const maxWidth = 1200;
+          if (canvas.width > maxWidth) {
+            const scaledCanvas = document.createElement('canvas');
+            const ratio = maxWidth / canvas.width;
+            scaledCanvas.width = maxWidth;
+            scaledCanvas.height = canvas.height * ratio;
+            const ctx = scaledCanvas.getContext('2d');
+            ctx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+            dataUrl = scaledCanvas.toDataURL('image/jpeg', 0.8);
+          }
+          
+          window.parent.postMessage({
+            type: 'sandpack-captured',
+            dataUrl: dataUrl,
+            success: true
+          }, '*');
+        } catch (error) {
+          window.parent.postMessage({
+            type: 'sandpack-captured',
+            success: false,
+            diagnostics: {
+              error: error.message,
+              viewport: { width: window.innerWidth, height: window.innerHeight },
+              rootFound: !!document.getElementById('root'),
+              html2canvasLoaded: typeof html2canvas !== 'undefined'
+            }
+          }, '*');
+        }
+      };
+    </script>
   </body>
 </html>`
   };
