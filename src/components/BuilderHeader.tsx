@@ -7,8 +7,13 @@ import ThemeToggle from './ThemeToggle';
 // TYPES
 // ============================================================================
 
+/** Available export formats for the project */
 export type ExportFormat = 'html' | 'react' | 'zip' | 'clipboard';
+
+/** Project status states */
 export type ProjectStatus = 'draft' | 'saved' | 'generating' | 'error';
+
+/** Available view modes for the builder */
 export type ViewType = 'chat' | 'code' | 'preview' | 'split';
 
 export interface BuilderHeaderProps {
@@ -43,6 +48,35 @@ export interface BuilderHeaderProps {
   /** App version to display */
   appVersion?: string;
 }
+
+// ============================================================================
+// SHARED CONSTANTS
+// ============================================================================
+
+/** Export options configuration */
+const EXPORT_OPTIONS: { format: ExportFormat; icon: string; label: string; description: string }[] = [
+  { format: 'html', icon: '🌐', label: 'Export as HTML', description: 'Static HTML files' },
+  { format: 'react', icon: '⚛️', label: 'Export as React', description: 'Next.js project' },
+  { format: 'zip', icon: '📦', label: 'Export as ZIP', description: 'Complete package' },
+  { format: 'clipboard', icon: '📋', label: 'Copy to Clipboard', description: 'Copy code' },
+];
+
+/** View options configuration */
+const VIEW_OPTIONS: { id: ViewType; icon: string; label: string }[] = [
+  { id: 'chat', icon: '💬', label: 'Chat' },
+  { id: 'code', icon: '💻', label: 'Code' },
+  { id: 'preview', icon: '👁️', label: 'Preview' },
+  { id: 'split', icon: '⊞', label: 'Split' },
+];
+
+/** Keyboard shortcuts configuration */
+const KEYBOARD_SHORTCUTS: { keys: string; action: string }[] = [
+  { keys: 'Ctrl+S', action: 'Save project' },
+  { keys: 'Ctrl+N', action: 'New project' },
+  { keys: 'Ctrl+Z', action: 'Undo' },
+  { keys: 'Ctrl+Shift+Z', action: 'Redo' },
+  { keys: 'Ctrl+/', action: 'Toggle view' },
+];
 
 // ============================================================================
 // STATUS INDICATOR COMPONENT
@@ -124,13 +158,6 @@ function ExportDropdown({ onExport, isOpen, onClose }: ExportDropdownProps) {
 
   if (!isOpen) return null;
 
-  const exportOptions = [
-    { format: 'html' as ExportFormat, icon: '🌐', label: 'Export as HTML', description: 'Static HTML files' },
-    { format: 'react' as ExportFormat, icon: '⚛️', label: 'Export as React', description: 'Next.js project' },
-    { format: 'zip' as ExportFormat, icon: '📦', label: 'Export as ZIP', description: 'Complete package' },
-    { format: 'clipboard' as ExportFormat, icon: '📋', label: 'Copy to Clipboard', description: 'Copy code' },
-  ];
-
   return (
     <div
       ref={dropdownRef}
@@ -141,8 +168,10 @@ function ExportDropdown({ onExport, isOpen, onClose }: ExportDropdownProps) {
         py-2 z-50
         animate-in fade-in slide-in-from-top-2 duration-200
       "
+      role="menu"
+      aria-orientation="vertical"
     >
-      {exportOptions.map((option) => (
+      {EXPORT_OPTIONS.map((option) => (
         <button
           key={option.format}
           onClick={() => {
@@ -153,8 +182,10 @@ function ExportDropdown({ onExport, isOpen, onClose }: ExportDropdownProps) {
             w-full px-4 py-3 text-left flex items-center gap-3
             hover:bg-white/10 transition-colors
           "
+          role="menuitem"
+          aria-label={`${option.label} - ${option.description}`}
         >
-          <span className="text-xl">{option.icon}</span>
+          <span className="text-xl" aria-hidden="true">{option.icon}</span>
           <div>
             <div className="text-sm font-medium text-white">{option.label}</div>
             <div className="text-xs text-slate-400">{option.description}</div>
@@ -175,19 +206,14 @@ interface ViewToggleProps {
 }
 
 function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
-  const views: { id: ViewType; icon: string; label: string }[] = [
-    { id: 'chat', icon: '💬', label: 'Chat' },
-    { id: 'code', icon: '💻', label: 'Code' },
-    { id: 'preview', icon: '👁️', label: 'Preview' },
-    { id: 'split', icon: '⊞', label: 'Split' },
-  ];
-
   return (
-    <div className="flex items-center bg-slate-800/50 rounded-lg p-1 border border-white/10">
-      {views.map((view) => (
+    <div className="flex items-center bg-slate-800/50 rounded-lg p-1 border border-white/10" role="group" aria-label="View selection">
+      {VIEW_OPTIONS.map((view) => (
         <button
           key={view.id}
           onClick={() => onViewChange(view.id)}
+          aria-label={`Switch to ${view.label} view`}
+          aria-pressed={currentView === view.id}
           className={`
             px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5
             ${currentView === view.id
@@ -197,7 +223,7 @@ function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
           `}
           title={view.label}
         >
-          <span>{view.icon}</span>
+          <span aria-hidden="true">{view.icon}</span>
           <span className="hidden lg:inline">{view.label}</span>
         </button>
       ))}
@@ -400,12 +426,7 @@ function MobileMenu({
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-slate-400">Export</h4>
           <div className="space-y-2">
-            {[
-              { format: 'html' as ExportFormat, icon: '🌐', label: 'Export as HTML' },
-              { format: 'react' as ExportFormat, icon: '⚛️', label: 'Export as React' },
-              { format: 'zip' as ExportFormat, icon: '📦', label: 'Export as ZIP' },
-              { format: 'clipboard' as ExportFormat, icon: '📋', label: 'Copy to Clipboard' },
-            ].map((option) => (
+            {EXPORT_OPTIONS.map((option) => (
               <button
                 key={option.format}
                 onClick={() => {
@@ -413,8 +434,9 @@ function MobileMenu({
                   onClose();
                 }}
                 className="w-full px-4 py-3 rounded-lg bg-slate-800 text-white text-left hover:bg-slate-700 transition-colors flex items-center gap-3"
+                aria-label={option.label}
               >
-                <span>{option.icon}</span>
+                <span aria-hidden="true">{option.icon}</span>
                 <span>{option.label}</span>
               </button>
             ))}
@@ -749,17 +771,11 @@ export function BuilderHeader({
                   "
                 >
                   <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <span>⌨️</span>
+                    <span aria-hidden="true">⌨️</span>
                     Keyboard Shortcuts
                   </h4>
                   <div className="space-y-2 text-xs">
-                    {[
-                      { keys: 'Ctrl+S', action: 'Save project' },
-                      { keys: 'Ctrl+N', action: 'New project' },
-                      { keys: 'Ctrl+Z', action: 'Undo' },
-                      { keys: 'Ctrl+Shift+Z', action: 'Redo' },
-                      { keys: 'Ctrl+/', action: 'Toggle view' },
-                    ].map((shortcut) => (
+                    {KEYBOARD_SHORTCUTS.map((shortcut) => (
                       <div key={shortcut.keys} className="flex items-center justify-between">
                         <span className="text-slate-400">{shortcut.action}</span>
                         <kbd className="px-2 py-1 rounded bg-slate-700 text-white font-mono">
