@@ -220,7 +220,7 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                   AI Prompt Preview
                 </h3>
                 <div className="p-3 rounded-lg bg-slate-900/50 border border-white/5 max-h-[200px] overflow-y-auto">
-                  <pre className="text-xs text-slate-400 whitespace-pre-wrap font-mono">
+                  <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono leading-relaxed">
                     {template.basePrompt}
                   </pre>
                 </div>

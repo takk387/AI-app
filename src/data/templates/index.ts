@@ -24,6 +24,17 @@ export const architectureTemplates: FullTemplate[] = [
 ];
 
 /**
+ * Category-specific keywords for template recommendations
+ */
+const CATEGORY_KEYWORDS: Record<TemplateCategory, string[]> = {
+  admin: ['admin', 'dashboard', 'analytics', 'monitor', 'metrics', 'management'],
+  commerce: ['shop', 'store', 'product', 'cart', 'checkout', 'ecommerce', 'e-commerce', 'buy', 'sell'],
+  content: ['blog', 'article', 'post', 'content', 'publish', 'cms', 'news'],
+  marketing: ['landing', 'marketing', 'portfolio', 'launch', 'showcase', 'promotion'],
+  saas: ['saas', 'subscription', 'billing', 'team', 'organization', 'onboarding', 'workspace']
+};
+
+/**
  * Get template by ID
  */
 export function getTemplateById(id: string): FullTemplate | undefined {
@@ -93,15 +104,7 @@ export function getRecommendedTemplates(description: string): FullTemplate[] {
     }
     
     // Check for category-specific keywords
-    const categoryKeywords: Record<TemplateCategory, string[]> = {
-      admin: ['admin', 'dashboard', 'analytics', 'monitor', 'metrics', 'management'],
-      commerce: ['shop', 'store', 'product', 'cart', 'checkout', 'ecommerce', 'e-commerce', 'buy', 'sell'],
-      content: ['blog', 'article', 'post', 'content', 'publish', 'cms', 'news'],
-      marketing: ['landing', 'marketing', 'portfolio', 'launch', 'showcase', 'promotion'],
-      saas: ['saas', 'subscription', 'billing', 'team', 'organization', 'onboarding', 'workspace']
-    };
-    
-    const keywords = categoryKeywords[template.category] || [];
+    const keywords = CATEGORY_KEYWORDS[template.category] || [];
     for (const keyword of keywords) {
       if (lowerDesc.includes(keyword)) {
         score += 3;

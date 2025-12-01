@@ -169,7 +169,10 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
             </div>
 
             {/* Description */}
-            <p className="text-sm text-slate-400 mb-4 line-clamp-2">
+            <p 
+              className="text-sm text-slate-400 mb-4 line-clamp-2"
+              title={template.description}
+            >
               {template.description}
             </p>
 

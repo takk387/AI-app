@@ -170,15 +170,42 @@ export function AppConceptWizard({
   const handleTemplateSelect = useCallback((template: FullTemplate) => {
     setSelectedTemplate(template);
     
-    // Pre-populate description with template info
-    setDescription(template.basePrompt);
-    setPurpose(template.description);
+    // Pre-populate description with template description (user-facing)
+    setDescription(template.description);
+    setPurpose(`Build a ${template.name.toLowerCase()} application using the ${template.layoutStructure.type} layout pattern.`);
     
-    // Pre-populate features from template
+    // Pre-populate features from template with meaningful descriptions
+    const featureDescriptions: Record<string, string> = {
+      'Sidebar navigation': 'Collapsible sidebar menu for easy navigation between sections',
+      'Header with user menu': 'Top header bar with user profile, notifications, and settings',
+      'Dashboard grid layout': 'Responsive grid system for organizing widgets and content',
+      'Metric cards': 'Cards displaying key metrics and KPIs with icons',
+      'Item list/table': 'Sortable table or list view for displaying data records',
+      'Create form': 'Form with validation for creating new records',
+      'Edit functionality': 'Inline or modal editing capabilities for existing records',
+      'Delete with confirmation': 'Safe deletion with confirmation dialog',
+      'Product listing': 'Grid or list view of products with filtering options',
+      'Product detail page': 'Detailed product view with images, description, and variants',
+      'Shopping cart': 'Cart functionality with item management and totals',
+      'Checkout process': 'Multi-step checkout flow with payment integration',
+      'User authentication': 'Login, registration, and password reset flows',
+      'Onboarding flow': 'Multi-step wizard for new user setup',
+      'Dashboard': 'Main dashboard with overview metrics and quick actions',
+      'Settings pages': 'User profile and account settings management',
+      'Hero section': 'Prominent headline with call-to-action button',
+      'Features showcase': 'Grid of feature cards highlighting key benefits',
+      'Call-to-action buttons': 'Prominent buttons guiding users to take action',
+      'Footer': 'Site footer with navigation links and social icons',
+      'Article listing': 'List of articles with pagination and filtering',
+      'Article detail page': 'Full article view with rich content rendering',
+      'Category navigation': 'Navigation by categories and tags',
+      'Search functionality': 'Search with autocomplete and filters'
+    };
+    
     const templateFeatures: Feature[] = template.requiredFeatures.map((f, index) => ({
       id: `template-feature-${index}`,
       name: f,
-      description: f,
+      description: featureDescriptions[f] || `Implementation of ${f.toLowerCase()} functionality`,
       priority: 'high' as const
     }));
     setFeatures(templateFeatures);
