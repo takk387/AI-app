@@ -32,6 +32,9 @@ import type {
   UserId
 } from '@/types/storage';
 
+// Resizable panels
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui';
+
 // Base44-inspired layout with conversation-first design + your dark colors
 
 interface ChatMessage {
@@ -2449,12 +2452,20 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="max-w-[1800px] mx-auto px-4 py-4 h-[calc(100vh-80px)]">
+        {/* Main Content - Resizable Panels */}
+        <ResizablePanelGroup 
+          direction="horizontal" 
+          persistenceKey="ai-builder-layout"
+          onLayoutChange={(sizes) => {
+            // Optional: track layout changes for analytics
+            console.log('Panel layout changed:', sizes);
+          }}
+          className="h-full"
+        >
           {/* Chat/Conversation Panel - Left Side */}
-          <div className="lg:col-span-5">
-            <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden flex flex-col h-[calc(100vh-200px)] shadow-2xl shadow-black/40">
+          <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
+            <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden flex flex-col h-full shadow-2xl shadow-black/40">
               {/* Chat Header */}
               <div className="px-6 py-4 border-b border-white/10 bg-black/30 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -2637,11 +2648,14 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 </div>
               </div>
             </div>
-          </div>
+          </ResizablePanel>
+
+          {/* Resizable Handle */}
+          <ResizableHandle />
 
           {/* Preview/Code Panel - Right Side */}
-          <div className="lg:col-span-7">
-            <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-black/40">
+          <ResizablePanel defaultSize={65} minSize={30} maxSize={80}>
+            <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-black/40 h-full flex flex-col">
               {/* Tabs */}
               <div className="flex items-center gap-2 px-6 py-4 border-b border-white/10 bg-black/30 backdrop-blur-sm">
                 <button
@@ -2723,9 +2737,9 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
               </div>
 
               {/* Preview Content */}
-              <div className="p-6">
+              <div className="flex-1 p-6 overflow-auto">
                 {!currentComponent ? (
-                  <div className="h-[calc(100vh-300px)] flex flex-col items-center justify-center text-center">
+                  <div className="h-full flex flex-col items-center justify-center text-center">
                     <div className="text-6xl mb-4">💬</div>
                     <h3 className="text-xl font-semibold text-white mb-2">
                       Start Building Your App
@@ -2737,13 +2751,13 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 ) : (
                   <>
                     {activeTab === 'preview' && (
-                      <div className="h-[calc(100vh-200px)]">
+                      <div className="h-full">
                         <FullAppPreview appDataJson={currentComponent.code} />
                       </div>
                     )}
 
                     {activeTab === 'code' && (
-                      <div className="min-h-[500px]">
+                      <div className="h-full min-h-[500px]">
                         <CodePreview code={currentComponent.code} />
                       </div>
                     )}
@@ -2751,8 +2765,8 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 )}
               </div>
             </div>
-          </div>
-        </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       {/* App Library Sidebar */}
