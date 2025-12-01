@@ -435,13 +435,8 @@ export class SemanticMemoryManager {
    */
   private async updateAccessCounts(ids: string[]): Promise<void> {
     for (const id of ids) {
-      await this.supabase
-        .from('semantic_memories')
-        .update({
-          last_accessed_at: new Date().toISOString(),
-          access_count: this.supabase.rpc('increment_access_count', { memory_id: id }),
-        })
-        .eq('id', id);
+      // Use the RPC function which handles both the increment and update
+      await this.supabase.rpc('increment_access_count', { memory_id: id });
     }
   }
   
