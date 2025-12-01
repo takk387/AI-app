@@ -7,6 +7,7 @@ import DiffPreview from './DiffPreview';
 import AppConceptWizard from './AppConceptWizard';
 import ConversationalAppWizard from './ConversationalAppWizard';
 import ThemeToggle from './ThemeToggle';
+import SettingsPage from './SettingsPage';
 import { ToastProvider } from './Toast';
 import type { AppConcept, ImplementationPlan, BuildPhase } from '../types/appConcept';
 import { exportAppAsZip, downloadBlob, parseAppFiles, getDeploymentInstructions, type DeploymentInstructions } from '../utils/exportApp';
@@ -310,6 +311,9 @@ export default function AIBuilder() {
   const [showConversationalWizard, setShowConversationalWizard] = useState(false);
   const [appConcept, setAppConcept] = useState<AppConcept | null>(null);
   const [implementationPlan, setImplementationPlan] = useState<ImplementationPlan | null>(null);
+
+  // Settings page state
+  const [showSettings, setShowSettings] = useState(false);
 
   // Advanced Phase-Driven Build state
   const [showAdvancedPhasedBuild, setShowAdvancedPhasedBuild] = useState(false);
@@ -2580,6 +2584,16 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 )}
               </button>
               
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="px-4 py-2 rounded-lg glass-panel border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-110 active:scale-95 hover:shadow-xl hover:shadow-slate-500/40 hover:border-slate-500/50 group"
+                title="Open Settings"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">⚙️</span>
+                <span className="hidden sm:inline">Settings</span>
+              </button>
+              
               {/* Theme Toggle */}
               <ThemeToggle size="md" showDropdown={true} />
             </div>
@@ -3910,6 +3924,12 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
           onCancel={() => setShowConversationalWizard(false)}
         />
       )}
+
+      {/* Settings Page Modal */}
+      <SettingsPage
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
 
       {/* Advanced Phased Build Panel */}
       {showAdvancedPhasedBuild && buildPhases.isPhasedMode && (
