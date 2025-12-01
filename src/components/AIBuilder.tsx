@@ -42,13 +42,13 @@ import {
   ValidationDashboard,
   PhaseDetailView,
 } from './build';
-import { useBuildPhases } from '@/hooks/useBuildPhases';
+import { useBuildPhases } from '../hooks/useBuildPhases';
 import type {
   BuildPhase as PhasedBuildPhase,
   PhaseId,
   PhasedAppConcept,
-} from '@/types/buildPhases';
-import { getPhasePrompt, getPhaseSummary } from '@/prompts/phasePrompts';
+} from '../types/buildPhases';
+import { getPhasePrompt, getPhaseSummary } from '../prompts/phasePrompts';
 
 // Base44-inspired layout with conversation-first design + your dark colors
 

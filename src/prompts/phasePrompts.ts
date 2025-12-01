@@ -5,6 +5,18 @@
 
 import type { PhaseId, PhasedAppConcept } from '../types/buildPhases';
 
+/** Maximum length for code context in prompts to avoid token limits */
+const MAX_CODE_CONTEXT_LENGTH = 2000;
+
+/**
+ * Truncate code to a safe length for prompt context
+ */
+function truncateCode(code: string | undefined, maxLength: number = MAX_CODE_CONTEXT_LENGTH): string {
+  if (!code) return '';
+  if (code.length <= maxLength) return code;
+  return `${code.substring(0, maxLength)}...`;
+}
+
 /**
  * Generate the prompt for a specific build phase
  */
@@ -102,7 +114,7 @@ function getFeaturesPrompt(
   existingCode?: string
 ): string {
   const existingContext = existingCode
-    ? `\n\n### Existing Foundation Code:\n\`\`\`\n${existingCode.substring(0, 2000)}...\n\`\`\``
+    ? `\n\n### Existing Foundation Code:\n\`\`\`\n${truncateCode(existingCode)}\n\`\`\``
     : '';
 
   return `${baseContext}
@@ -169,7 +181,7 @@ function getIntegrationPrompt(
   existingCode?: string
 ): string {
   const existingContext = existingCode
-    ? `\n\n### Existing Code:\n\`\`\`\n${existingCode.substring(0, 2000)}...\n\`\`\``
+    ? `\n\n### Existing Code:\n\`\`\`\n${truncateCode(existingCode)}\n\`\`\``
     : '';
 
   return `${baseContext}
@@ -240,7 +252,7 @@ function getOptimizationPrompt(
   existingCode?: string
 ): string {
   const existingContext = existingCode
-    ? `\n\n### Existing Code:\n\`\`\`\n${existingCode.substring(0, 2000)}...\n\`\`\``
+    ? `\n\n### Existing Code:\n\`\`\`\n${truncateCode(existingCode)}\n\`\`\``
     : '';
 
   return `${baseContext}
@@ -311,7 +323,7 @@ function getPolishPrompt(
   existingCode?: string
 ): string {
   const existingContext = existingCode
-    ? `\n\n### Existing Code:\n\`\`\`\n${existingCode.substring(0, 2000)}...\n\`\`\``
+    ? `\n\n### Existing Code:\n\`\`\`\n${truncateCode(existingCode)}\n\`\`\``
     : '';
 
   return `${baseContext}

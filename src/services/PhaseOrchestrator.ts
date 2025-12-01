@@ -12,16 +12,13 @@ import type {
   PhasedAppConcept,
   PhaseTask,
   ValidationCheck,
+} from '../types/buildPhases';
+
+// Import constants for use
+import {
   DEFAULT_PHASES,
   PHASE_FOCUS_AREAS,
   PHASE_VALIDATION_CRITERIA,
-} from '../types/buildPhases';
-
-// Re-import constants for use
-import {
-  DEFAULT_PHASES as PHASES_CONFIG,
-  PHASE_FOCUS_AREAS as FOCUS_AREAS,
-  PHASE_VALIDATION_CRITERIA as VALIDATION_CRITERIA,
 } from '../types/buildPhases';
 
 export interface PhaseOrchestratorState {
@@ -71,7 +68,7 @@ export class PhaseOrchestrator {
   }
 
   private initializePhases(): BuildPhase[] {
-    return PHASES_CONFIG.map((phase) => ({
+    return DEFAULT_PHASES.map((phase) => ({
       ...phase,
       tasks: this.createTasksForPhase(phase.id),
       validationChecks: this.createValidationChecks(phase.id),
@@ -79,7 +76,7 @@ export class PhaseOrchestrator {
   }
 
   private createTasksForPhase(phaseId: PhaseId): PhaseTask[] {
-    const focusAreas = FOCUS_AREAS[phaseId] || [];
+    const focusAreas = PHASE_FOCUS_AREAS[phaseId] || [];
     return focusAreas.map((area, index) => ({
       id: `${phaseId}-task-${index}`,
       name: area,
@@ -89,7 +86,7 @@ export class PhaseOrchestrator {
   }
 
   private createValidationChecks(phaseId: PhaseId): ValidationCheck[] {
-    const criteria = VALIDATION_CRITERIA[phaseId] || [];
+    const criteria = PHASE_VALIDATION_CRITERIA[phaseId] || [];
     return criteria.map((criterion, index) => ({
       id: `${phaseId}-check-${index}`,
       name: criterion,

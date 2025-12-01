@@ -3,6 +3,9 @@
 import React from 'react';
 import type { BuildPhase, PhaseTask, ValidationCheck } from '../../types/buildPhases';
 
+/** Maximum length for code preview in task details */
+const MAX_TASK_CODE_PREVIEW_LENGTH = 500;
+
 interface PhaseDetailViewProps {
   phase: BuildPhase;
   isOpen: boolean;
@@ -175,7 +178,7 @@ export function PhaseDetailView({
                           View generated code
                         </summary>
                         <pre className="mt-2 text-xs text-slate-300 bg-black/30 rounded p-2 overflow-x-auto">
-                          {task.generatedCode.substring(0, 500)}...
+                          {task.generatedCode.substring(0, MAX_TASK_CODE_PREVIEW_LENGTH)}...
                         </pre>
                       </details>
                     )}
