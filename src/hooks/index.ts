@@ -41,6 +41,14 @@ export type { UseChatSystemReturn } from './useChatSystem';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export type { UseKeyboardShortcutsOptions } from './useKeyboardShortcuts';
 
+// Smart context hook (compression + semantic memory)
+export { useSmartContext } from './useSmartContext';
+export type { 
+  UseSmartContextReturn,
+  SmartContextOptions,
+  SmartContextResult,
+} from './useSmartContext';
+
 // Re-export existing hooks for completeness
 export { useBuildPhases } from './useBuildPhases';
 export type { UseBuildPhasesOptions, UseBuildPhasesReturn } from './useBuildPhases';
