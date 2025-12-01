@@ -35,6 +35,21 @@ import type {
 // Resizable panels
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui';
 
+// Phase-driven build system components
+import {
+  PhaseProgressIndicator,
+  PhaseControlPanel,
+  ValidationDashboard,
+  PhaseDetailView,
+} from './build';
+import { useBuildPhases } from '@/hooks/useBuildPhases';
+import type {
+  BuildPhase as PhasedBuildPhase,
+  PhaseId,
+  PhasedAppConcept,
+} from '@/types/buildPhases';
+import { getPhasePrompt, getPhaseSummary } from '@/prompts/phasePrompts';
+
 // Base44-inspired layout with conversation-first design + your dark colors
 
 interface ChatMessage {
@@ -295,6 +310,53 @@ export default function AIBuilder() {
   const [showConversationalWizard, setShowConversationalWizard] = useState(false);
   const [appConcept, setAppConcept] = useState<AppConcept | null>(null);
   const [implementationPlan, setImplementationPlan] = useState<ImplementationPlan | null>(null);
+
+  // Advanced Phase-Driven Build state
+  const [showAdvancedPhasedBuild, setShowAdvancedPhasedBuild] = useState(false);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<PhaseId | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  // Phase-driven build hook
+  const buildPhases = useBuildPhases({
+    onPhaseStart: (phase) => {
+      const notification: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'system',
+        content: `🚀 **Starting Phase ${phase.order}: ${phase.name}**\n\n${phase.description}`,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages(prev => [...prev, notification]);
+    },
+    onPhaseComplete: (phase, result) => {
+      const notification: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'system',
+        content: result.success
+          ? `✅ **Phase ${phase.order} Complete!**\n\nCompleted ${result.tasksCompleted}/${result.totalTasks} tasks in ${(result.duration / 1000).toFixed(1)}s`
+          : `⚠️ **Phase ${phase.order} had issues**\n\n${result.errors?.join('\n') || 'Unknown error'}`,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages(prev => [...prev, notification]);
+    },
+    onBuildComplete: (progress) => {
+      const notification: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'system',
+        content: `🎉 **Build Complete!**\n\nAll ${progress.totalPhases} phases finished. Your app is ready!`,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages(prev => [...prev, notification]);
+    },
+    onError: (error, phase) => {
+      const notification: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'system',
+        content: `❌ **Build Error${phase ? ` in Phase ${phase.order}` : ''}**\n\n${error.message}`,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages(prev => [...prev, notification]);
+    },
+  });
 
   // Storage state
   const [contentTab, setContentTab] = useState<'apps' | 'files'>('apps');
@@ -935,6 +997,53 @@ export default function AIBuilder() {
     // Generate implementation plan
     generateImplementationPlan(concept);
   }, [generateImplementationPlan]);
+
+  /**
+   * Start advanced phased build from app concept
+   */
+  const handleStartAdvancedPhasedBuild = useCallback(async () => {
+    if (!appConcept) return;
+
+    const phasedConcept: PhasedAppConcept = {
+      name: appConcept.name,
+      description: appConcept.description,
+      appType: appConcept.uiPreferences.layout,
+      features: appConcept.coreFeatures.map(f => f.name),
+      uiStyle: appConcept.uiPreferences.style,
+      colorScheme: appConcept.uiPreferences.colorScheme,
+      complexity: appConcept.coreFeatures.length > 5 ? 'complex' : appConcept.coreFeatures.length > 2 ? 'moderate' : 'simple',
+    };
+
+    await buildPhases.startPhasedBuild(phasedConcept);
+    setShowAdvancedPhasedBuild(true);
+
+    const notification: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: `🏗️ **Advanced Phased Build Started**\n\nBuilding "${appConcept.name}" in ${buildPhases.phases.length} structured phases.\n\nUse the Phase Control Panel to manage the build process.`,
+      timestamp: new Date().toISOString(),
+    };
+    setChatMessages(prev => [...prev, notification]);
+  }, [appConcept, buildPhases]);
+
+  /**
+   * Handle phase detail view
+   */
+  const handleViewPhaseDetails = useCallback((phaseId: PhaseId) => {
+    setSelectedPhaseId(phaseId);
+  }, []);
+
+  /**
+   * Handle phase validation
+   */
+  const handleRunValidation = useCallback(async () => {
+    setIsValidating(true);
+    try {
+      await buildPhases.validateCurrentPhase();
+    } finally {
+      setIsValidating(false);
+    }
+  }, [buildPhases]);
 
   const sendMessage = async () => {
     if (!userInput.trim() || isGenerating) return;
@@ -2405,6 +2514,32 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 <span className="group-hover:scale-125 transition-transform duration-300">🧙‍♂️</span>
                 <span className="hidden sm:inline">Wizard</span>
               </button>
+              {/* Phased Build Button - Shows when app concept exists */}
+              {appConcept && (
+                <button
+                  onClick={handleStartAdvancedPhasedBuild}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:shadow-orange-500/40 group"
+                  title="Start advanced phased build"
+                >
+                  <span className="group-hover:scale-125 transition-transform duration-300">🏗️</span>
+                  <span className="hidden sm:inline">Phased Build</span>
+                </button>
+              )}
+              {/* Toggle Advanced Phased Build Panel */}
+              {buildPhases.isPhasedMode && (
+                <button
+                  onClick={() => setShowAdvancedPhasedBuild(!showAdvancedPhasedBuild)}
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2 hover:scale-110 active:scale-95 shadow-lg ${
+                    showAdvancedPhasedBuild
+                      ? 'bg-orange-600 text-white hover:bg-orange-700'
+                      : 'glass-panel border border-orange-500/30 text-orange-400 hover:text-white hover:border-orange-500/60'
+                  }`}
+                  title="Toggle phased build panel"
+                >
+                  <span className="group-hover:scale-125 transition-transform duration-300">📊</span>
+                  <span className="hidden sm:inline">Phases</span>
+                </button>
+              )}
               {currentComponent && currentComponent.versions && currentComponent.versions.length > 0 && (
                 <button
                   onClick={() => setShowVersionHistory(!showVersionHistory)}
@@ -3773,6 +3908,139 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
         <ConversationalAppWizard
           onComplete={handleConceptComplete}
           onCancel={() => setShowConversationalWizard(false)}
+        />
+      )}
+
+      {/* Advanced Phased Build Panel */}
+      {showAdvancedPhasedBuild && buildPhases.isPhasedMode && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-20"
+          onClick={() => setShowAdvancedPhasedBuild(false)}
+        >
+          <div
+            className="bg-slate-900 rounded-2xl border border-white/10 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Panel Header */}
+            <div className="px-6 py-4 border-b border-white/10 bg-gradient-to-r from-orange-500/10 to-amber-500/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                    <span className="text-2xl">🏗️</span>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Phase-Driven Build</h2>
+                    <p className="text-sm text-slate-400">
+                      {buildPhases.progress.percentComplete}% complete • {buildPhases.progress.estimatedTimeRemaining} remaining
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAdvancedPhasedBuild(false)}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-all"
+                >
+                  <span className="text-slate-400 text-xl">✕</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Panel Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Phase Progress Indicator */}
+              <PhaseProgressIndicator
+                phases={buildPhases.phases}
+                progress={buildPhases.progress}
+                onPhaseClick={handleViewPhaseDetails}
+              />
+
+              {/* Control Panel and Validation */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Phase Control Panel */}
+                <PhaseControlPanel
+                  phases={buildPhases.phases}
+                  progress={buildPhases.progress}
+                  isBuilding={buildPhases.isBuilding}
+                  isPaused={buildPhases.isPaused}
+                  onStartBuild={handleStartAdvancedPhasedBuild}
+                  onPauseBuild={buildPhases.pauseBuild}
+                  onResumeBuild={buildPhases.resumeBuild}
+                  onSkipPhase={(phaseId) => {
+                    if (buildPhases.currentPhase?.id === phaseId) {
+                      buildPhases.skipCurrentPhase();
+                    }
+                  }}
+                  onRetryPhase={(phaseId) => {
+                    if (buildPhases.currentPhase?.id === phaseId) {
+                      buildPhases.retryCurrentPhase();
+                    }
+                  }}
+                  onViewPhaseDetails={handleViewPhaseDetails}
+                />
+
+                {/* Validation Dashboard */}
+                {buildPhases.currentPhase && (
+                  <ValidationDashboard
+                    phase={buildPhases.currentPhase}
+                    onRunValidation={handleRunValidation}
+                    onProceedAnyway={buildPhases.proceedToNextPhase}
+                    onRetryPhase={buildPhases.retryCurrentPhase}
+                    isValidating={isValidating}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Panel Footer */}
+            <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span>💡</span>
+                <span>Each phase focuses on specific aspects of your app for better quality.</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    buildPhases.resetBuild();
+                    setShowAdvancedPhasedBuild(false);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-all"
+                >
+                  Reset Build
+                </button>
+                {buildPhases.currentPhase && buildPhases.currentPhase.status === 'pending' && (
+                  <button
+                    onClick={async () => {
+                      await buildPhases.executeCurrentPhase();
+                    }}
+                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-sm font-medium transition-all"
+                  >
+                    Build Current Phase
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase Detail View Modal */}
+      {selectedPhaseId && (
+        <PhaseDetailView
+          phase={buildPhases.getPhaseById(selectedPhaseId)!}
+          isOpen={!!selectedPhaseId}
+          onClose={() => setSelectedPhaseId(null)}
+          onBuildPhase={async () => {
+            await buildPhases.executeCurrentPhase();
+            setSelectedPhaseId(null);
+          }}
+          onSkipPhase={async () => {
+            await buildPhases.skipCurrentPhase();
+            setSelectedPhaseId(null);
+          }}
+          onRetryPhase={async () => {
+            await buildPhases.retryCurrentPhase();
+            setSelectedPhaseId(null);
+          }}
+          generatedCode={buildPhases.accumulatedCode}
         />
       )}
     </div>
