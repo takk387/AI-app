@@ -13,7 +13,7 @@
  * All functionality is preserved from the original implementation.
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -457,19 +457,23 @@ export default function AIBuilder() {
           
           // Cache in localStorage
           if (typeof window !== 'undefined') {
-            localStorage.setItem('ai_components', JSON.stringify(mergedComponents));
-            
-            // Restore last active app
-            const lastAppId = localStorage.getItem('current_app_id');
-            if (lastAppId && mergedComponents.length > 0) {
-              const lastApp = mergedComponents.find(c => c.id === lastAppId);
-              if (lastApp) {
-                setCurrentComponent(lastApp);
-                if (lastApp.conversationHistory && lastApp.conversationHistory.length > 0) {
-                  setChatMessages(lastApp.conversationHistory);
+            try {
+              localStorage.setItem('ai_components', JSON.stringify(mergedComponents));
+
+              // Restore last active app
+              const lastAppId = localStorage.getItem('current_app_id');
+              if (lastAppId && mergedComponents.length > 0) {
+                const lastApp = mergedComponents.find(c => c.id === lastAppId);
+                if (lastApp) {
+                  setCurrentComponent(lastApp);
+                  if (lastApp.conversationHistory && lastApp.conversationHistory.length > 0) {
+                    setChatMessages(lastApp.conversationHistory);
+                  }
+                  setActiveTab('preview');
                 }
-                setActiveTab('preview');
               }
+            } catch (e) {
+              console.warn('Failed to save to localStorage:', e);
             }
           }
         } else {
@@ -517,14 +521,22 @@ export default function AIBuilder() {
   // Save components to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && components.length > 0) {
-      localStorage.setItem('ai_components', JSON.stringify(components));
+      try {
+        localStorage.setItem('ai_components', JSON.stringify(components));
+      } catch (e) {
+        console.warn('Failed to save components to localStorage:', e);
+      }
     }
   }, [components]);
 
   // Save current app ID to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && currentComponent) {
-      localStorage.setItem('current_app_id', currentComponent.id);
+      try {
+        localStorage.setItem('current_app_id', currentComponent.id);
+      } catch (e) {
+        console.warn('Failed to save current app ID to localStorage:', e);
+      }
     }
   }, [currentComponent?.id]);
 
@@ -716,7 +728,11 @@ export default function AIBuilder() {
     setChatMessages([getWelcomeMessage()]);
     setActiveTab('chat');
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('current_app_id');
+      try {
+        localStorage.removeItem('current_app_id');
+      } catch (e) {
+        console.warn('Failed to clear current app ID from localStorage:', e);
+      }
     }
   }, [setCurrentComponent, setChatMessages, setActiveTab]);
 
@@ -975,11 +991,15 @@ export default function AIBuilder() {
     
     // Immediately update localStorage to ensure sync before any page refresh
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ai_components', JSON.stringify(updatedComponents));
-      
-      // If deleting the currently loaded component, clear its ID from localStorage
-      if (currentComponent?.id === id) {
-        localStorage.removeItem('current_app_id');
+      try {
+        localStorage.setItem('ai_components', JSON.stringify(updatedComponents));
+
+        // If deleting the currently loaded component, clear its ID from localStorage
+        if (currentComponent?.id === id) {
+          localStorage.removeItem('current_app_id');
+        }
+      } catch (e) {
+        console.warn('Failed to update localStorage after delete:', e);
       }
     }
     
@@ -1039,11 +1059,14 @@ export default function AIBuilder() {
     URL.revokeObjectURL(url);
   }, [currentComponent]);
 
-  // Filtered components
-  const filteredComponents = components.filter(comp =>
-    searchQuery === '' ||
-    comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    comp.description.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filtered components - memoized to avoid recalculating on every render
+  const filteredComponents = useMemo(() =>
+    components.filter(comp =>
+      searchQuery === '' ||
+      comp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      comp.description.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [components, searchQuery]
   );
 
   // Handle build phase in chat panel

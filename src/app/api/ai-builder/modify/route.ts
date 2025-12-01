@@ -297,7 +297,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
           messages,
           modelName,
           currentAppState,
-          correctionPrompt: lastError ? undefined : undefined, // Will be set below if retry
+          correctionPrompt: undefined, // Will be set below if this is a retry
         };
         
         // If this is a retry, add correction prompt

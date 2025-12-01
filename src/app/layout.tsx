@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AuthGuard from "../components/AuthGuard";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { SettingsProvider } from "../contexts/SettingsContext";
@@ -24,11 +25,13 @@ export default function RootLayout({
         <ThemeProvider>
           <SettingsProvider>
             <AuthProvider>
-              <AuthGuard>
-                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900 transition-colors duration-300">
-                  {children}
-                </div>
-              </AuthGuard>
+              <ErrorBoundary>
+                <AuthGuard>
+                  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900 transition-colors duration-300">
+                    {children}
+                  </div>
+                </AuthGuard>
+              </ErrorBoundary>
             </AuthProvider>
           </SettingsProvider>
         </ThemeProvider>

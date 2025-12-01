@@ -36,11 +36,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Initialize theme from localStorage on mount
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (stored && ['light', 'dark', 'system'].includes(stored)) {
-      setThemeState(stored);
-      setResolvedTheme(resolveTheme(stored));
-    } else {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+      if (stored && ['light', 'dark', 'system'].includes(stored)) {
+        setThemeState(stored);
+        setResolvedTheme(resolveTheme(stored));
+      } else {
+        setResolvedTheme(resolveTheme('system'));
+      }
+    } catch (error) {
+      // localStorage may be unavailable in private browsing mode
+      console.warn('Failed to load theme from localStorage:', error);
       setResolvedTheme(resolveTheme('system'));
     }
   }, []);
@@ -87,7 +93,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem(STORAGE_KEY, newTheme);
+    try {
+      localStorage.setItem(STORAGE_KEY, newTheme);
+    } catch (error) {
+      // localStorage may be unavailable in private browsing mode
+      console.warn('Failed to save theme to localStorage:', error);
+    }
   }, []);
 
   const toggleTheme = useCallback(() => {

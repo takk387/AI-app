@@ -45,20 +45,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const supabase = getSupabase();
         
-        // Get initial session with retry logic
-        let retries = 0;
+        // Get initial session with retry logic (iterative to avoid stack overflow)
         const MAX_RETRIES = 3;
         const RETRY_DELAY = 500;
-        
-        const loadSession = async (): Promise<void> => {
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
             const { data: { session }, error } = await supabase.auth.getSession();
-            
+
             if (error) {
               console.error("Session error:", error);
               throw error;
             }
-            
+
             if (mounted) {
               // Set user first
               setUser(session?.user ?? null);
@@ -69,26 +68,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setSessionReady(true);
               setLoading(false);
             }
+            // Success - exit retry loop
+            break;
           } catch (err) {
-            console.error("Error getting session (attempt " + (retries + 1) + "):", err);
-            
-            // Retry if session loading fails
-            if (retries < MAX_RETRIES) {
-              retries++;
+            console.error(`Error getting session (attempt ${attempt}/${MAX_RETRIES}):`, err);
+
+            // If not the last attempt, wait and retry
+            if (attempt < MAX_RETRIES) {
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-              return loadSession();
             } else {
-            // After all retries, set loading to false and mark session as checked
-            // (user remains null, but we've definitively tried)
-            if (mounted) {
-              setSessionReady(true);
-              setLoading(false);
-            }
+              // After all retries, set loading to false and mark session as checked
+              // (user remains null, but we've definitively tried)
+              if (mounted) {
+                setSessionReady(true);
+                setLoading(false);
+              }
             }
           }
-        };
-        
-        await loadSession();
+        }
 
         // Listen for auth changes
         const { data } = supabase.auth.onAuthStateChange((_event, session) => {

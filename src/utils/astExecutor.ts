@@ -616,12 +616,12 @@ export async function executeASTOperation(
         // Step 7: Find the main return element and add logout button
         // This will be inside the authenticated section
         const mainElement = parser.findDefaultExportedFunction(tree);
-        if (mainElement) {
+        if (mainElement && mainElement.children) {
           // Find the return statement and its JSX
           for (const child of mainElement.children) {
-            if (child.type === 'statement_block') {
+            if (child.type === 'statement_block' && child.children) {
               for (const stmt of child.children) {
-                if (stmt.type === 'return_statement') {
+                if (stmt.type === 'return_statement' && stmt.children) {
                   // Find the JSX element being returned
                   for (const returnChild of stmt.children) {
                     if (returnChild.type === 'jsx_element' || returnChild.type === 'jsx_fragment') {
@@ -629,7 +629,7 @@ export async function executeASTOperation(
                       const logoutButton = style === 'simple'
                         ? '<button onClick={handleLogout}>Logout</button>'
                         : '<button onClick={handleLogout} className="mb-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">Logout</button>';
-                      
+
                       modifier.insertJSX(returnChild, {
                         jsx: logoutButton,
                         position: 'inside_start'

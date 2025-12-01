@@ -109,35 +109,27 @@ export function ResizablePanelGroup({
   // Extract panel configuration from children
   const panelData = useMemo(() => extractPanelData(children), [children]);
   
-  // Calculate initial sizes
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [initialSizes, setInitialSizes] = useState<number[]>(() => {
-    const defaultSizes = panelData.map((p, i) => p.defaultSize ?? (100 / panelData.length));
-    return defaultSizes;
-  });
-  
-  // Load persisted sizes on mount
-  useEffect(() => {
-    if (!isInitialized && actualPersistenceKey && typeof window !== 'undefined') {
+  // Calculate initial sizes - compute once on mount to avoid race conditions
+  const [initialSizes] = useState<number[]>(() => {
+    const defaultSizes = panelData.map((p) => p.defaultSize ?? (100 / panelData.length));
+
+    // Try to load persisted layout synchronously during initialization
+    if (actualPersistenceKey && typeof window !== 'undefined') {
       const persisted = loadPanelLayout({ key: actualPersistenceKey });
-      const defaultSizes = panelData.map((p) => p.defaultSize ?? (100 / panelData.length));
-      const minSizes = panelData.map((p) => p.minSize ?? 5);
-      const maxSizes = panelData.map((p) => p.maxSize ?? 95);
-      
-      const mergedSizes = mergePersistedLayout(
+      const minSizesArr = panelData.map((p) => p.minSize ?? 5);
+      const maxSizesArr = panelData.map((p) => p.maxSize ?? 95);
+
+      return mergePersistedLayout(
         persisted,
         panelData.length,
         defaultSizes,
-        minSizes,
-        maxSizes
+        minSizesArr,
+        maxSizesArr
       );
-      
-      setInitialSizes(mergedSizes);
-      setIsInitialized(true);
-    } else if (!isInitialized) {
-      setIsInitialized(true);
     }
-  }, [actualPersistenceKey, panelData, isInitialized]);
+
+    return defaultSizes;
+  });
 
   // Extract min/max sizes
   const minSizes = useMemo(() => panelData.map((p) => p.minSize ?? 5), [panelData]);
@@ -167,17 +159,16 @@ export function ResizablePanelGroup({
     persistenceKey: actualPersistenceKey,
   });
 
-  // Update sizes when initialSizes change (after persistence load) - only on initial load
-  // Using a ref to track if we've already synced to avoid resetting during drag
+  // Track if initial sync has occurred to avoid resetting during drag
   const hasSyncedRef = useRef(false);
-  
+
+  // Sync initial sizes to the resize hook on first render only
   useEffect(() => {
-    // Only sync once when initialized, not during drag operations
-    if (isInitialized && !hasSyncedRef.current && initialSizes.length === panelData.length) {
+    if (!hasSyncedRef.current && initialSizes.length === panelData.length) {
       hasSyncedRef.current = true;
       setSizes(initialSizes);
     }
-  }, [initialSizes, isInitialized, panelData.length, setSizes]);
+  }, [initialSizes, panelData.length, setSizes]);
 
   // Track collapsed state per panel
   const [collapsedPanels, setCollapsedPanels] = useState<Set<number>>(new Set());

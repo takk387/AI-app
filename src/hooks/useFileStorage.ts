@@ -139,9 +139,9 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
    * Handles edge cases like files with multiple dots or no extension
    */
   const getExtension = useCallback((filename: string): string => {
-    // Handle files starting with dots (like .gitignore)
+    // Handle files starting with dots (like .gitignore) - treat as hidden files
     if (filename.startsWith('.') && !filename.slice(1).includes('.')) {
-      return '';
+      return 'hidden';
     }
     const lastDotIndex = filename.lastIndexOf('.');
     if (lastDotIndex === -1 || lastDotIndex === 0) {
@@ -224,10 +224,12 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
   const uploadFiles = useCallback(async (filesToUpload: File[]) => {
     if (!userId || filesToUpload.length === 0) return;
 
-    // Track uploading files
-    const newUploadingFiles = new Set(uploadingFiles);
-    filesToUpload.forEach(file => newUploadingFiles.add(file.name));
-    setUploadingFiles(newUploadingFiles);
+    // Track uploading files using functional update to avoid stale closure
+    setUploadingFiles(prev => {
+      const newSet = new Set(prev);
+      filesToUpload.forEach(file => newSet.add(file.name));
+      return newSet;
+    });
 
     try {
       // Upload files sequentially
@@ -250,7 +252,7 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
       // Clear uploading state
       setUploadingFiles(new Set());
     }
-  }, [userId, storageService, loadFiles, uploadingFiles]);
+  }, [userId, storageService, loadFiles]);
 
   /**
    * Delete a file from storage
