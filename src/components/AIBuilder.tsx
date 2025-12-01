@@ -6,6 +6,8 @@ import FullAppPreview from './FullAppPreview';
 import DiffPreview from './DiffPreview';
 import AppConceptWizard from './AppConceptWizard';
 import ConversationalAppWizard from './ConversationalAppWizard';
+import GuidedBuildView from './GuidedBuildView';
+import type { AppBuildConfig } from './GuidedBuildView';
 import ThemeToggle from './ThemeToggle';
 import SettingsPage from './SettingsPage';
 import { ToastProvider } from './Toast';
@@ -309,6 +311,7 @@ export default function AIBuilder() {
   // App Concept Wizard state
   const [showConceptWizard, setShowConceptWizard] = useState(false);
   const [showConversationalWizard, setShowConversationalWizard] = useState(false);
+  const [showGuidedBuildView, setShowGuidedBuildView] = useState(false);
   const [appConcept, setAppConcept] = useState<AppConcept | null>(null);
   const [implementationPlan, setImplementationPlan] = useState<ImplementationPlan | null>(null);
 
@@ -993,6 +996,56 @@ export default function AIBuilder() {
         `**Target Users:** ${concept.targetUsers}\n\n` +
         `**Features:** ${concept.coreFeatures.length} defined\n\n` +
         `**Design:** ${concept.uiPreferences.style} style, ${concept.uiPreferences.colorScheme} mode, ${concept.uiPreferences.layout} layout\n\n` +
+        `I'm now generating your implementation plan...`,
+      timestamp: new Date().toISOString()
+    };
+    setChatMessages(prev => [...prev, welcomeMessage]);
+
+    // Generate implementation plan
+    generateImplementationPlan(concept);
+  }, [generateImplementationPlan]);
+
+  /**
+   * Handle GuidedBuildView completion
+   */
+  const handleGuidedBuildComplete = useCallback((config: AppBuildConfig) => {
+    // Convert AppBuildConfig to AppConcept format
+    const concept: AppConcept = {
+      name: config.template?.name || 'My App',
+      description: config.description,
+      purpose: config.description,
+      targetUsers: 'General users',
+      coreFeatures: config.features,
+      uiPreferences: {
+        style: config.designPreferences.style,
+        colorScheme: config.designPreferences.colorScheme,
+        primaryColor: config.designPreferences.primaryColor,
+        layout: config.designPreferences.layout
+      },
+      technical: {
+        needsAuth: config.technicalOptions.needsAuth,
+        authType: config.technicalOptions.authType,
+        needsDatabase: config.technicalOptions.needsDatabase,
+        needsAPI: config.technicalOptions.needsAPI,
+        needsFileUpload: config.technicalOptions.needsFileUpload,
+        needsRealtime: config.technicalOptions.needsRealtime
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setAppConcept(concept);
+    setShowGuidedBuildView(false);
+
+    // Add welcome message about the new concept
+    const welcomeMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `🏗️ **App Built with Guided Builder!**\n\n` +
+        (config.template ? `**Template:** ${config.template.name}\n\n` : '') +
+        `**Description:** ${config.description}\n\n` +
+        `**Features:** ${config.features.length} defined\n\n` +
+        `**Design:** ${config.designPreferences.style} style, ${config.designPreferences.colorScheme} mode, ${config.designPreferences.layout} layout\n\n` +
         `I'm now generating your implementation plan...`,
       timestamp: new Date().toISOString()
     };
@@ -2518,6 +2571,15 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
                 <span className="group-hover:scale-125 transition-transform duration-300">🧙‍♂️</span>
                 <span className="hidden sm:inline">Wizard</span>
               </button>
+              {/* Guided Build View Button */}
+              <button
+                onClick={() => setShowGuidedBuildView(true)}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl hover:shadow-cyan-500/40 group"
+                title="Step-by-step guided app builder"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">🏗️</span>
+                <span className="hidden sm:inline">Guided</span>
+              </button>
               {/* Phased Build Button - Shows when app concept exists */}
               {appConcept && (
                 <button
@@ -3922,6 +3984,14 @@ I'll now show you the changes for Stage ${stagePlan.currentStage}. Review and ap
         <ConversationalAppWizard
           onComplete={handleConceptComplete}
           onCancel={() => setShowConversationalWizard(false)}
+        />
+      )}
+
+      {/* Guided Build View Modal */}
+      {showGuidedBuildView && (
+        <GuidedBuildView
+          onComplete={handleGuidedBuildComplete}
+          onCancel={() => setShowGuidedBuildView(false)}
         />
       )}
 

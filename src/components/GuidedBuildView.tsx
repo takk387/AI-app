@@ -1148,7 +1148,7 @@ export function GuidedBuildView({
                 <div>
                   <h4 className="font-medium text-green-200 mb-1">Ready to Generate!</h4>
                   <p className="text-sm text-green-200/70">
-                    Click &quot;Generate App&quot; below to start building your application. 
+                    Click &ldquo;Generate App&rdquo; below to start building your application. 
                     The AI will use your configuration to create a complete, working app.
                   </p>
                 </div>
