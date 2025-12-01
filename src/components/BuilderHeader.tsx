@@ -47,6 +47,48 @@ export interface BuilderHeaderProps {
   isSaving?: boolean;
   /** App version to display */
   appVersion?: string;
+  
+  // AI Builder workflow props
+  /** Opens AppConceptWizard */
+  onPlanApp?: () => void;
+  /** Opens ConversationalAppWizard */
+  onWizard?: () => void;
+  /** Starts phased build */
+  onPhasedBuild?: () => void;
+  /** Is phased panel visible */
+  showPhasedBuildPanel?: boolean;
+  /** Toggle phased panel */
+  onTogglePhasedPanel?: () => void;
+  /** Is in phased build mode */
+  isPhasedMode?: boolean;
+  /** Has an app concept defined */
+  hasAppConcept?: boolean;
+  
+  // Version history
+  /** Number of versions */
+  versionCount?: number;
+  /** Open version history */
+  onShowHistory?: () => void;
+  /** Is history open */
+  showHistory?: boolean;
+  
+  // App library
+  /** Number of saved apps */
+  appCount?: number;
+  /** Open library */
+  onShowLibrary?: () => void;
+  /** Is library open */
+  showLibrary?: boolean;
+  
+  // Current mode toggle
+  /** Current Plan/Act mode */
+  currentMode?: 'PLAN' | 'ACT';
+  /** Callback when mode changes */
+  onModeChange?: (mode: 'PLAN' | 'ACT') => void;
+  
+  // New app action
+  /** Create new app/conversation */
+  onNewApp?: () => void;
 }
 
 // ============================================================================
@@ -328,6 +370,19 @@ interface MobileMenuProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   isSaving?: boolean;
+  // AI Builder workflow props
+  onPlanApp?: () => void;
+  onWizard?: () => void;
+  onPhasedBuild?: () => void;
+  isPhasedMode?: boolean;
+  hasAppConcept?: boolean;
+  showPhasedBuildPanel?: boolean;
+  onTogglePhasedPanel?: () => void;
+  versionCount?: number;
+  onShowHistory?: () => void;
+  onNewApp?: () => void;
+  onShowLibrary?: () => void;
+  appCount?: number;
 }
 
 function MobileMenu({
@@ -341,6 +396,18 @@ function MobileMenu({
   currentView,
   onViewChange,
   isSaving,
+  onPlanApp,
+  onWizard,
+  onPhasedBuild,
+  isPhasedMode,
+  hasAppConcept,
+  showPhasedBuildPanel,
+  onTogglePhasedPanel,
+  versionCount,
+  onShowHistory,
+  onNewApp,
+  onShowLibrary,
+  appCount,
 }: MobileMenuProps) {
   if (!isOpen) return null;
 
@@ -398,6 +465,102 @@ function MobileMenu({
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-slate-400">Actions</h4>
           <div className="space-y-2">
+            {onPlanApp && (
+              <button
+                onClick={() => {
+                  onPlanApp();
+                  onClose();
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white text-left hover:from-purple-700 hover:to-blue-700 transition-all flex items-center gap-3"
+              >
+                <span>🚀</span>
+                <span>Plan App</span>
+              </button>
+            )}
+            {onWizard && (
+              <button
+                onClick={() => {
+                  onWizard();
+                  onClose();
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-left hover:from-emerald-700 hover:to-teal-700 transition-all flex items-center gap-3"
+              >
+                <span>🧙‍♂️</span>
+                <span>Wizard</span>
+              </button>
+            )}
+            {hasAppConcept && onPhasedBuild && (
+              <button
+                onClick={() => {
+                  onPhasedBuild();
+                  onClose();
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 text-white text-left hover:from-orange-700 hover:to-amber-700 transition-all flex items-center gap-3"
+              >
+                <span>🏗️</span>
+                <span>Phased Build</span>
+              </button>
+            )}
+            {isPhasedMode && onTogglePhasedPanel && (
+              <button
+                onClick={() => {
+                  onTogglePhasedPanel();
+                  onClose();
+                }}
+                className={`w-full px-4 py-3 rounded-lg text-left transition-all flex items-center gap-3 ${
+                  showPhasedBuildPanel
+                    ? 'bg-orange-600 text-white hover:bg-orange-700'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                <span>📊</span>
+                <span>Phases</span>
+              </button>
+            )}
+            {versionCount !== undefined && versionCount > 0 && onShowHistory && (
+              <button
+                onClick={() => {
+                  onShowHistory();
+                  onClose();
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-slate-800 text-white text-left hover:bg-slate-700 transition-colors flex items-center gap-3"
+              >
+                <span>🕒</span>
+                <span>History</span>
+                <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {versionCount}
+                </span>
+              </button>
+            )}
+            {onNewApp && (
+              <button
+                onClick={() => {
+                  onNewApp();
+                  onClose();
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-slate-800 text-white text-left hover:bg-slate-700 transition-colors flex items-center gap-3"
+              >
+                <span>✨</span>
+                <span>New App</span>
+              </button>
+            )}
+            {onShowLibrary && (
+              <button
+                onClick={() => {
+                  onShowLibrary();
+                  onClose();
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-slate-800 text-white text-left hover:bg-slate-700 transition-colors flex items-center gap-3"
+              >
+                <span>📂</span>
+                <span>My Apps</span>
+                {appCount && appCount > 0 && (
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {appCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               onClick={() => {
                 onNewProject();
@@ -526,6 +689,27 @@ export function BuilderHeader({
   onHelp,
   isSaving = false,
   appVersion = '1.0.0',
+  // AI Builder workflow props
+  onPlanApp,
+  onWizard,
+  onPhasedBuild,
+  showPhasedBuildPanel,
+  onTogglePhasedPanel,
+  isPhasedMode,
+  hasAppConcept,
+  // Version history
+  versionCount,
+  onShowHistory,
+  showHistory,
+  // App library
+  appCount,
+  onShowLibrary,
+  showLibrary,
+  // Current mode toggle
+  currentMode,
+  onModeChange,
+  // New app action
+  onNewApp,
 }: BuilderHeaderProps) {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -560,13 +744,14 @@ export function BuilderHeader({
     <>
       <header
         className="
-          sticky top-0 z-40
-          bg-slate-900/80 backdrop-blur-xl
-          border-b border-white/10
-          shadow-lg shadow-black/20
+          border-b border-white/10 backdrop-blur-xl
+          sticky top-0 z-50
+          shadow-2xl shadow-black/40
+          bg-slate-900/80
         "
       >
-        <div className="px-4 lg:px-6 h-16 flex items-center gap-4">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10" aria-hidden="true"></div>
+        <div className="px-4 lg:px-6 h-16 flex items-center gap-4 relative">
           {/* ============================================
               BRANDING SECTION (LEFT)
           ============================================ */}
@@ -613,6 +798,98 @@ export function BuilderHeader({
               ACTION BUTTONS (CENTER-RIGHT)
           ============================================ */}
           <div className="hidden md:flex items-center gap-2">
+            {/* Plan App Button */}
+            {onPlanApp && (
+              <button
+                onClick={onPlanApp}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg group"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">🚀</span>
+                <span className="hidden sm:inline">Plan App</span>
+              </button>
+            )}
+
+            {/* Wizard Button */}
+            {onWizard && (
+              <button
+                onClick={onWizard}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg group"
+                title="Chat-based app planning wizard"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">🧙‍♂️</span>
+                <span className="hidden sm:inline">Wizard</span>
+              </button>
+            )}
+
+            {/* Phased Build Button */}
+            {hasAppConcept && onPhasedBuild && (
+              <button
+                onClick={onPhasedBuild}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all duration-300 text-sm text-white font-medium flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg group"
+                title="Start advanced phased build"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">🏗️</span>
+                <span className="hidden sm:inline">Phased Build</span>
+              </button>
+            )}
+
+            {/* Phases Toggle Button */}
+            {isPhasedMode && onTogglePhasedPanel && (
+              <button
+                onClick={onTogglePhasedPanel}
+                className={`px-4 py-2 rounded-lg transition-all duration-300 text-sm font-medium flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg ${
+                  showPhasedBuildPanel
+                    ? 'bg-orange-600 text-white hover:bg-orange-700'
+                    : 'bg-slate-800/50 border border-orange-500/30 text-orange-400 hover:text-white hover:border-orange-500/60'
+                }`}
+                title="Toggle phased build panel"
+              >
+                <span>📊</span>
+                <span className="hidden sm:inline">Phases</span>
+              </button>
+            )}
+
+            {/* Version History Button */}
+            {versionCount !== undefined && versionCount > 0 && onShowHistory && (
+              <button
+                onClick={onShowHistory}
+                className="px-4 py-2 rounded-lg bg-slate-800/50 border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg group"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">🕒</span>
+                <span className="hidden sm:inline">History</span>
+                <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
+                  {versionCount}
+                </span>
+              </button>
+            )}
+
+            {/* New App Button */}
+            {onNewApp && (
+              <button
+                onClick={onNewApp}
+                className="px-4 py-2 rounded-lg bg-slate-800/50 border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg group"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">✨</span>
+                <span className="hidden sm:inline">New App</span>
+              </button>
+            )}
+
+            {/* My Apps Button */}
+            {onShowLibrary && (
+              <button
+                onClick={onShowLibrary}
+                className="px-4 py-2 rounded-lg bg-slate-800/50 border border-white/20 transition-all duration-300 text-sm text-slate-300 hover:text-white flex items-center gap-2 hover:scale-105 active:scale-95 shadow-lg group"
+              >
+                <span className="group-hover:scale-125 transition-transform duration-300">📂</span>
+                <span className="hidden sm:inline">My Apps</span>
+                {appCount && appCount > 0 && (
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
+                    {appCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* New Project */}
             <button
               onClick={onNewProject}
@@ -698,8 +975,36 @@ export function BuilderHeader({
           {/* ============================================
               VIEW CONTROLS
           ============================================ */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-2">
             <ViewToggle currentView={currentView} onViewChange={onViewChange} />
+
+            {/* Plan/Act Mode Toggle */}
+            {currentMode && onModeChange && (
+              <div className="flex gap-1 bg-slate-900/50 p-1 rounded-lg border border-white/10">
+                <button
+                  onClick={() => onModeChange('PLAN')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    currentMode === 'PLAN'
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                  title="Plan Mode: AI discusses and explains (no code changes)"
+                >
+                  💭 Plan
+                </button>
+                <button
+                  onClick={() => onModeChange('ACT')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    currentMode === 'ACT'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                  title="Act Mode: AI can modify code"
+                >
+                  ⚡ Act
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Spacer for mobile */}
@@ -821,6 +1126,18 @@ export function BuilderHeader({
         currentView={currentView}
         onViewChange={onViewChange}
         isSaving={isSaving}
+        onPlanApp={onPlanApp}
+        onWizard={onWizard}
+        onPhasedBuild={onPhasedBuild}
+        isPhasedMode={isPhasedMode}
+        hasAppConcept={hasAppConcept}
+        showPhasedBuildPanel={showPhasedBuildPanel}
+        onTogglePhasedPanel={onTogglePhasedPanel}
+        versionCount={versionCount}
+        onShowHistory={onShowHistory}
+        onNewApp={onNewApp}
+        onShowLibrary={onShowLibrary}
+        appCount={appCount}
       />
     </>
   );
