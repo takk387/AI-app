@@ -14,6 +14,12 @@ import type {
   UserId
 } from '@/types/storage';
 
+/** Default storage quota in bytes (100MB) */
+const DEFAULT_STORAGE_QUOTA = 100 * 1024 * 1024;
+
+/** Default file list limit */
+const DEFAULT_FILE_LIMIT = 100;
+
 /**
  * Options for useFileStorage hook
  */
@@ -22,6 +28,10 @@ export interface UseFileStorageOptions {
   userId: string | null;
   /** Storage service instance */
   storageService: StorageService;
+  /** Storage quota in bytes (default: 100MB) */
+  storageQuota?: number;
+  /** Maximum number of files to list (default: 100) */
+  fileListLimit?: number;
 }
 
 /**
@@ -103,7 +113,12 @@ export interface UseFileStorageReturn {
  * ```
  */
 export function useFileStorage(options: UseFileStorageOptions): UseFileStorageReturn {
-  const { userId, storageService } = options;
+  const { 
+    userId, 
+    storageService,
+    storageQuota = DEFAULT_STORAGE_QUOTA,
+    fileListLimit = DEFAULT_FILE_LIMIT,
+  } = options;
 
   // State
   const [files, setFiles] = useState<FileMetadata[]>([]);
@@ -120,6 +135,22 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   /**
+   * Get file extension using robust extraction
+   * Handles edge cases like files with multiple dots or no extension
+   */
+  const getExtension = useCallback((filename: string): string => {
+    // Handle files starting with dots (like .gitignore)
+    if (filename.startsWith('.') && !filename.slice(1).includes('.')) {
+      return '';
+    }
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex === -1 || lastDotIndex === 0) {
+      return 'unknown';
+    }
+    return filename.slice(lastDotIndex + 1).toLowerCase();
+  }, []);
+
+  /**
    * Load files from storage
    */
   const loadFiles = useCallback(async () => {
@@ -131,7 +162,7 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
     setIsLoading(true);
     try {
       const result = await storageService.list('user-uploads', {
-        limit: 100,
+        limit: fileListLimit,
         offset: 0,
         sortBy: {
           column: sortBy,
@@ -147,7 +178,7 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
         const byType: Record<string, { fileCount: number; totalSize: number }> = {};
         
         result.data.items.forEach(file => {
-          const ext = file.name.split('.').pop()?.toLowerCase() || 'unknown';
+          const ext = getExtension(file.name);
           if (!byType[ext]) {
             byType[ext] = { fileCount: 0, totalSize: 0 };
           }
@@ -174,8 +205,8 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
             }
           },
           byType,
-          quota: 100 * 1024 * 1024, // 100MB limit
-          quotaUsagePercent: (totalSize / (100 * 1024 * 1024)) * 100
+          quota: storageQuota,
+          quotaUsagePercent: (totalSize / storageQuota) * 100
         });
       } else {
         console.error('Failed to load files:', result.error);
@@ -185,7 +216,7 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
     } finally {
       setIsLoading(false);
     }
-  }, [userId, storageService, sortBy, sortOrder]);
+  }, [userId, storageService, sortBy, sortOrder, fileListLimit, storageQuota, getExtension]);
 
   /**
    * Upload files to storage
@@ -350,7 +381,7 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
 
       // Type filter
       if (typeFilter !== 'all') {
-        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const ext = getExtension(file.name);
         if (typeFilter === 'images' && !['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
           return false;
         }
@@ -361,7 +392,7 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
 
       return true;
     });
-  }, [files, searchQuery, typeFilter]);
+  }, [files, searchQuery, typeFilter, getExtension]);
 
   return {
     // State

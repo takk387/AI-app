@@ -107,7 +107,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
     const versions = component.versions || [];
     
     const newVersion: AppVersion = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       versionNumber: versions.length + 1,
       code: component.code,
       description: description,
@@ -132,7 +132,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
 
     // Save current state to redo stack
     const currentVersion: AppVersion = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       versionNumber: (currentComponent.versions?.length || 0) + 1,
       code: currentComponent.code,
       description: currentComponent.description,
@@ -164,7 +164,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
 
     // Save current state to undo stack
     const currentVersion: AppVersion = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       versionNumber: (currentComponent.versions?.length || 0) + 1,
       code: currentComponent.code,
       description: currentComponent.description,
@@ -193,7 +193,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
 
     // Save current state to undo stack before reverting
     const currentVersion: AppVersion = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       versionNumber: (currentComponent.versions?.length || 0) + 1,
       code: currentComponent.code,
       description: currentComponent.description,
