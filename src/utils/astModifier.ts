@@ -1715,6 +1715,11 @@ export class ASTModifier {
 
   /**
    * Apply all modifications and generate new code
+   *
+   * Position tracking strategy:
+   * - Sort by position descending (higher positions first)
+   * - This way, modifications at lower positions aren't affected by higher ones
+   * - For same-position modifications, track cumulative offset to adjust positions
    */
   async generate(): Promise<ModificationResult> {
     try {
@@ -1725,24 +1730,86 @@ export class ASTModifier {
         if (b.start !== a.start) {
           return b.start - a.start;
         }
-        
+
         // Then by priority (higher first) as tiebreaker for same position
         if (a.priority !== b.priority) {
           return b.priority - a.priority;
         }
-        
+
         // Finally: stable sort by type to ensure consistent ordering
         // Prefer: insert < replace < delete
         const typeOrder = { insert: 0, replace: 1, delete: 2 };
         return typeOrder[a.type] - typeOrder[b.type];
       });
-      
-      // Apply modifications
+
+      // Apply modifications with position offset tracking
+      // Track offsets for modifications at each position to handle same-position mods
       let modifiedCode = this.originalCode;
+
+      // Track cumulative offset for each original start position
+      // Key: original start position, Value: cumulative offset from previous same-position mods
+      const samePositionOffsets: Map<number, number> = new Map();
+
+      // Also track all applied modifications to detect and handle overlapping ranges
+      const appliedRanges: Array<{ start: number; end: number; offset: number }> = [];
+
       for (const mod of sortedMods) {
-        modifiedCode = this.applyModification(modifiedCode, mod);
+        // Calculate adjusted positions
+        // 1. Check for same-position modifications (most common case)
+        let adjustedStart = mod.start;
+        let adjustedEnd = mod.end;
+
+        // Apply offset from previous same-position modifications
+        const samePositionOffset = samePositionOffsets.get(mod.start) || 0;
+        adjustedStart += samePositionOffset;
+        adjustedEnd += samePositionOffset;
+
+        // 2. Check for overlapping modifications (edge case - log warning)
+        for (const applied of appliedRanges) {
+          // If this modification's original range overlaps with a previously applied one
+          if (mod.start < applied.end && mod.end > applied.start) {
+            console.warn(
+              `[ASTModifier] Overlapping modifications detected: ` +
+              `current [${mod.start}-${mod.end}] overlaps with applied [${applied.start}-${applied.end}]. ` +
+              `Results may be unexpected. Description: ${mod.description || 'none'}`
+            );
+          }
+        }
+
+        // Create adjusted modification
+        const adjustedMod: Modification = {
+          ...mod,
+          start: adjustedStart,
+          end: adjustedEnd
+        };
+
+        // Calculate the offset this modification creates
+        let offsetDelta = 0;
+        switch (mod.type) {
+          case 'insert':
+            offsetDelta = mod.newCode.length;
+            break;
+          case 'replace':
+            offsetDelta = mod.newCode.length - (mod.end - mod.start);
+            break;
+          case 'delete':
+            offsetDelta = -(mod.end - mod.start);
+            break;
+        }
+
+        // Update offset for this position (for subsequent same-position mods)
+        samePositionOffsets.set(mod.start, samePositionOffset + offsetDelta);
+
+        // Track this modification's range for overlap detection
+        appliedRanges.push({
+          start: mod.start,
+          end: mod.end,
+          offset: offsetDelta
+        });
+
+        modifiedCode = this.applyModification(modifiedCode, adjustedMod);
       }
-      
+
       // Validate if requested
       if (this.options.validateAfter) {
         const validationResult = await this.validate(modifiedCode);
@@ -1750,12 +1817,12 @@ export class ASTModifier {
           return validationResult;
         }
       }
-      
+
       return {
         success: true,
         code: modifiedCode
       };
-      
+
     } catch (error) {
       return {
         success: false,
