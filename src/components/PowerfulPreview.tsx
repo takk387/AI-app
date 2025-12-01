@@ -171,7 +171,7 @@ window.capturePreview = async function() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${appData.name || 'App'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
@@ -300,7 +300,7 @@ window.capturePreview = async function() {
           recompileMode: 'immediate',
           externalResources: [
             'https://cdn.tailwindcss.com',
-            'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+            'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
           ],
         }}
       >
