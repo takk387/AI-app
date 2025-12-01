@@ -144,18 +144,21 @@ export function useResizable({
 
     event.preventDefault();
     // Set both state and refs - refs are used in event handlers to avoid stale closures
+    console.log('[useResizable] startResize called with index:', index);
     setIsDragging(true);
     setActiveIndex(index);
     isDraggingRef.current = true;
     activeIndexRef.current = index;
     startPositionRef.current = getPositionFromEvent(event, direction);
     startSizesRef.current = [...sizes];
+    console.log('[useResizable] startPosition:', startPositionRef.current, 'sizes:', startSizesRef.current);
   }, [sizes, setSizes, direction, minSizes, maxSizes]);
 
   // Handle resize during drag - uses refs to avoid stale closure issues
   const handleResize = useCallback((event: MouseEvent | TouchEvent) => {
     // Use refs instead of state to get current values in event handlers
     const currentActiveIndex = activeIndexRef.current;
+    console.log('[useResizable] handleResize called, isDraggingRef:', isDraggingRef.current, 'activeIndex:', currentActiveIndex, 'containerRef:', !!containerRef.current);
     if (!isDraggingRef.current || currentActiveIndex === null || !containerRef.current) return;
 
     const container = containerRef.current;

@@ -67,8 +67,9 @@ export function ResizableHandle({
 
   // Handle mouse down
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
+    console.log('[ResizableHandle] handleMouseDown called, disabled:', disabled);
     if (disabled) return;
-    
+
     // Check for double-click
     const now = Date.now();
     if (now - lastClickTimeRef.current < DOUBLE_CLICK_THRESHOLD_MS) {
@@ -81,7 +82,8 @@ export function ResizableHandle({
       }
     }
     lastClickTimeRef.current = now;
-    
+
+    console.log('[ResizableHandle] calling startResize');
     startResize(event);
   }, [disabled, startResize, onDoubleClickProp, contextOnDoubleClick]);
 
