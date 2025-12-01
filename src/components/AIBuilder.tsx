@@ -3,7 +3,7 @@
 /**
  * AIBuilder - Refactored Orchestrator Component
  * 
- * This component has been refactored from 3182 lines to ~1500 lines (52% reduction).
+ * This component has been refactored from 3182 lines to ~1570 lines (50% reduction).
  * It now uses:
  * - Zustand store for state management
  * - Extracted ChatPanel and PreviewPanel components
@@ -74,6 +74,14 @@ import { StorageAnalyticsService } from '@/services/StorageAnalytics';
 // ============================================================================
 
 /**
+ * Generate a unique ID for messages and components
+ * Uses crypto.randomUUID() for robust ID generation that avoids collisions
+ */
+function generateId(): string {
+  return crypto.randomUUID();
+}
+
+/**
  * Get welcome message for new conversations
  */
 function getWelcomeMessage(): ChatMessage {
@@ -91,6 +99,28 @@ function getWelcomeMessage(): ChatMessage {
 function extractComponentName(prompt: string): string {
   const words = prompt.split(' ').slice(0, 3).join(' ');
   return words.length > 30 ? words.slice(0, 27) + '...' : words;
+}
+
+/**
+ * Format phase data from API response into displayable content
+ * Safely handles potentially missing properties with defaults
+ */
+function formatPhaseContent(phases: unknown[]): string {
+  if (!Array.isArray(phases) || phases.length === 0) {
+    return 'No phases defined';
+  }
+  
+  return phases.map((p: unknown, index: number) => {
+    const phase = p as { number?: number; name?: string; description?: string; features?: string[] };
+    const phaseNumber = phase.number ?? index + 1;
+    const phaseName = phase.name ?? 'Unnamed Phase';
+    const phaseDescription = phase.description ?? '';
+    const features = Array.isArray(phase.features) 
+      ? phase.features.map((f: string) => `  • ${f}`).join('\n') 
+      : '';
+    
+    return `**Phase ${phaseNumber}: ${phaseName}**\n${phaseDescription}${features ? '\n' + features : ''}`;
+  }).join('\n\n');
 }
 
 // ============================================================================
@@ -278,7 +308,7 @@ export default function AIBuilder() {
   const buildPhases = useBuildPhases({
     onPhaseStart: (phase) => {
       const notification: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'system',
         content: `🚀 **Starting Phase ${phase.order}: ${phase.name}**\n\n${phase.description}`,
         timestamp: new Date().toISOString(),
@@ -287,7 +317,7 @@ export default function AIBuilder() {
     },
     onPhaseComplete: (phase, result) => {
       const notification: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'system',
         content: result.success
           ? `✅ **Phase ${phase.order} Complete!**\n\nCompleted ${result.tasksCompleted}/${result.totalTasks} tasks in ${(result.duration / 1000).toFixed(1)}s`
@@ -298,7 +328,7 @@ export default function AIBuilder() {
     },
     onBuildComplete: (progress) => {
       const notification: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'system',
         content: `🎉 **Build Complete!**\n\nAll ${progress.totalPhases} phases finished. Your app is ready!`,
         timestamp: new Date().toISOString(),
@@ -307,7 +337,7 @@ export default function AIBuilder() {
     },
     onError: (error, phase) => {
       const notification: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'system',
         content: `❌ **Build Error${phase ? ` in Phase ${phase.order}` : ''}**\n\n${error.message}`,
         timestamp: new Date().toISOString(),
@@ -345,7 +375,7 @@ export default function AIBuilder() {
 
     if (previousMode === 'PLAN' && currentMode === 'ACT') {
       const transitionMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'system',
         content: `⚡ **Switched to ACT Mode**\n\nReady to build! I'll read the plan we discussed and implement it.\n\n**To build:** Type "build it" or "implement the plan" and I'll create your app based on our conversation.`,
         timestamp: new Date().toISOString()
@@ -355,7 +385,7 @@ export default function AIBuilder() {
 
     if (previousMode === 'ACT' && currentMode === 'PLAN') {
       const transitionMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'system',
         content: `💭 **Switched to PLAN Mode**\n\nLet's plan your next feature or discuss improvements. I won't generate code in this mode - we'll design the requirements first.`,
         timestamp: new Date().toISOString()
@@ -572,7 +602,7 @@ export default function AIBuilder() {
 
     // Add system message about the plan
     const planMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'assistant',
       content: `🎯 **Implementation Plan Created for "${concept.name}"**\n\n` +
         `I've analyzed your app concept and created a ${phases.length}-phase build plan:\n\n` +
@@ -603,7 +633,7 @@ export default function AIBuilder() {
     setShowConceptWizard(false);
 
     const welcomeMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'assistant',
       content: `✨ **App Concept Created: "${concept.name}"**\n\n` +
         `**Description:** ${concept.description}\n\n` +
@@ -635,7 +665,7 @@ export default function AIBuilder() {
     setShowAdvancedPhasedBuild(true);
 
     const notification: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'system',
       content: `🏗️ **Advanced Phased Build Started**\n\nBuilding "${appConcept.name}" in ${buildPhases.phases.length} structured phases.`,
       timestamp: new Date().toISOString(),
@@ -672,7 +702,7 @@ export default function AIBuilder() {
   const saveVersion = useCallback((component: GeneratedComponent, changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE', description: string): GeneratedComponent => {
     const versions = component.versions || [];
     const newVersion: AppVersion = {
-      id: Date.now().toString(),
+      id: generateId(),
       versionNumber: versions.length + 1,
       code: component.code,
       description: description,
@@ -692,7 +722,7 @@ export default function AIBuilder() {
 
     try {
       versionControl.pushToUndoStack({
-        id: Date.now().toString(),
+        id: generateId(),
         versionNumber: (currentComponent.versions?.length || 0) + 1,
         code: currentComponent.code,
         description: currentComponent.description,
@@ -718,7 +748,7 @@ export default function AIBuilder() {
       saveComponentToDb(updatedComponent);
 
       const approvalMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'assistant',
         content: `✅ Changes approved and applied! (Version ${updatedComponent.versions?.length || 1} saved)`,
         timestamp: new Date().toISOString(),
@@ -740,7 +770,7 @@ export default function AIBuilder() {
   // Reject pending change
   const rejectChange = useCallback(() => {
     const rejectionMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'assistant',
       content: `❌ Changes rejected. Your app remains unchanged.`,
       timestamp: new Date().toISOString()
@@ -787,7 +817,7 @@ export default function AIBuilder() {
       };
 
       versionControl.pushToUndoStack({
-        id: Date.now().toString(),
+        id: generateId(),
         versionNumber: (currentComponent.versions?.length || 0) + 1,
         code: currentComponent.code,
         description: currentComponent.description,
@@ -813,7 +843,7 @@ export default function AIBuilder() {
       saveComponentToDb(updatedComponent);
 
       const successMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'assistant',
         content: `✅ Changes applied successfully!\n\n${pendingDiff.summary}`,
         timestamp: new Date().toISOString(),
@@ -827,7 +857,7 @@ export default function AIBuilder() {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       const errorMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: generateId(),
         role: 'assistant',
         content: `❌ **Error Applying Changes**\n\n${errorMsg}`,
         timestamp: new Date().toISOString()
@@ -842,7 +872,7 @@ export default function AIBuilder() {
   // Reject diff
   const rejectDiff = useCallback(() => {
     const rejectionMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'assistant',
       content: `❌ Changes rejected. Your app remains unchanged.`,
       timestamp: new Date().toISOString()
@@ -861,7 +891,7 @@ export default function AIBuilder() {
     versionControl.revertToVersion(version);
 
     const revertMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'assistant',
       content: `🔄 Successfully reverted to Version ${version.versionNumber}\n\n**Reverted to:** ${version.description}`,
       timestamp: new Date().toISOString(),
@@ -887,7 +917,7 @@ export default function AIBuilder() {
     setComponents(prev => [forkedApp, ...prev]);
     setCurrentComponent(forkedApp);
     setChatMessages([{
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'assistant',
       content: `🍴 Successfully forked "${sourceApp.name}"!\n\nYou can now make changes to this forked version without affecting the original.`,
       timestamp: new Date().toISOString(),
@@ -1002,7 +1032,7 @@ export default function AIBuilder() {
 
     // Create user message
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: generateId(),
       role: 'user',
       content: userInput,
       timestamp: new Date().toISOString()
@@ -1071,7 +1101,7 @@ export default function AIBuilder() {
       // Handle diff response
       if (data.changeType === 'MODIFICATION' && data.files) {
         setPendingDiff({
-          id: Date.now().toString(),
+          id: generateId(),
           summary: data.summary,
           files: data.files,
           timestamp: new Date().toISOString()
@@ -1091,7 +1121,7 @@ export default function AIBuilder() {
       // Handle chat response
       if (isQuestion || data.type === 'chat') {
         const chatResponse: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           role: 'assistant',
           content: data.answer || data.description,
           timestamp: new Date().toISOString()
@@ -1100,7 +1130,7 @@ export default function AIBuilder() {
       } else {
         // Handle full-app response
         const aiAppMessage: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           role: 'assistant',
           content: `🚀 App created\n\n${data.description || `I've created your ${data.name} app!`}`,
           timestamp: new Date().toISOString(),
@@ -1111,7 +1141,7 @@ export default function AIBuilder() {
 
         if (data.files && data.files.length > 0) {
           let newComponent: GeneratedComponent = {
-            id: isModification && currentComponent ? currentComponent.id : crypto.randomUUID(),
+            id: isModification && currentComponent ? currentComponent.id : generateId(),
             name: data.name || extractComponentName(userInput),
             code: JSON.stringify(data, null, 2),
             description: userInput,
@@ -1143,7 +1173,7 @@ export default function AIBuilder() {
       setGenerationProgress('');
       
       const errorMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         role: 'assistant',
         content: `❌ Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         timestamp: new Date().toISOString()
@@ -1420,15 +1450,11 @@ export default function AIBuilder() {
 
               setNewAppStagePlan(data);
 
-              // Safely map the API response, providing defaults for missing properties
-              const phaseContent = Array.isArray(data.phases) 
-                ? data.phases.map((p: { number?: number; name?: string; description?: string; features?: string[] }, index: number) => 
-                    `**Phase ${p.number ?? index + 1}: ${p.name ?? 'Unnamed Phase'}**\n${p.description ?? ''}\n${Array.isArray(p.features) ? p.features.map((f: string) => `  • ${f}`).join('\n') : ''}`
-                  ).join('\n\n')
-                : 'No phases defined';
+              // Use helper function to format phase content safely
+              const phaseContent = formatPhaseContent(data.phases);
 
               const phasePlanMessage: ChatMessage = {
-                id: crypto.randomUUID(),
+                id: generateId(),
                 role: 'assistant',
                 content: `🏗️ **${data.totalPhases ?? 0}-Phase Build Plan Created**\n\n${phaseContent}\n\n**Ready to start?** Type **'start'** or **'begin'** to build Phase 1!`,
                 timestamp: new Date().toISOString()
@@ -1437,7 +1463,7 @@ export default function AIBuilder() {
               setChatMessages(prev => [...prev, phasePlanMessage]);
             } catch (error) {
               const errorMessage: ChatMessage = {
-                id: crypto.randomUUID(),
+                id: generateId(),
                 role: 'assistant',
                 content: `❌ Failed to create phase plan: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 timestamp: new Date().toISOString()
