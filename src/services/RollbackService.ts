@@ -42,11 +42,29 @@ export class RollbackService implements IRollbackService {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Convert date strings back to Date objects
-        this.restorePoints = parsed.map((point: RestorePoint) => ({
-          ...point,
-          timestamp: new Date(point.timestamp),
-        }));
+        // Validate that parsed data is an array
+        if (!Array.isArray(parsed)) {
+          console.error('Invalid restore points data: expected array');
+          this.restorePoints = [];
+          return;
+        }
+        // Validate and convert each restore point
+        this.restorePoints = parsed
+          .filter((point: unknown) => {
+            // Basic validation of restore point structure
+            if (typeof point !== 'object' || point === null) return false;
+            const p = point as Record<string, unknown>;
+            return (
+              typeof p.id === 'string' &&
+              typeof p.label === 'string' &&
+              (typeof p.timestamp === 'string' || p.timestamp instanceof Date) &&
+              Array.isArray(p.files)
+            );
+          })
+          .map((point: RestorePoint) => ({
+            ...point,
+            timestamp: new Date(point.timestamp),
+          }));
       }
     } catch (error) {
       console.error('Error loading restore points from storage:', error);
@@ -71,7 +89,11 @@ export class RollbackService implements IRollbackService {
    * Generate a unique ID for a restore point
    */
   private generateId(): string {
-    return `rp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Use crypto.randomUUID if available, fallback to timestamp-based ID
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `rp_${crypto.randomUUID()}`;
+    }
+    return `rp_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**

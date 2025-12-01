@@ -339,14 +339,14 @@ export interface ReviewConfig {
 /**
  * Default configuration for the review system
  */
-export const DEFAULT_REVIEW_CONFIG: ReviewConfig = {
+export const DEFAULT_REVIEW_CONFIG: Readonly<ReviewConfig> = Object.freeze({
   maxRestorePoints: 10,
   autoExpandHunks: true,
   showLineNumbers: true,
   contextLines: 3,
   enableComments: true,
   requireApprovalForHighRisk: true,
-};
+});
 
 // ============================================================================
 // UTILITY FUNCTIONS

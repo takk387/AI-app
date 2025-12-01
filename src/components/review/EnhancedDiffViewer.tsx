@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import type {
   EnhancedDiffViewerProps,
   DiffHunk,
@@ -41,6 +41,8 @@ export default function EnhancedDiffViewer({
     hunkId: string;
     lineNumber: number;
   } | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const toggleHunk = useCallback((hunkId: string) => {
     setExpandedHunks(prev => {
@@ -56,17 +58,23 @@ export default function EnhancedDiffViewer({
 
   const handleLineClick = useCallback((hunkId: string, lineNumber: number) => {
     setCommentingLine({ hunkId, lineNumber });
+    setCommentText('');
   }, []);
 
   const handleAddComment = useCallback(
     (content: string) => {
-      if (commentingLine) {
-        onAddComment(commentingLine.lineNumber, content);
+      if (commentingLine && content.trim()) {
+        onAddComment(commentingLine.lineNumber, content.trim());
         setCommentingLine(null);
+        setCommentText('');
       }
     },
     [commentingLine, onAddComment]
   );
+
+  const handleSubmitComment = useCallback(() => {
+    handleAddComment(commentText);
+  }, [handleAddComment, commentText]);
 
   const getLineTypeClass = (type: DiffLine['type']): string => {
     switch (type) {
@@ -274,16 +282,20 @@ export default function EnhancedDiffViewer({
                       <span className="text-sm">💬</span>
                       <div className="flex-1">
                         <textarea
+                          ref={commentInputRef}
                           autoFocus
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
                           placeholder="Add a comment..."
                           className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                           rows={2}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                              handleAddComment(e.currentTarget.value);
+                              handleSubmitComment();
                             }
                             if (e.key === 'Escape') {
                               setCommentingLine(null);
+                              setCommentText('');
                             }
                           }}
                         />
@@ -293,17 +305,18 @@ export default function EnhancedDiffViewer({
                           </span>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => setCommentingLine(null)}
+                              onClick={() => {
+                                setCommentingLine(null);
+                                setCommentText('');
+                              }}
                               className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-all"
                             >
                               Cancel
                             </button>
                             <button
-                              onClick={() => {
-                                const textarea = document.querySelector('textarea');
-                                if (textarea) handleAddComment(textarea.value);
-                              }}
-                              className="px-3 py-1 rounded text-xs bg-blue-600 hover:bg-blue-700 text-white transition-all"
+                              onClick={handleSubmitComment}
+                              disabled={!commentText.trim()}
+                              className="px-3 py-1 rounded text-xs bg-blue-600 hover:bg-blue-700 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Add Comment
                             </button>

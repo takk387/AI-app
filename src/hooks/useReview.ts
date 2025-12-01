@@ -367,10 +367,18 @@ export function useReview(): UseReviewReturn {
     dispatch({ type: 'REJECT_ALL' });
   }, []);
 
+  // Generate unique ID using crypto.randomUUID if available
+  const generateCommentId = (): string => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `comment_${crypto.randomUUID()}`;
+    }
+    return `comment_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  };
+
   const addComment = useCallback(
     (filePath: string, hunkId: string, lineNumber: number, content: string) => {
       const comment: LineComment = {
-        id: `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: generateCommentId(),
         lineNumber,
         content,
         author: 'User',
