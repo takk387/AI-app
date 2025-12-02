@@ -25,6 +25,35 @@ import {
 } from '@/types/dynamicPhases';
 
 // ============================================================================
+// DEPENDENCY INFERENCE PATTERNS
+// ============================================================================
+
+// Authentication-related patterns
+const AUTH_DEPENDENCY_PATTERNS = [
+  'user account', 'user login', 'user authentication', 'user registration',
+  'user session', 'user credential', 'sign in', 'sign up', 'log in', 'log out',
+  'account creation', 'account management', 'profile management',
+  'password', 'authentication', 'authorization'
+];
+
+// Database persistence patterns
+const DATABASE_DEPENDENCY_PATTERNS = [
+  'save data', 'store data', 'persist data', 'database',
+  'data storage', 'save to database', 'store in database', 'persist to database',
+  'conversation history', 'chat history', 'message history',
+  'save conversation', 'store conversation', 'save message',
+  'save to backend', 'store in backend', 'persist to backend'
+];
+
+// File storage patterns
+const FILE_STORAGE_DEPENDENCY_PATTERNS = [
+  'image upload', 'photo upload', 'file upload',
+  'image storage', 'photo storage', 'file storage',
+  'upload image', 'upload photo', 'upload file',
+  'file attachment', 'image attachment'
+];
+
+// ============================================================================
 // MAIN GENERATOR CLASS
 // ============================================================================
 
@@ -267,38 +296,17 @@ export class DynamicPhaseGenerator {
     const lowerDesc = feature.description.toLowerCase();
     
     // Features that typically depend on auth
-    // Use more specific patterns to reduce false positives
-    const authPatterns = [
-      'user account', 'user login', 'user authentication', 'user registration',
-      'user session', 'user credential', 'sign in', 'sign up', 'log in', 'log out',
-      'account creation', 'account management', 'profile management',
-      'password', 'authentication', 'authorization'
-    ];
-    if (authPatterns.some(pattern => lowerDesc.includes(pattern))) {
+    if (AUTH_DEPENDENCY_PATTERNS.some(pattern => lowerDesc.includes(pattern))) {
       deps.push('Authentication System');
     }
     
     // Features that typically depend on database
-    // Check for combinations that indicate data persistence
-    const dbPatterns = [
-      'save data', 'store data', 'persist data', 'database',
-      'data storage', 'save to', 'store in', 'persist to',
-      'conversation history', 'chat history', 'message history',
-      'save conversation', 'store conversation', 'save message'
-    ];
-    if (dbPatterns.some(pattern => lowerDesc.includes(pattern))) {
+    if (DATABASE_DEPENDENCY_PATTERNS.some(pattern => lowerDesc.includes(pattern))) {
       deps.push('Database Setup');
     }
     
     // Features that depend on storage
-    // More specific file-related patterns
-    const storagePatterns = [
-      'image upload', 'photo upload', 'file upload',
-      'image storage', 'photo storage', 'file storage',
-      'upload image', 'upload photo', 'upload file',
-      'file attachment', 'image attachment'
-    ];
-    if (storagePatterns.some(pattern => lowerDesc.includes(pattern))) {
+    if (FILE_STORAGE_DEPENDENCY_PATTERNS.some(pattern => lowerDesc.includes(pattern))) {
       deps.push('File Storage');
     }
     
