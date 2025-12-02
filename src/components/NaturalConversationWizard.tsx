@@ -113,9 +113,23 @@ What would you like to build?`,
     };
     setMessages([greeting]);
 
-    // Focus input
-    setTimeout(() => inputRef.current?.focus(), 100);
+    // Focus input with cleanup
+    const focusTimeout = setTimeout(() => inputRef.current?.focus(), 100);
+
+    return () => clearTimeout(focusTimeout);
   }, []);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onCancel]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -191,11 +205,6 @@ What would you like to build?`,
         setSuggestedActions(data.suggestedActions);
       } else {
         setSuggestedActions([]);
-      }
-
-      // Check if ready for phases
-      if (data.updatedState?.readyForPhases) {
-        generatePhases();
       }
 
     } catch (err) {
@@ -294,6 +303,13 @@ What would you like to build?`,
       setIsGeneratingPhases(false);
     }
   }, [wizardState, showToast]);
+
+  // Auto-trigger phase generation when ready
+  useEffect(() => {
+    if (wizardState.readyForPhases && !phasePlan && !isGeneratingPhases) {
+      generatePhases();
+    }
+  }, [wizardState.readyForPhases, phasePlan, isGeneratingPhases, generatePhases]);
 
   /**
    * Format the phase plan as a readable message
@@ -435,8 +451,14 @@ Does this look good? You can:
   // ============================================================================
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="flex w-full max-w-7xl h-[90vh] bg-slate-900 text-white rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="flex w-full max-w-7xl h-[90vh] bg-slate-900 text-white rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
