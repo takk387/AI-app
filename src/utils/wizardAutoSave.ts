@@ -8,6 +8,10 @@ export const WIZARD_DRAFT_KEYS = {
   FEATURES: 'wizard_draft_features',
   DESIGN: 'wizard_draft_design',
   TECHNICAL: 'wizard_draft_technical',
+  // Natural Conversation Wizard keys
+  CONVERSATION_MESSAGES: 'wizard_conversation_messages',
+  CONVERSATION_STATE: 'wizard_conversation_state',
+  CONVERSATION_PHASE_PLAN: 'wizard_conversation_phase_plan',
 } as const;
 
 interface DraftMetadata {

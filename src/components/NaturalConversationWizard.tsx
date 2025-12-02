@@ -18,6 +18,14 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import { useToast } from '@/components/Toast';
+import {
+  WIZARD_DRAFT_KEYS,
+  saveWizardDraft,
+  loadWizardDraft,
+  deleteDraft,
+  getDraftMetadata,
+  formatDraftAge,
+} from '@/utils/wizardAutoSave';
 
 // ============================================================================
 // TYPES
@@ -82,6 +90,9 @@ export default function NaturalConversationWizard({
   const [isGeneratingPhases, setIsGeneratingPhases] = useState(false);
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+  const [draftAge, setDraftAge] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -91,11 +102,45 @@ export default function NaturalConversationWizard({
   const { showToast } = useToast();
 
   // ============================================================================
-  // INITIALIZATION
+  // INITIALIZATION & PERSISTENCE
   // ============================================================================
 
+  // Check for existing draft on mount
   useEffect(() => {
-    // Add initial greeting
+    const checkForDraft = () => {
+      const messagesMetadata = getDraftMetadata(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
+      const stateMetadata = getDraftMetadata(WIZARD_DRAFT_KEYS.CONVERSATION_STATE);
+
+      // If we have a saved conversation with more than just the greeting
+      if (messagesMetadata || stateMetadata) {
+        const savedMessages = loadWizardDraft<Message[]>(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
+        // Check if there's actual conversation content (more than just greeting)
+        if (savedMessages && savedMessages.length > 1) {
+          const timestamp = messagesMetadata?.savedAt || stateMetadata?.savedAt;
+          if (timestamp) {
+            setDraftAge(formatDraftAge(timestamp));
+          }
+          setShowRecoveryPrompt(true);
+          return;
+        }
+      }
+
+      // No valid draft found, start fresh
+      startFreshConversation();
+    };
+
+    checkForDraft();
+  }, []);
+
+  /**
+   * Start a fresh conversation with greeting
+   */
+  const startFreshConversation = useCallback(() => {
+    // Clear any existing drafts
+    deleteDraft(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
+    deleteDraft(WIZARD_DRAFT_KEYS.CONVERSATION_STATE);
+    deleteDraft(WIZARD_DRAFT_KEYS.CONVERSATION_PHASE_PLAN);
+
     const greeting: Message = {
       id: 'greeting',
       role: 'assistant',
@@ -112,11 +157,102 @@ What would you like to build?`,
       timestamp: new Date(),
     };
     setMessages([greeting]);
+    setWizardState({
+      name: initialConcept?.name,
+      description: initialConcept?.description,
+      features: initialConcept?.coreFeatures || [],
+      technical: initialConcept?.technical || {},
+      uiPreferences: initialConcept?.uiPreferences || {},
+      isComplete: false,
+      readyForPhases: false,
+    });
+    setPhasePlan(null);
+    setSuggestedActions([]);
+    setShowRecoveryPrompt(false);
+    setIsInitialized(true);
 
-    // Focus input with cleanup
-    const focusTimeout = setTimeout(() => inputRef.current?.focus(), 100);
+    // Focus input
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [initialConcept]);
 
-    return () => clearTimeout(focusTimeout);
+  /**
+   * Recover saved conversation from localStorage
+   */
+  const recoverConversation = useCallback(() => {
+    const savedMessages = loadWizardDraft<Message[]>(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
+    const savedState = loadWizardDraft<WizardState>(WIZARD_DRAFT_KEYS.CONVERSATION_STATE);
+    const savedPhasePlan = loadWizardDraft<DynamicPhasePlan>(WIZARD_DRAFT_KEYS.CONVERSATION_PHASE_PLAN);
+
+    if (savedMessages && savedMessages.length > 0) {
+      // Restore timestamps as Date objects
+      const messagesWithDates = savedMessages.map(m => ({
+        ...m,
+        timestamp: new Date(m.timestamp),
+      }));
+      setMessages(messagesWithDates);
+    }
+
+    if (savedState) {
+      setWizardState(savedState);
+    }
+
+    if (savedPhasePlan) {
+      setPhasePlan(savedPhasePlan);
+      setSuggestedActions([
+        { label: 'Start Building', action: 'start_building' },
+        { label: 'Adjust Plan', action: 'adjust_plan' },
+      ]);
+    }
+
+    setShowRecoveryPrompt(false);
+    setIsInitialized(true);
+
+    showToast({
+      type: 'success',
+      message: 'Previous conversation restored!',
+    });
+
+    // Focus input
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [showToast]);
+
+  // Auto-save messages when they change
+  useEffect(() => {
+    if (!isInitialized || messages.length === 0) return;
+
+    // Debounce save
+    const saveTimeout = setTimeout(() => {
+      saveWizardDraft(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES, messages);
+    }, 500);
+
+    return () => clearTimeout(saveTimeout);
+  }, [messages, isInitialized]);
+
+  // Auto-save wizard state when it changes
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const saveTimeout = setTimeout(() => {
+      saveWizardDraft(WIZARD_DRAFT_KEYS.CONVERSATION_STATE, wizardState);
+    }, 500);
+
+    return () => clearTimeout(saveTimeout);
+  }, [wizardState, isInitialized]);
+
+  // Auto-save phase plan when it changes
+  useEffect(() => {
+    if (!isInitialized || !phasePlan) return;
+
+    saveWizardDraft(WIZARD_DRAFT_KEYS.CONVERSATION_PHASE_PLAN, phasePlan);
+  }, [phasePlan, isInitialized]);
+
+  /**
+   * Clear all drafts (called on complete or explicit cancel)
+   */
+  const clearDrafts = useCallback(() => {
+    deleteDraft(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
+    deleteDraft(WIZARD_DRAFT_KEYS.CONVERSATION_STATE);
+    deleteDraft(WIZARD_DRAFT_KEYS.CONVERSATION_PHASE_PLAN);
   }, []);
 
   // Escape key handler
@@ -370,6 +506,8 @@ Does this look good? You can:
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
+          // Clear drafts since we're completing the wizard
+          clearDrafts();
           onComplete(concept, phasePlan);
         }
         break;
@@ -389,7 +527,7 @@ Does this look good? You can:
       default:
         console.warn('Unknown action:', action);
     }
-  }, [generatePhases, phasePlan, wizardState, onComplete, sendMessage]);
+  }, [generatePhases, phasePlan, wizardState, onComplete, sendMessage, clearDrafts]);
 
   // ============================================================================
   // FILE HANDLING
@@ -449,6 +587,52 @@ Does this look good? You can:
   // ============================================================================
   // RENDER
   // ============================================================================
+
+  // Show recovery prompt if there's a saved conversation
+  if (showRecoveryPrompt) {
+    return (
+      <div
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={onCancel}
+      >
+        <div
+          className="bg-slate-900 text-white rounded-2xl border border-white/10 shadow-2xl p-8 max-w-md w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-3xl mb-4">
+              <span role="img" aria-label="restore">&#128190;</span>
+            </div>
+            <h2 className="text-xl font-bold mb-2">Resume Previous Session?</h2>
+            <p className="text-slate-400 mb-6">
+              You have an unsaved conversation from <span className="text-white font-medium">{draftAge}</span>.
+              Would you like to continue where you left off?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={startFreshConversation}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors"
+              >
+                Start Fresh
+              </button>
+              <button
+                onClick={recoverConversation}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-medium transition-colors"
+              >
+                Resume
+              </button>
+            </div>
+            <button
+              onClick={onCancel}
+              className="mt-4 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
