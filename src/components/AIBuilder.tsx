@@ -23,6 +23,7 @@ import { PreviewPanel } from './PreviewPanel';
 import { ToastProvider } from './Toast';
 import AppConceptWizard from './AppConceptWizard';
 import ConversationalAppWizard from './ConversationalAppWizard';
+import NaturalConversationWizard from './NaturalConversationWizard';
 import SettingsPage from './SettingsPage';
 import ThemeToggle from './ThemeToggle';
 
@@ -62,6 +63,7 @@ import { StreamingProgress, InlineStreamingProgress } from './StreamingProgress'
 import type { AppConcept, ImplementationPlan, BuildPhase } from '../types/appConcept';
 import type { GeneratedComponent, ChatMessage, AppVersion, StagePlan, Phase, PendingChange, PendingDiff, CurrentStagePlan } from '../types/aiBuilderTypes';
 import type { PhasedAppConcept, PhaseId } from '../types/buildPhases';
+import type { DynamicPhasePlan } from '../types/dynamicPhases';
 
 // Utils
 import { exportAppAsZip, downloadBlob, parseAppFiles, getDeploymentInstructions, type DeploymentInstructions } from '../utils/exportApp';
@@ -246,6 +248,12 @@ export default function AIBuilder() {
   const previousModeRef = useRef<'PLAN' | 'ACT'>('PLAN');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  
+  // Dynamic phase plan state for Natural Conversation Wizard
+  const [dynamicPhasePlan, setDynamicPhasePlan] = useState<DynamicPhasePlan | null>(null);
+  
+  // Wizard toggle state (true = use NaturalConversationWizard, false = use old ConversationalAppWizard)
+  const [useNaturalWizard, setUseNaturalWizard] = useState(true);
   
   // Initialize StorageService
   const [storageService] = useState(() => {
@@ -698,6 +706,59 @@ export default function AIBuilder() {
 
     generateImplementationPlan(concept);
   }, [setAppConcept, setShowConceptWizard, setChatMessages, generateImplementationPlan]);
+
+  // Handle natural conversation wizard completion with dynamic phases
+  const handleNaturalWizardComplete = useCallback((concept: AppConcept, phasePlan?: DynamicPhasePlan) => {
+    setAppConcept(concept);
+    setShowConversationalWizard(false);
+    
+    if (phasePlan) {
+      setDynamicPhasePlan(phasePlan);
+      
+      // Convert to existing StagePlan format for compatibility
+      const stagePlan: StagePlan = {
+        totalPhases: phasePlan.totalPhases,
+        currentPhase: 0,
+        phases: phasePlan.phases.map(p => ({
+          number: p.number,
+          name: p.name,
+          description: p.description,
+          features: p.features,
+          status: 'pending' as const
+        }))
+      };
+      setNewAppStagePlan(stagePlan);
+      
+      // Show phase plan message
+      const planMessage: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: `🎯 **${phasePlan.totalPhases}-Phase Build Plan Created for "${concept.name}"**\n\n` +
+          `**Complexity:** ${phasePlan.complexity}\n` +
+          `**Estimated Time:** ${phasePlan.estimatedTotalTime}\n\n` +
+          phasePlan.phases.map(p => 
+            `**Phase ${p.number}: ${p.name}** (${p.estimatedTime})\n${p.description}`
+          ).join('\n\n') +
+          `\n\n💡 **Ready to start?** Switch to ACT mode and type "build phase 1"!`,
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, planMessage]);
+    } else {
+      // No phase plan, just use regular implementation plan
+      const welcomeMessage: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: `✨ **App Concept Created: "${concept.name}"**\n\n` +
+          `**Description:** ${concept.description}\n\n` +
+          `**Target Users:** ${concept.targetUsers}\n\n` +
+          `**Features:** ${concept.coreFeatures.length} defined\n\n` +
+          `I'm now generating your implementation plan...`,
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, welcomeMessage]);
+      generateImplementationPlan(concept);
+    }
+  }, [setAppConcept, setShowConversationalWizard, setChatMessages, setNewAppStagePlan, generateImplementationPlan]);
 
   // Handle advanced phased build start
   const handleStartAdvancedPhasedBuild = useCallback(async () => {
@@ -1611,10 +1672,17 @@ export default function AIBuilder() {
         )}
 
         {showConversationalWizard && (
-          <ConversationalAppWizard
-            onComplete={handleConceptComplete}
-            onCancel={() => setShowConversationalWizard(false)}
-          />
+          useNaturalWizard ? (
+            <NaturalConversationWizard
+              onComplete={handleNaturalWizardComplete}
+              onCancel={() => setShowConversationalWizard(false)}
+            />
+          ) : (
+            <ConversationalAppWizard
+              onComplete={handleConceptComplete}
+              onCancel={() => setShowConversationalWizard(false)}
+            />
+          )
         )}
 
         <SettingsPage
