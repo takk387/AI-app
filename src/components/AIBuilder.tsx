@@ -97,7 +97,7 @@ function getWelcomeMessage(): ChatMessage {
   return {
     id: 'welcome',
     role: 'system',
-    content: "👋 Hi! I'm your AI App Builder.\n\n🎯 **How It Works:**\n\n**💭 PLAN Mode** (Current):\n• Discuss what you want to build\n• I'll help design the requirements and architecture\n• No code generated - just planning and roadmapping\n• Ask questions, refine ideas, create specifications\n\n**⚡ ACT Mode:**\n• I'll read our plan and build the app\n• Generates working code based on our discussion\n• Can modify existing apps with surgical precision\n\n**🔒 Smart Protection:**\n• Every change saved to version history\n• One-click undo/redo anytime\n• Review changes before applying\n\n💡 **Start by telling me what you want to build, and we'll plan it together!**",
+    content: "👋 Hi! I'm your AI App Builder.\n\n🎯 **How It Works:**\n\n**💭 PLAN Mode** (Current):\n• Discuss what you want to build\n• Design requirements and architecture\n• No code - just planning and roadmapping\n\n**⚡ ACT Mode:**\n• Generates working code from our plan\n• Modifies apps with surgical precision\n• Real-time streaming progress\n\n**🔒 Smart Protection:**\n• Every change saved to version history\n• One-click undo/redo anytime\n• Review changes before applying\n\n**✨ Pro Features:**\n🧙‍♂️ Use Wizards for guided planning • 🏗️ Build in phases • 🖼️ Upload design inspiration • 📦 Export & deploy\n\n💡 **Start by telling me what you want to build, and we'll plan it together!**",
     timestamp: new Date().toISOString()
   };
 }
