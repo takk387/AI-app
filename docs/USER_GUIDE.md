@@ -1,570 +1,817 @@
-# 📚 AI-APP-BUILDER - User Guide
+# 📚 AI App Builder - User Guide
 
-**Your Complete Guide to Building Apps with AI**
+> Your complete guide to building web applications through conversation with AI
 
-Last Updated: November 4, 2025  
-Version: 2.0 (Conversation-First System)
-
----
-
-## 🎯 What Is This?
-
-AI-APP-BUILDER is an **AI-powered application builder** that creates complete, working apps through conversation. Simply describe what you want to build, and the AI generates production-ready code with live preview.
-
-**What makes it special:**
-- 🤖 **Conversational interface** - No coding required
-- 👁️ **Live preview** - See your app running instantly
-- 🔄 **Version control** - Unlimited undo/redo, fork, and compare
-- 🎨 **Image-inspired designs** - Upload a screenshot, AI recreates the style
-- ⚡ **Surgical modifications** - Change specific parts without rewriting everything
-- 🔒 **Safe and reliable** - Review every change before it's applied
+**Version:** 3.0  
+**Last Updated:** December 2, 2025
 
 ---
 
-## 🚀 Quick Start (5 Minutes)
+## 🎯 What You'll Learn
 
-### Step 1: Access the App
-Open the app at `http://localhost:3000` (or your Vercel URL if deployed).
-
-**First-time login:**
-- Default password: `Nerd`
-- (To change: Set `SITE_PASSWORD` in `.env.local` or Vercel environment variables)
-
-### Step 2: Understand the Interface
-
-```
-┌────────────────────────────────────────────────────┐
-│  Header: Logo | History (🕒) | My Apps (📂)       │
-├─────────────────────┬──────────────────────────────┤
-│                     │                              │
-│   💬 Chat Panel     │    👁️ Preview / 💻 Code     │
-│   (Left Side)       │    (Right Side)              │
-│                     │                              │
-│  - Conversation     │  - Live Preview Tab          │
-│  - Plan/Act Toggle  │  - Code View Tab             │
-│  - Input Area       │  - Export/Download           │
-│  - Image Upload     │  - Undo/Redo/Fork            │
-│                     │                              │
-└─────────────────────┴──────────────────────────────┘
-```
-
-### Step 3: Choose Your Mode
-
-At the top of the chat panel, you'll see two mode buttons:
-
-**💭 PLAN Mode** (Default):
-- For brainstorming and discussing
-- AI explains concepts and answers questions
-- **No code is generated** - just planning
-- Best for: Exploring ideas, asking "how to", refining requirements
-
-**⚡ ACT Mode**:
-- For building and modifying apps
-- AI generates working code
-- Makes surgical modifications to existing apps
-- Best for: Actually getting work done
-
-**Rule of thumb:** Plan first, then Act!
-
-### Step 4: Create Your First App
-
-1. **Switch to ACT Mode** (click the ⚡ ACT button)
-2. Type in chat: `Build me a simple todo app`
-3. Press 🚀 Send or hit Enter
-4. Watch the magic happen! ✨
-
-**What you'll see:**
-- Progress messages updating in real-time
-- AI generates complete app with multiple files
-- Preview panel shows your working app
-- You can interact with it immediately!
-
-### Step 5: Make a Change
-
-With your todo app loaded, try:
-- `Change the button color to purple`
-- `Add a delete all button`
-- `Add dark mode`
-
-The AI makes **surgical edits** - only changing what you asked for!
+- How to build complete apps through conversation
+- Understanding PLAN Mode vs ACT Mode
+- Using AI Wizards for guided creation
+- Building complex apps in phases
+- Managing versions and changes
+- Exporting and deploying your apps
 
 ---
 
-## 💭 Understanding Plan vs Act Modes
+## Table of Contents
 
-### When to Use PLAN Mode
+1. [Getting Started](#getting-started)
+2. [Understanding PLAN vs ACT Mode](#understanding-plan-vs-act-mode)
+3. [Building Your First App](#building-your-first-app)
+4. [Using AI Wizards](#using-ai-wizards)
+5. [Phased Building](#phased-building)
+6. [Making Modifications](#making-modifications)
+7. [Version Control](#version-control)
+8. [Image Upload for Design Inspiration](#image-upload-for-design-inspiration)
+9. [Export & Deployment](#export--deployment)
+10. [My Apps Library](#my-apps-library)
+11. [Best Practices](#best-practices)
+12. [Troubleshooting](#troubleshooting)
+13. [FAQ](#faq)
 
-**PLAN Mode is for discussion and exploration:**
+---
 
-**Use it when you want to:**
-- ✅ Brainstorm ideas: "What features should a task manager have?"
-- ✅ Ask questions: "How does React Context work?"
-- ✅ Get explanations: "What's the difference between useState and useReducer?"
-- ✅ Refine requirements: "I want to build a blog - what should I consider?"
-- ✅ Learn concepts: "Explain authentication to me"
-- ✅ Plan architecture: "How should I structure a multi-page app?"
+## Getting Started
 
-**What happens in PLAN Mode:**
-- 💬 AI responds with explanations and guidance
-- 📋 No code generation
-- 🎯 Focus on understanding and planning
-- 💡 AI helps you think through problems
+### Your First Visit
 
-**Example conversation in PLAN Mode:**
+When you open AI App Builder, you'll see:
+
 ```
-You: "I want to build a todo app"
-AI: "Great! Let's plan it out. Here are some questions:
-     1. Do you want user accounts?
-     2. Should todos persist after refresh?
-     3. Any priority levels or categories?
-     4. Desktop only or mobile-friendly?"
+┌─────────────────────────────────────────────────┐
+│  Header: Logo | Wizards | New App | My Apps    │
+├──────────────────┬──────────────────────────────┤
+│                  │                              │
+│  💬 Chat Panel   │   👁️ Preview / 💻 Code      │
+│                  │                              │
+│  • Welcome msg   │   • Live preview             │
+│  • Plan/Act      │   • Code view                │
+│  • Input field   │   • Export/Download          │
+│  • Image upload  │   • Version controls         │
+│                  │                              │
+└──────────────────┴──────────────────────────────┘
+```
 
-You: "Just simple - add/delete/complete. No accounts."
-AI: "Perfect! For a simple todo app, here's what we'll need:
-     - A useState array to hold todos
-     - Add function with input field
-     - Map over todos to display them
-     - Delete and toggle complete functions
-     - localStorage for persistence
+### The Interface
+
+**Chat Panel (Left):**
+- Read the welcome message for quick instructions
+- Toggle between PLAN and ACT modes
+- Type your requests
+- Upload design inspiration images
+
+**Preview Panel (Right):**
+- **Preview Tab**: See your app running live
+- **Code Tab**: View generated source code
+- **Controls**: Undo, Redo, Fork, Export buttons
+
+### Quick Concepts
+
+**Three Ways to Build:**
+
+1. **Direct Chat** - Just describe what you want
+2. **Wizards** - Guided step-by-step planning 🧙‍♂️
+3. **Templates** - Start from pre-built apps
+
+---
+
+## Understanding PLAN vs ACT Mode
+
+The heart of AI App Builder is the dual-mode system.
+
+### 💭 PLAN Mode
+
+**Purpose:** Discussion, design, and planning
+
+**What happens:**
+- AI answers questions and explains concepts
+- You can brainstorm ideas
+- Refine requirements
+- Create implementation plans
+- **No code is generated**
+
+**When to use:**
+- "What features should a blog have?"
+- "How should I structure this app?"
+- "Explain authentication to me"
+- "What's the best approach for..."
+
+**Example conversation:**
+```
+You: "I want to build a recipe app"
+
+AI: "Great! Let's plan it out:
+     - Will users submit recipes or is it read-only?
+     - Do you want search and filtering?
+     - Should it have images?
+     - Any dietary preferences or tags?"
+
+You: "Users can submit, with images and tags"
+
+AI: "Perfect! Here's what we'll need:
+     - Form for recipe submission
+     - Image upload
+     - Tag system (vegan, gluten-free, etc.)
+     - Recipe list with filter options
+     - Individual recipe view
      
-     Ready to build? Switch to ACT Mode and say 'build it'"
+     Ready to build? Switch to ACT Mode!"
+```
+
+### ⚡ ACT Mode
+
+**Purpose:** Building and modifying applications
+
+**What happens:**
+- AI generates working code
+- Creates complete applications
+- Makes modifications to existing apps
+- Shows real-time progress
+- **Code is generated and applied**
+
+**When to use:**
+- "Build a todo app"
+- "Add dark mode"
+- "Change the button color to blue"
+- "Add authentication"
+
+**Example conversation:**
+```
+You: "Build a recipe app with the features we discussed"
+
+AI: [Streaming generation starts]
+    "🚀 Starting generation...
+     📝 Creating components...
+     🎨 Applying styles...
+     ✨ Adding functionality..."
+     
+    [After 15-30 seconds]
+    "✅ App created! Your recipe app is ready."
+    
+[Preview shows working app]
+
+You: "Add a favorites feature"
+
+AI: "🔍 Changes Ready for Review
+     I'll add a heart icon to each recipe..."
+     
+[Shows diff preview]
+[You approve]
+     
+AI: "✅ Changes applied! Recipes now have favorites."
+```
+
+### Switching Between Modes
+
+**Mode Transition Messages:**
+
+When you switch from PLAN → ACT:
+```
+"⚡ Switched to ACT Mode
+
+Ready to build! I'll read the plan we discussed and implement it.
+
+To build: Type 'build it' or 'implement the plan'"
+```
+
+When you switch from ACT → PLAN:
+```
+"💭 Switched to PLAN Mode
+
+Let's plan your next feature or discuss improvements. 
+I won't generate code in this mode - we'll design the requirements first."
 ```
 
 ---
 
-### When to Use ACT Mode
+## Building Your First App
 
-**ACT Mode is for building and modifying:**
+Let's build a simple todo app step by step.
 
-**Use it when you want to:**
-- ✅ Build a new app: "Create a calculator app"
-- ✅ Modify existing app: "Add dark mode"
-- ✅ Add features: "Add authentication"
-- ✅ Fix issues: "The button isn't working"
-- ✅ Change styling: "Make it look more modern"
+### Step 1: Start Fresh
 
-**What happens in ACT Mode:**
-- 🏗️ AI generates complete, working code
-- 👁️ Live preview shows your app
-- 🔄 Version control saves every change
-- ✅ Review changes before they're applied (for complex modifications)
+Click **"✨ New App"** button in the header to start a clean conversation.
 
-**Example conversation in ACT Mode:**
+### Step 2: Switch to ACT Mode
+
+Click the **"⚡ ACT"** button at the top of the chat panel.
+
+The button will highlight to show you're in ACT mode.
+
+### Step 3: Describe Your App
+
+Type a clear description:
+
 ```
-You: "Build a todo app"
-AI: [Generates complete app with files]
-    "🚀 App created - I've created your todo app with 3 files!"
+"Build a todo app with:
+- Add new tasks
+- Mark tasks as complete
+- Delete tasks
+- Show total count"
+```
 
-You: "Add a counter showing total todos"
-AI: [Shows diff preview]
-    "🔍 Changes Ready for Review - I'll add a counter at the top"
-    [You see exactly what will change]
-    [Click ✅ Approve]
+Press Enter or click 🚀 Send.
 
-You: "Change the add button to green"
-AI: [Applies change immediately]
-    "✨ Minor update applied - Button is now green!"
+### Step 4: Watch It Build
+
+You'll see real-time progress:
+
+```
+⏳ Starting generation...
+📝 Generating App.tsx...
+📝 Generating styles...
+📝 Generating TodoItem.tsx...
+✅ Generation complete!
+```
+
+This typically takes 15-30 seconds depending on complexity.
+
+### Step 5: Test Your App
+
+The preview panel now shows your working app:
+
+- Try adding a todo
+- Click the checkbox to mark complete
+- Click delete to remove a todo
+- See the counter update
+
+**Congratulations! You've built your first app! 🎉**
+
+### Step 6: Make a Change
+
+With the app loaded, try:
+
+```
+"Change the add button color to purple"
+```
+
+The change applies instantly. You'll see:
+```
+✅ Minor update applied - Button is now purple!
 ```
 
 ---
 
-### Transitioning Between Modes
+## Using AI Wizards
 
-**PLAN → ACT:** Natural progression
-```
-PLAN: "I want to build a blog"
-PLAN: [Discussion about features, structure, etc.]
-PLAN: "Sounds good, I'm ready to build"
-[You switch to ACT Mode]
-ACT: "Build the blog with those features"
-```
+Wizards provide guided app creation with step-by-step planning.
 
-**ACT → PLAN:** When you need guidance
+### Starting a Wizard
+
+Click the **"🧙‍♂️ Wizard"** button in the header.
+
+You'll see the **Natural Conversation Wizard** modal.
+
+### How Wizards Work
+
+**Step 1: Describe Your App**
 ```
-ACT: [You've built an app]
-[Something isn't working right]
-[You switch to PLAN Mode]
-PLAN: "Why isn't the login form showing up?"
-PLAN: [AI explains the issue]
-[You switch back to ACT Mode]
-ACT: "Fix the login form by..."
+Wizard: "Tell me about the app you want to build."
+
+You: "A blog where people can write and share posts"
 ```
 
-**The system helps you!** When you switch modes, you'll see a helpful message explaining what changed.
+**Step 2: Answer Follow-up Questions**
+```
+Wizard: "Great! A few questions:
+         - Should users be able to comment?
+         - Do you want categories/tags?
+         - Simple or rich text editor?
+         - User accounts or anonymous posting?"
+
+You: "Yes to comments and tags. Simple editor. No accounts for now."
+```
+
+**Step 3: Review Concept**
+```
+Wizard: "Here's your app concept:
+
+         📝 Blog Platform
+         
+         Features:
+         • Create/edit/delete posts
+         • Comment system
+         • Tag organization
+         • Simple text editor
+         • Anonymous posting
+         
+         Does this look good?"
+
+You: "Yes"
+```
+
+**Step 4: Get Phase Plan**
+```
+Wizard: "Perfect! I've created a 3-phase build plan:
+
+         Phase 1: Post Creation & Display
+         Phase 2: Tag System
+         Phase 3: Comments
+         
+         Estimated time: 15-20 minutes
+         
+         Ready to build?"
+```
+
+**Step 5: Build**
+
+The wizard closes and you're in ACT mode with a phased plan ready to execute.
+
+### Wizard Benefits
+
+- ✅ Structured planning process
+- ✅ AI asks the right questions
+- ✅ Automatic phase breakdown
+- ✅ Complexity estimation
+- ✅ Nothing forgotten
 
 ---
 
-## 🏗️ Building Your First App (Detailed Walkthrough)
+## Phased Building
 
-### Example: Creating a Todo App
+For complex apps, building in phases gives better control and results.
 
-**Step 1: Switch to ACT Mode**
-Click the ⚡ ACT button at top of chat panel.
+### What is Phased Building?
 
-**Step 2: Make Your Request**
-Type a clear, specific description:
+Instead of generating everything at once, the app is built incrementally:
 
-✅ **Good requests:**
-- "Build a todo app with add, delete, and mark complete"
-- "Create a simple calculator"
-- "Make a timer that counts down from 5 minutes"
-
-❌ **Vague requests:**
-- "Build something cool" (too vague)
-- "Make an app" (what kind?)
-
-**Step 3: Watch It Generate**
-
-You'll see progress messages:
 ```
-🤔 Analyzing your request...
-🏗️ Designing app structure...
-⚡ Generating components...
-🎨 Styling with Tailwind...
-✨ Adding functionality...
+Phase 1: Foundation (layout, basic structure)
+    ↓
+Phase 2: Core Features (main functionality)
+    ↓
+Phase 3: Polish (styling, UX improvements)
 ```
 
-**This takes 10-30 seconds** depending on complexity.
+### When Phases Are Created
 
-**Step 4: Review Your App**
+**Automatically:**
+- Wizard generates phases for you
+- AI detects complexity and suggests phases
 
-The preview panel shows your working app:
-- **Live Preview** tab: Interact with it like a real app
-- **Code** tab: See all the files that were generated
+**Manually:**
+- You can request: "Build this in phases"
 
-**What you get:**
-- `src/App.tsx` - Main app component
-- Fully functional React app
-- Tailwind CSS styling
-- Working state management
-- localStorage persistence (if applicable)
+### Working with Phases
 
-**Step 5: Test It**
+**Phase Progress Card:**
 
-Try using your app:
-- Add a todo → Does it appear?
-- Mark complete → Does it toggle?
-- Delete → Does it remove?
+When a phase plan exists, you'll see a card in the chat panel:
 
-If something's not right, just ask! "The delete button isn't working"
+```
+🏗️ Build Plan (3 Phases)
+
+Phase 1: Foundation & Layout ✅
+Phase 2: Core Features      ⏳ (Building)
+Phase 3: Polish & UX        ⏸️ (Pending)
+```
+
+**Building a Phase:**
+
+Click the **"Build"** button next to a phase, or type:
+```
+"Build phase 1"
+"Start phase 2"
+"Continue with next phase"
+```
+
+**AI generates that phase specifically**, using context from previous phases.
+
+### Phase Execution Context
+
+Each phase includes:
+- Description of what to build
+- Features to implement
+- Dependencies on previous phases
+- Context from completed phases
+
+**Example:**
+```
+Phase 2 uses the layout created in Phase 1
+Phase 3 enhances the features from Phase 2
+```
+
+### Benefits of Phased Building
+
+**Incremental Progress:**
+- Working app after each phase
+- Test before moving forward
+- Catch issues early
+
+**Better Quality:**
+- AI focuses on one thing at a time
+- Less overwhelming context
+- Cleaner, more maintainable code
+
+**Flexibility:**
+- Change direction between phases
+- Skip phases if not needed
+- Add custom phases
+
+### Advanced: Phased Build Panel
+
+For complex projects, use the **"🏗️ Phased Build"** button:
+
+This opens a dedicated panel showing:
+- All phases with status
+- Validation results
+- Build progress
+- Phase details
+
+**Features:**
+- Pause/Resume building
+- Skip phases
+- Retry failed phases
+- View detailed phase information
+- Run validation tests
 
 ---
 
-## ✏️ Making Modifications
+## Making Modifications
 
-### Simple Changes (Instant)
+With an app loaded, you can make changes through conversation.
 
-These apply immediately without approval:
+### Types of Modifications
 
-**Text changes:**
+**1. Simple Updates (Instant)**
+
+Applied immediately without preview:
+
 ```
 "Change the title to 'My Tasks'"
-"Update the button text to 'Add Task'"
-```
-
-**Color changes:**
-```
 "Make the button blue"
-"Change background to light gray"
-"Use a purple gradient for the header"
+"Add padding to the container"
+"Change font size to larger"
 ```
 
-**Adding elements:**
-```
-"Add a 'Clear All' button"
-"Add a counter showing total tasks"
-"Add a reset button"
-```
+These update in 1-2 seconds.
 
-**Style tweaks:**
-```
-"Make the buttons bigger"
-"Center the content"
-"Add more spacing between items"
-```
+**2. Feature Additions (Diff Preview)**
 
-### Medium Complexity (Usually Instant)
+Shows you exactly what will change:
 
-These might show a diff preview:
-
-**New features:**
 ```
-"Add dark mode toggle"
 "Add a search filter"
-"Add export to CSV button"
+"Add dark mode toggle"
+"Add export to JSON"
 "Add keyboard shortcuts"
 ```
 
-**State management:**
+You'll see a **diff preview** showing:
+- What files change
+- What code is added/removed
+- Summary of changes
+
+Click **✅ Approve** or **❌ Reject**.
+
+**3. Complex Changes (AST or Staged)**
+
+For major modifications like authentication:
+
 ```
-"Save to localStorage"
-"Add categories for tasks"
-"Add priority levels"
+"Add authentication"
 ```
 
-**Layout changes:**
+AI uses **AST operations** to add complete systems:
+- Login form
+- Logout button
+- Protected content
+- State management
+- Event handlers
+
+All in one operation!
+
+### Modification Workflow
+
+**Example: Adding Dark Mode**
+
 ```
-"Make it a 2-column layout"
-"Add a sidebar"
-"Make it responsive for mobile"
+You: "Add a dark mode toggle"
+
+AI: "🔍 Changes Ready for Review
+
+     I'll add:
+     • useState for dark mode
+     • Toggle button in header
+     • Dark background when active
+     • Dark text colors
+     
+     Files changing: App.tsx
+     Lines added: 15
+     Lines removed: 2"
+
+[Diff preview shows exact changes]
+
+You: [Click ✅ Approve]
+
+AI: "✅ Changes applied successfully!
+     
+     Dark mode added with toggle button."
 ```
 
-### Complex Features (Staged or AST)
+**Testing:**
+- Click the sun/moon icon
+- Background turns dark
+- Text becomes light
+- Smooth transition
 
-For complex features, the AI uses either:
+### When Modifications Fail
 
-**A. AST Operations** (One-click, super reliable):
-- Authentication (login/logout system)
-- Complex state additions
-- Structural changes
+**"Pattern not found" error:**
+
+This means the code structure changed since AI last saw it.
+
+**Solutions:**
+1. Try a simpler change
+2. Break into smaller steps
+3. Ask AI to read current code first (in PLAN mode)
+4. Start fresh with a new app including the feature
 
 **Example:**
 ```
-You: "Add authentication"
-AI: ✅ Uses AST_ADD_AUTHENTICATION
-    [Applies complete auth in one step]
-    [Login form, logout button, state, handlers - all working!]
+❌ Failed: "Refactor the entire authentication system"
+
+✅ Better: "Add a logout button"
 ```
 
-**B. Staged Implementation** (Step-by-step):
-- Major refactors
-- Multi-step features
-- Breaking changes into stages
+### Tips for Successful Modifications
 
-**Example:**
-```
-You: "Add a payment system"
-AI: ⚠️ Complex Modification Detected
-    "This requires multiple stages:
-     Stage 1: Payment form UI
-     Stage 2: Stripe integration
-     Stage 3: Success/error handling
-     
-     Reply 'proceed' to continue"
-     
-You: "proceed"
+**Be Specific:**
+- ✅ "Add a blue button below the input that clears all todos"
+- ❌ "Add a button"
 
-AI: [Shows Stage 1 changes]
-    ✅ Approve → [Applied]
-    
-AI: "Stage 1 Complete! Happy with this stage?"
+**One Change at a Time:**
+- ✅ "Add dark mode" → wait → "Add search"
+- ❌ "Add dark mode, search, filters, and export"
 
-You: "yes"
+**Describe Outcome:**
+- ✅ "Save todos to localStorage so they persist after refresh"
+- ❌ "Use localStorage.setItem in useEffect to save"
 
-AI: [Shows Stage 2 changes]
-    [Continue through stages...]
-```
+**Use Examples:**
+- ✅ "Make it look like Gmail's interface"
+- ✅ "Add a timer like the Pomodoro Technique"
 
 ---
 
-## 🎨 Using Image Upload for Design Inspiration
+## Version Control
 
-### How It Works
+Every change is automatically saved, giving you powerful version control.
 
-Upload a screenshot of any design, and the AI recreates the aesthetic!
+### Automatic Saving
 
-**What AI extracts:**
-- 🎨 Color palette
-- 📐 Layout structure
-- ✨ Design style (modern, minimalist, bold, etc.)
-- 🖼️ Visual patterns
-
-### Step-by-Step
-
-**1. Find Inspiration**
-- Screenshot a website you like
-- Find a design on Dribbble/Behance
-- Use any image with a design aesthetic
-
-**2. Upload**
-- Click 🖼️ button next to chat input
-- Select image (JPG, PNG, GIF, WebP)
-- Max 5MB
-
-**3. Preview**
-- See thumbnail of your uploaded image
-- Click ✕ to remove if needed
-
-**4. Request**
-Type your request referencing the image:
-```
-"Build a todo app using this color scheme"
-"Create a landing page inspired by this design"
-"Make it look like this screenshot"
-```
-
-**5. AI Analyzes**
-AI examines:
-- Primary/secondary colors
-- Typography style
-- Spacing and layout
-- Overall aesthetic
-
-**6. Result**
-Your app recreates the visual style using Tailwind CSS!
-
-**Example:**
-```
-[Upload screenshot of a dark, modern dashboard]
-
-You: "Build a todo app with this aesthetic"
-
-AI: "🎨 Analyzing image...
-     Detected: Dark theme with blue accents
-     Style: Modern, clean, minimalist
-     Creating your app..."
-     
-[Generates app with dark background, blue buttons, modern spacing]
-```
-
----
-
-## 🔄 Version Control & Undo/Redo
-
-### Automatic Version Saving
-
-**Every change creates a version:**
+**When versions are created:**
 - New app created → Version 1
-- Add dark mode → Version 2
-- Change colors → Version 3
-- Add feature → Version 4
+- Feature added → New version
+- Modification applied → New version
+- Major change → New version
 
 **Each version includes:**
-- 📝 Description of change
-- ⏰ Timestamp
-- 🏷️ Change type (NEW_APP, MAJOR_CHANGE, MINOR_CHANGE)
-- 💾 Complete code snapshot
+- Complete code snapshot
+- Description of change
+- Timestamp
+- Change type (NEW_APP, MAJOR_CHANGE, MINOR_CHANGE)
 
-### Undo/Redo
+### Undo / Redo
 
-**Keyboard shortcuts:**
-- **Ctrl+Z** (Windows) or **Cmd+Z** (Mac): Undo
-- **Ctrl+Shift+Z** or **Ctrl+Y**: Redo
+**Keyboard Shortcuts:**
+- **Undo**: `Ctrl+Z` (Windows/Linux) or `Cmd+Z` (Mac)
+- **Redo**: `Ctrl+Shift+Z` or `Ctrl+Y` (Windows/Linux) or `Cmd+Shift+Z` (Mac)
+
+**Buttons:**
+- Click the **↶ Undo** button in preview panel
+- Click the **↷ Redo** button in preview panel
+
+**The buttons show count:**
+```
+↶ Undo (3)    ↷ Redo (1)
+```
 
 **How it works:**
-1. Make a change
-2. Don't like it? Press Ctrl+Z
-3. Previous version restored instantly
-4. Changed your mind? Press Ctrl+Y to redo
-
-**Example:**
 ```
-1. Add dark mode → App now has dark mode
-2. Press Ctrl+Z → Dark mode removed, back to original
-3. Press Ctrl+Y → Dark mode returns
+1. Add feature    [Current]
+2. Press Ctrl+Z → [Back to previous]
+3. Press Ctrl+Y → [Forward again]
 ```
 
-**Unlimited undo stack** (until page refresh)
+**Unlimited undo** during your session (clears on page refresh).
 
-### Version History Modal
+### Version History
 
-**Access:** Click 🕒 History button in header
+Click **"🕒 History"** in the header to see all versions.
 
 **What you see:**
-- All versions in reverse chronological order
-- Version number and timestamp
-- Description of what changed
-- Current version highlighted in blue
-
-**Actions per version:**
-- **🔄 Revert** - Restore to that version
-- **🍴 Fork** - Create a new branch from that version
-- **🔍 Compare** - Side-by-side comparison with current
-
-**Example workflow:**
 ```
-Version 5: Added authentication (Current) ← You are here
-Version 4: Added dark mode
-Version 3: Changed colors
-Version 2: Added todo counter
-Version 1: Initial todo app
+Version History
 
-[Click "Revert" on Version 3]
-→ App now looks like Version 3 (without dark mode or auth)
-→ Version 3 becomes new "Current"
+Version 5 - Added search filter ← Current
+November 25, 2025 at 3:45 PM
+[Code preview...]
+🔄 Revert | 🍴 Fork | 🔍 Compare
+
+Version 4 - Added dark mode
+November 25, 2025 at 3:30 PM
+[Code preview...]
+🔄 Revert | 🍴 Fork | 🔍 Compare
+
+Version 3 - Changed button colors
+[...]
 ```
 
-### Fork/Branch
+**Actions available:**
+
+**🔄 Revert** - Jump back to this version
+- Becomes your new current version
+- Previous versions still in history
+- Can't redo from this point
+
+**🍴 Fork** - Create independent copy
+- New app created from this version
+- Original app unchanged
+- Appears in My Apps library
+
+**🔍 Compare** - Side-by-side comparison
+- Shows this version vs current
+- Highlights differences
+- View code changes
+
+### Forking
 
 **What is forking?**
-Create an alternative version of your app from any point in history.
+
+Create an independent branch of your app.
 
 **When to fork:**
-- 🔀 Try different approaches
-- 🧪 Experiment without affecting original
-- 📋 Create variations (light theme vs dark theme)
-- 💾 Save "checkpoint" before major changes
+- 🧪 Try experimental features safely
+- 🔀 Create variations (different themes, etc.)
+- 💾 Save checkpoint before major changes
+- 📋 Develop multiple versions
 
 **How to fork:**
 
-**Method 1: From current app**
-1. Click **🍴 Fork** button in header
+**Method 1: Fork Current App**
+1. Click **"🍴 Fork"** in preview panel header
 2. New app created: "Your App - Fork"
-3. Appears in My Apps library
-4. Independent from original
+3. Both apps independent
 
-**Method 2: From version history**
-1. Open 🕒 History
-2. Find version you want to fork
+**Method 2: Fork from History**
+1. Open **🕒 History**
+2. Find version to fork
 3. Click **🍴 Fork** on that version
-4. New app created from that specific version
+4. New app created from that point
 
 **Example:**
 ```
-Original App: Todo app with dark mode
-              
-[Fork it]
-              
+Original: Todo app with dark mode
+
+[Fork original]
+
 Fork: Todo app with dark mode
       ↓
-      Add different color scheme
+      Try light mode with custom colors
       ↓
-      Now you have 2 independent versions!
       
-Original: Dark mode with blue
-Fork: Dark mode with purple
+Now you have 2 independent versions!
 ```
 
 ### Compare Versions
 
-**What it does:**
-Shows two versions side-by-side so you can see what changed.
+**Purpose:** See exactly what changed between versions.
 
 **How to compare:**
-1. Open 🕒 History
-2. Click **🔍 Compare with current** on any version
-3. Modal shows:
-   - Left panel: Selected version
-   - Right panel: Current version
-   - Timestamps and descriptions
-   - Code previews (first 1000 characters)
+1. Open **🕒 History**
+2. Find version to compare
+3. Click **🔍 Compare with current**
 
-**Actions available:**
-- 📋 Copy code from either version
-- 🔄 Revert to old version
-- 🍴 Fork the old version
+**Modal shows:**
+- **Left**: Selected version (old)
+- **Right**: Current version (new)
+- Timestamps and descriptions
+- Code previews
 
 **Use cases:**
-- "What did I change between yesterday and today?"
-- "Which version had the working login?"
-- "When did I add dark mode?"
+- "What changed since yesterday?"
+- "When did I add authentication?"
+- "Which version had the working feature?"
 
 ---
 
-## 📦 Exporting & Deploying Your App
+## Image Upload for Design Inspiration
 
-### Downloading Your App
+Upload screenshots to recreate visual designs.
+
+### How It Works
+
+AI analyzes your image and extracts:
+- 🎨 Color palette (primary, secondary, accents)
+- 📐 Layout structure
+- ✨ Design style (modern, minimal, bold, etc.)
+- 🖼️ Visual patterns and spacing
+
+Then generates code matching that aesthetic.
+
+### Step by Step
+
+**1. Find Inspiration**
+- Screenshot a website you like
+- Design from Dribbble, Awwwards, etc.
+- App screenshot
+- Any design image
+
+**2. Upload Image**
+- Click **🖼️** icon next to chat input
+- Select image file
+- Formats: JPG, PNG, GIF, WebP
+- Max size: 5MB
+
+**3. Preview**
+- Thumbnail appears above input
+- Click **✕** to remove if needed
+
+**4. Make Request**
+```
+"Build a todo app using this color scheme"
+"Create a dashboard inspired by this design"
+"Make it look like this screenshot"
+"Use these colors and styling"
+```
+
+**5. AI Generates**
+
+AI creates your app matching:
+- Colors from the image
+- Layout style
+- Visual aesthetic
+- Design patterns
+
+### Example
+
+```
+[Upload screenshot of a sleek dark dashboard with blue accents]
+
+You: "Build a todo app with this aesthetic"
+
+AI: "🎨 Analyzing image...
+     
+     Detected:
+     • Dark theme (#1a1a2e background)
+     • Blue accents (#0f3460, #16213e)
+     • Modern, clean design
+     • Card-based layout
+     • Subtle shadows
+     
+     Creating your app..."
+     
+[Generates app with dark theme, blue buttons, card layout, modern styling]
+```
+
+### Tips
+
+**Good images:**
+- ✅ Clear design with visible elements
+- ✅ Good color contrast
+- ✅ Representative of overall style
+- ✅ High enough resolution
+
+**Less effective:**
+- ❌ Very small images
+- ❌ Complex busy screenshots
+- ❌ Low contrast images
+
+**Combine with text:**
+```
+"Build a timer app using these colors but keep the layout simple"
+```
+
+This gives AI both visual and functional guidance.
+
+---
+
+## Export & Deployment
+
+Get your app ready for production.
+
+### Exporting Your App
 
 **Step 1: Click Export**
-Click 📦 **Export & Deploy** button in header
 
-**Step 2: Download ZIP**
-A ZIP file downloads automatically containing:
+Click **"📦 Export & Deploy"** button in preview panel header.
+
+**Step 2: Download Automatically**
+
+A ZIP file downloads containing:
+
 ```
-your-app.zip
+your-app-name.zip
 ├── src/
 │   ├── App.tsx
-│   └── (other components)
+│   └── components/
+├── public/
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.js
@@ -574,891 +821,503 @@ your-app.zip
 └── README.md
 ```
 
-**Step 3: Deployment Modal Opens**
-Shows platform options and instructions:
-- ▲ Vercel (Recommended)
-- ◆ Netlify
-- 🐙 GitHub Pages
+**Step 3: Deployment Modal**
+
+After download, a modal opens with deployment instructions.
 
 ### Running Locally
 
-**Extract the ZIP:**
+**Extract and Install:**
 ```bash
-unzip your-app.zip
-cd your-app
-```
+# Extract ZIP
+unzip your-app-name.zip
+cd your-app-name
 
-**Install dependencies:**
-```bash
+# Install dependencies
 npm install
-```
 
-**Run development server:**
-```bash
+# Run dev server
 npm run dev
 ```
 
-**Open in browser:**
+**Open browser:**
 ```
 http://localhost:3000
 ```
 
-Your app is now running on your machine!
+Your app is now running locally!
 
-### Deploying to Vercel (Recommended)
+### Deploy to Vercel (Recommended)
 
 **Why Vercel?**
-- ✅ Optimized for Next.js (what we use)
+- ✅ Optimized for Next.js
 - ✅ Free tier available
 - ✅ Automatic deployments
-- ✅ Custom domains
 - ✅ Zero configuration
+- ✅ Custom domains
 
 **Quick Deploy:**
 
-**Method 1: CLI (Fast)**
+**Method 1: Vercel CLI (Fastest)**
 ```bash
 # Install Vercel CLI
 npm i -g vercel
 
+# Navigate to your app
+cd your-app-name
+
 # Deploy
-cd your-app
 vercel
 
-# Follow prompts (just press Enter for defaults)
-# Your app is live in ~60 seconds!
+# Follow prompts (press Enter for defaults)
+# Live in ~60 seconds!
 ```
 
 **Method 2: GitHub + Vercel (Automated)**
-1. Create GitHub repo
-2. Push your code:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin <your-repo-url>
-   git push -u origin main
-   ```
-3. Go to [vercel.com](https://vercel.com)
-4. Import your GitHub repo
-5. Click Deploy
-6. Done! Auto-deploys on every push
+```bash
+# Create GitHub repo and push code
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin <your-repo-url>
+git push -u origin main
+
+# Then:
+# 1. Go to vercel.com
+# 2. Click "New Project"
+# 3. Import your GitHub repo
+# 4. Click "Deploy"
+# Done! Auto-deploys on every push.
+```
 
 **Method 3: Drag & Drop**
 1. Go to [vercel.com](https://vercel.com)
-2. Drag ZIP folder onto upload area
+2. Drag your extracted folder
 3. Click Deploy
 4. Done!
 
-### Deploying to Netlify
+### Deploy to Netlify
 
 **Quick Deploy:**
 ```bash
 # Install Netlify CLI
 npm install -g netlify-cli
 
-# Deploy
-cd your-app
+# Build your app
 npm run build
-netlify deploy --prod
 
-# Follow prompts
-# Your app is live!
+# Deploy
+netlify deploy --prod
 ```
 
-Or use Netlify's drag-and-drop interface at [netlify.com](https://netlify.com)
+Or use Netlify's [drag & drop](https://app.netlify.com/drop).
 
-### Environment Variables (Important!)
+### Environment Variables
 
-If your app uses:
-- 🔐 Authentication
-- 💾 Database
-- 🔑 API keys
+If your app uses API keys or external services:
 
-**You need to set environment variables in production:**
-
-**Vercel:**
-1. Go to project settings
+**For Vercel:**
+1. Project Settings
 2. Environment Variables tab
-3. Add variables from your `.env.example`
+3. Add variables from `.env.example`
 
-**Netlify:**
-1. Site settings
+**For Netlify:**
+1. Site Settings
 2. Build & Deploy
 3. Environment
 4. Add variables
 
 **Common variables:**
-- `DATABASE_URL` - Database connection string
-- `NEXTAUTH_SECRET` - Auth secret
-- `API_KEY` - External API keys
-
----
-
-## 🎯 Common Use Cases with Examples
-
-### Use Case 1: Building a Todo App
-
-**Request:**
-```
-"Build a todo app with:
-- Add todos
-- Mark as complete
-- Delete todos
-- Counter showing total"
-```
-
-**What you get:**
-- Input field for new todos
-- List of todos with checkboxes
-- Delete button per todo
-- Counter at top
-- localStorage persistence
-
-**Common follow-up requests:**
-```
-"Add categories (Work, Personal, Shopping)"
-"Add due dates"
-"Add priority levels (High, Medium, Low)"
-"Add search filter"
-"Add dark mode"
+```env
+ANTHROPIC_API_KEY=your_key_here
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 ```
 
 ---
 
-### Use Case 2: Adding Dark Mode
+## My Apps Library
 
-**Prerequisites:** You have an existing app
+Manage all your created apps.
 
-**Request:**
+### Opening the Library
+
+Click **"📂 My Apps"** button in the header.
+
+### What You See
+
+**Apps Tab:**
 ```
-"Add a dark mode toggle"
+My Apps (12)
+
+[Search apps...]
+
+⭐ Favorites
+└─ Todo App Pro
+   Recipe Manager
+
+📱 All Apps
+└─ Calculator
+   Timer
+   Dashboard
+   Blog Platform
+   [...]
 ```
 
-**What happens:**
-1. AI adds `useState` for dark mode
-2. Creates toggle button
-3. Conditionally applies dark classes
-4. Preserves all existing features
+### App Cards
 
-**What you get:**
-- ☀️/🌙 Toggle button
-- Dark background when active
-- Light text in dark mode
-- Smooth transition
+Each app shows:
+- **Name** and description
+- **Timestamp** (last modified)
+- **Star icon** (click to favorite)
+- **Actions**: Load, Export, Delete
 
-**Customization requests:**
+### Actions
+
+**Load App:**
+- Click app card or "Load" button
+- App opens in preview
+- Chat history restored
+- Continue working on it
+
+**Export App:**
+- Click **📤 Export** icon
+- Downloads ZIP file
+- Deployment modal opens
+
+**Delete App:**
+- Click **🗑️ Delete** icon
+- Confirms before deleting
+- Removed from library
+
+**Toggle Favorite:**
+- Click **⭐** star icon
+- Favorited apps appear at top
+- Helps organize important apps
+
+### Search & Filter
+
+**Search:**
 ```
-"Use purple instead of gray for dark mode"
-"Make the toggle a sun/moon icon"
-"Remember dark mode preference after refresh"
-"Make dark mode the default"
+[Search apps...]
 ```
+- Searches app names and descriptions
+- Real-time filtering
+
+**Sort:**
+- Newest first (default)
+- Oldest first
+- Alphabetical
+- Favorites first
+
+### Files Tab
+
+**Cloud Storage:**
+
+If you're logged in with Supabase:
+- Upload project files
+- Download files
+- Delete files
+- View storage statistics
+
+**Use cases:**
+- Store app assets
+- Keep backups
+- Share files between apps
 
 ---
 
-### Use Case 3: Adding Authentication
+## Best Practices
 
-**Prerequisites:** You have an existing app
+### Writing Clear Requests
 
-**Request:**
+**Be Specific:**
 ```
-"Add authentication"
-```
-
-**What happens:**
-1. AI uses AST_ADD_AUTHENTICATION operation
-2. Applies complete auth system in one step
-3. No staging required!
-
-**What you get:**
-- 📝 Login form (email + password)
-- 🔓 Logout button
-- 🔒 Protected content (shows login when logged out)
-- ✅ State management (isLoggedIn, email, password)
-- ⚡ Event handlers (handleLogin, handleLogout)
-
-**The login form includes:**
-- Professional styling (centered, shadowed)
-- Input fields with validation
-- Submit button
-- Full-screen layout when logged out
-
-**Customization requests:**
-```
-"Remove the email field, just use password"
-"Use a simple login form instead of styled"
-"Change the logout button color to red"
-"Add 'Remember Me' checkbox"
+✅ "Add a blue button below the input that clears all completed todos"
+❌ "Add a button"
 ```
 
-**Testing it:**
-1. Enter any email/password
-2. Click Login
-3. App appears with logout button
-4. Click Logout
-5. Back to login form
+**One Thing at a Time:**
+```
+✅ "Add dark mode"
+   [wait for completion]
+   "Now add a search filter"
+
+❌ "Add dark mode, search, authentication, and export"
+```
+
+**Describe Outcome, Not Implementation:**
+```
+✅ "Make todos persist after page refresh"
+❌ "Use localStorage.setItem in useEffect with JSON.stringify"
+```
+
+**Use Examples:**
+```
+✅ "Make it look like Gmail"
+✅ "Add a timer like Pomodoro Technique"
+✅ "Create buttons similar to Stripe's website"
+```
+
+### Managing Complexity
+
+**Start Simple, Add Incrementally:**
+```
+1. "Build basic calculator"
+2. "Add decimal support"
+3. "Add keyboard input"
+4. "Add history feature"
+5. "Add scientific functions"
+```
+
+**Use PLAN Mode for Complex Features:**
+```
+PLAN: "I want to add user accounts. What's the best approach?"
+[Discuss options]
+[Switch to ACT]
+ACT: "Add authentication using the approach we discussed"
+```
+
+**Break Large Features into Phases:**
+```
+Instead of: "Build complete e-commerce platform"
+
+Better:
+Phase 1: Product catalog
+Phase 2: Shopping cart
+Phase 3: Checkout
+Phase 4: Payment integration
+```
+
+### Version Control Strategy
+
+**Fork Before Risky Changes:**
+```
+1. Have working app
+2. Fork it (creates backup)
+3. Try risky change in fork
+4. If works → continue
+5. If fails → back to original
+```
+
+**Test Before Moving Forward:**
+```
+Build Phase 1 → Test → Phase 2 → Test → Phase 3
+```
+
+### Keyboard Shortcuts
+
+**Efficiency Boosters:**
+- `Enter` - Send message
+- `Ctrl+Z` - Undo
+- `Ctrl+Shift+Z` or `Ctrl+Y` - Redo
+- `Esc` - Close modals
+
+### Performance Tips
+
+**Keep Library Manageable:**
+- Export and delete old apps you don't need
+- Keep library under 20 apps
+- localStorage has limits (~5-10MB)
+
+**Start New Conversations:**
+- Use "New App" for new projects
+- Don't let chat history get too long
+- Helps AI focus better
 
 ---
 
-### Use Case 4: Creating a Calculator
+## Troubleshooting
 
-**Request:**
-```
-"Build a calculator with basic operations"
-```
+### "Pattern not found" Error
 
-**What you get:**
-- Number buttons (0-9)
-- Operation buttons (+, -, ×, ÷)
-- Display showing current value
-- Clear button
-- Equals button
-- Working calculation logic
+**Symptom:** Modification fails with this message.
 
-**Common follow-up requests:**
-```
-"Add decimal point support"
-"Add percentage button"
-"Add memory functions (M+, M-, MR, MC)"
-"Make it look like the iPhone calculator"
-"Add keyboard support"
-```
-
----
-
-### Use Case 5: Building a Timer
-
-**Request:**
-```
-"Create a countdown timer starting at 5 minutes"
-```
-
-**What you get:**
-- Large display showing MM:SS
-- Start/Pause button
-- Reset button
-- Sound alert when done (optional)
-- Working countdown logic
-
-**Common follow-up requests:**
-```
-"Add custom time input"
-"Add multiple preset timers (1min, 5min, 10min)"
-"Add a progress circle"
-"Make it full screen with larger numbers"
-"Add lap timer functionality"
-```
-
----
-
-### Use Case 6: Creating a Dashboard
-
-**Request:**
-```
-"Build a dashboard with stats cards and a chart"
-```
-
-**What you get:**
-- 3-4 stat cards (views, users, revenue, etc.)
-- Charts (using Chart.js or Recharts)
-- Responsive grid layout
-- Modern styling
-- Mock data for demo
-
-**Common follow-up requests:**
-```
-"Add a sidebar navigation"
-"Add data table below charts"
-"Add date range selector"
-"Make it dark mode by default"
-"Add export to PDF button"
-```
-
----
-
-## ❓ Frequently Asked Questions (FAQ)
-
-### General Questions
-
-**Q: Do I need to know how to code?**
-A: No! The AI generates all code. However, basic React knowledge helps you understand what's being created.
-
-**Q: What programming language/framework is used?**
-A: React with TypeScript (TSX), Next.js 13+ App Router, and Tailwind CSS.
-
-**Q: Can I export and modify the code myself?**
-A: Yes! Export to ZIP and modify in any code editor. It's your code.
-
-**Q: Is this free?**
-A: The app is free to use. However, it uses Claude AI which costs money per API call (you need to provide your own API key).
-
-**Q: Can I use this for commercial projects?**
-A: Yes! The generated code is yours. No restrictions.
-
----
-
-### Plan/Act Mode Questions
-
-**Q: What's the difference between Plan and Act mode?**
-A: 
-- **PLAN**: Discussion and explanation only. No code generation.
-- **ACT**: Builds and modifies apps. Generates code.
-
-**Q: Can I ask questions in Act mode?**
-A: Yes, but the AI tries to build things. For explanations, switch to PLAN mode.
-
-**Q: Do I lose my conversation when switching modes?**
-A: No! Conversation history is preserved across mode switches.
-
----
-
-### Building & Modifying Questions
-
-**Q: Why did my modification fail?**
-A: Common reasons:
-1. **Pattern not found** - Code changed since last modification
-2. **Too complex** - Break into smaller requests
-3. **Ambiguous request** - Be more specific
-
-Solution: Try simpler, more specific requests.
-
-**Q: How do I know if my change needs approval?**
-A:
-- **Simple changes** (colors, text, small additions) → Auto-applied
-- **Complex changes** (authentication, major refactors) → Shows diff preview
-- **System tells you!** You'll see either immediate change or approval modal.
-
-**Q: What if I don't like a change?**
-A: Press **Ctrl+Z** to undo immediately, or open History and revert to any previous version.
-
-**Q: Can I modify multiple things at once?**
-A: Yes, but be specific:
-- ✅ "Add dark mode and a counter"
-- ❌ "Make it better" (too vague)
-
-**Q: How do I add authentication?**
-A: Simple! Just say "Add authentication" and the AI uses AST operations to add a complete login/logout system in one step.
-
----
-
-### Preview & Testing Questions
-
-**Q: Why doesn't my full-stack app work in preview?**
-A: Preview runs in browser only (no backend). Backend features like:
-- Database queries
-- Authentication APIs
-- File uploads
-- Server-side operations
-
-...won't work in preview. **Download and run locally** to test these.
-
-**Q: Can I interact with the preview?**
-A: Yes! It's a live React app. Click buttons, type in inputs, etc.
-
-**Q: How do I see the code?**
-A: Click the **💻 Code** tab in the right panel.
-
-**Q: Can I edit code directly in the preview?**
-A: No. Use the chat to request changes. Export if you want to edit manually.
-
----
-
-### Export & Deploy Questions
-
-**Q: What's included in the export?**
-A:
-- All source code files
-- `package.json` with dependencies
-- Configuration files (TypeScript, Tailwind, Next.js)
-- `.env.example` for environment variables
-- `README.md` with setup instructions
-
-**Q: How do I run it after downloading?**
-A:
-```bash
-unzip your-app.zip
-cd your-app
-npm install
-npm run dev
-```
-
-**Q: Can I deploy to my own hosting?**
-A: Yes! It's a standard Next.js app. Deploy to:
-- Vercel (easiest)
-- Netlify
-- AWS
-- Your own server
-- Anywhere that runs Node.js
-
-**Q: Do I need to credit this app?**
-A: No! Generated code is yours. Use however you want.
-
----
-
-### Version Control Questions
-
-**Q: How many versions can I save?**
-A: Unlimited (until page refresh). Undo stack is in-memory.
-
-**Q: Do versions persist after refresh?**
-A: **Per-app versions**: Yes, saved in localStorage
-- **Undo stack**: No, cleared on refresh
-
-**Q: What's the difference between undo and revert?**
-A:
-- **Undo (Ctrl+Z)**: Quick step backward, can redo
-- **Revert**: Jump to specific version in history, can't redo
-
-**Q: Can I compare any two versions?**
-A: Currently only compare old version with current. Full comparison coming soon!
-
-**Q: What happens when I fork?**
-A: Creates independent copy. Original and fork can be modified separately.
-
----
-
-### Technical Questions
-
-**Q: Can I use TypeScript?**
-A: Yes! The app generates TypeScript (TSX) by default.
-
-**Q: Can I use other CSS frameworks?**
-A: Generated apps use Tailwind CSS. You can modify exported code to use anything.
-
-**Q: Can I add npm packages?**
-A: In exported code, yes. In preview, only what's already included.
-
-**Q: Does it support React hooks?**
-A: Yes! useState, useEffect, useContext, useRef, useMemo, useCallback, useReducer.
-
-**Q: Can it create multi-page apps?**
-A: Yes! It uses Next.js App Router for routing.
-
----
-
-## 🔧 Troubleshooting
-
-### Error: "Pattern not found"
-
-**Symptom:** Modification fails with message about search pattern not found.
-
-**Cause:** The code structure changed and doesn't match what AI expected.
+**Cause:** Code structure doesn't match AI's expectation.
 
 **Solutions:**
 
-1. **Try a simpler change:**
+1. **Simplify change:**
    ```
-   Instead of: "Refactor the entire component"
-   Try: "Change the button color to blue"
+   ❌ "Refactor entire component"
+   ✅ "Change button color to blue"
    ```
 
 2. **Break into steps:**
    ```
-   Instead of: "Add authentication and dark mode"
-   Try: "Add authentication" (wait) → then "Add dark mode"
+   ❌ "Add auth and dark mode"
+   ✅ "Add authentication"
+       [wait]
+       "Now add dark mode"
    ```
 
-3. **Use new approach:**
+3. **Ask AI to check first:**
    ```
-   If stuck on modifications, create a new app with desired features built-in
-   ```
-
-4. **Read the file first:**
-   Ask in PLAN mode: "Show me the current code structure"
-   Then request changes based on actual structure
-
----
-
-### Error: "Complexity detected"
-
-**Symptom:** AI asks if you want to proceed with staged implementation.
-
-**What it means:** The change is too complex for one step.
-
-**Options:**
-
-1. **Proceed with staging** (Recommended):
-   ```
-   Reply: "proceed"
-   AI breaks into 2-4 stages
-   Review and approve each stage
+   Switch to PLAN: "Show me current code structure"
+   Then make specific change
    ```
 
-2. **Simplify request:**
-   ```
-   Instead of: "Add complete authentication with OAuth, password reset, and email verification"
-   Try: "Add simple authentication" (basic login/logout)
-   ```
+### Changes Not Appearing
 
-3. **Use template or build fresh:**
-   ```
-   If modification keeps failing, create new app with feature included
-   ```
-
----
-
-### Error: "Timeout"
-
-**Symptom:** "AI response timeout - the modification was taking too long"
-
-**Cause:** AI took longer than 45 seconds to respond.
+**Symptom:** You requested a change but don't see it.
 
 **Solutions:**
 
-1. **Try again** - Sometimes it's temporary
-2. **Simplify request** - Smaller changes process faster
-3. **Break into steps** - Multiple small changes instead of one large
-4. **Check API status** - Anthropic API may be slow
+1. **Hard refresh browser:**
+   - `Ctrl+Shift+R` (Windows/Linux)
+   - `Cmd+Shift+R` (Mac)
 
----
+2. **Check code tab:**
+   - Maybe change is subtle
+   - View code to confirm
 
-### Problem: "Preview shows error"
+3. **Try undo then redo:**
+   - `Ctrl+Z` then `Ctrl+Y`
+   - Forces re-render
 
-**Symptom:** Red error message in preview panel.
+### Preview Shows Error
+
+**Symptom:** Red error message in preview.
 
 **Common causes:**
 
-1. **Syntax error in generated code:**
-   - Tell AI: "There's a syntax error, please fix"
-   - Shows error in preview console
+1. **Syntax error:**
+   - Tell AI: "There's an error, please fix"
+   - AI will correct it
 
 2. **Missing dependency:**
    - Usually auto-fixed on next change
    - Or export and run `npm install`
 
 3. **Backend feature in preview:**
-   - Preview can't run server-side code
-   - Download and run locally
+   - Preview is browser-only
+   - Download and run locally for backend features
 
----
+### Streaming Stuck
 
-### Problem: "Change didn't apply"
-
-**Symptom:** You asked for a change but don't see it in the preview.
-
-**Common causes:**
-
-1. **Change was too subtle:**
-   - Check carefully - maybe it did apply but isn't obvious
-   - View code to confirm
-
-2. **Browser cache:**
-   - Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
-   - Or click refresh button in preview
-
-3. **Conflicting styles:**
-   - Your new style might be overridden by existing CSS
-   - Ask: "Make sure the button color is blue with !important"
-
----
-
-### Problem: "App Library not loading"
-
-**Symptom:** Click My Apps but nothing shows.
-
-**Cause:** localStorage might be full or corrupted.
+**Symptom:** Generation progress stops updating.
 
 **Solutions:**
 
-1. **Clear and reload:**
-   - Open browser console (F12)
-   - Type: `localStorage.clear()`
-   - Refresh page
-   - (Warning: This deletes all saved apps!)
+1. **Wait 60 seconds:**
+   - Sometimes there's a delay
+   - AI might still be processing
 
-2. **Export important apps first:**
-   - Before clearing, export any apps you want to keep
-   - Then clear localStorage
-   - Re-import if needed
+2. **Cancel and retry:**
+   - Click "Cancel" if available
+   - Try request again
 
----
+3. **Simplify request:**
+   - Break into smaller parts
+   - Build incrementally
 
-### Problem: "Image upload not working"
+### Image Upload Not Working
 
-**Symptom:** Can't upload image or image doesn't show.
+**Symptom:** Can't upload image.
 
 **Solutions:**
 
 1. **Check file size:**
    - Max 5MB
-   - Compress large images first
+   - Compress if needed
 
-2. **Check file type:**
+2. **Check format:**
    - JPG, PNG, GIF, WebP only
-   - Convert other formats first
+   - Convert other formats
 
 3. **Try different browser:**
-   - Some browsers have stricter limits
    - Chrome/Edge recommended
 
 ---
 
-## 💡 Tips & Best Practices
-
-### Writing Good Requests
-
-**Be specific:**
-- ✅ "Add a blue button that resets the form"
-- ❌ "Add a button"
-
-**One thing at a time:**
-- ✅ "Add dark mode" → wait → "Add counter"
-- ❌ "Add dark mode, counter, authentication, and search"
-
-**Describe desired outcome, not implementation:**
-- ✅ "Make todos persist after page refresh"
-- ❌ "Use localStorage.setItem in useEffect"
-
-**Use examples:**
-- ✅ "Make it look like Gmail's interface"
-- ✅ "Add a timer like Pomodoro Technique"
-
-### Managing Complexity
-
-**Start simple, add features incrementally:**
-```
-1. "Build basic todo app"
-2. "Add categories"
-3. "Add dark mode"
-4. "Add authentication"
-```
+## FAQ
 
-**Use Plan mode first for complex features:**
-```
-PLAN: "How should I implement user authentication?"
-[Get AI's advice]
-[Switch to ACT]
-ACT: "Add authentication using the approach we discussed"
-```
+### General
 
-**Break large features into phases:**
-- Instead of: "Build a complete e-commerce platform"
-- Try: Build in stages (product catalog → cart → checkout → payments)
-
-### Keyboard Shortcuts
+**Q: Do I need coding experience?**
 
-**Efficiency boosters:**
-- **Enter** - Send message
-- **Ctrl+Z** - Undo last change
-- **Ctrl+Shift+Z** or **Ctrl+Y** - Redo
-- **Esc** - Close modals
-
-### Version Control Strategy
-
-**Save checkpoints before risky changes:**
-1. Working app → Fork it
-2. Try risky change in fork
-3. If it works → continue
-4. If it fails → go back to original
-
-**Use descriptive change messages:**
-- AI generates: "Added authentication"
-- But you can request: "Add authentication with custom styling"
-- Helps you find versions later
-
-### Performance Tips
-
-**Keep chat history manageable:**
-- Start new conversation for new app
-- Or use "New Task" when context gets too long
+A: No! AI generates all code. However, understanding basic programming concepts helps you make better requests and understand what's being built.
 
-**Don't save too many apps:**
-- localStorage has limits (~5-10MB)
-- Export and delete old apps you don't need
-- Keep library under 20 apps for best performance
-
----
-
-## 🎓 Learning Resources
-
-### Understanding React Basics
-
-If you want to understand the generated code better:
-
-**Key concepts to learn:**
-- **Components** - Building blocks of React apps
-- **Props** - Passing data between components
-- **State** - Data that changes over time (`useState`)
-- **Effects** - Side effects like API calls (`useEffect`)
-- **Events** - Handling user interactions (`onClick`, etc.)
+**Q: What framework is used?**
 
-**Recommended learning:**
-- [React Official Docs](https://react.dev)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-
-### Understanding the Generated Code
+A: Next.js 15 with React 19, TypeScript, and Tailwind CSS.
 
-**File structure:**
-```
-src/App.tsx              # Main component
-├── State variables      # const [x, setX] = useState()
-├── Event handlers       # const handleX = () => {}
-├── useEffect hooks      # Side effects
-└── JSX return          # UI structure
-```
-
-**Common patterns:**
-```tsx
-// State management
-const [count, setCount] = useState(0);
-
-// Event handling
-const handleClick = () => setCount(count + 1);
+**Q: Can I edit the generated code?**
 
-// Conditional rendering
-{isLoggedIn ? <Dashboard /> : <LoginForm />}
+A: Yes! Export to ZIP and edit in any code editor. It's your code to do with as you wish.
 
-// Mapping arrays
-{todos.map(todo => <TodoItem key={todo.id} {...todo} />)}
-```
+**Q: Is this free?**
 
----
+A: The app itself is free. However, it uses Claude AI which requires an API key (costs per API call).
 
-## 🚀 Advanced Features
+**Q: Can I use this commercially?**
 
-### Phased Building for Complex Apps
+A: Yes! Generated code is yours with no restrictions.
 
-**What it is:**
-When you request a very complex app, AI breaks it into phases.
+### Modes
 
-**Example:**
-```
-You: "Build a complete blog platform with comments, likes, and user profiles"
+**Q: What's the difference between PLAN and ACT?**
 
-AI: "🏗️ Build in Phases?
-     This is complex. I suggest building in 3 phases:
-     
-     Phase 1: Blog posts display and creation
-     Phase 2: Comments system
-     Phase 3: User profiles and likes
-     
-     Type 'yes' to proceed with phased building"
+A: 
+- **PLAN**: Discussion only, no code generation
+- **ACT**: Builds and modifies apps, generates code
 
-You: "yes"
+**Q: Can I ask questions in ACT mode?**
 
-AI: [Creates phase plan]
-    "Phase 1/3: Blog posts
-     Features:
-     - Post creation form
-     - Post list display
-     - Individual post view
-     
-     Type 'start' to begin Phase 1"
+A: Yes, but AI assumes you want to build. For explanations, use PLAN mode.
 
-You: "start"
+**Q: Why does the AI keep trying to build when I just want to chat?**
 
-AI: [Builds Phase 1]
-    "✅ Phase 1 Complete!
-     Ready for Phase 2? Type 'continue'"
-```
+A: You're in ACT mode. Switch to PLAN mode for discussions.
 
-**Benefits:**
-- Working app after each phase
-- Test before moving forward
-- Guide direction at each step
-- Less overwhelming
+### Building
 
-### Using Context from Previous Apps
+**Q: How long does it take to build an app?**
 
-**Scenario:** You built an app yesterday, want to reference it today.
+A: 
+- Simple apps: 15-30 seconds
+- Medium complexity: 30-60 seconds  
+- Complex apps: 1-3 minutes (phased)
 
-**Approach:**
-1. Load the old app from My Apps
-2. View its code
-3. In chat, reference it:
-   ```
-   "Build a new todo app similar to the one I built yesterday,
-    but with a different color scheme"
-   ```
+**Q: Can I build full-stack apps?**
 
-4. AI uses context from visible app
+A: The AI generates full-stack code, but preview is frontend-only. Download and run locally for backend features.
 
----
+**Q: How do I add authentication?**
 
-## 📱 Mobile & Responsive Design
+A: Simply say "Add authentication" in ACT mode. AI uses AST operations to add a complete auth system.
 
-### Making Apps Mobile-Friendly
+**Q: Can I build mobile apps?**
 
-**Request responsive design:**
-```
-"Make it responsive for mobile devices"
-"Optimize for phones and tablets"
-"Use mobile-first design"
-```
+A: You can build responsive web apps that work on mobile browsers. Not native iOS/Android apps.
 
-**What AI adds:**
-- Tailwind responsive classes (`sm:`, `md:`, `lg:`)
-- Flexible layouts (flexbox, grid)
-- Touch-friendly buttons (larger)
-- Stack elements vertically on small screens
+### Modifications
 
-**Testing on mobile:**
-1. Open preview
-2. Open browser DevTools (F12)
-3. Click device toolbar icon
-4. Select mobile device
-5. Or: Open on actual phone
+**Q: Why did my modification fail?**
 
----
+A: Usually because the code structure changed. Try simpler changes or break into steps.
 
-## 🔐 Security Considerations
+**Q: How do I know if a change needs approval?**
 
-### For Production Apps
+A:
+- Simple changes → Applied instantly
+- Complex changes → Shows diff preview
+- System tells you automatically
 
-**Important notes:**
+**Q: Can I modify multiple things at once?**
 
-1. **Authentication is basic:**
-   - Generated auth is for demonstration
-   - For production, use NextAuth.js or similar
-   - Or backend authentication service
+A: Yes, but be specific: "Add dark mode and a search filter"
 
-2. **API keys:**
-   - Never commit `.env` files to git
-   - Use environment variables on hosting platform
-   - Rotate keys regularly
+### Export
 
-3. **Input validation:**
-   - Add validation to forms
-   - Sanitize user input
-   - Use TypeScript for type safety
+**Q: What's included in the export?**
 
-4. **HTTPS:**
-   - Always use HTTPS in production
-   - Vercel/Netlify provide this automatically
+A: Complete source code, config files, package.json, README, and .env.example.
 
----
+**Q: Can I use the code in other projects?**
 
-## 🎉 Conclusion
+A: Yes! It's standard Next.js/React code. Copy/paste as needed.
 
-You're now ready to build amazing apps with AI!
+**Q: How do I deploy to production?**
 
-**Remember the key principles:**
-1. **Plan first** (PLAN Mode) → **Then build** (ACT Mode)
-2. **Start simple** → **Add features incrementally**
-3. **Be specific** in your requests
-4. **Use version control** - Fork, undo, compare
-5. **Test frequently** as you build
-
-**Need help?**
-- Switch to PLAN Mode and ask questions
-- Check this guide's FAQ and Troubleshooting sections
-- Review CURRENT_FEATURES.md for technical details
-
-**Happy building! 🚀**
-
----
-
-## 📚 Additional Documentation
-
-- **CURRENT_FEATURES.md** - Complete feature reference
-- **MODIFICATION_GUIDE.md** - Deep dive into modifications
-- **KEYBOARD_SHORTCUTS.md** - All shortcuts
-- **README.md** - Project overview and setup
-
----
-
-**Last Updated:** November 4, 2025  
-**Version:** 2.0  
-**Questions or feedback?** Open an issue on GitHub or contact the maintainer.
+A: Use Vercel (recommended), Netlify, or any
