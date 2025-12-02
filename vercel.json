@@ -33,6 +33,12 @@
     },
     "src/app/api/chat/route.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/wizard/chat/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/wizard/generate-phases/route.ts": {
+      "maxDuration": 30
     }
   }
 }
