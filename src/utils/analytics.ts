@@ -10,10 +10,11 @@
 // TYPES & INTERFACES
 // ============================================================================
 
-export type RouteType = 
+export type RouteType =
   | 'ai-builder'           // Single component generation
   | 'ai-builder/modify'    // Code modification
   | 'ai-builder/full-app'  // Full app generation
+  | 'ai-builder/full-app-stream' // Full app generation with streaming
   | 'ai-builder/plan-phases' // Planning
   | 'chat';                // Chat interface
 
@@ -234,6 +235,7 @@ class AnalyticsLogger {
         'ai-builder': 0,
         'ai-builder/modify': 0,
         'ai-builder/full-app': 0,
+        'ai-builder/full-app-stream': 0,
         'ai-builder/plan-phases': 0,
         'chat': 0,
       },

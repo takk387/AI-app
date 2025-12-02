@@ -19,6 +19,9 @@
     "src/app/api/ai-builder/full-app/route.ts": {
       "maxDuration": 60
     },
+    "src/app/api/ai-builder/full-app-stream/route.ts": {
+      "maxDuration": 60
+    },
     "src/app/api/ai-builder/route.ts": {
       "maxDuration": 60
     },

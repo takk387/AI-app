@@ -55,6 +55,8 @@ import {
   useMessageSender,
   useBuildPhases,
 } from '@/hooks';
+import { useStreamingGeneration } from '@/hooks/useStreamingGeneration';
+import { StreamingProgress, InlineStreamingProgress } from './StreamingProgress';
 
 // Types
 import type { AppConcept, ImplementationPlan, BuildPhase } from '../types/appConcept';
@@ -320,6 +322,22 @@ export default function AIBuilder() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    },
+  });
+
+  // Streaming generation hook for real-time progress
+  const streaming = useStreamingGeneration({
+    onStart: () => {
+      setGenerationProgress('Starting generation...');
+    },
+    onFileStart: (filePath) => {
+      setGenerationProgress(`Generating ${filePath.split('/').pop()}...`);
+    },
+    onComplete: (data, stats) => {
+      console.log(`Generation complete: ${stats.filesGenerated} files in ${(stats.totalTime / 1000).toFixed(1)}s`);
+    },
+    onError: (message) => {
+      console.error('Streaming error:', message);
     },
   });
 
@@ -1105,30 +1123,28 @@ export default function AIBuilder() {
     const isQuestion = messageSender.isQuestion(userInput);
     const isModification = currentComponent !== null;
 
-    // Get progress messages
+    // Determine if this should use streaming (full-app generation only)
+    const useStreaming = currentMode === 'ACT' && !isQuestion && !isModification;
+
+    // Get progress messages for non-streaming requests
     const progressMessages = messageSender.getProgressMessages(isQuestion, isModification);
-    
+
     let progressIndex = 0;
-    const progressInterval = setInterval(() => {
-      if (progressIndex < progressMessages.length) {
-        setGenerationProgress(progressMessages[progressIndex]);
-        progressIndex++;
-      }
-    }, 3000);
+    let progressInterval: NodeJS.Timeout | null = null;
+
+    if (!useStreaming) {
+      progressInterval = setInterval(() => {
+        if (progressIndex < progressMessages.length) {
+          setGenerationProgress(progressMessages[progressIndex]);
+          progressIndex++;
+        }
+      }, 3000);
+    }
 
     try {
-      // Determine endpoint based on mode and request type
-      let endpoint: string;
-      if (currentMode === 'PLAN') {
-        endpoint = '/api/chat';
-      } else {
-        endpoint = isQuestion ? '/api/chat' : 
-                   isModification ? '/api/ai-builder/modify' : '/api/ai-builder/full-app';
-      }
-
       // Build request body
       const parsedCurrentAppState = currentComponent ? JSON.parse(currentComponent.code) : null;
-      
+
       const requestBody: Record<string, unknown> = {
         prompt: userInput,
         conversationHistory: chatMessages.slice(-30),
@@ -1141,31 +1157,52 @@ export default function AIBuilder() {
         requestBody.hasImage = true;
       }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+      let data: Record<string, unknown> | null = null;
 
-      clearInterval(progressInterval);
-      setGenerationProgress('');
-      
-      const data = await response.json();
+      if (useStreaming) {
+        // Use streaming for full-app generation
+        data = await streaming.generate(requestBody);
 
-      if (data.error) {
-        throw new Error(data.error);
+        if (!data) {
+          throw new Error('Generation failed or was cancelled');
+        }
+      } else {
+        // Determine endpoint based on mode and request type
+        let endpoint: string;
+        if (currentMode === 'PLAN') {
+          endpoint = '/api/chat';
+        } else {
+          endpoint = isQuestion ? '/api/chat' : '/api/ai-builder/modify';
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (progressInterval) {
+          clearInterval(progressInterval);
+        }
+        setGenerationProgress('');
+
+        data = await response.json();
+
+        if (data?.error) {
+          throw new Error(data.error as string);
+        }
       }
 
       // Handle diff response
-      if (data.changeType === 'MODIFICATION' && data.files) {
+      if (data?.changeType === 'MODIFICATION' && data?.files) {
         setPendingDiff({
           id: generateId(),
-          summary: data.summary,
-          files: data.files,
+          summary: data.summary as string,
+          files: data.files as PendingDiff['files'],
           timestamp: new Date().toISOString()
         });
         setShowDiffPreview(true);
-        
+
         const diffMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -1177,30 +1214,31 @@ export default function AIBuilder() {
       }
 
       // Handle chat response
-      if (isQuestion || data.type === 'chat') {
+      if (isQuestion || data?.type === 'chat') {
         const chatResponse: ChatMessage = {
           id: generateId(),
           role: 'assistant',
-          content: data.answer || data.description,
+          content: (data?.answer || data?.description) as string,
           timestamp: new Date().toISOString()
         };
         setChatMessages(prev => [...prev, chatResponse]);
-      } else {
-        // Handle full-app response
+      } else if (data) {
+        // Handle full-app response (both streaming and non-streaming)
         const aiAppMessage: ChatMessage = {
           id: generateId(),
           role: 'assistant',
           content: `🚀 App created\n\n${data.description || `I've created your ${data.name} app!`}`,
           timestamp: new Date().toISOString(),
           componentCode: JSON.stringify(data),
-          componentPreview: !!data.files
+          componentPreview: !!(data.files as unknown[])?.length
         };
         setChatMessages(prev => [...prev, aiAppMessage]);
 
-        if (data.files && data.files.length > 0) {
+        const files = data.files as Array<{ path: string; content: string }>;
+        if (files && files.length > 0) {
           let newComponent: GeneratedComponent = {
             id: isModification && currentComponent ? currentComponent.id : generateId(),
-            name: data.name || extractComponentName(userInput),
+            name: (data.name as string) || extractComponentName(userInput),
             code: JSON.stringify(data, null, 2),
             description: userInput,
             timestamp: new Date().toISOString(),
@@ -1208,28 +1246,30 @@ export default function AIBuilder() {
             conversationHistory: [...chatMessages, userMessage, aiAppMessage],
             versions: isModification && currentComponent ? currentComponent.versions : [],
           };
-          
-          newComponent = saveVersion(newComponent, 'NEW_APP', data.description || userInput);
+
+          newComponent = saveVersion(newComponent, 'NEW_APP', (data.description as string) || userInput);
 
           setCurrentComponent(newComponent);
-          
+
           if (isModification && currentComponent) {
-            setComponents(prev => 
+            setComponents(prev =>
               prev.map(comp => comp.id === currentComponent.id ? newComponent : comp)
             );
           } else {
             setComponents(prev => [newComponent, ...prev].slice(0, 50));
           }
-          
+
           saveComponentToDb(newComponent);
           setActiveTab('preview');
         }
       }
 
     } catch (error) {
-      clearInterval(progressInterval);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setGenerationProgress('');
-      
+
       const errorMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
@@ -1245,10 +1285,10 @@ export default function AIBuilder() {
         fileInputRef.current.value = '';
       }
     }
-  // Note: This callback depends on the listed values that may change. The Zustand setters 
+  // Note: This callback depends on the listed values that may change. The Zustand setters
   // used internally (setChatMessages, setIsGenerating, etc.) are stable and omitted from deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userInput, isGenerating, currentMode, currentComponent, chatMessages, uploadedImage, messageSender, saveVersion, saveComponentToDb]);
+  }, [userInput, isGenerating, currentMode, currentComponent, chatMessages, uploadedImage, messageSender, streaming, saveVersion, saveComponentToDb]);
 
   // ============================================================================
   // RENDER
@@ -1360,22 +1400,33 @@ export default function AIBuilder() {
           >
             {/* Chat Panel */}
             <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
-              <ChatPanel
-                messages={chatMessages}
-                isGenerating={isGenerating}
-                generationProgress={generationProgress}
-                userInput={userInput}
-                onUserInputChange={setUserInput}
-                onSendMessage={sendMessage}
-                uploadedImage={uploadedImage}
-                onImageUpload={handleImageUpload}
-                onRemoveImage={removeImage}
-                currentMode={currentMode}
-                onModeChange={setCurrentMode}
-                stagePlan={newAppStagePlan}
-                onBuildPhase={handleBuildPhase}
-                onViewComponent={() => setActiveTab('preview')}
-              />
+              <div className="h-full flex flex-col relative">
+                <ChatPanel
+                  messages={chatMessages}
+                  isGenerating={isGenerating}
+                  generationProgress={generationProgress}
+                  userInput={userInput}
+                  onUserInputChange={setUserInput}
+                  onSendMessage={sendMessage}
+                  uploadedImage={uploadedImage}
+                  onImageUpload={handleImageUpload}
+                  onRemoveImage={removeImage}
+                  currentMode={currentMode}
+                  onModeChange={setCurrentMode}
+                  stagePlan={newAppStagePlan}
+                  onBuildPhase={handleBuildPhase}
+                  onViewComponent={() => setActiveTab('preview')}
+                />
+                {/* Streaming Progress Overlay */}
+                {streaming.isStreaming && (
+                  <div className="absolute bottom-20 left-4 right-4 z-10">
+                    <StreamingProgress
+                      progress={streaming.progress}
+                      onCancel={streaming.abort}
+                    />
+                  </div>
+                )}
+              </div>
             </ResizablePanel>
 
             <ResizableHandle />

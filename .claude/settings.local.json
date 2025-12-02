@@ -8,7 +8,8 @@
       "Bash(wmic:*)",
       "Bash(if exist \"c:\\AI-app\\.next\" rmdir /s /q \"c:\\AI-app\\.next\")",
       "Bash(tree:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(if not exist \"c:\\AI-app\\src\\app\\api\\ai-builder\\full-app-stream\" mkdir \"c:\\AI-app\\src\\app\\api\\ai-builder\\full-app-stream\")"
     ],
     "deny": [],
     "ask": []
