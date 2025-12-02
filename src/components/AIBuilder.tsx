@@ -23,6 +23,7 @@ import { PreviewPanel } from './PreviewPanel';
 import { ToastProvider } from './Toast';
 import AppConceptWizard from './AppConceptWizard';
 import ConversationalAppWizard from './ConversationalAppWizard';
+import NaturalConversationWizard from './NaturalConversationWizard';
 import SettingsPage from './SettingsPage';
 import ThemeToggle from './ThemeToggle';
 
@@ -62,6 +63,8 @@ import { StreamingProgress, InlineStreamingProgress } from './StreamingProgress'
 import type { AppConcept, ImplementationPlan, BuildPhase } from '../types/appConcept';
 import type { GeneratedComponent, ChatMessage, AppVersion, StagePlan, Phase, PendingChange, PendingDiff, CurrentStagePlan } from '../types/aiBuilderTypes';
 import type { PhasedAppConcept, PhaseId } from '../types/buildPhases';
+import type { DynamicPhasePlan } from '../types/dynamicPhases';
+import { PhaseExecutionManager, buildPhaseExecutionPrompt } from '../services/PhaseExecutionManager';
 
 // Utils
 import { exportAppAsZip, downloadBlob, parseAppFiles, getDeploymentInstructions, type DeploymentInstructions } from '../utils/exportApp';
@@ -246,6 +249,10 @@ export default function AIBuilder() {
   const previousModeRef = useRef<'PLAN' | 'ACT'>('PLAN');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Dynamic Phase Generation state
+  const [dynamicPhasePlan, setDynamicPhasePlan] = useState<DynamicPhasePlan | null>(null);
+  const [useNaturalWizard, setUseNaturalWizard] = useState(true);
   
   // Initialize StorageService
   const [storageService] = useState(() => {
@@ -699,6 +706,102 @@ export default function AIBuilder() {
     generateImplementationPlan(concept);
   }, [setAppConcept, setShowConceptWizard, setChatMessages, generateImplementationPlan]);
 
+  // Handle natural wizard completion with dynamic phase plan
+  const handleNaturalWizardComplete = useCallback((concept: AppConcept, phasePlan?: DynamicPhasePlan) => {
+    setAppConcept(concept);
+    setShowConversationalWizard(false);
+
+    if (phasePlan) {
+      setDynamicPhasePlan(phasePlan);
+
+      // Convert to existing StagePlan format for compatibility
+      const stagePlan: StagePlan = {
+        totalPhases: phasePlan.totalPhases,
+        currentPhase: 0,
+        phases: phasePlan.phases.map(p => ({
+          number: p.number,
+          name: p.name,
+          description: p.description,
+          features: p.features,
+          status: 'pending' as const
+        }))
+      };
+      setNewAppStagePlan(stagePlan);
+
+      // Show phase plan message
+      const planMessage: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: `🎯 **${phasePlan.totalPhases}-Phase Build Plan Created for "${concept.name}"**\n\n` +
+          `**Complexity:** ${phasePlan.complexity}\n` +
+          `**Estimated Time:** ${phasePlan.estimatedTotalTime}\n\n` +
+          phasePlan.phases.map(p =>
+            `**Phase ${p.number}: ${p.name}** (${p.estimatedTime})\n${p.description}`
+          ).join('\n\n') +
+          `\n\n💡 **Ready to start?** Switch to ACT mode and type "build phase 1"!`,
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, planMessage]);
+    } else {
+      // No phase plan, just show concept created message
+      const welcomeMessage: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: `✨ **App Concept Created: "${concept.name}"**\n\n` +
+          `**Description:** ${concept.description}\n\n` +
+          `**Target Users:** ${concept.targetUsers}\n\n` +
+          `**Features:** ${concept.coreFeatures.length} defined\n\n` +
+          `I'm now generating your implementation plan...`,
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, welcomeMessage]);
+      generateImplementationPlan(concept);
+    }
+  }, [setAppConcept, setShowConversationalWizard, setChatMessages, setNewAppStagePlan, generateImplementationPlan]);
+
+  // Start building with dynamic phase plan (context-chained execution)
+  const startDynamicPhasedBuild = useCallback(async (phaseNumber: number = 1) => {
+    if (!dynamicPhasePlan) {
+      console.error('No dynamic phase plan available');
+      const errorMessage: ChatMessage = {
+        id: generateId(),
+        role: 'system',
+        content: '❌ No phase plan available. Please use the Wizard to create a plan first.',
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+
+    const manager = new PhaseExecutionManager(dynamicPhasePlan);
+
+    // Get context for the specified phase
+    const context = manager.getExecutionContext(phaseNumber);
+    const prompt = buildPhaseExecutionPrompt(context);
+
+    // Add a message showing we're starting this phase
+    const startMessage: ChatMessage = {
+      id: generateId(),
+      role: 'system',
+      content: `🚀 **Starting Phase ${phaseNumber}: ${context.phaseName}**\n\n${context.phaseDescription}\n\n**Features to implement:**\n${context.features.map(f => `- ${f}`).join('\n')}`,
+      timestamp: new Date().toISOString(),
+    };
+    setChatMessages(prev => [...prev, startMessage]);
+
+    // Set the prompt in the input for the user to send or modify
+    setUserInput(prompt);
+    setCurrentMode('ACT');
+
+    // Update the stage plan to show this phase as in-progress
+    setNewAppStagePlan(prev => prev ? {
+      ...prev,
+      currentPhase: phaseNumber,
+      phases: prev.phases.map(p =>
+        p.number === phaseNumber ? { ...p, status: 'building' as const } : p
+      )
+    } : null);
+  }, [dynamicPhasePlan, setChatMessages, setUserInput, setCurrentMode, setNewAppStagePlan]);
+
   // Handle advanced phased build start
   const handleStartAdvancedPhasedBuild = useCallback(async () => {
     if (!appConcept) return;
@@ -1089,16 +1192,23 @@ export default function AIBuilder() {
 
   // Handle build phase in chat panel
   const handleBuildPhase = useCallback((phase: Phase) => {
+    // If we have a dynamic phase plan, use context-aware execution
+    if (dynamicPhasePlan) {
+      startDynamicPhasedBuild(phase.number);
+      return;
+    }
+
+    // Fallback to simple prompt for non-dynamic plans
     const buildPrompt = `Build ${phase.name}: ${phase.description}. Features to implement: ${phase.features.join(', ')}`;
     setUserInput(buildPrompt);
     setNewAppStagePlan(prev => prev ? {
       ...prev,
       currentPhase: phase.number,
-      phases: prev.phases.map(p => 
+      phases: prev.phases.map(p =>
         p.number === phase.number ? { ...p, status: 'building' as const } : p
       )
     } : null);
-  }, [setUserInput, setNewAppStagePlan]);
+  }, [dynamicPhasePlan, startDynamicPhasedBuild, setUserInput, setNewAppStagePlan]);
 
   // ============================================================================
   // SEND MESSAGE (Core message sending logic - kept in orchestrator)
@@ -1611,10 +1721,17 @@ export default function AIBuilder() {
         )}
 
         {showConversationalWizard && (
-          <ConversationalAppWizard
-            onComplete={handleConceptComplete}
-            onCancel={() => setShowConversationalWizard(false)}
-          />
+          useNaturalWizard ? (
+            <NaturalConversationWizard
+              onComplete={handleNaturalWizardComplete}
+              onCancel={() => setShowConversationalWizard(false)}
+            />
+          ) : (
+            <ConversationalAppWizard
+              onComplete={handleConceptComplete}
+              onCancel={() => setShowConversationalWizard(false)}
+            />
+          )
         )}
 
         <SettingsPage

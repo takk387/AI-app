@@ -1,0 +1,392 @@
+/**
+ * Natural Conversation Wizard - API Route
+ *
+ * Handles the AI-powered planning conversation using Claude.
+ * Unlike the old wizard, this uses actual AI responses, not hardcoded templates.
+ */
+
+import { NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
+import { WIZARD_SYSTEM_PROMPT, generateContinuationPrompt } from '@/prompts/wizardSystemPrompt';
+import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+
+// Vercel serverless function config
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface WizardMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: string;
+}
+
+interface WizardState {
+  name?: string;
+  description?: string;
+  purpose?: string;
+  targetUsers?: string;
+  features: Feature[];
+  technical: Partial<TechnicalRequirements>;
+  uiPreferences: Partial<UIPreferences>;
+  roles?: Array<{ name: string; capabilities: string[] }>;
+  isComplete: boolean;
+  readyForPhases: boolean;
+}
+
+interface WizardRequest {
+  message: string;
+  conversationHistory: WizardMessage[];
+  currentState: WizardState;
+  referenceImages?: string[]; // Base64 encoded images
+}
+
+interface WizardResponse {
+  message: string;
+  updatedState: WizardState;
+  suggestedActions?: Array<{
+    label: string;
+    action: string;
+  }>;
+  isConceptComplete: boolean;
+  tokensUsed: {
+    input: number;
+    output: number;
+  };
+}
+
+// ============================================================================
+// STATE EXTRACTION
+// ============================================================================
+
+/**
+ * Extract app concept information from the conversation
+ * This uses Claude to analyze the conversation and update the state
+ */
+async function extractStateFromConversation(
+  conversationHistory: WizardMessage[],
+  currentState: WizardState
+): Promise<WizardState> {
+  // Only extract if we have meaningful conversation
+  if (conversationHistory.length < 4) {
+    return currentState;
+  }
+
+  const extractionPrompt = `Analyze this conversation and extract the app concept information discussed. Return a JSON object with the following structure:
+
+{
+  "name": "app name if mentioned, or null",
+  "description": "one sentence description if clear, or null",
+  "purpose": "what problem it solves if discussed, or null",
+  "targetUsers": "who uses it if discussed, or null",
+  "features": [
+    {"name": "feature name", "description": "what it does", "priority": "high|medium|low"}
+  ],
+  "technical": {
+    "needsAuth": true/false if discussed,
+    "authType": "email|phone|oauth if discussed",
+    "needsDatabase": true/false if discussed,
+    "needsRealtime": true/false if discussed,
+    "needsFileUpload": true/false if discussed,
+    "needsAPI": true/false if discussed
+  },
+  "roles": [
+    {"name": "role name", "capabilities": ["what they can do"]}
+  ],
+  "isComplete": true if all major areas covered, false otherwise
+}
+
+Only include information that was explicitly discussed. Use null for anything not yet determined.
+
+CONVERSATION:
+${conversationHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')}
+
+Return ONLY the JSON object, no other text.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2000,
+      temperature: 0,
+      messages: [{ role: 'user', content: extractionPrompt }],
+    });
+
+    const textBlock = response.content.find(block => block.type === 'text');
+    if (textBlock && textBlock.type === 'text') {
+      // Clean up the response - remove markdown code blocks if present
+      let jsonText = textBlock.text.trim();
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/```json?\n?/g, '').replace(/```$/g, '').trim();
+      }
+
+      const extracted = JSON.parse(jsonText);
+
+      // Merge with current state, preferring new information
+      return {
+        name: extracted.name || currentState.name,
+        description: extracted.description || currentState.description,
+        purpose: extracted.purpose || currentState.purpose,
+        targetUsers: extracted.targetUsers || currentState.targetUsers,
+        features: extracted.features?.length > 0 ? extracted.features : currentState.features,
+        technical: { ...currentState.technical, ...extracted.technical },
+        uiPreferences: currentState.uiPreferences,
+        roles: extracted.roles?.length > 0 ? extracted.roles : currentState.roles,
+        isComplete: extracted.isComplete || false,
+        readyForPhases: currentState.readyForPhases,
+      };
+    }
+  } catch (error) {
+    console.error('State extraction error:', error);
+  }
+
+  return currentState;
+}
+
+/**
+ * Check if the user is confirming completion
+ */
+function isConfirmingCompletion(message: string): boolean {
+  const confirmPatterns = [
+    /yes.*ready/i,
+    /looks? good/i,
+    /that'?s? (correct|right|everything)/i,
+    /confirmed?/i,
+    /let'?s? (build|start|go|proceed)/i,
+    /generate.*phases?/i,
+    /create.*plan/i,
+    /ready to build/i,
+  ];
+
+  return confirmPatterns.some(pattern => pattern.test(message));
+}
+
+/**
+ * Check if the user is asking to generate phases
+ */
+function isRequestingPhases(message: string): boolean {
+  const phasePatterns = [
+    /generate.*phases?/i,
+    /create.*phases?/i,
+    /show.*phases?/i,
+    /implementation.*plan/i,
+    /build.*plan/i,
+    /step.*by.*step/i,
+    /break.*down/i,
+    /how.*build/i,
+  ];
+
+  return phasePatterns.some(pattern => pattern.test(message));
+}
+
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
+
+export async function POST(request: Request) {
+  const startTime = Date.now();
+
+  try {
+    const body: WizardRequest = await request.json();
+    const { message, conversationHistory, currentState, referenceImages } = body;
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({
+        error: 'Anthropic API key not configured'
+      }, { status: 500 });
+    }
+
+    // Build conversation messages for Claude
+    const messages: Anthropic.MessageParam[] = [];
+
+    // Add conversation history
+    for (const msg of conversationHistory) {
+      messages.push({
+        role: msg.role,
+        content: msg.content,
+      });
+    }
+
+    // Add current message (with images if provided)
+    if (referenceImages && referenceImages.length > 0) {
+      const content: Anthropic.ContentBlockParam[] = [];
+
+      // Add images first
+      for (const imageData of referenceImages) {
+        // Extract base64 data and media type
+        const match = imageData.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          content.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: match[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+              data: match[2],
+            },
+          });
+        }
+      }
+
+      // Add text message
+      content.push({ type: 'text', text: message });
+
+      messages.push({ role: 'user', content });
+    } else {
+      messages.push({ role: 'user', content: message });
+    }
+
+    // Build system prompt with context
+    let systemPrompt = WIZARD_SYSTEM_PROMPT;
+
+    // Add current state context if we have gathered information
+    if (currentState.name || currentState.features.length > 0 || currentState.roles) {
+      const stateContext = `
+
+## CURRENT UNDERSTANDING
+
+${currentState.name ? `**App Name:** ${currentState.name}` : ''}
+${currentState.description ? `**Description:** ${currentState.description}` : ''}
+${currentState.targetUsers ? `**Target Users:** ${currentState.targetUsers}` : ''}
+
+${currentState.roles && currentState.roles.length > 0 ? `
+**Roles Identified:**
+${currentState.roles.map(r => `- ${r.name}: ${r.capabilities.join(', ')}`).join('\n')}
+` : ''}
+
+${currentState.features.length > 0 ? `
+**Features Discussed:**
+${currentState.features.map(f => `- ${f.name}: ${f.description}`).join('\n')}
+` : ''}
+
+${Object.values(currentState.technical).some(v => v !== undefined) ? `
+**Technical Decisions:**
+${currentState.technical.needsAuth !== undefined ? `- Authentication: ${currentState.technical.needsAuth ? 'Yes' : 'No'}` : ''}
+${currentState.technical.needsDatabase !== undefined ? `- Database: ${currentState.technical.needsDatabase ? 'Yes' : 'No'}` : ''}
+${currentState.technical.needsRealtime !== undefined ? `- Real-time: ${currentState.technical.needsRealtime ? 'Yes' : 'No'}` : ''}
+${currentState.technical.needsFileUpload !== undefined ? `- File Upload: ${currentState.technical.needsFileUpload ? 'Yes' : 'No'}` : ''}
+` : ''}
+
+Continue the conversation naturally based on this context.`;
+
+      systemPrompt += stateContext;
+    }
+
+    // Check for completion signals
+    const isComplete = currentState.isComplete || isConfirmingCompletion(message);
+    const wantsPhases = isRequestingPhases(message);
+
+    if (wantsPhases && isComplete) {
+      systemPrompt += `
+
+## USER READY FOR PHASES
+
+The user has confirmed their concept and wants to generate phases. Acknowledge this and explain that you'll now analyze the features to create an implementation plan with an appropriate number of phases based on complexity.
+
+Ask any final technical questions if needed (platform, technology preferences) before generating phases.`;
+    }
+
+    // Call Claude API
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 4096,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages,
+    });
+
+    // Extract response text
+    const textBlock = response.content.find(block => block.type === 'text');
+    const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+
+    // Update state by analyzing the full conversation
+    const updatedHistory = [
+      ...conversationHistory,
+      { role: 'user' as const, content: message },
+      { role: 'assistant' as const, content: assistantMessage },
+    ];
+
+    const updatedState = await extractStateFromConversation(updatedHistory, currentState);
+
+    // Check if we should show phase generation option
+    const showPhaseOption = updatedState.isComplete ||
+      (updatedState.features.length >= 3 && updatedState.name && updatedState.technical.needsAuth !== undefined);
+
+    // Generate suggested actions based on conversation state
+    const suggestedActions: Array<{ label: string; action: string }> = [];
+
+    if (showPhaseOption && !wantsPhases) {
+      suggestedActions.push({
+        label: 'Generate Implementation Plan',
+        action: 'generate_phases',
+      });
+    }
+
+    if (!updatedState.name && conversationHistory.length < 2) {
+      suggestedActions.push({
+        label: 'Browse Templates',
+        action: 'browse_templates',
+      });
+    }
+
+    if (referenceImages?.length === 0 && updatedState.features.length > 0) {
+      suggestedActions.push({
+        label: 'Upload Design Reference',
+        action: 'upload_reference',
+      });
+    }
+
+    const result: WizardResponse = {
+      message: assistantMessage,
+      updatedState: {
+        ...updatedState,
+        readyForPhases: wantsPhases && isComplete,
+      },
+      suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
+      isConceptComplete: isComplete,
+      tokensUsed: {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+      },
+    };
+
+    console.log(`Wizard response generated in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`);
+
+    return NextResponse.json(result);
+
+  } catch (error) {
+    console.error('Wizard chat error:', error);
+
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Failed to process wizard message',
+    }, { status: 500 });
+  }
+}
+
+// ============================================================================
+// GET - Return wizard configuration
+// ============================================================================
+
+export async function GET() {
+  return NextResponse.json({
+    name: 'Natural Conversation Wizard',
+    version: '2.0',
+    description: 'AI-powered app planning through natural conversation',
+    features: [
+      'Real AI responses (not hardcoded)',
+      'Natural conversation flow',
+      'Progressive concept building',
+      'Image reference support',
+      'Dynamic phase generation',
+    ],
+    endpoints: {
+      chat: 'POST /api/wizard/chat',
+      generatePhases: 'POST /api/wizard/generate-phases',
+    },
+  });
+}
