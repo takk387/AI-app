@@ -1,305 +1,432 @@
-# 🚀 AI App Builder - Conversation-First Full-Stack Generator
+# 🤖 AI App Builder
 
-Build complete React and Next.js applications through natural conversation with Claude AI. No coding required - just describe what you want to build!
+> Build complete web applications through natural conversation with AI. Plan, design, and generate production-ready React apps powered by Claude AI.
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![AI](https://img.shields.io/badge/AI-Claude%20Sonnet%204.5-purple)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Ready-green)](https://supabase.com/)
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-### 🤖 **Conversation-First Interface**
-- Chat with AI like you're talking to a developer
-- Natural language app generation
-- Iterative refinements through conversation
-- Q&A mode for programming questions
+### 🎯 Dual-Mode AI System
+- **💭 PLAN Mode**: Discuss and design your app without generating code
+  - Brainstorm features and architecture
+  - Refine requirements through conversation
+  - Create detailed implementation plans
+- **⚡ ACT Mode**: Generate and modify working applications
+  - Real-time code generation
+  - Surgical code modifications
+  - Context-aware changes
 
-### 🏗️ **Full-Stack Support**
-- **Frontend-only apps**: Instant preview in browser
-- **Full-stack apps**: Next.js with database, auth, APIs
-- Prisma ORM, NextAuth.js, API routes included
-- One-click export with deployment instructions
+### 🧙‍♂️ Guided App Creation
+- **Interactive Wizards**: Step-by-step app planning with AI assistance
+- **Smart Conversations**: Natural language understanding of requirements
+- **Template Suggestions**: AI recommends the best starting point
 
-### 🔄 **Smart Modification System**
-- Diff-based surgical edits (Phase 2 complete)
-- Only changes what you request - preserves everything else
-- Simple changes: Auto-applied instantly
-- Complex changes: Review and approve before applying
-- Staged modifications for big features
+### 🏗️ Phased Building System
+- Break complex apps into manageable phases
+- Context-aware phase execution
+- Build incrementally with dependencies
+- Track progress across phases
 
-### 📸 **Image-Inspired Designs**
-- Upload screenshots or designs
-- AI extracts colors, styles, and patterns
-- Recreates the aesthetic with Tailwind CSS
-- Perfect for replicating existing designs
+### ⚡ Real-Time Generation
+- **Streaming Code Generation**: Watch your app come to life
+- **Live Progress Tracking**: See each file as it's created
+- **Instant Preview**: Test components immediately
+- **Sandpack Integration**: Interactive code playground
 
-### 🕒 **Advanced Version Control**
-- Automatic version saving on every change
-- Unlimited undo/redo (Ctrl+Z / Ctrl+Shift+Z)
-- Fork/branch to create alternative versions
-- Compare versions side-by-side
-- One-click revert to any previous version
+### 🔄 Advanced Version Control
+- **Automatic History**: Every change saved automatically
+- **Undo/Redo**: One-click rollback to any state
+- **Fork Versions**: Create variations without losing originals
+- **Compare Versions**: Side-by-side diff viewer
+- **Smart Rollback**: Revert to any previous version
 
-### 📦 **Export & Deploy**
-- Download as ZIP with complete project structure
-- Includes package.json, configuration, README
-- Deployment instructions for Vercel/Netlify
-- Ready for production use
+### 🎨 Pre-Built Templates
+Choose from 6 production-ready templates:
+- **Blog**: Content-focused with dynamic routing
+- **CRUD App**: Full database operations
+- **Dashboard**: Analytics and data visualization
+- **E-commerce**: Product catalog and shopping cart
+- **Landing Page**: Marketing and conversion optimized
+- **SaaS Platform**: Multi-page application structure
 
-### 🔐 **Password Protected**
-- Built-in authentication
-- Default password: "Nerd" (change in `.env.local`)
-- Multi-user ready
+### 🔍 Intelligent Code Modifications
+- **Diff-Based Editing**: Review changes before applying
+- **Approval Workflow**: Accept or reject modifications
+- **Impact Analysis**: Understand effects before committing
+- **AST Parsing**: Surgical code changes with Tree-sitter
+
+### 📁 Cloud Storage Integration
+- **File Management**: Upload and organize project assets
+- **Supabase Storage**: Secure cloud file storage
+- **Analytics**: Track storage usage and file statistics
+- **Bulk Operations**: Delete multiple files at once
+
+### 📦 Export & Deployment
+- **Download as ZIP**: Get complete project files
+- **Deployment Guides**: Instructions for Vercel, Netlify, etc.
+- **Production Ready**: Optimized code with best practices
+- **One-Click Export**: Package entire application instantly
+
+### 🔐 Authentication & Security
+- **Supabase Auth**: Secure user authentication
+- **Protected Routes**: Middleware-based route protection
+- **User Isolation**: Each user's apps are private
+- **Session Management**: Persistent login state
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
-- Anthropic API key ([Get one here](https://console.anthropic.com/))
+
+- **Node.js** 18.0 or higher
+- **npm** or **yarn**
+- **Supabase** account (free tier works)
+- **Anthropic API** key (Claude)
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/takk387/AI-app.git
-cd AI-app
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/takk387/AI-app.git
+   cd AI-app
+   ```
 
-# Install dependencies
-npm install
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local and add your ANTHROPIC_API_KEY
+3. **Set up environment variables**
+   
+   Create a `.env.local` file in the root directory:
+   
+   ```env
+   # Anthropic API
+   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   
+   # Optional: App Configuration
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   ```
 
-# Run the development server
-npm run dev
+4. **Set up Supabase**
+   
+   Run the migrations in your Supabase project:
+   ```bash
+   # The migrations are in supabase/migrations/
+   # Apply them through Supabase dashboard or CLI
+   ```
 
-# Open http://localhost:3000
-```
+5. **Run development server**
+   ```bash
+   npm run dev
+   ```
 
-### Environment Setup
-
-Create a `.env.local` file:
-
-```env
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-SITE_PASSWORD=Nerd
-```
-
----
-
-## 💡 How to Use
-
-### 1. **Start a Conversation**
-Just describe what you want to build:
-- "Build a todo app with priorities"
-- "Create a blog with dark mode"
-- "Make a dashboard with charts"
-
-### 2. **Iterative Refinement**
-Continue the conversation to improve:
-- "Add a dark mode toggle"
-- "Make the buttons blue"
-- "Add export to CSV functionality"
-
-### 3. **Preview & Test**
-- Frontend apps: Instant live preview
-- Full-stack apps: Download and run locally
-- Fullscreen mode available
-- View/edit code in browser
-
-### 4. **Version Control**
-- **Ctrl+Z**: Undo last change
-- **Ctrl+Shift+Z**: Redo
-- Click **🕒 History** to see all versions
-- Fork to create alternative versions
-
-### 5. **Export & Deploy**
-- Click **📦 Export** for deployment instructions
-- Download ZIP with complete project
-- Deploy to Vercel, Netlify, or anywhere
+6. **Open your browser**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 🎯 What Can You Build?
+## 🎯 How to Use
 
-### Frontend-Only Apps (Instant Preview)
-- ✅ Todo lists, calculators, games
-- ✅ Dashboards, charts, data visualizations  
-- ✅ Landing pages, portfolios
-- ✅ UI components, design systems
+### Getting Started
 
-### Full-Stack Apps (Download Required)
-- ⚡ Blogs with CMS
-- ⚡ E-commerce platforms
-- ⚡ SaaS applications
-- ⚡ Social media apps
-- ⚡ CRM systems
-- ⚡ Project management tools
+1. **Start a Conversation**
+   - Click "New App" to begin
+   - Describe what you want to build in natural language
+   - Use the image upload to share design inspiration
 
----
+2. **Choose Your Approach**
+   
+   **Option A: Quick Build**
+   - Describe your app
+   - Switch to ACT Mode
+   - Type "build it" and let AI generate everything
+   
+   **Option B: Use Wizards** 🧙‍♂️
+   - Click "Wizard" button
+   - Answer guided questions
+   - Get a structured plan
+   - Build in phases
+   
+   **Option C: Detailed Planning**
+   - Stay in PLAN Mode
+   - Discuss features and architecture
+   - Refine requirements
+   - Then switch to ACT Mode to build
 
-## 🛠️ Technology Stack
+### PLAN Mode vs ACT Mode
 
-### Core
-- **AI**: Claude Sonnet 4.5 (Anthropic)
-- **Framework**: Next.js 13+ with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
+| Mode | Purpose | AI Behavior |
+|------|---------|-------------|
+| **💭 PLAN** | Discussion & Design | Answers questions, suggests features, creates plans |
+| **⚡ ACT** | Code Generation | Generates working code, modifies apps, implements features |
 
-### Preview System
-- **Sandpack**: Browser-based React preview
-- **Live Editing**: Real-time code updates
+**Tip**: Always start in PLAN Mode to design, then switch to ACT Mode to build.
 
-### Full-Stack Capabilities
-- **Database**: Prisma ORM (PostgreSQL, MySQL, MongoDB, SQLite)
-- **Authentication**: NextAuth.js (OAuth, JWT)
-- **File Upload**: Local storage or cloud (S3, Cloudinary)
-- **Real-time**: Pusher, Server-Sent Events
-- **Email**: Resend, Nodemailer
+### Building in Phases
 
----
+1. Use the **Wizard** to create a phased build plan
+2. AI generates 3-7 phases based on complexity
+3. Build one phase at a time for better control
+4. Each phase includes context from previous phases
 
-## 📚 Documentation
+### Modifying Existing Apps
 
-- **[Current Features](./CURRENT_FEATURES.md)** - Complete feature list
-- **[Keyboard Shortcuts](./KEYBOARD_SHORTCUTS.md)** - Hidden shortcuts
-- **[Modification Guide](./MODIFICATION_GUIDE.md)** - How diff system works
-- **[Version Control](./VERSION_CONTROL.md)** - Undo/redo/fork/compare
-- **[Troubleshooting](./TROUBLESHOOTING.md)** - Common issues
-- **[Full-Stack Guide](./FULL_STACK_GUIDE.md)** - Backend features
-- **[Deployment](./DEPLOYMENT_GUIDE.md)** - How to deploy
-
----
-
-## 🔑 Features in Detail
-
-### Dual Chat System
-The app intelligently routes your messages:
-- **Questions**: "What is useState?" → AI answers
-- **Build requests**: "Build a todo app" → AI generates
-
-### Modification System (Phase 2)
-Smart diff-based modifications:
-- **Simple changes**: Color, text, styling → Auto-applied
-- **Medium changes**: New features, dark mode → Auto-applied
-- **Complex changes**: Auth, major refactors → Requires approval
-
-### Image Upload
-Upload any image and AI will:
-- Extract color palette
-- Identify design style
-- Recreate the aesthetic
-- Match fonts and layouts
-
----
-
-## ⌨️ Keyboard Shortcuts
+1. Load an app from "My Apps"
+2. Switch to ACT Mode
+3. Describe your changes
+4. Review the diff preview
+5. Approve or reject modifications
 
 ### Version Control
-- `Ctrl+Z` / `Cmd+Z` - Undo
-- `Ctrl+Shift+Z` / `Cmd+Shift+Z` - Redo
-- `Ctrl+Y` / `Cmd+Y` - Redo (alternative)
 
-### Interface
-- `Enter` - Send message
-- `Esc` - Close modals
+- **Undo/Redo**: Use buttons in the preview panel
+- **History**: Click "History" to view all versions
+- **Fork**: Create a copy to experiment safely
+- **Compare**: View differences between versions
 
 ---
 
-## 🐛 Known Issues
+## 🛠️ Tech Stack
 
-### ~~Complex Modifications~~ ✅ SOLVED IN PHASE 5
-**Update:** Authentication and complex modifications now work reliably via AST operations!
+### Frontend
+- **[Next.js 15](https://nextjs.org/)** - React framework with App Router
+- **[React 19](https://react.dev/)** - UI library with latest features
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first styling
+- **[Zustand](https://zustand-demo.pmnd.rs/)** - Lightweight state management
 
-**Try it:** Just say "add authentication" - works automatically in one command.
+### Backend & Database
+- **Next.js API Routes** - Serverless backend
+- **[Supabase](https://supabase.com/)** - Backend-as-a-Service
+  - PostgreSQL database
+  - Authentication
+  - File storage
+  - Real-time subscriptions
 
-**What works now:**
-- ✅ Complete authentication system (login/logout)
-- ✅ State management with hooks
-- ✅ Component wrapping and conditional rendering
-- ✅ Function injection and JSX modifications
+### AI Integration
+- **[Anthropic Claude](https://www.anthropic.com/)** - AI code generation
+  - Claude 3.5 Sonnet for complex reasoning
+  - Streaming responses for real-time feedback
+  - Extended context for full-app generation
 
-### Token Limits
-Very large apps may approach the 16K token limit. **Solution**: Build incrementally through conversation stages.
-
-See [Troubleshooting Guide](./TROUBLESHOOTING.md) for more.
+### Developer Tools
+- **[Tree-sitter](https://tree-sitter.github.io/tree-sitter/)** - Code parsing and AST manipulation
+- **[Sandpack](https://sandpack.codesandbox.io/)** - Live code preview and execution
+- **[Jest](https://jestjs.io/)** - Testing framework
+- **[JSZip](https://stuk.github.io/jszip/)** - App export functionality
 
 ---
 
-## 🚀 Deployment
+## 📂 Project Structure
 
-### Vercel (Recommended)
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Add environment variables in Vercel dashboard:
-# ANTHROPIC_API_KEY=your-key
-# SITE_PASSWORD=your-password
+```
+AI-APP-BUILDER/
+├── src/
+│   ├── app/                      # Next.js App Router
+│   │   ├── api/                  # API Routes
+│   │   │   ├── ai-builder/      # Main AI endpoints
+│   │   │   ├── chat/            # Chat API
+│   │   │   ├── auth/            # Authentication
+│   │   │   └── wizard/          # Wizard endpoints
+│   │   ├── login/               # Login page
+│   │   ├── signup/              # Signup page
+│   │   └── page.tsx             # Home page
+│   │
+│   ├── components/              # React components
+│   │   ├── AIBuilder.tsx        # Main orchestrator
+│   │   ├── ChatPanel.tsx        # Chat interface
+│   │   ├── PreviewPanel.tsx     # Code preview
+│   │   ├── modals/              # Modal dialogs
+│   │   ├── build/               # Build system UI
+│   │   ├── review/              # Code review UI
+│   │   └── storage/             # File storage UI
+│   │
+│   ├── hooks/                   # Custom React hooks
+│   │   ├── useBuildPhases.ts   # Phase management
+│   │   ├── useVersionControl.ts # Version history
+│   │   ├── useDatabaseSync.ts  # Supabase sync
+│   │   └── useStreamingGeneration.ts # Streaming AI
+│   │
+│   ├── services/                # Business logic
+│   │   ├── PhaseOrchestrator.ts        # Phase coordination
+│   │   ├── PhaseExecutionManager.ts    # Phase execution
+│   │   ├── DynamicPhaseGenerator.ts    # AI phase planning
+│   │   ├── ImpactAnalyzer.ts          # Change analysis
+│   │   ├── RollbackService.ts         # Version rollback
+│   │   └── StorageService.ts          # File management
+│   │
+│   ├── types/                   # TypeScript types
+│   ├── utils/                   # Utility functions
+│   ├── prompts/                 # AI prompts
+│   ├── data/templates/          # App templates
+│   ├── contexts/                # React contexts
+│   └── store/                   # Zustand stores
+│
+├── supabase/                    # Supabase configuration
+│   └── migrations/              # Database migrations
+│
+├── tests/                       # Test files
+├── docs/                        # Documentation
+└── public/                      # Static assets
 ```
 
-### Netlify
-```bash
-# Install Netlify CLI  
-npm i -g netlify-cli
+---
 
-# Deploy
-netlify deploy --prod
+## 🔧 Configuration
 
-# Add environment variables in Netlify dashboard
-```
+### Environment Variables
 
-See [Deployment Guide](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key | ✅ Yes |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | ✅ Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | ✅ Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | ✅ Yes |
+| `NEXT_PUBLIC_APP_URL` | Your app URL | ❌ No (defaults to localhost) |
+
+### Getting API Keys
+
+**Anthropic API Key:**
+1. Sign up at [console.anthropic.com](https://console.anthropic.com/)
+2. Navigate to API Keys
+3. Create a new key
+4. Copy and add to `.env.local`
+
+**Supabase Setup:**
+1. Create project at [supabase.com](https://supabase.com/)
+2. Go to Settings > API
+3. Copy URL and keys
+4. Apply database migrations from `supabase/migrations/`
 
 ---
 
-## 📊 Current Status
+## 🧪 Testing
 
-- ✅ **Phase 0**: Planning (Complete)
-- ✅ **Phase 1**: Tree-sitter Parser (Complete)
-- ✅ **Phase 2**: AST Modifier System (Complete)
-- ✅ **Phase 3**: AI Integration (Complete)
-- ✅ **Phase 5**: Authentication Support (Complete)
-- 📝 **Phase 4**: Skipped/Merged with Phase 3
+Run the test suite:
 
-**Latest:** Phase 5 adds one-command authentication via AST operations!
+```bash
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:validator    # Code validation tests
+npm run test:retry        # Retry logic tests
+npm run test:integration  # Integration tests
+
+# Run all tests including integration
+npm run test:all
+```
+
+---
+
+## 📤 Deployment
+
+### Deploy to Vercel (Recommended)
+
+1. **Push to GitHub**
+   ```bash
+   git push origin main
+   ```
+
+2. **Import to Vercel**
+   - Go to [vercel.com](https://vercel.com/)
+   - Click "New Project"
+   - Import your GitHub repository
+
+3. **Add Environment Variables**
+   - Add all variables from `.env.local`
+   - Deploy
+
+4. **Configure Supabase**
+   - Update `NEXT_PUBLIC_APP_URL` with your Vercel URL
+   - Add Vercel URL to Supabase allowed origins
+
+### Other Platforms
+
+The app can be deployed to any platform supporting Next.js:
+- **Netlify**: Use `next export` for static export
+- **Railway**: Direct deployment with build commands
+- **DigitalOcean**: App Platform supports Next.js
+- **AWS Amplify**: Full Next.js support
+
+---
+
+## 🎨 Customization
+
+### Adding New Templates
+
+1. Create a new file in `src/data/templates/`
+2. Follow the template structure:
+   ```typescript
+   export const myTemplate = {
+     id: 'my-template',
+     name: 'My Template',
+     description: 'Description here',
+     tags: ['tag1', 'tag2'],
+     // ... more config
+   };
+   ```
+3. Export from `src/data/templates/index.ts`
+
+### Modifying AI Prompts
+
+AI prompts are located in `src/prompts/`:
+- `builder.ts` - Main builder prompts
+- `phasePrompts.ts` - Phase-specific prompts
+- `wizardSystemPrompt.ts` - Wizard conversation prompts
+
+### Customizing UI Theme
+
+Edit `src/app/globals.css` for global styles or use the built-in theme toggle for light/dark modes.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read the contributing guidelines first.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
-## 📄 License
+## 📝 License
 
-MIT License - see LICENSE file for details
+This project is part of a private repository. Please contact the repository owner for licensing information.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- Built with [Claude](https://anthropic.com) by Anthropic
-- Preview powered by [Sandpack](https://sandpack.codesandbox.io/)
-- UI inspired by Base44's clean design philosophy
+- **Anthropic** for Claude AI
+- **Supabase** for backend infrastructure
+- **Vercel** for Next.js framework
+- **CodeSandbox** for Sandpack live preview
 
 ---
 
-## 📞 Support
+## 📧 Support
 
-- 📖 [Documentation](./CURRENT_FEATURES.md)
-- 🐛 [Report Issues](https://github.com/takk387/AI-app/issues)
-- 💬 [Discussions](https://github.com/takk387/AI-app/discussions)
+For questions or issues:
+- Open an issue on GitHub
+- Check the [User Guide](docs/USER_GUIDE.md)
 
 ---
 
-**Built with ❤️ using AI-powered development**
+**Built with ❤️ using Next.js, React, and Claude AI**
