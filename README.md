@@ -23,13 +23,18 @@
 
 ### 🧙‍♂️ Guided App Creation
 - **Interactive Wizards**: Step-by-step app planning with AI assistance
+- **State Persistence**: Wizard state persists through browser refresh and navigation
 - **Smart Conversations**: Natural language understanding of requirements
+- **Rich Concept Preservation**: App concepts and details preserved throughout the generation pipeline
 - **Template Suggestions**: AI recommends the best starting point
 
 ### 🏗️ Phased Building System
+- **AI-Powered Scope Detection**: Intelligent analysis determines optimal phases dynamically
+- **Dynamic Phase Generation**: AI creates custom phases based on app complexity and requirements
 - Break complex apps into manageable phases
 - Context-aware phase execution
 - Build incrementally with dependencies
+- **Synchronized Progress Tracking**: Real-time sync between chat panel and stage plan
 - Track progress across phases
 
 ### ⚡ Real-Time Generation
@@ -178,9 +183,10 @@ Choose from 6 production-ready templates:
 ### Building in Phases
 
 1. Use the **Wizard** to create a phased build plan
-2. AI generates 3-7 phases based on complexity
-3. Build one phase at a time for better control
-4. Each phase includes context from previous phases
+2. **AI-powered scope detection** analyzes your requirements and generates 3-7 optimal phases
+3. **Dynamic phase planning** adapts to your specific app complexity and architecture
+4. Build one phase at a time for better control with **synchronized progress tracking**
+5. Each phase includes context from previous phases with **rich concept preservation**
 
 ### Modifying Existing Apps
 
@@ -263,7 +269,7 @@ AI-APP-BUILDER/
 │   ├── services/                # Business logic
 │   │   ├── PhaseOrchestrator.ts        # Phase coordination
 │   │   ├── PhaseExecutionManager.ts    # Phase execution
-│   │   ├── DynamicPhaseGenerator.ts    # AI phase planning
+│   │   ├── DynamicPhaseGenerator.ts    # AI-powered scope detection and phase planning
 │   │   ├── ImpactAnalyzer.ts          # Change analysis
 │   │   ├── RollbackService.ts         # Version rollback
 │   │   └── StorageService.ts          # File management
