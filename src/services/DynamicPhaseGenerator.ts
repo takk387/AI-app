@@ -7,7 +7,7 @@
  * Replaces the fixed 5-phase system with intelligent, adaptive phase planning.
  */
 
-import type { AppConcept, Feature, TechnicalRequirements } from '@/types/appConcept';
+import type { AppConcept, Feature, TechnicalRequirements, UserRole } from '@/types/appConcept';
 import type {
   FeatureDomain,
   FeatureClassification,
@@ -344,12 +344,17 @@ export class DynamicPhaseGenerator {
     // Phase 2: Database (if needed) - always comes early
     if (featuresByDomain.has('database')) {
       const dbFeatures = featuresByDomain.get('database')!;
+      // Include data model details in database phase
+      const dataModelContext = concept.technical.dataModels
+        ? `. Data models: ${concept.technical.dataModels.map(m => m.name).join(', ')}`
+        : '';
       phases.push(this.createPhaseFromFeatures(
         phaseNumber++,
         'Database Schema',
-        'Set up database tables, types, and configuration',
+        `Set up database tables, types, and configuration${dataModelContext}`,
         'database',
-        dbFeatures
+        dbFeatures,
+        concept
       ));
       featuresByDomain.delete('database');
     }
@@ -357,12 +362,17 @@ export class DynamicPhaseGenerator {
     // Phase 3: Authentication (if needed) - comes after database
     if (featuresByDomain.has('auth')) {
       const authFeatures = featuresByDomain.get('auth')!;
+      // Include role context in auth phase
+      const roleContext = concept.roles && concept.roles.length > 0
+        ? `. User roles: ${concept.roles.map(r => r.name).join(', ')}`
+        : '';
       phases.push(this.createPhaseFromFeatures(
         phaseNumber++,
         'Authentication System',
-        `Implement ${concept.technical.authType || 'email'} authentication`,
+        `Implement ${concept.technical.authType || 'email'} authentication${roleContext}`,
         'auth',
-        authFeatures
+        authFeatures,
+        concept
       ));
       featuresByDomain.delete('auth');
     }
@@ -397,7 +407,8 @@ export class DynamicPhaseGenerator {
           subPhase.name,
           subPhase.description,
           domain,
-          subPhase.features
+          subPhase.features,
+          concept  // Pass concept for rich context
         ));
       }
     }
@@ -532,20 +543,25 @@ export class DynamicPhaseGenerator {
 
   /**
    * Create the setup phase (always first)
+   * Includes design context from concept for consistent styling
    */
   private createSetupPhase(phaseNumber: number, concept: AppConcept): DynamicPhase {
+    // Build design context from uiPreferences
+    const designContext = this.buildDesignContext(concept);
+
     return {
       number: phaseNumber,
       name: 'Project Setup',
-      description: 'Initialize project structure, dependencies, and base configuration',
+      description: `Initialize project structure, dependencies, and base configuration for "${concept.name}". ${designContext}`,
       domain: 'setup',
       features: [
         'Folder structure and organization',
         'Package.json with dependencies',
         'TypeScript configuration',
-        'Base styling (Tailwind setup)',
+        `Base styling (Tailwind setup with ${concept.uiPreferences.colorScheme} theme, ${concept.uiPreferences.style} style)`,
         'Core layout components',
         'Routing configuration',
+        ...(concept.uiPreferences.layout === 'dashboard' ? ['Dashboard layout skeleton'] : []),
       ],
       featureDetails: [],
       estimatedTokens: this.config.baseTokenEstimates.setupPhase,
@@ -555,29 +571,71 @@ export class DynamicPhaseGenerator {
       testCriteria: [
         'Project runs without errors',
         'Base layout renders correctly',
+        `Theme matches ${concept.uiPreferences.style} style with ${concept.uiPreferences.colorScheme} colors`,
         'Navigation works between routes',
         'No console errors',
       ],
       status: 'pending',
+      // Include concept context for execution
+      conceptContext: {
+        purpose: concept.purpose,
+        targetUsers: concept.targetUsers,
+        uiPreferences: concept.uiPreferences,
+        roles: concept.roles,
+      },
     };
   }
 
   /**
+   * Build design context string from concept
+   */
+  private buildDesignContext(concept: AppConcept): string {
+    const parts: string[] = [];
+
+    if (concept.uiPreferences) {
+      if (concept.uiPreferences.style && concept.uiPreferences.style !== 'custom') {
+        parts.push(`${concept.uiPreferences.style} design style`);
+      }
+      if (concept.uiPreferences.colorScheme && concept.uiPreferences.colorScheme !== 'auto') {
+        parts.push(`${concept.uiPreferences.colorScheme} color scheme`);
+      }
+      if (concept.uiPreferences.primaryColor) {
+        parts.push(`primary color: ${concept.uiPreferences.primaryColor}`);
+      }
+      if (concept.uiPreferences.layout && concept.uiPreferences.layout !== 'custom') {
+        parts.push(`${concept.uiPreferences.layout} layout`);
+      }
+    }
+
+    if (concept.targetUsers) {
+      parts.push(`designed for ${concept.targetUsers}`);
+    }
+
+    return parts.length > 0 ? `Design: ${parts.join(', ')}.` : '';
+  }
+
+  /**
    * Create the polish phase (always last)
+   * Includes full concept context for final refinements
    */
   private createPolishPhase(phaseNumber: number, concept: AppConcept): DynamicPhase {
+    const designContext = this.buildDesignContext(concept);
+
     return {
       number: phaseNumber,
       name: 'Polish & Documentation',
-      description: 'Final touches, animations, error states, and documentation',
+      description: `Final touches, animations, error states, and documentation for "${concept.name}". ${designContext}`,
       domain: 'polish',
       features: [
         'Loading states and skeletons',
         'Error handling and error states',
         'Empty states with helpful messages',
-        'Micro-interactions and animations',
+        `Micro-interactions and animations (${concept.uiPreferences.style} style)`,
         'README.md with setup instructions',
         'Final code cleanup',
+        ...(concept.roles && concept.roles.length > 0
+          ? [`Role-specific UX polish for: ${concept.roles.map(r => r.name).join(', ')}`]
+          : []),
       ],
       featureDetails: [],
       estimatedTokens: this.config.baseTokenEstimates.polishPhase,
@@ -586,31 +644,58 @@ export class DynamicPhaseGenerator {
       dependencyNames: ['All previous phases'],
       testCriteria: [
         'All states have appropriate feedback',
-        'Animations are smooth',
+        `Animations match ${concept.uiPreferences.style} style`,
         'Documentation is complete',
+        `App serves ${concept.targetUsers} effectively`,
         'No console warnings or errors',
       ],
       status: 'pending',
+      // Include full concept context
+      conceptContext: {
+        purpose: concept.purpose,
+        targetUsers: concept.targetUsers,
+        uiPreferences: concept.uiPreferences,
+        roles: concept.roles,
+        conversationContext: concept.conversationContext,
+      },
+      relevantRoles: concept.roles?.map(r => r.name),
     };
   }
 
   /**
    * Create a phase from classified features
+   * Includes concept context for rich detail preservation
    */
   private createPhaseFromFeatures(
     phaseNumber: number,
     name: string,
     description: string,
     domain: FeatureDomain,
-    features: FeatureClassification[]
+    features: FeatureClassification[],
+    concept?: AppConcept
   ): DynamicPhase {
     const totalTokens = features.reduce((sum, f) => sum + f.estimatedTokens, 0);
     const estimatedMinutes = Math.ceil(totalTokens / 1500); // Rough estimate
 
+    // Determine which roles are relevant to this phase's features
+    const relevantRoles = this.findRelevantRoles(features, concept?.roles);
+
+    // Build enriched description with context
+    let enrichedDescription = description;
+    if (concept) {
+      const designContext = this.buildDesignContext(concept);
+      if (designContext) {
+        enrichedDescription = `${description}. ${designContext}`;
+      }
+      if (relevantRoles.length > 0) {
+        enrichedDescription += ` For users: ${relevantRoles.join(', ')}.`;
+      }
+    }
+
     return {
       number: phaseNumber,
       name,
-      description,
+      description: enrichedDescription,
       domain,
       features: features.map(f => f.originalFeature.name),
       featureDetails: features,
@@ -620,7 +705,46 @@ export class DynamicPhaseGenerator {
       dependencyNames: [],
       testCriteria: this.generateTestCriteria(features, domain),
       status: 'pending',
+      // Include concept context if available
+      conceptContext: concept ? {
+        purpose: concept.purpose,
+        targetUsers: concept.targetUsers,
+        uiPreferences: concept.uiPreferences,
+        roles: concept.roles,
+        dataModels: concept.technical.dataModels,
+      } : undefined,
+      relevantRoles: relevantRoles.length > 0 ? relevantRoles : undefined,
     };
+  }
+
+  /**
+   * Find which user roles are relevant to a set of features
+   */
+  private findRelevantRoles(features: FeatureClassification[], roles?: UserRole[]): string[] {
+    if (!roles || roles.length === 0) return [];
+
+    const relevantRoles: Set<string> = new Set();
+
+    for (const feature of features) {
+      const featureText = `${feature.originalFeature.name} ${feature.originalFeature.description}`.toLowerCase();
+
+      for (const role of roles) {
+        const roleName = role.name.toLowerCase();
+        // Check if feature mentions this role
+        if (featureText.includes(roleName)) {
+          relevantRoles.add(role.name);
+        }
+        // Check if feature relates to role capabilities
+        for (const capability of role.capabilities) {
+          if (featureText.includes(capability.toLowerCase())) {
+            relevantRoles.add(role.name);
+            break;
+          }
+        }
+      }
+    }
+
+    return Array.from(relevantRoles);
   }
 
   /**

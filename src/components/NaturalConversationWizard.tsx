@@ -15,7 +15,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+import type { AppConcept, Feature, TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import { useToast } from '@/components/Toast';
 import {
@@ -111,21 +111,27 @@ export default function NaturalConversationWizard({
       const messagesMetadata = getDraftMetadata(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
       const stateMetadata = getDraftMetadata(WIZARD_DRAFT_KEYS.CONVERSATION_STATE);
 
+      console.log('[Wizard] Checking for drafts:', { messagesMetadata, stateMetadata });
+
       // If we have a saved conversation with more than just the greeting
       if (messagesMetadata || stateMetadata) {
         const savedMessages = loadWizardDraft<Message[]>(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
+        console.log('[Wizard] Loaded messages:', savedMessages?.length, 'messages');
+
         // Check if there's actual conversation content (more than just greeting)
         if (savedMessages && savedMessages.length > 1) {
           const timestamp = messagesMetadata?.savedAt || stateMetadata?.savedAt;
           if (timestamp) {
             setDraftAge(formatDraftAge(timestamp));
           }
+          console.log('[Wizard] Showing recovery prompt');
           setShowRecoveryPrompt(true);
           return;
         }
       }
 
       // No valid draft found, start fresh
+      console.log('[Wizard] Starting fresh conversation');
       startFreshConversation();
     };
 
@@ -222,6 +228,7 @@ What would you like to build?`,
 
     // Debounce save
     const saveTimeout = setTimeout(() => {
+      console.log('[Wizard] Auto-saving messages:', messages.length, 'messages');
       saveWizardDraft(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES, messages);
     }, 500);
 
@@ -359,6 +366,40 @@ What would you like to build?`,
   // PHASE GENERATION
   // ============================================================================
 
+  /**
+   * Build conversation context summary for phase generation
+   * Preserves the full details discussed in the conversation
+   */
+  const buildConversationContext = useCallback((): string => {
+    const relevantMessages = messages.filter(m => m.role !== 'system');
+    if (relevantMessages.length === 0) return '';
+
+    // Build a structured summary of the conversation
+    const contextParts: string[] = [];
+
+    // Add message history summary (condensed)
+    const conversationSummary = relevantMessages
+      .map(m => `${m.role.toUpperCase()}: ${m.content.slice(0, 500)}${m.content.length > 500 ? '...' : ''}`)
+      .join('\n\n');
+
+    contextParts.push('=== CONVERSATION SUMMARY ===');
+    contextParts.push(conversationSummary);
+
+    return contextParts.join('\n');
+  }, [messages]);
+
+  /**
+   * Convert wizard roles to AppConcept UserRole format
+   */
+  const convertRolesToUserRoles = useCallback((): UserRole[] | undefined => {
+    if (!wizardState.roles || wizardState.roles.length === 0) return undefined;
+
+    return wizardState.roles.map(role => ({
+      name: role.name,
+      capabilities: role.capabilities,
+    }));
+  }, [wizardState.roles]);
+
   const generatePhases = useCallback(async () => {
     if (!wizardState.name || wizardState.features.length === 0) {
       showToast({
@@ -371,7 +412,7 @@ What would you like to build?`,
     setIsGeneratingPhases(true);
 
     try {
-      // Build complete concept
+      // Build complete concept with ALL details from the conversation
       const concept: AppConcept = {
         name: wizardState.name!,
         description: wizardState.description || `A ${wizardState.name} application`,
@@ -392,6 +433,10 @@ What would you like to build?`,
           needsRealtime: false,
           ...wizardState.technical,
         } as TechnicalRequirements,
+        // NEW: Preserve roles from wizard conversation
+        roles: convertRolesToUserRoles(),
+        // NEW: Preserve full conversation context for detail retention
+        conversationContext: buildConversationContext(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -503,6 +548,10 @@ Does this look good? You can:
             coreFeatures: wizardState.features,
             uiPreferences: wizardState.uiPreferences as UIPreferences,
             technical: wizardState.technical as TechnicalRequirements,
+            // Preserve roles from wizard conversation
+            roles: convertRolesToUserRoles(),
+            // Preserve full conversation context for detail retention
+            conversationContext: buildConversationContext(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };

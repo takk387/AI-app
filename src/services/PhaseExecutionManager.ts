@@ -13,8 +13,9 @@ import type {
   DynamicPhasePlan,
   PhaseExecutionContext,
   PhaseExecutionResult,
+  PhaseConceptContext,
 } from '@/types/dynamicPhases';
-import type { TechnicalRequirements } from '@/types/appConcept';
+import type { TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
 
 // ============================================================================
 // PHASE PROMPT BUILDER
@@ -22,6 +23,7 @@ import type { TechnicalRequirements } from '@/types/appConcept';
 
 /**
  * Build the prompt for executing a specific phase
+ * Now includes full concept context for rich detail preservation
  */
 export function buildPhaseExecutionPrompt(context: PhaseExecutionContext): string {
   const isFirstPhase = context.phaseNumber === 1;
@@ -33,8 +35,67 @@ export function buildPhaseExecutionPrompt(context: PhaseExecutionContext): strin
 **Name:** ${context.appName}
 **Description:** ${context.appDescription}
 **Type:** ${context.appType}
+`;
+
+  // Add rich concept context if available
+  if (context.fullConcept) {
+    if (context.fullConcept.purpose) {
+      prompt += `**Purpose:** ${context.fullConcept.purpose}
+`;
+    }
+    if (context.fullConcept.targetUsers) {
+      prompt += `**Target Users:** ${context.fullConcept.targetUsers}
+`;
+    }
+  }
+
+  prompt += `
+`;
+
+  // User roles context (critical for role-based apps)
+  if (context.fullConcept?.roles && context.fullConcept.roles.length > 0) {
+    prompt += `## User Roles
+`;
+    for (const role of context.fullConcept.roles) {
+      prompt += `### ${role.name}
+- Capabilities: ${role.capabilities.join(', ')}
+`;
+      if (role.permissions && role.permissions.length > 0) {
+        prompt += `- Permissions: ${role.permissions.join(', ')}
+`;
+      }
+    }
+    prompt += `
+`;
+  }
+
+  // Phase-specific role context
+  if (context.relevantRoles && context.relevantRoles.length > 0) {
+    prompt += `## This Phase Serves
+Users in roles: **${context.relevantRoles.join(', ')}**
 
 `;
+  }
+
+  // Design preferences context
+  if (context.fullConcept?.uiPreferences) {
+    const ui = context.fullConcept.uiPreferences;
+    prompt += `## Design Requirements
+- Style: ${ui.style || 'modern'}
+- Color Scheme: ${ui.colorScheme || 'auto'}
+- Layout: ${ui.layout || 'single-page'}
+`;
+    if (ui.primaryColor) {
+      prompt += `- Primary Color: ${ui.primaryColor}
+`;
+    }
+    if (ui.inspiration) {
+      prompt += `- Inspiration: ${ui.inspiration}
+`;
+    }
+    prompt += `
+`;
+  }
 
   // Technical stack info
   prompt += `## Technical Stack
@@ -54,6 +115,21 @@ export function buildPhaseExecutionPrompt(context: PhaseExecutionContext): strin
   if (context.techStack.needsFileUpload) {
     prompt += `- File Upload: Storage integration needed
 `;
+  }
+
+  // Data models if available
+  if (context.fullConcept?.dataModels && context.fullConcept.dataModels.length > 0) {
+    prompt += `
+## Data Models
+`;
+    for (const model of context.fullConcept.dataModels) {
+      prompt += `### ${model.name}
+`;
+      for (const field of model.fields) {
+        prompt += `- ${field.name}: ${field.type}${field.required ? ' (required)' : ''}
+`;
+      }
+    }
   }
 
   prompt += `
@@ -237,12 +313,15 @@ export class PhaseExecutionManager {
 
   /**
    * Get the execution context for a specific phase
+   * Now includes full concept context for rich detail preservation
    */
   getExecutionContext(phaseNumber: number): PhaseExecutionContext {
     const phase = this.plan.phases.find(p => p.number === phaseNumber);
     if (!phase) {
       throw new Error(`Phase ${phaseNumber} not found in plan`);
     }
+
+    const concept = this.plan.concept;
 
     return {
       phaseNumber,
@@ -258,8 +337,24 @@ export class PhaseExecutionManager {
       cumulativeFiles: [...this.accumulatedFiles],
       appName: this.plan.appName,
       appDescription: this.plan.appDescription,
-      appType: this.plan.concept.technical.needsDatabase ? 'full-stack' : 'frontend',
-      techStack: this.plan.concept.technical,
+      appType: concept.technical.needsDatabase ? 'full-stack' : 'frontend',
+      techStack: concept.technical,
+
+      // ENHANCED: Full concept context for rich detail preservation
+      fullConcept: {
+        purpose: concept.purpose,
+        targetUsers: concept.targetUsers,
+        uiPreferences: concept.uiPreferences,
+        roles: concept.roles,
+        conversationContext: concept.conversationContext,
+        dataModels: concept.technical.dataModels,
+      },
+
+      // Phase-specific concept context
+      phaseConceptContext: phase.conceptContext,
+
+      // Which user roles this phase serves
+      relevantRoles: phase.relevantRoles,
     };
   }
 

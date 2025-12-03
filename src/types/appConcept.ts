@@ -18,6 +18,13 @@ export interface AppConcept {
   // Technical Requirements
   technical: TechnicalRequirements;
 
+  // User Roles & Workflows (preserved from wizard conversation)
+  roles?: UserRole[];
+  workflows?: Workflow[];
+
+  // Full conversation context for rich detail preservation
+  conversationContext?: string;
+
   // Metadata
   createdAt: string;
   updatedAt: string;
@@ -64,6 +71,27 @@ export interface DataField {
   name: string;
   type: 'string' | 'number' | 'boolean' | 'date' | 'array' | 'object';
   required: boolean;
+}
+
+/**
+ * User role captured during wizard conversation
+ * Preserves role-based access and capabilities
+ */
+export interface UserRole {
+  name: string;
+  capabilities: string[];
+  permissions?: string[];
+}
+
+/**
+ * Workflow captured during wizard conversation
+ * Describes multi-step processes in the app
+ */
+export interface Workflow {
+  name: string;
+  description?: string;
+  steps: string[];
+  involvedRoles: string[];
 }
 
 export interface ImplementationPlan {

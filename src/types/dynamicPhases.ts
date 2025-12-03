@@ -5,7 +5,7 @@
  * feature count, and domain grouping. Replaces the fixed 5-phase system.
  */
 
-import type { AppConcept, Feature, TechnicalRequirements } from '@/types/appConcept';
+import type { AppConcept, Feature, TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
 
 // ============================================================================
 // FEATURE CLASSIFICATION
@@ -65,6 +65,19 @@ export interface ComplexFeaturePattern {
 // ============================================================================
 
 /**
+ * Concept context preserved for each phase
+ * Ensures phase execution has access to full app vision
+ */
+export interface PhaseConceptContext {
+  purpose?: string;
+  targetUsers?: string;
+  uiPreferences?: UIPreferences;
+  roles?: UserRole[];
+  conversationContext?: string;
+  dataModels?: Array<{ name: string; fields: Array<{ name: string; type: string; required: boolean }> }>;
+}
+
+/**
  * A dynamically generated phase
  */
 export interface DynamicPhase {
@@ -83,6 +96,12 @@ export interface DynamicPhase {
   generatedCode?: string;
   completedAt?: string;
   errors?: string[];
+
+  // Rich concept context for phase execution (preserves detail)
+  conceptContext?: PhaseConceptContext;
+
+  // Role context: which user roles interact with this phase's features
+  relevantRoles?: string[];
 }
 
 /**
@@ -223,6 +242,22 @@ export interface PhaseExecutionContext {
   appDescription: string;
   appType: string;
   techStack: TechnicalRequirements;
+
+  // ENHANCED: Full concept context for rich detail preservation
+  fullConcept?: {
+    purpose?: string;
+    targetUsers?: string;
+    uiPreferences?: UIPreferences;
+    roles?: UserRole[];
+    conversationContext?: string;
+    dataModels?: Array<{ name: string; fields: Array<{ name: string; type: string; required: boolean }> }>;
+  };
+
+  // Phase-specific concept context
+  phaseConceptContext?: PhaseConceptContext;
+
+  // Which user roles this phase serves
+  relevantRoles?: string[];
 }
 
 /**
