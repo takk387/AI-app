@@ -47,7 +47,18 @@ function createVirtualFsPlugin(files: AppFile[]) {
       // Resolve relative imports to virtual paths
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       build.onResolve({ filter: /^\./ }, (args: any) => {
-        const resolved = new URL(args.path, `file://${args.importer}`).pathname;
+        // Handle case where importer is undefined/empty (e.g., stdin entry)
+        const importer = args.importer || '/entry.tsx';
+        let resolved: string;
+        try {
+          resolved = new URL(args.path, `file://${importer}`).pathname;
+        } catch {
+          // Fallback: simple path resolution
+          const dir = importer.substring(0, importer.lastIndexOf('/')) || '/';
+          resolved = args.path.startsWith('./')
+            ? `${dir}/${args.path.slice(2)}`
+            : `${dir}/${args.path}`;
+        }
         // Try exact match, then with extensions
         for (const ext of ['', '.tsx', '.ts', '.jsx', '.js']) {
           if (fileMap.has(resolved + ext)) {
