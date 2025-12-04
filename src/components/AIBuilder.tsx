@@ -1678,6 +1678,8 @@ export default function AIBuilder() {
                   content: m.content,
                 })),
                 currentState: wizardState,
+                // Include images for vision capabilities
+                referenceImages: uploadedImage ? [uploadedImage] : undefined,
               })
             : JSON.stringify(requestBody);
 
