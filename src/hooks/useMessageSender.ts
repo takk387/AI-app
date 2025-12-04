@@ -7,7 +7,12 @@
  */
 
 import { useCallback } from 'react';
-import type { ChatMessage, GeneratedComponent, StagePlan, PendingDiff } from '@/types/aiBuilderTypes';
+import type {
+  ChatMessage,
+  GeneratedComponent,
+  StagePlan,
+  PendingDiff,
+} from '@/types/aiBuilderTypes';
 
 /**
  * Options for useMessageSender hook

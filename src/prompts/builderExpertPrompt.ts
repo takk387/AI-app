@@ -122,11 +122,13 @@ Remember: Your primary job is to understand what the user ACTUALLY wants and res
 /**
  * Generate context-aware prompt based on current app state
  */
-export function generateBuilderContext(currentAppState: {
-  name?: string;
-  files?: Array<{ path: string; content: string }>;
-  appType?: string;
-} | null): string {
+export function generateBuilderContext(
+  currentAppState: {
+    name?: string;
+    files?: Array<{ path: string; content: string }>;
+    appType?: string;
+  } | null
+): string {
   if (!currentAppState || !currentAppState.files || currentAppState.files.length === 0) {
     return `
 
@@ -135,9 +137,9 @@ No app is currently loaded. If the user asks questions, answer them. If they wan
   }
 
   // Truncate file contents to avoid context overflow
-  const truncatedFiles = currentAppState.files.map(f => ({
+  const truncatedFiles = currentAppState.files.map((f) => ({
     path: f.path,
-    content: f.content.length > 2000 ? f.content.slice(0, 2000) + '\n... (truncated)' : f.content
+    content: f.content.length > 2000 ? f.content.slice(0, 2000) + '\n... (truncated)' : f.content,
   }));
 
   return `
@@ -150,11 +152,15 @@ The user has an app loaded. Reference this when answering questions or making mo
 **App Type:** ${currentAppState.appType || 'Unknown'}
 
 **Files:**
-${truncatedFiles.map(f => `
+${truncatedFiles
+  .map(
+    (f) => `
 --- ${f.path} ---
 ${f.content}
 --- END ${f.path} ---
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 When discussing or modifying this app, reference the actual code above.`;
 }
@@ -163,12 +169,12 @@ When discussing or modifying this app, reference the actual code above.`;
  * Response type indicators for the frontend
  */
 export const RESPONSE_TYPES = {
-  QUESTION: 'question',      // Answer without code
-  BUILD: 'build',            // Generate new app/component
-  MODIFY: 'modify',          // Edit existing code
-  CLARIFY: 'clarify',        // Need more info from user
+  QUESTION: 'question', // Answer without code
+  BUILD: 'build', // Generate new app/component
+  MODIFY: 'modify', // Edit existing code
+  CLARIFY: 'clarify', // Need more info from user
 } as const;
 
-export type ResponseType = typeof RESPONSE_TYPES[keyof typeof RESPONSE_TYPES];
+export type ResponseType = (typeof RESPONSE_TYPES)[keyof typeof RESPONSE_TYPES];
 
 export default BUILDER_EXPERT_PROMPT;

@@ -2,7 +2,14 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { UIPreferences, AppConcept, Feature } from '../types/appConcept';
-import type { HeaderDesign, CardDesign, SidebarDesign, NavigationDesign, EffectsSettings, ColorSettings } from '../types/layoutDesign';
+import type {
+  HeaderDesign,
+  CardDesign,
+  SidebarDesign,
+  NavigationDesign,
+  EffectsSettings,
+  ColorSettings,
+} from '../types/layoutDesign';
 import { generateMockContent } from '../utils/mockContentGenerator';
 
 type ViewMode = 'mobile' | 'tablet' | 'desktop';
@@ -27,10 +34,7 @@ type StatusType = 'success' | 'warning' | 'error' | 'info' | 'default';
 /**
  * Get status color from color settings or use defaults
  */
-function getStatusColor(
-  status: StatusType,
-  colorSettings?: Partial<ColorSettings>
-): string {
+function getStatusColor(status: StatusType, colorSettings?: Partial<ColorSettings>): string {
   switch (status) {
     case 'success':
       return colorSettings?.success || DEFAULT_STATUS_COLORS.success;
@@ -50,16 +54,32 @@ function getStatusColor(
  */
 function mapStatusToType(status: string): StatusType {
   const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes('success') || normalizedStatus.includes('complete') || normalizedStatus.includes('active')) {
+  if (
+    normalizedStatus.includes('success') ||
+    normalizedStatus.includes('complete') ||
+    normalizedStatus.includes('active')
+  ) {
     return 'success';
   }
-  if (normalizedStatus.includes('warning') || normalizedStatus.includes('pending') || normalizedStatus.includes('review')) {
+  if (
+    normalizedStatus.includes('warning') ||
+    normalizedStatus.includes('pending') ||
+    normalizedStatus.includes('review')
+  ) {
     return 'warning';
   }
-  if (normalizedStatus.includes('error') || normalizedStatus.includes('fail') || normalizedStatus.includes('rejected')) {
+  if (
+    normalizedStatus.includes('error') ||
+    normalizedStatus.includes('fail') ||
+    normalizedStatus.includes('rejected')
+  ) {
     return 'error';
   }
-  if (normalizedStatus.includes('info') || normalizedStatus.includes('draft') || normalizedStatus.includes('new')) {
+  if (
+    normalizedStatus.includes('info') ||
+    normalizedStatus.includes('draft') ||
+    normalizedStatus.includes('new')
+  ) {
     return 'info';
   }
   return 'default';
@@ -132,14 +152,7 @@ const BREAKPOINTS: Record<ViewMode, BreakpointInfo> = {
 /**
  * Animation demo configuration - sequence of elements to animate
  */
-const ANIMATION_DEMO_SEQUENCE = [
-  'header',
-  'hero',
-  'stats',
-  'cards',
-  'list',
-  'footer',
-] as const;
+const ANIMATION_DEMO_SEQUENCE = ['header', 'hero', 'stats', 'cards', 'list', 'footer'] as const;
 
 /** Duration for each element highlight in ms */
 const ANIMATION_DEMO_DURATION = 800;
@@ -161,36 +174,36 @@ const stylePresets = {
     cardShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-xl font-medium',
     fontWeight: 'font-medium',
-    spacing: 'gap-4'
+    spacing: 'gap-4',
   },
   minimalist: {
     borderRadius: '0.25rem',
     cardShadow: 'none',
     buttonStyle: 'rounded font-normal',
     fontWeight: 'font-normal',
-    spacing: 'gap-6'
+    spacing: 'gap-6',
   },
   playful: {
     borderRadius: '1.5rem',
     cardShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-full font-bold',
     fontWeight: 'font-bold',
-    spacing: 'gap-3'
+    spacing: 'gap-3',
   },
   professional: {
     borderRadius: '0.375rem',
     cardShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-md font-semibold',
     fontWeight: 'font-semibold',
-    spacing: 'gap-5'
+    spacing: 'gap-5',
   },
   custom: {
     borderRadius: '0.5rem',
     cardShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-lg font-medium',
     fontWeight: 'font-medium',
-    spacing: 'gap-4'
-  }
+    spacing: 'gap-4',
+  },
 } as const;
 
 /** Type for style preset values */
@@ -207,7 +220,7 @@ const colorSchemes = {
     card: 'bg-white',
     border: 'border-gray-200',
     sidebar: 'bg-white',
-    header: 'bg-white'
+    header: 'bg-white',
   },
   dark: {
     bg: 'bg-slate-900',
@@ -216,7 +229,7 @@ const colorSchemes = {
     card: 'bg-slate-800',
     border: 'border-slate-700',
     sidebar: 'bg-slate-800',
-    header: 'bg-slate-800'
+    header: 'bg-slate-800',
   },
   auto: {
     // Auto mode: uses a balanced theme that works in both light/dark contexts
@@ -226,7 +239,7 @@ const colorSchemes = {
     card: 'bg-zinc-800',
     border: 'border-zinc-700',
     sidebar: 'bg-zinc-850',
-    header: 'bg-zinc-800'
+    header: 'bg-zinc-800',
   },
   custom: {
     // Custom mode: neutral base that works well with custom primary colors
@@ -236,8 +249,8 @@ const colorSchemes = {
     card: 'bg-neutral-800',
     border: 'border-neutral-700',
     sidebar: 'bg-neutral-800',
-    header: 'bg-neutral-800'
-  }
+    header: 'bg-neutral-800',
+  },
 } as const;
 
 /** Type for color scheme values */
@@ -250,8 +263,7 @@ const headerStyles = {
   solid: (colors: ColorScheme) => colors.header,
   gradient: (colors: ColorScheme, primary: string) =>
     `bg-gradient-to-r from-[${primary}] to-[${primary}80]`,
-  blur: (colors: ColorScheme) =>
-    `backdrop-blur-md bg-opacity-80 ${colors.header}`,
+  blur: (colors: ColorScheme) => `backdrop-blur-md bg-opacity-80 ${colors.header}`,
   transparent: () => 'bg-transparent',
 } as const;
 
@@ -308,7 +320,10 @@ const animationClasses = {
 /**
  * Get animation class based on animation level
  */
-function getAnimationClass(animation?: EffectsSettings['animations'], type: 'base' | 'hover' | 'transition' = 'base'): string {
+function getAnimationClass(
+  animation?: EffectsSettings['animations'],
+  type: 'base' | 'hover' | 'transition' = 'base'
+): string {
   const level = animation || 'none';
   return animationClasses[level]?.[type] || '';
 }
@@ -438,7 +453,7 @@ function Header({
   headerDesign,
   navDesign,
   effectsSettings,
-  isMobile = false
+  isMobile = false,
 }: HeaderProps) {
   // Animation classes based on effects settings
   const animBase = getAnimationClass(effectsSettings?.animations, 'base');
@@ -521,10 +536,7 @@ function Header({
         {!isMobile && (
           <nav className="flex items-center gap-4">
             {navItems.slice(0, 4).map((item, index) => (
-              <span
-                key={`nav-${item}`}
-                className={getNavItemStyle(index === 0)}
-              >
+              <span key={`nav-${item}`} className={getNavItemStyle(index === 0)}>
                 {item}
               </span>
             ))}
@@ -539,7 +551,12 @@ function Header({
               aria-label="Open menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           )}
@@ -578,7 +595,7 @@ function Sidebar({
   primaryColor,
   onElementSelect,
   selectedElement,
-  sidebarDesign
+  sidebarDesign,
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(sidebarDesign?.defaultCollapsed || false);
 
@@ -605,7 +622,12 @@ function Sidebar({
   // Icon placeholder component
   const IconPlaceholder = () => (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 6h16M4 12h16M4 18h16"
+      />
     </svg>
   );
 
@@ -634,24 +656,25 @@ function Sidebar({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+              />
             </svg>
           </button>
         )}
 
         {/* Menu title */}
-        {!isCollapsed && (
-          <div className={`${style.fontWeight} ${colors.text} mb-4`}>Menu</div>
-        )}
+        {!isCollapsed && <div className={`${style.fontWeight} ${colors.text} mb-4`}>Menu</div>}
 
         {/* Navigation items */}
         {navItems.map((item, index) => (
           <div
             key={`sidebar-${item}`}
             className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-all flex items-center gap-3 ${
-              index === 0
-                ? 'text-white'
-                : `${colors.textMuted} hover:opacity-80`
+              index === 0 ? 'text-white' : `${colors.textMuted} hover:opacity-80`
             }`}
             style={index === 0 ? { backgroundColor: primaryColor || DEFAULT_PRIMARY_COLOR } : {}}
             title={isCollapsed ? item : undefined}
@@ -689,7 +712,7 @@ function Hero({
   primaryColor,
   onElementSelect,
   selectedElement,
-  effectsSettings
+  effectsSettings,
 }: HeroProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -753,7 +776,7 @@ function StatsRow({
   style,
   onElementSelect,
   selectedElement,
-  effectsSettings
+  effectsSettings,
 }: StatsRowProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -777,12 +800,8 @@ function StatsRow({
             key={`stat-${stat.label}`}
             className={`${colors.card} border ${colors.border} p-4 text-center ${radiusClass} ${shadowClass} ${animationBase} ${hoverAnimation}`}
           >
-            <div className={`text-xl ${style.fontWeight} ${colors.text}`}>
-              {stat.value}
-            </div>
-            <div className={`text-xs ${colors.textMuted} mt-1`}>
-              {stat.label}
-            </div>
+            <div className={`text-xl ${style.fontWeight} ${colors.text}`}>{stat.value}</div>
+            <div className={`text-xs ${colors.textMuted} mt-1`}>{stat.label}</div>
           </div>
         ))}
       </div>
@@ -812,7 +831,7 @@ function CardGrid({
   onElementSelect,
   selectedElement,
   cardDesign,
-  effectsSettings
+  effectsSettings,
 }: CardGridProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -861,9 +880,7 @@ function CardGrid({
             className={`${getCardStyleClass()} p-4 ${getHoverEffect()} ${radiusClass} ${animationBase}`}
           >
             <div className="flex items-start justify-between mb-2">
-              <h3 className={`${style.fontWeight} ${colors.text} text-sm`}>
-                {card.title}
-              </h3>
+              <h3 className={`${style.fontWeight} ${colors.text} text-sm`}>{card.title}</h3>
               {cardDesign?.showBadge !== false && (
                 <span
                   className="text-xs px-2 py-0.5 rounded-full text-white"
@@ -876,10 +893,7 @@ function CardGrid({
             <p className={`text-xs ${colors.textMuted}`}>{card.subtitle}</p>
             {cardDesign?.showFooter && (
               <div className={`mt-3 pt-3 border-t ${colors.border} flex justify-end`}>
-                <button
-                  type="button"
-                  className={`text-xs ${colors.textMuted} hover:opacity-80`}
-                >
+                <button type="button" className={`text-xs ${colors.textMuted} hover:opacity-80`}>
                   View Details
                 </button>
               </div>
@@ -911,7 +925,7 @@ function ListItems({
   onElementSelect,
   selectedElement,
   effectsSettings,
-  colorSettings
+  colorSettings,
 }: ListItemsProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -938,9 +952,7 @@ function ListItems({
       onClick={handleSelect}
       className="px-4 py-6"
     >
-      <div
-        className={`${colors.card} border ${colors.border} overflow-hidden ${radiusClass}`}
-      >
+      <div className={`${colors.card} border ${colors.border} overflow-hidden ${radiusClass}`}>
         {items.slice(0, 5).map((item, index, slicedArr) => (
           <div
             key={`list-${item.title}`}
@@ -975,12 +987,7 @@ interface FooterProps {
   selectedElement?: string | null;
 }
 
-function Footer({
-  appName,
-  colors,
-  onElementSelect,
-  selectedElement
-}: FooterProps) {
+function Footer({ appName, colors, onElementSelect, selectedElement }: FooterProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
   };
@@ -1056,7 +1063,7 @@ function DashboardLayout({
   navDesign,
   effectsSettings,
   colorSettings,
-  viewMode = 'desktop'
+  viewMode = 'desktop',
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
   const isTablet = viewMode === 'tablet';
@@ -1149,7 +1156,7 @@ function MultiPageLayout({
   navDesign,
   effectsSettings,
   colorSettings: _colorSettings, // Not used in this layout but part of shared props
-  viewMode = 'desktop'
+  viewMode = 'desktop',
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
 
@@ -1225,7 +1232,7 @@ function SinglePageLayout({
   navDesign,
   effectsSettings,
   colorSettings,
-  viewMode = 'desktop'
+  viewMode = 'desktop',
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
 
@@ -1296,7 +1303,7 @@ export function LayoutPreview({
   onPreferenceChange,
   onElementSelect,
   selectedElement,
-  componentDesign
+  componentDesign,
 }: LayoutPreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('desktop');
   const [isAnimationDemo, setIsAnimationDemo] = useState(false);
@@ -1346,9 +1353,8 @@ export function LayoutPreview({
   // Generate mock content based on concept
   const mockContent = useMemo(() => {
     // Safely handle coreFeatures - parse from key or use empty array
-    const features: Feature[] = concept?.coreFeatures && Array.isArray(concept.coreFeatures)
-      ? concept.coreFeatures
-      : [];
+    const features: Feature[] =
+      concept?.coreFeatures && Array.isArray(concept.coreFeatures) ? concept.coreFeatures : [];
 
     return generateMockContent(
       concept?.name || 'My App',
@@ -1384,7 +1390,7 @@ export function LayoutPreview({
       effectsSettings: componentDesign?.effectsSettings,
       colorSettings: componentDesign?.colorSettings,
       // Responsive
-      viewMode
+      viewMode,
     };
 
     switch (preferences.layout) {
@@ -1409,9 +1415,7 @@ export function LayoutPreview({
             type="button"
             onClick={() => setViewMode('mobile')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              viewMode === 'mobile'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              viewMode === 'mobile' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
             title="Mobile view (375x667)"
           >
@@ -1421,9 +1425,7 @@ export function LayoutPreview({
             type="button"
             onClick={() => setViewMode('tablet')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              viewMode === 'tablet'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              viewMode === 'tablet' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
             title="Tablet view (768x1024)"
           >
@@ -1433,9 +1435,7 @@ export function LayoutPreview({
             type="button"
             onClick={() => setViewMode('desktop')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              viewMode === 'desktop'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              viewMode === 'desktop' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
             title="Desktop view (full width)"
           >
@@ -1451,7 +1451,7 @@ export function LayoutPreview({
               type="button"
               onClick={() =>
                 onPreferenceChange({
-                  colorScheme: preferences.colorScheme === 'dark' ? 'light' : 'dark'
+                  colorScheme: preferences.colorScheme === 'dark' ? 'light' : 'dark',
                 })
               }
               className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white text-xs font-medium transition-all"
@@ -1499,9 +1499,24 @@ export function LayoutPreview({
                 </>
               ) : (
                 <>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   Demo
                 </>
@@ -1525,9 +1540,7 @@ export function LayoutPreview({
             {viewMode === 'desktop' ? 'Full width' : `${BREAKPOINTS[viewMode].numericWidth}px`}
           </span>
         </div>
-        <span className="text-xs text-slate-600 italic">
-          {BREAKPOINTS[viewMode].description}
-        </span>
+        <span className="text-xs text-slate-600 italic">{BREAKPOINTS[viewMode].description}</span>
       </div>
 
       {/* Preview Frame */}
@@ -1536,9 +1549,16 @@ export function LayoutPreview({
         {viewMode !== 'desktop' && (
           <div className="absolute top-2 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded text-xs text-slate-400">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+              />
             </svg>
-            <span>{BREAKPOINTS[viewMode].numericWidth} × {parseInt(BREAKPOINTS[viewMode].height)}px</span>
+            <span>
+              {BREAKPOINTS[viewMode].numericWidth} × {parseInt(BREAKPOINTS[viewMode].height)}px
+            </span>
           </div>
         )}
         <div
@@ -1547,7 +1567,7 @@ export function LayoutPreview({
             width: dimensions.width,
             height: dimensions.height,
             maxWidth: '100%',
-            maxHeight: '100%'
+            maxHeight: '100%',
           }}
         >
           {renderLayout()}
@@ -1575,7 +1595,9 @@ export function LayoutPreview({
               <div className="h-1 bg-purple-900/50 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 transition-all duration-200"
-                  style={{ width: `${((animationDemoIndex + 1) / ANIMATION_DEMO_SEQUENCE.length) * 100}%` }}
+                  style={{
+                    width: `${((animationDemoIndex + 1) / ANIMATION_DEMO_SEQUENCE.length) * 100}%`,
+                  }}
                 />
               </div>
             </div>

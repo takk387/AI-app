@@ -37,157 +37,201 @@ const anthropic = new Anthropic({
 const hexColorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 
 // Typography settings schema
-const TypographySchema = z.object({
-  fontFamily: z.string().optional(),
-  headingWeight: z.enum(['light', 'normal', 'medium', 'semibold', 'bold']).optional(),
-  bodyWeight: z.enum(['light', 'normal', 'medium', 'semibold']).optional(),
-  headingSize: z.enum(['sm', 'base', 'lg', 'xl', '2xl']).optional(),
-  bodySize: z.enum(['xs', 'sm', 'base', 'lg']).optional(),
-  lineHeight: z.enum(['tight', 'normal', 'relaxed']).optional(),
-  letterSpacing: z.enum(['tight', 'normal', 'wide']).optional(),
-}).strict().optional();
+const TypographySchema = z
+  .object({
+    fontFamily: z.string().optional(),
+    headingWeight: z.enum(['light', 'normal', 'medium', 'semibold', 'bold']).optional(),
+    bodyWeight: z.enum(['light', 'normal', 'medium', 'semibold']).optional(),
+    headingSize: z.enum(['sm', 'base', 'lg', 'xl', '2xl']).optional(),
+    bodySize: z.enum(['xs', 'sm', 'base', 'lg']).optional(),
+    lineHeight: z.enum(['tight', 'normal', 'relaxed']).optional(),
+    letterSpacing: z.enum(['tight', 'normal', 'wide']).optional(),
+  })
+  .strict()
+  .optional();
 
 // Color settings schema with hex validation
-const ColorSchema = z.object({
-  primary: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  secondary: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  accent: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  background: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  surface: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  text: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  textMuted: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  border: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  success: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  warning: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  error: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-  info: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
-}).strict().optional();
+const ColorSchema = z
+  .object({
+    primary: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    secondary: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    accent: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    background: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    surface: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    text: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    textMuted: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    border: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    success: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    warning: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    error: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+    info: z.string().regex(hexColorRegex, 'Invalid hex color format').optional(),
+  })
+  .strict()
+  .optional();
 
 // Spacing settings schema
-const SpacingSchema = z.object({
-  density: z.enum(['compact', 'normal', 'relaxed']).optional(),
-  containerWidth: z.enum(['narrow', 'standard', 'wide', 'full']).optional(),
-  sectionPadding: z.enum(['sm', 'md', 'lg', 'xl']).optional(),
-  componentGap: z.enum(['sm', 'md', 'lg', 'xl']).optional(),
-}).strict().optional();
+const SpacingSchema = z
+  .object({
+    density: z.enum(['compact', 'normal', 'relaxed']).optional(),
+    containerWidth: z.enum(['narrow', 'standard', 'wide', 'full']).optional(),
+    sectionPadding: z.enum(['sm', 'md', 'lg', 'xl']).optional(),
+    componentGap: z.enum(['sm', 'md', 'lg', 'xl']).optional(),
+  })
+  .strict()
+  .optional();
 
 // Effects settings schema
-const EffectsSchema = z.object({
-  borderRadius: z.enum(['none', 'sm', 'md', 'lg', 'xl', 'full']).optional(),
-  shadows: z.enum(['none', 'subtle', 'medium', 'strong']).optional(),
-  animations: z.enum(['none', 'subtle', 'smooth', 'playful']).optional(),
-  blur: z.enum(['none', 'subtle', 'medium', 'strong']).optional(),
-  gradients: z.boolean().optional(),
-}).strict().optional();
+const EffectsSchema = z
+  .object({
+    borderRadius: z.enum(['none', 'sm', 'md', 'lg', 'xl', 'full']).optional(),
+    shadows: z.enum(['none', 'subtle', 'medium', 'strong']).optional(),
+    animations: z.enum(['none', 'subtle', 'smooth', 'playful']).optional(),
+    blur: z.enum(['none', 'subtle', 'medium', 'strong']).optional(),
+    gradients: z.boolean().optional(),
+  })
+  .strict()
+  .optional();
 
 // Global styles schema
-const GlobalStylesSchema = z.object({
-  typography: TypographySchema,
-  colors: ColorSchema,
-  spacing: SpacingSchema,
-  effects: EffectsSchema,
-}).strict().optional();
+const GlobalStylesSchema = z
+  .object({
+    typography: TypographySchema,
+    colors: ColorSchema,
+    spacing: SpacingSchema,
+    effects: EffectsSchema,
+  })
+  .strict()
+  .optional();
 
 // Base preferences schema
-const BasePreferencesSchema = z.object({
-  style: z.enum(['modern', 'minimalist', 'playful', 'professional', 'custom']).optional(),
-  colorScheme: z.enum(['light', 'dark', 'auto', 'custom']).optional(),
-  layout: z.enum(['single-page', 'multi-page', 'dashboard', 'custom']).optional(),
-}).strict().optional();
+const BasePreferencesSchema = z
+  .object({
+    style: z.enum(['modern', 'minimalist', 'playful', 'professional', 'custom']).optional(),
+    colorScheme: z.enum(['light', 'dark', 'auto', 'custom']).optional(),
+    layout: z.enum(['single-page', 'multi-page', 'dashboard', 'custom']).optional(),
+  })
+  .strict()
+  .optional();
 
 // Component schemas
-const HeaderDesignSchema = z.object({
-  visible: z.boolean().optional(),
-  height: z.enum(['compact', 'standard', 'tall']).optional(),
-  style: z.enum(['solid', 'gradient', 'blur', 'transparent']).optional(),
-  logoPosition: z.enum(['left', 'center', 'right']).optional(),
-  navPosition: z.enum(['left', 'center', 'right']).optional(),
-  hasSearch: z.boolean().optional(),
-  hasCTA: z.boolean().optional(),
-  ctaText: z.string().optional(),
-  ctaStyle: z.enum(['filled', 'outline', 'ghost']).optional(),
-}).strict().optional();
+const HeaderDesignSchema = z
+  .object({
+    visible: z.boolean().optional(),
+    height: z.enum(['compact', 'standard', 'tall']).optional(),
+    style: z.enum(['solid', 'gradient', 'blur', 'transparent']).optional(),
+    logoPosition: z.enum(['left', 'center', 'right']).optional(),
+    navPosition: z.enum(['left', 'center', 'right']).optional(),
+    hasSearch: z.boolean().optional(),
+    hasCTA: z.boolean().optional(),
+    ctaText: z.string().optional(),
+    ctaStyle: z.enum(['filled', 'outline', 'ghost']).optional(),
+  })
+  .strict()
+  .optional();
 
-const SidebarDesignSchema = z.object({
-  visible: z.boolean().optional(),
-  position: z.enum(['left', 'right']).optional(),
-  width: z.enum(['narrow', 'standard', 'wide']).optional(),
-  collapsible: z.boolean().optional(),
-  defaultCollapsed: z.boolean().optional(),
-  style: z.enum(['standard', 'minimal', 'floating']).optional(),
-  iconOnly: z.boolean().optional(),
-  hasLogo: z.boolean().optional(),
-}).strict().optional();
+const SidebarDesignSchema = z
+  .object({
+    visible: z.boolean().optional(),
+    position: z.enum(['left', 'right']).optional(),
+    width: z.enum(['narrow', 'standard', 'wide']).optional(),
+    collapsible: z.boolean().optional(),
+    defaultCollapsed: z.boolean().optional(),
+    style: z.enum(['standard', 'minimal', 'floating']).optional(),
+    iconOnly: z.boolean().optional(),
+    hasLogo: z.boolean().optional(),
+  })
+  .strict()
+  .optional();
 
-const HeroDesignSchema = z.object({
-  visible: z.boolean().optional(),
-  height: z.enum(['compact', 'standard', 'tall', 'fullscreen']).optional(),
-  layout: z.enum(['centered', 'split', 'offset']).optional(),
-  hasImage: z.boolean().optional(),
-  imagePosition: z.enum(['left', 'right', 'background']).optional(),
-  hasSubtitle: z.boolean().optional(),
-  hasCTA: z.boolean().optional(),
-  ctaCount: z.number().min(1).max(3).optional(),
-}).strict().optional();
+const HeroDesignSchema = z
+  .object({
+    visible: z.boolean().optional(),
+    height: z.enum(['compact', 'standard', 'tall', 'fullscreen']).optional(),
+    layout: z.enum(['centered', 'split', 'offset']).optional(),
+    hasImage: z.boolean().optional(),
+    imagePosition: z.enum(['left', 'right', 'background']).optional(),
+    hasSubtitle: z.boolean().optional(),
+    hasCTA: z.boolean().optional(),
+    ctaCount: z.number().min(1).max(3).optional(),
+  })
+  .strict()
+  .optional();
 
-const CardDesignSchema = z.object({
-  style: z.enum(['minimal', 'bordered', 'elevated', 'filled']).optional(),
-  imagePosition: z.enum(['none', 'top', 'left', 'right', 'background']).optional(),
-  showBadge: z.boolean().optional(),
-  showFooter: z.boolean().optional(),
-  hoverEffect: z.enum(['none', 'lift', 'glow', 'scale', 'border']).optional(),
-  aspectRatio: z.enum(['auto', 'square', 'portrait', 'landscape', 'video']).optional(),
-}).strict().optional();
+const CardDesignSchema = z
+  .object({
+    style: z.enum(['minimal', 'bordered', 'elevated', 'filled']).optional(),
+    imagePosition: z.enum(['none', 'top', 'left', 'right', 'background']).optional(),
+    showBadge: z.boolean().optional(),
+    showFooter: z.boolean().optional(),
+    hoverEffect: z.enum(['none', 'lift', 'glow', 'scale', 'border']).optional(),
+    aspectRatio: z.enum(['auto', 'square', 'portrait', 'landscape', 'video']).optional(),
+  })
+  .strict()
+  .optional();
 
-const FooterDesignSchema = z.object({
-  visible: z.boolean().optional(),
-  style: z.enum(['minimal', 'standard', 'rich']).optional(),
-  columns: z.number().min(1).max(5).optional(),
-  showSocial: z.boolean().optional(),
-  showNewsletter: z.boolean().optional(),
-  showCopyright: z.boolean().optional(),
-  position: z.enum(['static', 'fixed', 'sticky']).optional(),
-}).strict().optional();
+const FooterDesignSchema = z
+  .object({
+    visible: z.boolean().optional(),
+    style: z.enum(['minimal', 'standard', 'rich']).optional(),
+    columns: z.number().min(1).max(5).optional(),
+    showSocial: z.boolean().optional(),
+    showNewsletter: z.boolean().optional(),
+    showCopyright: z.boolean().optional(),
+    position: z.enum(['static', 'fixed', 'sticky']).optional(),
+  })
+  .strict()
+  .optional();
 
 // Components schema
-const ComponentsSchema = z.object({
-  header: HeaderDesignSchema,
-  sidebar: SidebarDesignSchema,
-  hero: HeroDesignSchema,
-  cards: CardDesignSchema,
-  footer: FooterDesignSchema,
-}).strict().optional();
+const ComponentsSchema = z
+  .object({
+    header: HeaderDesignSchema,
+    sidebar: SidebarDesignSchema,
+    hero: HeroDesignSchema,
+    cards: CardDesignSchema,
+    footer: FooterDesignSchema,
+  })
+  .strict()
+  .optional();
 
 // Structure schema
-const StructureSchema = z.object({
-  type: z.enum(['single-page', 'multi-page', 'dashboard', 'landing']).optional(),
-  hasHeader: z.boolean().optional(),
-  hasSidebar: z.boolean().optional(),
-  hasFooter: z.boolean().optional(),
-  sidebarPosition: z.enum(['left', 'right']).optional(),
-  headerType: z.enum(['fixed', 'sticky', 'static']).optional(),
-  contentLayout: z.enum(['centered', 'full-width', 'offset']).optional(),
-  mainContentWidth: z.enum(['narrow', 'standard', 'wide', 'full']).optional(),
-}).strict().optional();
+const StructureSchema = z
+  .object({
+    type: z.enum(['single-page', 'multi-page', 'dashboard', 'landing']).optional(),
+    hasHeader: z.boolean().optional(),
+    hasSidebar: z.boolean().optional(),
+    hasFooter: z.boolean().optional(),
+    sidebarPosition: z.enum(['left', 'right']).optional(),
+    headerType: z.enum(['fixed', 'sticky', 'static']).optional(),
+    contentLayout: z.enum(['centered', 'full-width', 'offset']).optional(),
+    mainContentWidth: z.enum(['narrow', 'standard', 'wide', 'full']).optional(),
+  })
+  .strict()
+  .optional();
 
 // Responsive schema
-const ResponsiveSchema = z.object({
-  mobileBreakpoint: z.number().optional(),
-  tabletBreakpoint: z.number().optional(),
-  mobileLayout: z.enum(['stack', 'drawer', 'bottom-nav']).optional(),
-  mobileHeader: z.enum(['hamburger', 'bottom-tabs', 'minimal']).optional(),
-  hideSidebarOnMobile: z.boolean().optional(),
-  stackCardsOnMobile: z.boolean().optional(),
-}).strict().optional();
+const ResponsiveSchema = z
+  .object({
+    mobileBreakpoint: z.number().optional(),
+    tabletBreakpoint: z.number().optional(),
+    mobileLayout: z.enum(['stack', 'drawer', 'bottom-nav']).optional(),
+    mobileHeader: z.enum(['hamburger', 'bottom-tabs', 'minimal']).optional(),
+    hideSidebarOnMobile: z.boolean().optional(),
+    stackCardsOnMobile: z.boolean().optional(),
+  })
+  .strict()
+  .optional();
 
 // Complete design updates schema
-const DesignUpdatesSchema = z.object({
-  basePreferences: BasePreferencesSchema,
-  globalStyles: GlobalStylesSchema,
-  components: ComponentsSchema,
-  structure: StructureSchema,
-  responsive: ResponsiveSchema,
-}).strict();
+const DesignUpdatesSchema = z
+  .object({
+    basePreferences: BasePreferencesSchema,
+    globalStyles: GlobalStylesSchema,
+    components: ComponentsSchema,
+    structure: StructureSchema,
+    responsive: ResponsiveSchema,
+  })
+  .strict();
 
 // Design change schema
 const DesignChangeSchema = z.object({

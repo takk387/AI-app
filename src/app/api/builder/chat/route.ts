@@ -9,7 +9,12 @@
 
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { BUILDER_EXPERT_PROMPT, generateBuilderContext, RESPONSE_TYPES, type ResponseType } from '@/prompts/builderExpertPrompt';
+import {
+  BUILDER_EXPERT_PROMPT,
+  generateBuilderContext,
+  RESPONSE_TYPES,
+  type ResponseType,
+} from '@/prompts/builderExpertPrompt';
 
 // Railway serverless function config
 export const maxDuration = 60;
@@ -75,7 +80,11 @@ function analyzeResponseType(
     lowerResponse.includes('should i') ||
     lowerResponse.includes('let me know if')
   ) {
-    return { responseType: RESPONSE_TYPES.CLARIFY, shouldTriggerBuild: false, shouldTriggerModify: false };
+    return {
+      responseType: RESPONSE_TYPES.CLARIFY,
+      shouldTriggerBuild: false,
+      shouldTriggerModify: false,
+    };
   }
 
   // Check if response contains code blocks (indicates build/modify)
@@ -86,27 +95,39 @@ function analyzeResponseType(
     /^(build|create|make|generate)\s+(me\s+)?(a|an|the)?\s*/i,
     /^(give me|show me)\s+(a|an)?\s*(new\s+)?(app|component|page)/i,
   ];
-  const isExplicitBuild = buildPatterns.some(p => p.test(userMessage.trim()));
+  const isExplicitBuild = buildPatterns.some((p) => p.test(userMessage.trim()));
 
   // Check for modification indicators
   const modifyPatterns = [
     /^(change|update|fix|modify|edit|add|remove|delete)\s/i,
     /(change|update|fix|modify)\s+(the|this|my)/i,
   ];
-  const isModification = hasCurrentApp && modifyPatterns.some(p => p.test(userMessage.trim()));
+  const isModification = hasCurrentApp && modifyPatterns.some((p) => p.test(userMessage.trim()));
 
   // If response has substantial code and user asked for build
   if (hasCodeBlocks && isExplicitBuild) {
-    return { responseType: RESPONSE_TYPES.BUILD, shouldTriggerBuild: true, shouldTriggerModify: false };
+    return {
+      responseType: RESPONSE_TYPES.BUILD,
+      shouldTriggerBuild: true,
+      shouldTriggerModify: false,
+    };
   }
 
   // If response has code and user asked for modification
   if (hasCodeBlocks && isModification) {
-    return { responseType: RESPONSE_TYPES.MODIFY, shouldTriggerBuild: false, shouldTriggerModify: true };
+    return {
+      responseType: RESPONSE_TYPES.MODIFY,
+      shouldTriggerBuild: false,
+      shouldTriggerModify: true,
+    };
   }
 
   // Default to question (conversational response)
-  return { responseType: RESPONSE_TYPES.QUESTION, shouldTriggerBuild: false, shouldTriggerModify: false };
+  return {
+    responseType: RESPONSE_TYPES.QUESTION,
+    shouldTriggerBuild: false,
+    shouldTriggerModify: false,
+  };
 }
 
 // ============================================================================
@@ -121,10 +142,7 @@ export async function POST(request: Request) {
     const { message, conversationHistory, currentAppState, image, hasImage } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { error: 'Anthropic API key not configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
     }
 
     // Build system prompt with app context

@@ -1561,10 +1561,12 @@ export default function AIBuilder() {
             role: m.role === 'user' ? 'user' : 'assistant',
             content: m.content,
           })),
-          currentAppState: currentComponent ? {
-            name: currentComponent.name,
-            files: [{ path: 'App.tsx', content: currentComponent.code }],
-          } : undefined,
+          currentAppState: currentComponent
+            ? {
+                name: currentComponent.name,
+                files: [{ path: 'App.tsx', content: currentComponent.code }],
+              }
+            : undefined,
           image: uploadedImage || undefined,
           hasImage: !!uploadedImage,
         });
@@ -1621,7 +1623,8 @@ export default function AIBuilder() {
       // Handle chat response (wizard in PLAN mode, builder expert in ACT mode)
       const isBuilderResponse = currentMode === 'ACT' && data?.message && data?.responseType;
       const isWizardResponse = currentMode === 'PLAN' && data?.message;
-      const isChatResponse = isQuestion || data?.type === 'chat' || isWizardResponse || isBuilderResponse;
+      const isChatResponse =
+        isQuestion || data?.type === 'chat' || isWizardResponse || isBuilderResponse;
 
       if (isChatResponse) {
         const chatResponse: ChatMessage = {

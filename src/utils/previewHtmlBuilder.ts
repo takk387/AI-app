@@ -156,7 +156,9 @@ function createVirtualFsPlugin(files: AppFile[], hasDependencies: Record<string,
           }
         }
 
-        console.warn(`[esbuild] Could not resolve: ${args.path} from ${args.importer} -> ${resolved}`);
+        console.warn(
+          `[esbuild] Could not resolve: ${args.path} from ${args.importer} -> ${resolved}`
+        );
         return { path: resolved, namespace: 'virtual' };
       });
 

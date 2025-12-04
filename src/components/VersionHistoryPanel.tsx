@@ -90,21 +90,24 @@ function getTriggerLabel(trigger: 'save' | 'apply' | 'manual'): string {
 /**
  * Compare two designs and return list of differences
  */
-function compareDesigns(
-  current: Partial<LayoutDesign>,
-  previous: Partial<LayoutDesign>
-): string[] {
+function compareDesigns(current: Partial<LayoutDesign>, previous: Partial<LayoutDesign>): string[] {
   const differences: string[] = [];
 
   // Compare base preferences
   if (current.basePreferences?.style !== previous.basePreferences?.style) {
-    differences.push(`Style: ${previous.basePreferences?.style} → ${current.basePreferences?.style}`);
+    differences.push(
+      `Style: ${previous.basePreferences?.style} → ${current.basePreferences?.style}`
+    );
   }
   if (current.basePreferences?.colorScheme !== previous.basePreferences?.colorScheme) {
-    differences.push(`Color Scheme: ${previous.basePreferences?.colorScheme} → ${current.basePreferences?.colorScheme}`);
+    differences.push(
+      `Color Scheme: ${previous.basePreferences?.colorScheme} → ${current.basePreferences?.colorScheme}`
+    );
   }
   if (current.basePreferences?.layout !== previous.basePreferences?.layout) {
-    differences.push(`Layout: ${previous.basePreferences?.layout} → ${current.basePreferences?.layout}`);
+    differences.push(
+      `Layout: ${previous.basePreferences?.layout} → ${current.basePreferences?.layout}`
+    );
   }
 
   // Compare colors
@@ -116,27 +119,43 @@ function compareDesigns(
   }
 
   // Compare typography
-  if (current.globalStyles?.typography?.fontFamily !== previous.globalStyles?.typography?.fontFamily) {
-    differences.push(`Font: ${previous.globalStyles?.typography?.fontFamily} → ${current.globalStyles?.typography?.fontFamily}`);
+  if (
+    current.globalStyles?.typography?.fontFamily !== previous.globalStyles?.typography?.fontFamily
+  ) {
+    differences.push(
+      `Font: ${previous.globalStyles?.typography?.fontFamily} → ${current.globalStyles?.typography?.fontFamily}`
+    );
   }
 
   // Compare effects
-  if (current.globalStyles?.effects?.borderRadius !== previous.globalStyles?.effects?.borderRadius) {
-    differences.push(`Border Radius: ${previous.globalStyles?.effects?.borderRadius} → ${current.globalStyles?.effects?.borderRadius}`);
+  if (
+    current.globalStyles?.effects?.borderRadius !== previous.globalStyles?.effects?.borderRadius
+  ) {
+    differences.push(
+      `Border Radius: ${previous.globalStyles?.effects?.borderRadius} → ${current.globalStyles?.effects?.borderRadius}`
+    );
   }
   if (current.globalStyles?.effects?.shadows !== previous.globalStyles?.effects?.shadows) {
-    differences.push(`Shadows: ${previous.globalStyles?.effects?.shadows} → ${current.globalStyles?.effects?.shadows}`);
+    differences.push(
+      `Shadows: ${previous.globalStyles?.effects?.shadows} → ${current.globalStyles?.effects?.shadows}`
+    );
   }
 
   // Compare structure
   if (current.structure?.hasHeader !== previous.structure?.hasHeader) {
-    differences.push(`Header: ${previous.structure?.hasHeader ? 'visible' : 'hidden'} → ${current.structure?.hasHeader ? 'visible' : 'hidden'}`);
+    differences.push(
+      `Header: ${previous.structure?.hasHeader ? 'visible' : 'hidden'} → ${current.structure?.hasHeader ? 'visible' : 'hidden'}`
+    );
   }
   if (current.structure?.hasSidebar !== previous.structure?.hasSidebar) {
-    differences.push(`Sidebar: ${previous.structure?.hasSidebar ? 'visible' : 'hidden'} → ${current.structure?.hasSidebar ? 'visible' : 'hidden'}`);
+    differences.push(
+      `Sidebar: ${previous.structure?.hasSidebar ? 'visible' : 'hidden'} → ${current.structure?.hasSidebar ? 'visible' : 'hidden'}`
+    );
   }
   if (current.structure?.hasFooter !== previous.structure?.hasFooter) {
-    differences.push(`Footer: ${previous.structure?.hasFooter ? 'visible' : 'hidden'} → ${current.structure?.hasFooter ? 'visible' : 'hidden'}`);
+    differences.push(
+      `Footer: ${previous.structure?.hasFooter ? 'visible' : 'hidden'} → ${current.structure?.hasFooter ? 'visible' : 'hidden'}`
+    );
   }
 
   return differences.length > 0 ? differences : ['No significant changes detected'];
@@ -177,8 +196,18 @@ function VersionItem({
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={getTriggerIcon(version.trigger)} />
+            <svg
+              className="w-4 h-4 text-slate-400 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={getTriggerIcon(version.trigger)}
+              />
             </svg>
             <span className="font-medium text-sm text-white truncate">{version.name}</span>
             {isCurrentVersion && (
@@ -208,7 +237,12 @@ function VersionItem({
               title="Restore this version"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
             </button>
           )}
@@ -222,7 +256,12 @@ function VersionItem({
             title="Delete this version"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </button>
         </div>
@@ -250,7 +289,12 @@ function ComparisonView({
     <div className="border-t border-slate-700 pt-4 mt-4">
       <h4 className="text-xs font-medium text-slate-300 mb-2 flex items-center gap-2">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
         </svg>
         Changes from &ldquo;{selectedVersion.name}&rdquo;
       </h4>
@@ -260,7 +304,12 @@ function ComparisonView({
             key={index}
             className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/50 px-2 py-1.5 rounded"
           >
-            <svg className="w-3 h-3 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-3 h-3 text-blue-400 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
             <span>{diff}</span>
@@ -287,7 +336,7 @@ export function VersionHistoryPanel({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const selectedVersion = useMemo(
-    () => versions.find(v => v.id === selectedVersionId),
+    () => versions.find((v) => v.id === selectedVersionId),
     [versions, selectedVersionId]
   );
 
@@ -311,8 +360,18 @@ export function VersionHistoryPanel({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5 text-blue-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <h3 className="text-sm font-semibold text-white">Version History</h3>
             <span className="px-1.5 py-0.5 text-[10px] font-medium bg-slate-700 text-slate-300 rounded">
@@ -325,7 +384,12 @@ export function VersionHistoryPanel({
             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -334,8 +398,18 @@ export function VersionHistoryPanel({
         <div className="flex-1 overflow-y-auto p-4">
           {versions.length === 0 ? (
             <div className="text-center py-8">
-              <svg className="w-12 h-12 mx-auto text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-12 h-12 mx-auto text-slate-600 mb-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <p className="text-sm text-slate-400">No versions saved yet</p>
               <p className="text-xs text-slate-500 mt-1">Save your design to create a version</p>
@@ -348,9 +422,9 @@ export function VersionHistoryPanel({
                   version={version}
                   isCurrentVersion={version.id === currentVersionId}
                   isSelected={version.id === selectedVersionId}
-                  onSelect={() => setSelectedVersionId(
-                    selectedVersionId === version.id ? null : version.id
-                  )}
+                  onSelect={() =>
+                    setSelectedVersionId(selectedVersionId === version.id ? null : version.id)
+                  }
                   onRestore={() => onRestore(version.id)}
                   onDelete={() => handleDelete(version.id)}
                 />
@@ -360,10 +434,7 @@ export function VersionHistoryPanel({
 
           {/* Comparison View */}
           {selectedVersion && selectedVersion.id !== currentVersionId && (
-            <ComparisonView
-              currentDesign={currentDesign}
-              selectedVersion={selectedVersion}
-            />
+            <ComparisonView currentDesign={currentDesign} selectedVersion={selectedVersion} />
           )}
 
           {/* Delete Confirmation */}

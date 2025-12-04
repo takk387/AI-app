@@ -87,61 +87,76 @@ export function useToast(): UseToastReturn {
   }, []);
 
   // Add a new toast
-  const toast = useCallback((options: ToastOptions): string => {
-    const id = generateToastId();
-    const duration = options.duration ?? DEFAULT_DURATION;
+  const toast = useCallback(
+    (options: ToastOptions): string => {
+      const id = generateToastId();
+      const duration = options.duration ?? DEFAULT_DURATION;
 
-    const newToast: Toast = {
-      id,
-      type: options.type || 'info',
-      message: options.message,
-      duration,
-    };
+      const newToast: Toast = {
+        id,
+        type: options.type || 'info',
+        message: options.message,
+        duration,
+      };
 
-    setToasts((prev) => {
-      // Limit number of toasts
-      const updated = [...prev, newToast];
-      if (updated.length > MAX_TOASTS) {
-        // Remove oldest toast
-        const removed = updated.shift();
-        if (removed) {
-          const timeout = timeoutRefs.current.get(removed.id);
-          if (timeout) {
-            clearTimeout(timeout);
-            timeoutRefs.current.delete(removed.id);
+      setToasts((prev) => {
+        // Limit number of toasts
+        const updated = [...prev, newToast];
+        if (updated.length > MAX_TOASTS) {
+          // Remove oldest toast
+          const removed = updated.shift();
+          if (removed) {
+            const timeout = timeoutRefs.current.get(removed.id);
+            if (timeout) {
+              clearTimeout(timeout);
+              timeoutRefs.current.delete(removed.id);
+            }
           }
         }
+        return updated;
+      });
+
+      // Auto-dismiss after duration
+      if (duration > 0) {
+        const timeout = setTimeout(() => {
+          dismiss(id);
+        }, duration);
+        timeoutRefs.current.set(id, timeout);
       }
-      return updated;
-    });
 
-    // Auto-dismiss after duration
-    if (duration > 0) {
-      const timeout = setTimeout(() => {
-        dismiss(id);
-      }, duration);
-      timeoutRefs.current.set(id, timeout);
-    }
-
-    return id;
-  }, [dismiss]);
+      return id;
+    },
+    [dismiss]
+  );
 
   // Convenience methods
-  const success = useCallback((message: string, duration?: number): string => {
-    return toast({ type: 'success', message, duration });
-  }, [toast]);
+  const success = useCallback(
+    (message: string, duration?: number): string => {
+      return toast({ type: 'success', message, duration });
+    },
+    [toast]
+  );
 
-  const error = useCallback((message: string, duration?: number): string => {
-    return toast({ type: 'error', message, duration });
-  }, [toast]);
+  const error = useCallback(
+    (message: string, duration?: number): string => {
+      return toast({ type: 'error', message, duration });
+    },
+    [toast]
+  );
 
-  const info = useCallback((message: string, duration?: number): string => {
-    return toast({ type: 'info', message, duration });
-  }, [toast]);
+  const info = useCallback(
+    (message: string, duration?: number): string => {
+      return toast({ type: 'info', message, duration });
+    },
+    [toast]
+  );
 
-  const warning = useCallback((message: string, duration?: number): string => {
-    return toast({ type: 'warning', message, duration });
-  }, [toast]);
+  const warning = useCallback(
+    (message: string, duration?: number): string => {
+      return toast({ type: 'warning', message, duration });
+    },
+    [toast]
+  );
 
   return {
     toasts,

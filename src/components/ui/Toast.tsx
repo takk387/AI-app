@@ -21,7 +21,13 @@ interface ToastProps {
 interface ToastContainerProps {
   toasts: ToastType[];
   onDismiss: (id: string) => void;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  position?:
+    | 'top-right'
+    | 'top-left'
+    | 'bottom-right'
+    | 'bottom-left'
+    | 'top-center'
+    | 'bottom-center';
 }
 
 // ============================================================================
@@ -47,7 +53,12 @@ function ErrorIcon() {
 function InfoIcon() {
   return (
     <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   );
 }
@@ -55,7 +66,12 @@ function InfoIcon() {
 function WarningIcon() {
   return (
     <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+      />
     </svg>
   );
 }
@@ -152,15 +168,11 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       role="alert"
     >
       {/* Icon */}
-      <div className="flex-shrink-0 mt-0.5">
-        {getIcon(toast.type)}
-      </div>
+      <div className="flex-shrink-0 mt-0.5">{getIcon(toast.type)}</div>
 
       {/* Message */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-white leading-relaxed">
-          {toast.message}
-        </p>
+        <p className="text-sm text-white leading-relaxed">{toast.message}</p>
       </div>
 
       {/* Close button */}
@@ -179,11 +191,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
 // TOAST CONTAINER
 // ============================================================================
 
-export function ToastContainer({
-  toasts,
-  onDismiss,
-  position = 'top-right',
-}: ToastContainerProps) {
+export function ToastContainer({ toasts, onDismiss, position = 'top-right' }: ToastContainerProps) {
   if (toasts.length === 0) return null;
 
   return (

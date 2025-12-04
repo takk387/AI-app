@@ -111,11 +111,7 @@ function Section({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isOpen && (
-        <div className="px-3 pb-3 space-y-3">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="px-3 pb-3 space-y-3">{children}</div>}
     </div>
   );
 }
@@ -144,9 +140,7 @@ function SegmentedControl<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             className={`flex-1 px-2 py-1 text-xs rounded transition-all ${
-              value === option.value
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              value === option.value ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
             {option.label}
@@ -274,10 +268,7 @@ export function DesignControlPanel({
     });
   };
 
-  const handleVisibilityChange = <K extends keyof ComponentVisibility>(
-    key: K,
-    value: boolean
-  ) => {
+  const handleVisibilityChange = <K extends keyof ComponentVisibility>(key: K, value: boolean) => {
     onVisibilityChange?.({
       ...componentVisibility,
       [key]: value,
@@ -296,7 +287,9 @@ export function DesignControlPanel({
   };
 
   return (
-    <div className={`bg-slate-800/95 rounded-lg border border-slate-700 overflow-hidden ${className}`}>
+    <div
+      className={`bg-slate-800/95 rounded-lg border border-slate-700 overflow-hidden ${className}`}
+    >
       {/* Header */}
       <button
         type="button"
@@ -304,8 +297,18 @@ export function DesignControlPanel({
         className="w-full px-3 py-2 flex items-center justify-between bg-slate-700/50"
       >
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          <svg
+            className="w-4 h-4 text-blue-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+            />
           </svg>
           <span className="text-xs font-medium text-slate-300">Design Controls</span>
         </div>

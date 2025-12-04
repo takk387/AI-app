@@ -170,9 +170,9 @@ export interface ResponsiveSettings {
 export interface ReferenceMedia {
   id: string;
   type: 'image' | 'video' | 'url';
-  source: string;  // base64 for images, URL for videos/links
+  source: string; // base64 for images, URL for videos/links
   name: string;
-  analysis?: string;  // AI's interpretation of the reference
+  analysis?: string; // AI's interpretation of the reference
   addedAt: string;
 }
 
@@ -197,8 +197,8 @@ export interface MessageError {
   type: MessageErrorType;
   message: string;
   canRetry: boolean;
-  retryAfter?: number;  // Milliseconds until retry is allowed
-  originalMessage?: string;  // Original user message for retry
+  retryAfter?: number; // Milliseconds until retry is allowed
+  originalMessage?: string; // Original user message for retry
 }
 
 export interface LayoutMessage {
@@ -206,11 +206,11 @@ export interface LayoutMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  attachments?: string[];  // Base64 images
-  selectedElement?: string;  // Element that was selected when message was sent
-  previewSnapshot?: string;  // Screenshot of preview when message was sent
-  error?: MessageError;  // Error information for retry functionality
-  isRetrying?: boolean;  // Indicates message is being retried
+  attachments?: string[]; // Base64 images
+  selectedElement?: string; // Element that was selected when message was sent
+  previewSnapshot?: string; // Screenshot of preview when message was sent
+  error?: MessageError; // Error information for retry functionality
+  isRetrying?: boolean; // Indicates message is being retried
 }
 
 // ============================================================================
