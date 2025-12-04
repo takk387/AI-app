@@ -13,13 +13,25 @@ Object.defineProperty(process.env, 'NODE_ENV', {
 // Mock Next.js Response
 global.Response = class Response {
   constructor(public body: any, public init?: ResponseInit) {}
-  
+
+  // Instance method - called on response instances
   json() {
     return Promise.resolve(
       typeof this.body === 'string' ? JSON.parse(this.body) : this.body
     );
   }
-  
+
+  // Static method - called by NextResponse.json() internally
+  static json(data: any, init?: ResponseInit) {
+    return new Response(JSON.stringify(data), {
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        ...(init?.headers || {}),
+      },
+    });
+  }
+
   get status() {
     return this.init?.status || 200;
   }
