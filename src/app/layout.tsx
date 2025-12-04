@@ -27,8 +27,9 @@ export default function RootLayout({
           <SettingsProvider>
             <AuthProvider>
               <ErrorBoundary>
+                {/* DevTools outside AuthGuard so it always renders in dev mode */}
+                <DevTools />
                 <AuthGuard>
-                  <DevTools />
                   <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900 transition-colors duration-300">
                     {children}
                   </div>

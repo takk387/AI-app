@@ -27,6 +27,14 @@ export const isProduction = process.env.NODE_ENV === 'production';
 export const isServer = typeof window === 'undefined';
 
 /**
+ * Show dev tools (Inspector, Debug Panel, etc.)
+ * Works in development OR when NEXT_PUBLIC_DEV_TOOLS=true (for Railway/production debugging)
+ */
+export const SHOW_DEV_TOOLS =
+  process.env.NEXT_PUBLIC_DEV_TOOLS === 'true' ||
+  process.env.NODE_ENV === 'development';
+
+/**
  * Debug flags - all require development mode to be active
  *
  * IMPORTANT: These flags ONLY work in development mode.

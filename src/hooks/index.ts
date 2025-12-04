@@ -63,3 +63,7 @@ export type { UseReviewReturn } from './useReview';
 export { useSettings } from './useSettings';
 
 export { useTheme } from './useTheme';
+
+// Element Inspector hook (dev tool)
+export { useElementInspector } from './useElementInspector';
+export type { UseElementInspectorOptions, UseElementInspectorReturn } from './useElementInspector';

@@ -14,15 +14,17 @@
 import React from 'react';
 import { MockAIBanner } from './MockAIBanner';
 import { DebugPanel } from './DebugPanel';
+import { ElementInspector } from './ElementInspector';
 import { useStateInspector } from '@/hooks/useStateInspector';
-import { DEBUG } from '@/utils/debug';
+import { SHOW_DEV_TOOLS } from '@/utils/debug';
 
 export function DevTools(): React.ReactElement | null {
   // Initialize state inspector (exposes state to window.__APP_STATE__)
   useStateInspector();
 
-  // Don't render anything in production
-  if (process.env.NODE_ENV !== 'development') {
+  // Don't render if dev tools are disabled
+  // Enable via: NEXT_PUBLIC_DEV_TOOLS=true (or automatically in development mode)
+  if (!SHOW_DEV_TOOLS) {
     return null;
   }
 
@@ -33,6 +35,9 @@ export function DevTools(): React.ReactElement | null {
 
       {/* Debug Panel - floating overlay with state/API/token info */}
       <DebugPanel />
+
+      {/* Element Inspector - visual element selection and Claude prompt generation */}
+      <ElementInspector />
     </>
   );
 }
