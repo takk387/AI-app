@@ -117,7 +117,11 @@ export function InspectorPanel({
 
         {/* Generate Button */}
         <button
-          onClick={onGeneratePrompt}
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('[InspectorPanel] Generate button clicked!');
+            onGeneratePrompt();
+          }}
           disabled={selectedElements.length === 0}
           className={`
             w-full py-3 rounded-lg font-medium transition-all

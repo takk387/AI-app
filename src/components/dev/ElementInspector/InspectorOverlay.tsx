@@ -65,6 +65,18 @@ export function InspectorOverlay({
 
   /** Handle click to select element */
   const handleClick = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+
+    console.log('[Overlay] Click detected on:', target?.tagName, target?.className?.slice?.(0, 50));
+    console.log('[Overlay] shouldIgnore:', target && shouldIgnoreElement(target));
+
+    // Don't intercept clicks on inspector UI elements
+    if (target && shouldIgnoreElement(target)) {
+      console.log('[Overlay] Letting click through to UI');
+      return; // Let the click through to the UI
+    }
+
+    console.log('[Overlay] Blocking click for element selection');
     e.preventDefault();
     e.stopPropagation();
 
