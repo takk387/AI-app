@@ -9,3 +9,10 @@ export type { ResizableHandleProps, ResizableHandleContextValue } from './Resiza
 
 export { ResizablePanelGroup } from './ResizablePanelGroup';
 export type { ResizablePanelGroupProps } from './ResizablePanelGroup';
+
+// Icons
+export * from './Icons';
+
+// Header Components
+export { HeaderDropdown } from './HeaderDropdown';
+export type { HeaderDropdownProps, DropdownItem } from './HeaderDropdown';

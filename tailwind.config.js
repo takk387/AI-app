@@ -9,11 +9,30 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'sans': ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        'sans': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
       colors: {
         'primary': '#3B82F6',
         'secondary': '#6366F1',
+        // Linear/Vercel-inspired color palette
+        linear: {
+          bg: '#0a0a0a',
+          'bg-elevated': '#141414',
+          'bg-hover': '#1a1a1a',
+          'bg-subtle': '#18181b',
+          border: '#262626',
+          'border-subtle': '#1f1f1f',
+          text: '#fafafa',
+          'text-secondary': '#a1a1aa',
+          'text-muted': '#71717a',
+          accent: '#3b82f6',
+          'accent-hover': '#2563eb',
+        },
+        zinc: {
+          750: '#323238',
+          850: '#1f1f23',
+          925: '#131316',
+        },
         // Extended grays with more steps
         gray: {
           850: '#1f2937',

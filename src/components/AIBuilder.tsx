@@ -25,7 +25,7 @@ import AppConceptWizard from './AppConceptWizard';
 import NaturalConversationWizard from './NaturalConversationWizard';
 import LayoutBuilderWizard from './LayoutBuilderWizard';
 import SettingsPage from './SettingsPage';
-import ThemeToggle from './ThemeToggle';
+import BuilderHeader from './BuilderHeader';
 
 // UI components
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui';
@@ -1348,7 +1348,7 @@ const [wizardState, setWizardState] = useState<{
     const isModification = currentComponent !== null;
 
     // Determine if this should use streaming (full-app generation only)
-    let useStreaming = currentMode === 'ACT' && !isQuestion && !isModification;
+    const useStreaming = currentMode === 'ACT' && !isQuestion && !isModification;
 
     // AI Scope Detection: Analyze if this request needs phased execution
     if (currentMode === 'ACT' && !isQuestion && !isModification && !dynamicPhasePlan) {
@@ -1656,96 +1656,64 @@ const [wizardState, setWizardState] = useState<{
     <ToastProvider>
       <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         {/* Header */}
-        <header className="border-b border-white/10 glass-panel sticky top-0 z-50 shadow-2xl shadow-black/40">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
-          <div className="max-w-7xl mx-auto px-6 py-4 relative">
-            <div className="flex items-center justify-between">
-              {/* Logo */}
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <span className="text-2xl">✨</span>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold gradient-text">AI App Builder</h1>
-                  <p className="text-xs text-slate-400">Build complete apps through conversation</p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowConceptWizard(true)}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all text-sm text-white font-medium flex items-center gap-2"
-                >
-                  <span>🚀</span>
-                  <span className="hidden sm:inline">Plan App</span>
-                </button>
-                <button
-                  onClick={() => setShowConversationalWizard(true)}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all text-sm text-white font-medium flex items-center gap-2"
-                >
-                  <span>🧙‍♂️</span>
-                  <span className="hidden sm:inline">Wizard</span>
-                </button>
-                <button
-                  onClick={() => setShowLayoutBuilder(true)}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all text-sm text-white font-medium flex items-center gap-2"
-                >
-                  <span>🎨</span>
-                  <span className="hidden sm:inline">Layout</span>
-                </button>
-                {appConcept && (
-                  <button
-                    onClick={handleStartAdvancedPhasedBuild}
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-amber-600 text-white text-sm font-medium flex items-center gap-2"
-                  >
-                    <span>🏗️</span>
-                    <span className="hidden sm:inline">Phased Build</span>
-                  </button>
-                )}
-                {currentComponent?.versions && currentComponent.versions.length > 0 && (
-                  <button
-                    onClick={() => setShowVersionHistory(!showVersionHistory)}
-                    className="px-4 py-2 rounded-lg glass-panel border border-white/20 text-sm text-slate-300 hover:text-white flex items-center gap-2"
-                  >
-                    <span>🕒</span>
-                    <span className="hidden sm:inline">History</span>
-                    <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {currentComponent.versions.length}
-                    </span>
-                  </button>
-                )}
-                <button
-                  onClick={handleNewApp}
-                  className="px-4 py-2 rounded-lg glass-panel border border-white/20 text-sm text-slate-300 hover:text-white flex items-center gap-2"
-                >
-                  <span>✨</span>
-                  <span className="hidden sm:inline">New App</span>
-                </button>
-                <button
-                  onClick={() => setShowLibrary(!showLibrary)}
-                  className="px-4 py-2 rounded-lg glass-panel border border-white/20 text-sm text-slate-300 hover:text-white flex items-center gap-2"
-                >
-                  <span>📂</span>
-                  <span className="hidden sm:inline">My Apps</span>
-                  {components.length > 0 && (
-                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {components.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setShowSettings(true)}
-                  className="px-4 py-2 rounded-lg glass-panel border border-white/20 text-sm text-slate-300 hover:text-white flex items-center gap-2"
-                >
-                  <span>⚙️</span>
-                  <span className="hidden sm:inline">Settings</span>
-                </button>
-                <ThemeToggle size="md" showDropdown={true} />
-              </div>
-            </div>
-          </div>
-        </header>
+        <BuilderHeader
+          projectName={currentComponent?.name || 'Untitled App'}
+          onProjectNameChange={(name) => {
+            if (currentComponent) {
+              // Update component name in store
+              const updated = { ...currentComponent, name };
+              setCurrentComponent(updated);
+            }
+          }}
+          projectStatus={isGenerating ? 'generating' : (currentComponent ? 'saved' : 'draft')}
+          hasUnsavedChanges={false}
+          currentView={activeTab as 'chat' | 'code' | 'preview' | 'split'}
+          onViewChange={(view) => {
+            // Map 'split' to 'preview' for the store since ActiveTab doesn't support 'split'
+            const mappedView = view === 'split' ? 'preview' : view;
+            setActiveTab(mappedView as 'chat' | 'preview' | 'code');
+          }}
+          onNewProject={handleNewApp}
+          onSave={() => {
+            if (currentComponent) {
+              saveComponentToDb(currentComponent);
+            }
+          }}
+          onExport={(format) => {
+            if (currentComponent) {
+              switch (format) {
+                case 'zip':
+                  handleExportApp(currentComponent);
+                  break;
+                case 'clipboard':
+                  navigator.clipboard.writeText(currentComponent.code);
+                  break;
+                case 'html':
+                case 'react':
+                  // For HTML/React, use the ZIP export which packages everything
+                  handleExportApp(currentComponent);
+                  break;
+              }
+            }
+          }}
+          onOpenSettings={() => setShowSettings(true)}
+          onHelp={() => {/* Could open help modal */}}
+          onPlanApp={() => setShowConceptWizard(true)}
+          onWizard={() => setShowConversationalWizard(true)}
+          onLayoutBuilder={() => setShowLayoutBuilder(true)}
+          onPhasedBuild={handleStartAdvancedPhasedBuild}
+          hasAppConcept={!!appConcept}
+          isPhasedMode={showAdvancedPhasedBuild}
+          showPhasedBuildPanel={showAdvancedPhasedBuild}
+          onTogglePhasedPanel={() => setShowAdvancedPhasedBuild(!showAdvancedPhasedBuild)}
+          versionCount={currentComponent?.versions?.length || 0}
+          onShowHistory={() => setShowVersionHistory(!showVersionHistory)}
+          appCount={components.length}
+          onShowLibrary={() => setShowLibrary(!showLibrary)}
+          currentMode={currentMode}
+          onModeChange={setCurrentMode}
+          onNewApp={handleNewApp}
+        />
 
         {/* Main Content */}
         <div className="max-w-[1800px] mx-auto px-4 py-4 h-[calc(100vh-80px)]">
