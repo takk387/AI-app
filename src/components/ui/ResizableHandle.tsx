@@ -57,25 +57,18 @@ export function ResizableHandle({
   const handleRef = useRef<HTMLDivElement>(null);
   const lastClickTimeRef = useRef<number>(0);
 
-  if (!context) {
-    console.warn('ResizableHandle must be used within a ResizablePanelGroup');
-    return null;
-  }
-
-  const {
-    direction,
-    isDragging,
-    isActive,
-    startResize,
-    onDoubleClick: contextOnDoubleClick,
-  } = context;
+  // Extract context values (with defaults for when context is null)
+  const direction = context?.direction ?? 'horizontal';
+  const isDragging = context?.isDragging ?? false;
+  const isActive = context?.isActive ?? false;
+  const startResize = context?.startResize;
+  const contextOnDoubleClick = context?.onDoubleClick;
   const isHorizontal = direction === 'horizontal';
 
-  // Handle mouse down
+  // Handle mouse down - hooks must be called unconditionally
   const handleMouseDown = useCallback(
     (event: React.MouseEvent) => {
-      console.log('[ResizableHandle] handleMouseDown called, disabled:', disabled);
-      if (disabled) return;
+      if (disabled || !startResize) return;
 
       // Check for double-click
       const now = Date.now();
@@ -90,7 +83,6 @@ export function ResizableHandle({
       }
       lastClickTimeRef.current = now;
 
-      console.log('[ResizableHandle] calling startResize');
       startResize(event);
     },
     [disabled, startResize, onDoubleClickProp, contextOnDoubleClick]
@@ -99,7 +91,7 @@ export function ResizableHandle({
   // Handle touch start
   const handleTouchStart = useCallback(
     (event: React.TouchEvent) => {
-      if (disabled) return;
+      if (disabled || !startResize) return;
       startResize(event);
     },
     [disabled, startResize]
@@ -108,7 +100,7 @@ export function ResizableHandle({
   // Handle keyboard events for accessibility
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (disabled) return;
+      if (disabled || !startResize) return;
 
       const relevantKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
       if (relevantKeys.includes(event.key)) {
@@ -117,6 +109,11 @@ export function ResizableHandle({
     },
     [disabled, startResize]
   );
+
+  // Early return after all hooks are called
+  if (!context) {
+    return null;
+  }
 
   // Calculate hit area sizes
   const hitAreaSize = isDragging ? hitAreaMargins.coarse : hitAreaMargins.fine;
