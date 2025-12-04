@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
+import { isMockAIEnabled, mockComponentResponse } from '@/utils/mockAI';
+import { logAPI, logTokens } from '@/utils/debug';
 
 // Vercel serverless function config
 export const maxDuration = 60;
@@ -13,11 +15,25 @@ const anthropic = new Anthropic({
 
 export async function POST(request: Request) {
   // ============================================================================
+  // MOCK AI MODE - Return instant mock response if enabled
+  // ============================================================================
+  if (isMockAIEnabled()) {
+    logAPI('POST', '/api/ai-builder', { mock: true });
+    return NextResponse.json({
+      code: mockComponentResponse.code,
+      explanation: mockComponentResponse.explanation,
+      name: 'Mock Component',
+      _mock: true,
+      _mockWarning: 'Mock AI Mode is enabled. Set NEXT_PUBLIC_MOCK_AI=false for real AI.',
+    });
+  }
+
+  // ============================================================================
   // ANALYTICS - Phase 4: Track request metrics
   // ============================================================================
   const requestId = generateRequestId();
   const perfTracker = new PerformanceTracker();
-  
+
   try {
     const { prompt, conversationHistory } = await request.json();
     perfTracker.checkpoint('request_parsed');
@@ -180,7 +196,6 @@ CRITICAL RULES:
           const finalMessage = await stream.finalMessage();
           inputTokens = finalMessage.usage.input_tokens || 0;
           outputTokens = finalMessage.usage.output_tokens || 0;
-          // @ts-ignore - cache_read_input_tokens might not be in types yet
           cachedTokens = finalMessage.usage.cache_read_input_tokens || 0;
         }
       }

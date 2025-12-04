@@ -4,13 +4,26 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mock": "set NEXT_PUBLIC_MOCK_AI=true && next dev",
+    "dev:debug": "set NEXT_PUBLIC_DEBUG_PANEL=true && set NEXT_PUBLIC_DEBUG_STATE=true && set NEXT_PUBLIC_DEBUG_API=true && next dev",
     "build": "next build",
     "start": "next start",
     "test": "npx tsx tests/code-validator.test.ts && npx tsx tests/retry-logic.test.ts",
     "test:validator": "npx tsx tests/code-validator.test.ts",
     "test:retry": "npx tsx tests/retry-logic.test.ts",
     "test:integration": "jest tests/integration-modify-route.test.ts",
-    "test:all": "npm test && npm run test:integration"
+    "test:hooks": "jest src/hooks/__tests__",
+    "test:services": "jest src/services/__tests__",
+    "test:unit": "jest src/**/__tests__",
+    "test:all": "npm test && npm run test:unit && npm run test:integration",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json}\"",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",
@@ -33,16 +46,34 @@
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.8.10",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
     "autoprefixer": "^10.4.16",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.0.0",
+    "husky": "^9.0.0",
     "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "lint-staged": "^15.0.0",
     "postcss": "^8.4.31",
+    "prettier": "^3.7.4",
     "tailwindcss": "^3.3.5",
     "ts-jest": "^29.4.5",
     "tsx": "^4.20.6",
     "typescript": "^5.2.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "jest --bail --findRelatedTests --passWithNoTests"
+    ],
+    "*.{json,md}": [
+      "prettier --write --ignore-unknown"
+    ]
   }
 }

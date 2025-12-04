@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { isMockAIEnabled, mockChatResponse } from '@/utils/mockAI';
+import { logAPI } from '@/utils/debug';
 
 // Vercel serverless function config
 export const maxDuration = 30;
@@ -10,6 +12,16 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(request: Request) {
+  // Mock AI Mode check - return instant mock response if enabled
+  if (isMockAIEnabled()) {
+    logAPI('POST', '/api/chat', { mock: true });
+    return NextResponse.json({
+      message: mockChatResponse.message,
+      tokensUsed: mockChatResponse.tokensUsed,
+      _mock: true,
+    });
+  }
+
   try {
     const { prompt, conversationHistory, includeCodeInResponse = false, mode = 'ACT', currentAppState, image, hasImage } = await request.json();
 

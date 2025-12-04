@@ -149,7 +149,7 @@ export function PreviewPanel({
               Start Building Your App
             </h3>
             <p className="text-slate-400 max-w-md">
-              Describe what you want to build in the chat, and I'll create a complete app with live preview for you.
+              Describe what you want to build in the chat, and I&apos;ll create a complete app with live preview for you.
             </p>
           </div>
         ) : (

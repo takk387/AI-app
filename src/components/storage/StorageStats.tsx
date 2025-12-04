@@ -109,7 +109,7 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
                 Storage Almost Full!
               </p>
               <p className="text-red-200/70 text-xs">
-                You're using {usagePercentage.toFixed(1)}% of your storage. Delete some files or upgrade to continue uploading.
+                You&apos;re using {usagePercentage.toFixed(1)}% of your storage. Delete some files or upgrade to continue uploading.
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
                 Storage Running Low
               </p>
               <p className="text-yellow-200/70 text-xs">
-                You've used {usagePercentage.toFixed(1)}% of your storage quota.
+                You&apos;ve used {usagePercentage.toFixed(1)}% of your storage quota.
               </p>
             </div>
           </div>

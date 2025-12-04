@@ -97,7 +97,6 @@ export async function generateModifications(
         const finalMessage = await stream.finalMessage();
         inputTokens = finalMessage.usage.input_tokens || 0;
         outputTokens = finalMessage.usage.output_tokens || 0;
-        // @ts-ignore - cache_read_input_tokens might not be in types yet
         cachedTokens = finalMessage.usage.cache_read_input_tokens || 0;
       }
     }

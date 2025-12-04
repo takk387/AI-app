@@ -3,17 +3,19 @@ import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildFullAppPrompt } from '@/prompts/builder';
 import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
-import { 
-  generateRetryStrategy, 
-  type RetryContext, 
-  DEFAULT_RETRY_CONFIG 
+import {
+  generateRetryStrategy,
+  type RetryContext,
+  DEFAULT_RETRY_CONFIG
 } from '@/utils/retryLogic';
-import { 
-  generateFullApp, 
-  type GenerationContext, 
+import {
+  generateFullApp,
+  type GenerationContext,
   type GenerationError,
   type PhaseContext
 } from './generation-logic';
+import { isMockAIEnabled, mockFullAppResponse } from '@/utils/mockAI';
+import { logAPI } from '@/utils/debug';
 
 // Vercel serverless function config
 export const maxDuration = 60; // 60 seconds max
@@ -25,11 +27,25 @@ const anthropic = new Anthropic({
 
 export async function POST(request: Request) {
   // ============================================================================
+  // MOCK AI MODE - Return instant mock response if enabled
+  // ============================================================================
+  if (isMockAIEnabled()) {
+    logAPI('POST', '/api/ai-builder/full-app', { mock: true });
+    return NextResponse.json({
+      files: mockFullAppResponse.files,
+      explanation: mockFullAppResponse.explanation,
+      tokensUsed: mockFullAppResponse.tokensUsed,
+      _mock: true,
+      _mockWarning: 'Mock AI Mode is enabled. Set NEXT_PUBLIC_MOCK_AI=false for real AI.',
+    });
+  }
+
+  // ============================================================================
   // ANALYTICS - Phase 4: Track request metrics
   // ============================================================================
   const requestId = generateRequestId();
   const perfTracker = new PerformanceTracker();
-  
+
   try {
     const { 
       prompt, 
