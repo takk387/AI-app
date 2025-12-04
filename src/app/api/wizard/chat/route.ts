@@ -7,10 +7,10 @@
 
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { WIZARD_SYSTEM_PROMPT, generateContinuationPrompt } from '@/prompts/wizardSystemPrompt';
-import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+import { WIZARD_SYSTEM_PROMPT } from '@/prompts/wizardSystemPrompt';
+import type { Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 
-// Vercel serverless function config
+// Railway serverless function config
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
@@ -309,16 +309,26 @@ The user has confirmed their concept and wants to generate phases. Acknowledge t
 Ask any final technical questions if needed (platform, technology preferences) before generating phases.`;
     }
 
-    // Call Claude API
+    // Call Claude API with extended thinking for deeper reasoning
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 4096,
-      temperature: 0.7,
-      system: systemPrompt,
+      max_tokens: 16000, // Increased to accommodate thinking budget + response
+      temperature: 1, // Required for extended thinking
+      thinking: {
+        type: 'enabled',
+        budget_tokens: 8000, // Allow deep reasoning for planning conversations
+      },
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       messages,
     });
 
-    // Extract response text
+    // Extract response text (skip thinking blocks)
     const textBlock = response.content.find((block) => block.type === 'text');
     const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
 

@@ -12,11 +12,29 @@ import { FULLSTACK_RULES_COMPRESSED } from './full-app/fullstack-rules-compresse
 import { FULLAPP_EXAMPLES_COMPRESSED } from './full-app/examples-compressed';
 
 /**
+ * Accuracy guidelines included in all builder prompts
+ */
+const ACCURACY_GUIDELINES = `
+## ACCURACY & HONESTY
+
+**CRITICAL: Generate only working, accurate code.**
+
+- Use established libraries and patterns you know well
+- Never invent APIs, functions, or features that don't exist
+- If unsure about implementation, use simpler but reliable approaches
+- Complete all code - never truncate or leave placeholders
+- Test logic mentally before generating (will this actually work?)
+- Be realistic about complexity - simpler is often better
+`.trim();
+
+/**
  * Build system prompt for modify route
  * Combines: base rules + AST operations + examples
  */
 export function buildModifyPrompt(baseInstructions: string): string {
   return `${baseInstructions}
+
+${ACCURACY_GUIDELINES}
 
 ${COMPONENT_SYNTAX_RULES}
 
@@ -63,6 +81,8 @@ MODIFICATION MODE:
 ${imageContext}
 ${modificationContext ? '\n' + modificationContext + '\n' : ''}
 
+${ACCURACY_GUIDELINES}
+
 ${COMPONENT_SYNTAX_RULES}
 
 ${DELIMITER_FORMAT}
@@ -90,6 +110,8 @@ REMEMBER:
  */
 export function buildComponentPrompt(): string {
   return `You are an expert React/TypeScript component generator.
+
+${ACCURACY_GUIDELINES}
 
 Rules:
 1. Functional components with TypeScript

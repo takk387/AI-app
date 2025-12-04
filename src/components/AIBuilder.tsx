@@ -56,8 +56,7 @@ import {
 import { useDynamicBuildPhases } from '@/hooks/useDynamicBuildPhases';
 import { useStreamingGeneration } from '@/hooks/useStreamingGeneration';
 
-// Scope detection service
-import { scopeDetectionService } from '@/services/ScopeDetectionService';
+// Phase adapters
 import { adaptAllPhasesToUI, adaptDynamicProgressToUI } from '@/types/phaseAdapters';
 
 // Types
@@ -1500,138 +1499,22 @@ export default function AIBuilder() {
     setUserInput('');
     setIsGenerating(true);
 
-    // Determine if this is a question or build request
-    const isQuestion = messageSender.isQuestion(userInput);
+    // Determine if this is a modification (has existing app loaded)
     const isModification = currentComponent !== null;
 
-    // Determine if this should use streaming (full-app generation only)
-    const useStreaming = currentMode === 'ACT' && !isQuestion && !isModification;
+    // Legacy isQuestion check - kept for PLAN mode and response handling compatibility
+    const isQuestion = messageSender.isQuestion(userInput);
 
-    // AI Scope Detection: Analyze if this request needs phased execution
-    if (currentMode === 'ACT' && !isQuestion && !isModification && !dynamicPhasePlan) {
-      const scopeResult = scopeDetectionService.analyzeScope(
-        userInput,
-        chatMessages.slice(-10).map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          timestamp: m.timestamp,
-        })),
-        currentComponent
-      );
-
-      if (scopeResult.requiresPhases && scopeResult.confidence >= 0.7) {
-        // Complex request detected - generate phases first
-        const analysisMessage: ChatMessage = {
-          id: generateId(),
-          role: 'system',
-          content: `🔍 **Analyzing Request...**\n\n${scopeResult.reason}\n\n**Detected complexity:** ${scopeResult.complexity}\n**Suggested phases:** ${scopeResult.suggestedPhaseCount}\n\n⏳ Generating optimized build plan...`,
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, analysisMessage]);
-
-        try {
-          // Generate concept from detected features
-          const concept = {
-            name: extractComponentName(userInput),
-            description: userInput,
-            purpose: userInput,
-            targetUsers: 'General users',
-            coreFeatures: scopeResult.detectedFeatures.map((f, idx) => ({
-              id: `feature-${idx}`,
-              name: f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'),
-              description: `Implement ${f} functionality`,
-              priority: 'high' as const,
-            })),
-            uiPreferences: {
-              layout: 'dashboard',
-              style: 'modern',
-              colorScheme: 'blue',
-              features: [],
-            },
-            technical: {
-              needsAuth: scopeResult.detectedTechnical.needsAuth || false,
-              needsDatabase: scopeResult.detectedTechnical.needsDatabase || false,
-              needsAPI: scopeResult.detectedTechnical.needsAPI || false,
-              needsFileUpload: scopeResult.detectedTechnical.needsFileUpload || false,
-              needsRealtime: scopeResult.detectedTechnical.needsRealtime || false,
-            },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-
-          const response = await fetch('/api/wizard/generate-phases', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ concept }),
-          });
-
-          const phaseData = await response.json();
-
-          if (phaseData.success && phaseData.plan) {
-            const phasePlan: DynamicPhasePlan = phaseData.plan;
-            setDynamicPhasePlan(phasePlan);
-            dynamicBuildPhases.initializePlan(phasePlan);
-
-            // Sync with StagePlan for ChatPanel display
-            const stagePlan: StagePlan = {
-              totalPhases: phasePlan.totalPhases,
-              currentPhase: 0,
-              phases: phasePlan.phases.map((p) => ({
-                number: p.number,
-                name: p.name,
-                description: p.description,
-                features: p.features,
-                status: 'pending' as const,
-              })),
-            };
-            setNewAppStagePlan(stagePlan);
-
-            const planMessage: ChatMessage = {
-              id: generateId(),
-              role: 'assistant',
-              content:
-                `🎯 **${phasePlan.totalPhases}-Phase Build Plan Created**\n\n` +
-                `**Complexity:** ${phasePlan.complexity}\n` +
-                `**Estimated Time:** ${phasePlan.estimatedTotalTime}\n\n` +
-                phasePlan.phases
-                  .slice(0, 5)
-                  .map((p) => `**Phase ${p.number}: ${p.name}** (${p.estimatedTime})`)
-                  .join('\n') +
-                (phasePlan.phases.length > 5
-                  ? `\n\n...and ${phasePlan.phases.length - 5} more phases`
-                  : '') +
-                `\n\n🚀 **Starting Phase 1 now...**`,
-              timestamp: new Date().toISOString(),
-            };
-            setChatMessages((prev) => [...prev, planMessage]);
-
-            // Start building with phase 1
-            startDynamicPhasedBuild(1);
-            setIsGenerating(false);
-            return; // Exit early - phased build will handle the rest
-          }
-        } catch (error) {
-          console.error('Scope detection phase generation failed:', error);
-          // Fall through to regular execution
-        }
-      }
-    }
-
-    // Get progress messages for non-streaming requests
+    // Get progress messages for requests
     const progressMessages = messageSender.getProgressMessages(isQuestion, isModification);
 
     let progressIndex = 0;
-    let progressInterval: NodeJS.Timeout | null = null;
-
-    if (!useStreaming) {
-      progressInterval = setInterval(() => {
-        if (progressIndex < progressMessages.length) {
-          setGenerationProgress(progressMessages[progressIndex]);
-          progressIndex++;
-        }
-      }, 3000);
-    }
+    const progressInterval = setInterval(() => {
+      if (progressIndex < progressMessages.length) {
+        setGenerationProgress(progressMessages[progressIndex]);
+        progressIndex++;
+      }
+    }, 3000);
 
     try {
       // Build request body
@@ -1651,59 +1534,68 @@ export default function AIBuilder() {
 
       let data: Record<string, unknown> | null = null;
 
-      if (useStreaming) {
-        // Use streaming for full-app generation
-        data = await streaming.generate(requestBody);
+      // Determine endpoint based on mode
+      let endpoint: string;
+      let fetchBody: string;
 
-        if (!data) {
-          throw new Error('Generation failed or was cancelled');
-        }
-      } else {
-        // Determine endpoint based on mode and request type
-        let endpoint: string;
-        if (currentMode === 'PLAN') {
-          // Smart Conversations: Use wizard API for intelligent planning
-          endpoint = '/api/wizard/chat';
-        } else {
-          endpoint = isQuestion ? '/api/chat' : '/api/ai-builder/modify';
-        }
-
-        // Build request body based on endpoint
-        const fetchBody =
-          currentMode === 'PLAN'
-            ? JSON.stringify({
-                message: userInput,
-                conversationHistory: chatMessages.slice(-30).map((m) => ({
-                  role: m.role === 'user' ? 'user' : 'assistant',
-                  content: m.content,
-                })),
-                currentState: wizardState,
-                // Include images for vision capabilities
-                referenceImages: uploadedImage ? [uploadedImage] : undefined,
-              })
-            : JSON.stringify(requestBody);
-
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: fetchBody,
+      if (currentMode === 'PLAN') {
+        // Smart Conversations: Use wizard API for intelligent planning
+        endpoint = '/api/wizard/chat';
+        fetchBody = JSON.stringify({
+          message: userInput,
+          conversationHistory: chatMessages.slice(-30).map((m) => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content,
+          })),
+          currentState: wizardState,
+          // Include images for vision capabilities
+          referenceImages: uploadedImage ? [uploadedImage] : undefined,
         });
+      } else {
+        // ACT mode: Use builder expert for intelligent intent detection
+        // The builder expert handles questions, builds, and modifications
+        endpoint = '/api/builder/chat';
+        fetchBody = JSON.stringify({
+          message: userInput,
+          conversationHistory: chatMessages.slice(-30).map((m) => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content,
+          })),
+          currentAppState: currentComponent ? {
+            name: currentComponent.name,
+            files: [{ path: 'App.tsx', content: currentComponent.code }],
+          } : undefined,
+          image: uploadedImage || undefined,
+          hasImage: !!uploadedImage,
+        });
+      }
 
-        if (progressInterval) {
-          clearInterval(progressInterval);
-        }
-        setGenerationProgress('');
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: fetchBody,
+      });
 
-        data = await response.json();
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      setGenerationProgress('');
 
-        if (data?.error) {
-          throw new Error(data.error as string);
-        }
+      data = await response.json();
 
-        // Smart Conversations: Update wizard state from response
-        if (currentMode === 'PLAN' && data?.updatedState) {
-          setWizardState(data.updatedState as typeof wizardState);
-        }
+      if (data?.error) {
+        throw new Error(data.error as string);
+      }
+
+      // Smart Conversations: Update wizard state from response (PLAN mode)
+      if (currentMode === 'PLAN' && data?.updatedState) {
+        setWizardState(data.updatedState as typeof wizardState);
+      }
+
+      // Builder Expert: Check if we should trigger build/modify (ACT mode)
+      if (currentMode === 'ACT' && data?.shouldTriggerBuild) {
+        // The builder expert decided this needs a full build - redirect to streaming
+        // For now, just show the response - user can confirm to build
       }
 
       // Handle diff response
@@ -1726,8 +1618,12 @@ export default function AIBuilder() {
         return;
       }
 
-      // Handle chat response (including wizard responses in PLAN mode)
-      if (isQuestion || data?.type === 'chat' || (currentMode === 'PLAN' && data?.message)) {
+      // Handle chat response (wizard in PLAN mode, builder expert in ACT mode)
+      const isBuilderResponse = currentMode === 'ACT' && data?.message && data?.responseType;
+      const isWizardResponse = currentMode === 'PLAN' && data?.message;
+      const isChatResponse = isQuestion || data?.type === 'chat' || isWizardResponse || isBuilderResponse;
+
+      if (isChatResponse) {
         const chatResponse: ChatMessage = {
           id: generateId(),
           role: 'assistant',

@@ -34,6 +34,18 @@ Description: ${concept.description}
 Features: ${concept.features.join(', ')}
 UI Style: ${concept.uiStyle || 'modern'}
 Color Scheme: ${concept.colorScheme || 'auto'}
+
+## ACCURACY & HONESTY
+
+**CRITICAL: You must be truthful and accurate at all times.**
+
+- Only generate code you are confident will work correctly
+- Use established patterns and well-known libraries only
+- If a feature requires complex implementation, be upfront about limitations
+- Never invent APIs, libraries, or features that don't exist
+- When generating code, ensure it follows best practices
+- If you cannot fully implement something within this phase, note what remains
+- Be realistic about what can be accomplished - quality over quantity
 `.trim();
 
   const prompts: Record<PhaseId, string> = {
