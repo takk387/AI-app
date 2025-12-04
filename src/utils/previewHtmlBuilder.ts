@@ -284,6 +284,26 @@ export async function buildPreviewHtml(input: BuildInput): Promise<string> {
       }
       return true;
     };
+
+    // Polyfill localStorage for Puppeteer's setContent() context
+    // (localStorage isn't available when content is loaded directly)
+    (function() {
+      try {
+        localStorage.setItem('__test__', '1');
+        localStorage.removeItem('__test__');
+      } catch (e) {
+        var store = {};
+        window.localStorage = {
+          getItem: function(k) { return store[k] || null; },
+          setItem: function(k, v) { store[k] = String(v); },
+          removeItem: function(k) { delete store[k]; },
+          clear: function() { store = {}; },
+          get length() { return Object.keys(store).length; },
+          key: function(i) { return Object.keys(store)[i] || null; }
+        };
+      }
+    })();
+
     // Provide React globals for the bundle
     window.React = React;
     window.ReactDOM = ReactDOM;
