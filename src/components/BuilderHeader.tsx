@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 // New header components
-import { ProjectDropdown, BuildDropdown, SettingsDropdown, ProjectInfo, ViewModeToggle } from './header';
+import { ProjectDropdown, BuildDropdown, SettingsDropdown, ProjectInfo } from './header';
 import {
   RocketIcon,
   LayoutIcon,
@@ -12,8 +12,6 @@ import {
   SaveIcon,
   MenuIcon,
   XIcon,
-  BrainIcon,
-  ZapIcon,
 } from './ui/Icons';
 
 // ============================================================================
@@ -395,8 +393,8 @@ export function BuilderHeader({
   onShowHistory,
   appCount,
   onShowLibrary,
-  currentMode,
-  onModeChange,
+  currentMode: _currentMode,
+  onModeChange: _onModeChange,
   onNewApp,
 }: BuilderHeaderProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -527,48 +525,6 @@ export function BuilderHeader({
           </button>
         </div>
 
-        {/* Divider */}
-        <div className="hidden md:block w-px h-6 bg-zinc-800" />
-
-        {/* ============================================
-            VIEW CONTROLS
-        ============================================ */}
-        <div className="hidden md:flex items-center gap-2">
-          <ViewModeToggle
-            currentView={currentView}
-            onViewChange={onViewChange}
-          />
-
-          {/* Plan/Act Mode Toggle */}
-          {currentMode && onModeChange && (
-            <div className="flex bg-zinc-900 rounded-md p-0.5 border border-zinc-800">
-              <button
-                onClick={() => onModeChange('PLAN')}
-                className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  currentMode === 'PLAN'
-                    ? 'bg-zinc-700 text-white'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-                title="Plan Mode"
-              >
-                <BrainIcon size={14} />
-                <span className="hidden lg:inline">Plan</span>
-              </button>
-              <button
-                onClick={() => onModeChange('ACT')}
-                className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  currentMode === 'ACT'
-                    ? 'bg-zinc-700 text-white'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-                title="Act Mode"
-              >
-                <ZapIcon size={14} />
-                <span className="hidden lg:inline">Act</span>
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Spacer for mobile */}
         <div className="flex-1 md:hidden" />
