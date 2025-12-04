@@ -151,24 +151,13 @@ export function useElementInspector(
    * Generate the Claude prompt
    */
   const generatePrompt = useCallback(() => {
-    console.log('[ElementInspector] Generating prompt...', {
-      selectedElements: selectedElements.length,
+    const prompt = generateClaudePrompt(
+      selectedElements,
       problemDescription,
-      desiredChange,
-    });
-
-    try {
-      const prompt = generateClaudePrompt(
-        selectedElements,
-        problemDescription,
-        desiredChange
-      );
-      console.log('[ElementInspector] Prompt generated:', prompt.slice(0, 100) + '...');
-      setGeneratedPrompt(prompt);
-      setIsPromptModalOpen(true);
-    } catch (error) {
-      console.error('[ElementInspector] Error generating prompt:', error);
-    }
+      desiredChange
+    );
+    setGeneratedPrompt(prompt);
+    setIsPromptModalOpen(true);
   }, [selectedElements, problemDescription, desiredChange]);
 
   /**

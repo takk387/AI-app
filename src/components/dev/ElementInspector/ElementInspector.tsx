@@ -6,10 +6,10 @@
  * Allows developers to visually select elements, describe problems,
  * and generate Claude-ready prompts for assistance.
  *
- * Only renders in development mode.
+ * Only renders in development mode or when NEXT_PUBLIC_DEV_TOOLS=true.
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useElementInspector } from '@/hooks/useElementInspector';
 import { SHOW_DEV_TOOLS } from '@/utils/debug';
 import { InspectorButton } from './InspectorButton';
@@ -20,30 +20,8 @@ import { PromptGeneratorModal } from './PromptGeneratorModal';
 export function ElementInspector(): React.ReactElement | null {
   const inspector = useElementInspector();
 
-  // Debug: Log when ElementInspector mounts
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[ElementInspector] Component mounted', {
-      SHOW_DEV_TOOLS,
-      isActive: inspector.isActive,
-      selectedCount: inspector.selectedElements.length,
-    });
-  }, []);
-
-  // Debug: Log state changes
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[ElementInspector] State changed', {
-      isActive: inspector.isActive,
-      selectedCount: inspector.selectedElements.length,
-      isPromptModalOpen: inspector.isPromptModalOpen,
-    });
-  }, [inspector.isActive, inspector.selectedElements.length, inspector.isPromptModalOpen]);
-
   // Don't render if dev tools are disabled
   if (!SHOW_DEV_TOOLS) {
-    // eslint-disable-next-line no-console
-    console.log('[ElementInspector] Not rendering - SHOW_DEV_TOOLS is false');
     return null;
   }
 

@@ -17,7 +17,6 @@
       "Bash(cat:*)",
       "Bash(git -C \"c:\\AI-app\" log --oneline -5)",
       "Bash(git -C \"c:\\AI-app\" add:*)",
-      "Bash(git -C \"c:\\AI-app\" commit -m \"$(cat <<''EOF''\nfeat: Add Layout Builder with AI vision for conversational UI design\n\n- Add LayoutBuilderWizard modal with chat interface and live preview\n- Implement html2canvas screenshot capture for AI vision capabilities\n- Create comprehensive LayoutDesign type system for complete design storage\n- Add API endpoint with Claude Vision for analyzing layout screenshots\n- Enable element selection/highlighting in preview for targeted feedback\n- Support reference image uploads for design inspiration\n- Add \"Apply to App Concept\" to copy full design without data loss\n- Fix LayoutPreview bugs: event propagation, dynamic classes, footer\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git -C \"c:\\AI-app\" push)",
       "Bash(npx tsc:*)",
       "Bash(find:*)",
@@ -29,10 +28,25 @@
       "Bash(git commit:*)",
       "Bash(git -C \"c:\\AI-app\" status)",
       "Bash(git -C \"c:\\AI-app\" log --oneline -3)",
-      "Bash(git -C \"c:\\AI-app\" add src/components/header/ src/components/ui/HeaderDropdown.tsx src/components/ui/Icons.tsx src/app/globals.css src/components/AIBuilder.tsx src/components/BuilderHeader.tsx src/components/ui/index.ts tailwind.config.js)",
-      "Bash(git -C \"c:\\AI-app\" commit -m \"$(cat <<''EOF''\nfeat: Redesign navigation with Linear/Vercel-inspired design system\n\n- Add Linear color palette and Inter font to Tailwind config\n- Create modular header components (ProjectDropdown, BuildDropdown, \n  SettingsDropdown, ProjectInfo, ViewModeToggle)\n- Add SVG icon library (Icons.tsx) replacing emoji icons\n- Add HeaderDropdown component with keyboard navigation and submenus\n- Refactor BuilderHeader from 1,146 to ~643 lines using new components\n- Add utility classes: linear-btn, linear-dropdown, status-dot\n- Wire up Save button and fix export for all formats\n- Standardize naming: \"New App\" / \"My Apps\" consistency\n\nHeader layout: [Logo] | [Project+Status] | [Project▾][Build▾] | [Layout][Wizard][Save] | [ViewToggle] | [⚙]\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git -C \"c:\\AI-app\" add .env)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "c:\\AI-app\\.claude\\scripts\\post-edit-review.cmd",
+            "timeout": 60,
+            "statusMessage": "Running TypeScript review..."
+          }
+        ]
+      }
+    ]
   }
 }

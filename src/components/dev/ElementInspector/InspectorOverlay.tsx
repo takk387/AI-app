@@ -5,7 +5,7 @@
  * Renders highlight outlines for hovered and selected elements.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type { InspectedElement } from '@/types/elementInspector';
 
 interface InspectorOverlayProps {
@@ -30,7 +30,6 @@ export function InspectorOverlay({
   onHover,
   onSelect,
 }: InspectorOverlayProps): React.ReactElement {
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   /** Check if an element should be ignored */
   const shouldIgnoreElement = useCallback((element: HTMLElement): boolean => {
@@ -45,16 +44,8 @@ export function InspectorOverlay({
 
   /** Handle mouse move to track hovered element */
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    const overlay = overlayRef.current;
-    if (overlay) {
-      overlay.style.pointerEvents = 'none';
-    }
-
+    // elementFromPoint automatically skips elements with pointer-events: none
     const element = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-
-    if (overlay) {
-      overlay.style.pointerEvents = 'auto';
-    }
 
     if (element && !shouldIgnoreElement(element)) {
       onHover(element);
@@ -65,31 +56,15 @@ export function InspectorOverlay({
 
   /** Handle click to select element */
   const handleClick = useCallback((e: MouseEvent) => {
-    // First, find the actual element beneath the overlay
-    const overlay = overlayRef.current;
-    if (overlay) {
-      overlay.style.pointerEvents = 'none';
-    }
-
+    // elementFromPoint automatically skips elements with pointer-events: none
     const element = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
 
-    if (overlay) {
-      overlay.style.pointerEvents = 'auto';
-    }
-
-    // eslint-disable-next-line no-console
-    console.log('[Overlay] Click - element beneath:', element?.tagName, element?.className?.toString().slice(0, 50));
-
-    // Check if the element beneath should be ignored (inspector UI elements)
+    // Check if the element should be ignored (inspector UI elements)
     if (!element || shouldIgnoreElement(element)) {
-      // eslint-disable-next-line no-console
-      console.log('[Overlay] Element is ignored or null, letting click through');
       return; // Let the click through to the UI
     }
 
-    // Block the click and select the element
-    // eslint-disable-next-line no-console
-    console.log('[Overlay] Selecting element:', element.tagName);
+    // Block the click and select the element for inspection
     e.preventDefault();
     e.stopPropagation();
 
@@ -109,10 +84,8 @@ export function InspectorOverlay({
 
   return (
     <div
-      ref={overlayRef}
       data-inspector-overlay
-      className="fixed inset-0 z-[9998] pointer-events-auto"
-      style={{ cursor: 'crosshair' }}
+      className="fixed inset-0 z-[9998] pointer-events-none"
     >
       {/* Hover Highlight */}
       {hoveredElement && (
