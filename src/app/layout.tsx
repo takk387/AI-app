@@ -5,6 +5,7 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { SettingsProvider } from "../contexts/SettingsContext";
+import { DevTools } from "../components/dev/DevTools";
 
 export const metadata: Metadata = {
   title: "Personal AI App Builder",
@@ -27,6 +28,7 @@ export default function RootLayout({
             <AuthProvider>
               <ErrorBoundary>
                 <AuthGuard>
+                  <DevTools />
                   <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900 transition-colors duration-300">
                     {children}
                   </div>
