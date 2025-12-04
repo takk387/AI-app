@@ -1,11 +1,7 @@
-"use client";
+'use client';
 
 import React from 'react';
-import {
-  PhaseProgressIndicator,
-  PhaseControlPanel,
-  ValidationDashboard,
-} from '../build';
+import { PhaseProgressIndicator, PhaseControlPanel, ValidationDashboard } from '../build';
 import type { BuildPhase, BuildProgress, PhaseId } from '@/types/buildPhases';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 
@@ -81,14 +77,12 @@ export function PhasedBuildPanel({
                       {dynamicPlan.complexity}
                     </span>
                   )}
-                  {phases.length} phases • {progress.percentComplete}% complete • {progress.estimatedTimeRemaining} remaining
+                  {phases.length} phases • {progress.percentComplete}% complete •{' '}
+                  {progress.estimatedTimeRemaining} remaining
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>

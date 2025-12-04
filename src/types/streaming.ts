@@ -13,14 +13,14 @@
  * Types of streaming events
  */
 export type StreamEventType =
-  | 'start'           // Generation started
-  | 'thinking'        // AI is thinking/planning
-  | 'file_start'      // Starting to generate a file
-  | 'file_progress'   // Progress on current file (token chunks)
-  | 'file_complete'   // File generation complete
-  | 'validation'      // Validating generated code
-  | 'complete'        // All generation complete
-  | 'error';          // Error occurred
+  | 'start' // Generation started
+  | 'thinking' // AI is thinking/planning
+  | 'file_start' // Starting to generate a file
+  | 'file_progress' // Progress on current file (token chunks)
+  | 'file_complete' // File generation complete
+  | 'validation' // Validating generated code
+  | 'complete' // All generation complete
+  | 'error'; // Error occurred
 
 /**
  * Base event structure
@@ -218,13 +218,21 @@ export function formatSSE(event: StreamEvent): string {
  */
 export function getPhaseMessage(phase: StreamingProgress['phase']): string {
   switch (phase) {
-    case 'idle': return '';
-    case 'starting': return 'Initializing generation...';
-    case 'thinking': return 'AI is analyzing your request...';
-    case 'generating': return 'Generating code...';
-    case 'validating': return 'Validating generated code...';
-    case 'complete': return 'Generation complete!';
-    case 'error': return 'An error occurred';
-    default: return '';
+    case 'idle':
+      return '';
+    case 'starting':
+      return 'Initializing generation...';
+    case 'thinking':
+      return 'AI is analyzing your request...';
+    case 'generating':
+      return 'Generating code...';
+    case 'validating':
+      return 'Validating generated code...';
+    case 'complete':
+      return 'Generation complete!';
+    case 'error':
+      return 'An error occurred';
+    default:
+      return '';
   }
 }

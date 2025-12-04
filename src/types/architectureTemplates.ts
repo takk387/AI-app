@@ -83,7 +83,8 @@ export interface TemplateDefinition {
 /**
  * Full template data combining metadata and definition
  */
-export interface FullTemplate extends ArchitectureTemplate, Omit<TemplateDefinition, 'id' | 'name' | 'description'> {}
+export interface FullTemplate
+  extends ArchitectureTemplate, Omit<TemplateDefinition, 'id' | 'name' | 'description'> {}
 
 /**
  * Template filter options for the selector

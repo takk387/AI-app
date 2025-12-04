@@ -5,12 +5,12 @@ import type {
   VariableMatch,
   StateVariable,
   ParserOptions,
-  ImportInfo
+  ImportInfo,
 } from './treeSitterTypes';
 
 /**
  * Comprehensive Tree-sitter parser for TypeScript/JavaScript/TSX
- * 
+ *
  * Features:
  * - Supports all function types (declarations, arrow functions, expressions)
  * - Supports all variable patterns (simple, array destructuring, object destructuring)
@@ -19,7 +19,7 @@ import type {
  * - Dual ESM/CommonJS support
  * - Comprehensive null checking
  * - React-specific helpers
- * 
+ *
  * @version 2.0.0 - Comprehensive rewrite (Nov 2025)
  */
 export class CodeParser {
@@ -34,7 +34,7 @@ export class CodeParser {
     this.options = {
       throwOnError: false,
       logErrors: true,
-      ...options
+      ...options,
     };
     // Note: Don't initialize here - lazy init on first use prevents crashes
   }
@@ -45,7 +45,7 @@ export class CodeParser {
    */
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
-    
+
     try {
       if (this.language === 'typescript') {
         // Try ESM import first (modern)
@@ -71,20 +71,21 @@ export class CodeParser {
           this.parser.setLanguage(JavaScript as any);
         }
       }
-      
+
       this.initialized = true;
     } catch (error) {
-      const message = `Failed to load tree-sitter language for ${this.language}. ` +
+      const message =
+        `Failed to load tree-sitter language for ${this.language}. ` +
         `Please install: npm install tree-sitter tree-sitter-${this.language}`;
-      
+
       if (this.options.logErrors) {
         console.error(message, error);
       }
-      
+
       if (this.options.throwOnError) {
         throw new Error(message);
       }
-      
+
       throw error;
     }
   }
@@ -102,24 +103,24 @@ export class CodeParser {
     }
 
     await this.ensureInitialized();
-    
+
     try {
       const tree = this.parser.parse(code);
-      
+
       if (!tree || !tree.rootNode) {
         if (this.options.logErrors) {
           console.error('Parser returned invalid tree');
         }
         return null;
       }
-      
+
       if (tree.rootNode.hasError) {
         if (this.options.logErrors) {
           console.warn('Parse tree has syntax errors:', this.getErrors(tree));
         }
         // Still return tree - error-tolerant!
       }
-      
+
       return tree;
     } catch (error) {
       if (this.options.logErrors) {
@@ -137,22 +138,22 @@ export class CodeParser {
     if (!this.initialized) {
       throw new Error('Parser not initialized. Use parse() or call ensureInitialized() first.');
     }
-    
+
     if (!code || typeof code !== 'string') {
       return null;
     }
 
     try {
       const tree = this.parser.parse(code);
-      
+
       if (!tree || !tree.rootNode) {
         return null;
       }
-      
+
       if (tree.rootNode.hasError && this.options.logErrors) {
         console.warn('Parse tree has syntax errors:', this.getErrors(tree));
       }
-      
+
       return tree;
     } catch (error) {
       if (this.options.logErrors) {
@@ -171,7 +172,7 @@ export class CodeParser {
     }
 
     const nodes: Parser.SyntaxNode[] = [];
-    
+
     const traverse = (node: Parser.SyntaxNode) => {
       if (node.type === nodeType) {
         nodes.push(node);
@@ -180,7 +181,7 @@ export class CodeParser {
         traverse(child);
       }
     };
-    
+
     traverse(tree.rootNode);
     return nodes;
   }
@@ -205,11 +206,11 @@ export class CodeParser {
         return {
           node: func,
           type: 'function_declaration',
-          name: funcName
+          name: funcName,
         };
       }
     }
-    
+
     // 2. Check arrow functions in lexical declarations: const App = () => {}
     const lexDecls = this.findNodes(tree, 'lexical_declaration');
     for (const decl of lexDecls) {
@@ -217,38 +218,38 @@ export class CodeParser {
         if (child.type === 'variable_declarator') {
           const name = child.childForFieldName('name');
           const value = child.childForFieldName('value');
-          
+
           if (name?.text === funcName && value?.type === 'arrow_function') {
             return {
               node: value,
               type: 'arrow_function',
               declarator: child,
-              name: funcName
+              name: funcName,
             };
           }
         }
       }
     }
-    
+
     // 3. Check function expressions: const App = function() {}
     for (const decl of lexDecls) {
       for (const child of decl.children) {
         if (child.type === 'variable_declarator') {
           const name = child.childForFieldName('name');
           const value = child.childForFieldName('value');
-          
+
           if (name?.text === funcName && value?.type === 'function_expression') {
             return {
               node: value,
               type: 'function_expression',
               declarator: child,
-              name: funcName
+              name: funcName,
             };
           }
         }
       }
     }
-    
+
     return null;
   }
 
@@ -267,23 +268,23 @@ export class CodeParser {
 
     // Use lexical_declaration for const/let (TypeScript/modern JS)
     const declarations = this.findNodes(tree, 'lexical_declaration');
-    
+
     for (const decl of declarations) {
       for (const child of decl.children) {
         if (child.type === 'variable_declarator') {
           const nameNode = child.childForFieldName('name');
-          
+
           if (!nameNode) continue;
-          
+
           // Case 1: Simple identifier - const count = 0
           if (nameNode.text === varName) {
             return {
               node: decl,
               type: 'simple',
-              nameNode
+              nameNode,
             };
           }
-          
+
           // Case 2: Array destructuring - const [a, b] = arr
           if (nameNode.type === 'array_pattern') {
             const elements = nameNode.namedChildren;
@@ -293,12 +294,12 @@ export class CodeParser {
                   node: decl,
                   type: 'array_destructure',
                   nameNode,
-                  element
+                  element,
                 };
               }
             }
           }
-          
+
           // Case 3: Object destructuring - const { name, age } = obj
           if (nameNode.type === 'object_pattern') {
             const properties = nameNode.namedChildren;
@@ -310,16 +311,16 @@ export class CodeParser {
                     node: decl,
                     type: 'object_destructure',
                     nameNode,
-                    property: prop
+                    property: prop,
                   };
                 }
               }
-              
+
               // Handle renamed: { name: userName }
               if (prop.type === 'pair_pattern') {
                 const key = prop.childForFieldName('key');
                 const value = prop.childForFieldName('value');
-                
+
                 // Check the renamed variable
                 if (value?.text === varName) {
                   return {
@@ -327,7 +328,7 @@ export class CodeParser {
                     type: 'object_destructure_renamed',
                     nameNode,
                     property: prop,
-                    originalName: key?.text
+                    originalName: key?.text,
                   };
                 }
               }
@@ -336,7 +337,7 @@ export class CodeParser {
         }
       }
     }
-    
+
     return null;
   }
 
@@ -354,7 +355,7 @@ export class CodeParser {
     for (const element of jsxElements) {
       // Try different field names (tree-sitter-typescript uses different names)
       let openingElement = element.childForFieldName('opening_element');
-      
+
       // If that doesn't work, find the opening tag by type
       if (!openingElement) {
         for (const child of element.children) {
@@ -364,11 +365,11 @@ export class CodeParser {
           }
         }
       }
-      
+
       if (openingElement) {
         // Try to get the name
         let name = openingElement.childForFieldName('name');
-        
+
         // If that doesn't work, find by type
         if (!name) {
           for (const child of openingElement.children) {
@@ -378,18 +379,18 @@ export class CodeParser {
             }
           }
         }
-        
+
         if (name?.text === componentName) {
           return element;
         }
       }
     }
-    
+
     // Check self-closing elements: <Component />
     const selfClosing = this.findNodes(tree, 'jsx_self_closing_element');
     for (const element of selfClosing) {
       let name = element.childForFieldName('name');
-      
+
       // If that doesn't work, find by type
       if (!name) {
         for (const child of element.children) {
@@ -399,12 +400,12 @@ export class CodeParser {
           }
         }
       }
-      
+
       if (name?.text === componentName) {
         return element;
       }
     }
-    
+
     return null;
   }
 
@@ -427,7 +428,7 @@ export class CodeParser {
     }
 
     const exports = this.findNodes(tree, 'export_statement');
-    
+
     for (const exp of exports) {
       // Check if it has 'default' keyword
       for (const child of exp.children) {
@@ -436,7 +437,7 @@ export class CodeParser {
         }
       }
     }
-    
+
     return null;
   }
 
@@ -451,16 +452,18 @@ export class CodeParser {
 
     const defaultExport = this.findDefaultExport(tree);
     if (!defaultExport) return null;
-    
+
     // Check if it's exporting a function
     for (const child of defaultExport.children) {
-      if (child.type === 'arrow_function' || 
-          child.type === 'function' || 
-          child.type === 'function_declaration') {
+      if (
+        child.type === 'arrow_function' ||
+        child.type === 'function' ||
+        child.type === 'function_declaration'
+      ) {
         return child;
       }
     }
-    
+
     return null;
   }
 
@@ -476,36 +479,36 @@ export class CodeParser {
     const stateVars: StateVariable[] = [];
     // Use lexical_declaration for const/let
     const varDecls = this.findNodes(tree, 'lexical_declaration');
-    
+
     for (const decl of varDecls) {
       for (const child of decl.children) {
         if (child.type === 'variable_declarator') {
           const nameNode = child.childForFieldName('name');
           const value = child.childForFieldName('value');
-          
+
           // Check for array pattern: [state, setState]
           if (nameNode?.type === 'array_pattern' && value?.type === 'call_expression') {
             const callee = value.childForFieldName('function');
-            
+
             // Check if it's useState
             if (callee?.text === 'useState') {
               const elements = nameNode.namedChildren;
               if (elements.length >= 2) {
                 const stateVar = elements[0].text;
                 const setterVar = elements[1].text;
-                
+
                 // Try to get initial value
                 const args = value.childForFieldName('arguments');
                 let initialValue: string | undefined;
                 if (args && args.namedChildren.length > 0) {
                   initialValue = args.namedChildren[0].text;
                 }
-                
+
                 stateVars.push({
                   stateVar,
                   setterVar,
                   initialValue,
-                  node: decl
+                  node: decl,
                 });
               }
             }
@@ -513,7 +516,7 @@ export class CodeParser {
         }
       }
     }
-    
+
     return stateVars;
   }
 
@@ -528,17 +531,17 @@ export class CodeParser {
 
     const source = importNode.childForFieldName('source');
     if (!source) return null;
-    
+
     // Remove quotes from source
     const sourcePath = source.text.replace(/['"]/g, '');
-    
+
     const imports: ImportInfo['imports'] = [];
-    
+
     // Find import clause
-    const importClause = importNode.children.find(c => 
-      c.type === 'import_clause' || c.type === 'named_imports'
+    const importClause = importNode.children.find(
+      (c) => c.type === 'import_clause' || c.type === 'named_imports'
     );
-    
+
     if (importClause) {
       // Handle named imports: import { a, b as c } from 'module'
       if (importClause.type === 'import_clause') {
@@ -550,7 +553,7 @@ export class CodeParser {
                 const alias = spec.childForFieldName('alias');
                 imports.push({
                   name: name?.text || '',
-                  alias: alias?.text
+                  alias: alias?.text,
                 });
               }
             }
@@ -558,7 +561,7 @@ export class CodeParser {
             // Default import
             imports.push({
               name: child.text,
-              isDefault: true
+              isDefault: true,
             });
           } else if (child.type === 'namespace_import') {
             // import * as Name
@@ -566,17 +569,17 @@ export class CodeParser {
             imports.push({
               name: '*',
               alias: alias?.text,
-              isNamespace: true
+              isNamespace: true,
             });
           }
         }
       }
     }
-    
+
     return {
       source: sourcePath,
       imports,
-      node: importNode
+      node: importNode,
     };
   }
 
@@ -591,7 +594,7 @@ export class CodeParser {
 
     const errors: ErrorInfo[] = [];
     const seen = new Set<string>(); // Prevent duplicates
-    
+
     const traverse = (node: Parser.SyntaxNode) => {
       if (node.hasError) {
         // Mark actual error nodes
@@ -602,12 +605,12 @@ export class CodeParser {
               line: node.startPosition.row + 1, // 1-indexed for humans
               column: node.startPosition.column + 1,
               text: node.text.slice(0, 50), // First 50 chars
-              nodeType: node.type
+              nodeType: node.type,
             });
             seen.add(key);
           }
         }
-        
+
         // Continue traversing even if this node is an error
         // There might be more specific errors in children
         for (const child of node.children) {
@@ -615,7 +618,7 @@ export class CodeParser {
         }
       }
     };
-    
+
     traverse(tree.rootNode);
     return errors;
   }
@@ -628,30 +631,28 @@ export class CodeParser {
     if (!tree) {
       return 'Error: tree is null';
     }
-    
+
     if (!tree.rootNode) {
       return 'Error: tree has no root node';
     }
 
     let result = '';
-    
+
     const traverse = (node: Parser.SyntaxNode, depth: number, prefix: string) => {
       if (depth > maxDepth) return;
-      
+
       const indent = '  '.repeat(depth);
       const nodeInfo = `${indent}${prefix}${node.type}`;
-      const text = node.text.length > 30 
-        ? node.text.slice(0, 30) + '...' 
-        : node.text;
+      const text = node.text.length > 30 ? node.text.slice(0, 30) + '...' : node.text;
       result += `${nodeInfo} "${text}"\n`;
-      
+
       node.children.forEach((child, index) => {
         const isLast = index === node.children.length - 1;
         const childPrefix = isLast ? '└─ ' : '├─ ';
         traverse(child, depth + 1, childPrefix);
       });
     };
-    
+
     traverse(tree.rootNode, 0, '');
     return result;
   }
@@ -677,10 +678,10 @@ export class CodeParser {
     if (!node) {
       return { line: 0, column: 0 };
     }
-    
+
     return {
       line: node.startPosition.row + 1, // 1-indexed
-      column: node.startPosition.column + 1
+      column: node.startPosition.column + 1,
     };
   }
 

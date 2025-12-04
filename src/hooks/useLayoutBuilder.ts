@@ -9,9 +9,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { captureLayoutPreview, containsVisualKeywords } from '@/utils/screenshotCapture';
 import { LAYOUT_BUILDER_GREETING } from '@/prompts/layoutBuilderSystemPrompt';
-import {
-  defaultLayoutDesign,
-} from '@/types/layoutDesign';
+import { defaultLayoutDesign } from '@/types/layoutDesign';
 import type {
   LayoutDesign,
   LayoutMessage,
@@ -78,7 +76,7 @@ function mapLayoutDesignToUIPreferences(design: Partial<LayoutDesign>): Partial<
     fontFamily: typography?.fontFamily,
     spacing: spacing?.density,
     layoutDesignId: design.id,
-    referenceMedia: design.referenceMedia?.map(ref => ({
+    referenceMedia: design.referenceMedia?.map((ref) => ({
       type: ref.type as 'image' | 'video',
       url: ref.source,
       name: ref.name,
@@ -153,129 +151,131 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   /**
    * Send a message to the layout builder AI
    */
-  const sendMessage = useCallback(async (text: string, includeCapture = false) => {
-    if (!text.trim() && !includeCapture) return;
+  const sendMessage = useCallback(
+    async (text: string, includeCapture = false) => {
+      if (!text.trim() && !includeCapture) return;
 
-    // Cancel any pending request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    // Determine if we should auto-capture
-    let screenshot = lastCapture;
-    if (includeCapture || containsVisualKeywords(text) || selectedElement) {
-      const newCapture = await capturePreview();
-      if (newCapture) {
-        screenshot = newCapture;
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    }
+      abortControllerRef.current = new AbortController();
 
-    // Add user message
-    const userMessage: LayoutMessage = {
-      id: generateMessageId(),
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-      selectedElement: selectedElement || undefined,
-      previewSnapshot: screenshot || undefined,
-    };
+      // Determine if we should auto-capture
+      let screenshot = lastCapture;
+      if (includeCapture || containsVisualKeywords(text) || selectedElement) {
+        const newCapture = await capturePreview();
+        if (newCapture) {
+          screenshot = newCapture;
+        }
+      }
 
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const request: LayoutChatRequest = {
-        message: text,
-        conversationHistory: messages,
-        currentDesign: design,
+      // Add user message
+      const userMessage: LayoutMessage = {
+        id: generateMessageId(),
+        role: 'user',
+        content: text,
+        timestamp: new Date(),
         selectedElement: selectedElement || undefined,
-        previewScreenshot: screenshot || undefined,
-        referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+        previewSnapshot: screenshot || undefined,
       };
 
-      const response = await fetch('/api/layout/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-        signal: abortControllerRef.current.signal,
-      });
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      try {
+        const request: LayoutChatRequest = {
+          message: text,
+          conversationHistory: messages,
+          currentDesign: design,
+          selectedElement: selectedElement || undefined,
+          previewScreenshot: screenshot || undefined,
+          referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+        };
+
+        const response = await fetch('/api/layout/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data: LayoutChatResponse = await response.json();
+
+        // Add assistant message
+        const assistantMessage: LayoutMessage = {
+          id: generateMessageId(),
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+
+        // Update design with any changes
+        if (data.updatedDesign && Object.keys(data.updatedDesign).length > 0) {
+          setDesign((prev) => ({
+            ...prev,
+            ...data.updatedDesign,
+          }));
+        }
+
+        // Update suggested actions
+        if (data.suggestedActions) {
+          setSuggestedActions(data.suggestedActions);
+        }
+
+        // Track recent changes
+        if (data.designChanges && data.designChanges.length > 0) {
+          setRecentChanges(data.designChanges);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return; // Request was cancelled
+        }
+
+        console.error('Layout chat error:', error);
+
+        // Add error message
+        const errorMessage: LayoutMessage = {
+          id: generateMessageId(),
+          role: 'assistant',
+          content: 'Sorry, I encountered an error processing your request. Please try again.',
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, errorMessage]);
+      } finally {
+        setIsLoading(false);
+        abortControllerRef.current = null;
       }
-
-      const data: LayoutChatResponse = await response.json();
-
-      // Add assistant message
-      const assistantMessage: LayoutMessage = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: data.message,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Update design with any changes
-      if (data.updatedDesign && Object.keys(data.updatedDesign).length > 0) {
-        setDesign(prev => ({
-          ...prev,
-          ...data.updatedDesign,
-        }));
-      }
-
-      // Update suggested actions
-      if (data.suggestedActions) {
-        setSuggestedActions(data.suggestedActions);
-      }
-
-      // Track recent changes
-      if (data.designChanges && data.designChanges.length > 0) {
-        setRecentChanges(data.designChanges);
-      }
-
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return; // Request was cancelled
-      }
-
-      console.error('Layout chat error:', error);
-
-      // Add error message
-      const errorMessage: LayoutMessage = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error processing your request. Please try again.',
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-      abortControllerRef.current = null;
-    }
-  }, [messages, design, selectedElement, referenceImages, lastCapture, capturePreview]);
+    },
+    [messages, design, selectedElement, referenceImages, lastCapture, capturePreview]
+  );
 
   /**
    * Add a reference image
    */
   const addReferenceImage = useCallback((imageData: string) => {
-    setReferenceImages(prev => [...prev, imageData]);
+    setReferenceImages((prev) => [...prev, imageData]);
   }, []);
 
   /**
    * Remove a reference image
    */
   const removeReferenceImage = useCallback((index: number) => {
-    setReferenceImages(prev => prev.filter((_, i) => i !== index));
+    setReferenceImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   /**
    * Update design directly
    */
   const updateDesign = useCallback((updates: Partial<LayoutDesign>) => {
-    setDesign(prev => ({
+    setDesign((prev) => ({
       ...prev,
       ...updates,
     }));
@@ -292,40 +292,50 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   /**
    * Save the current design
    */
-  const saveDesign = useCallback((name?: string): LayoutDesign => {
-    const now = new Date().toISOString();
-    const savedDesign: LayoutDesign = {
-      ...defaultLayoutDesign,
-      ...design,
-      id: design.id || `ld_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: name || design.name || 'Untitled Design',
-      version: (design.version || 0) + 1,
-      createdAt: design.createdAt || now,
-      updatedAt: now,
-      referenceMedia: referenceImages.map((img, i) => ({
-        id: `ref_${i}`,
-        type: 'image' as const,
-        source: img,
-        name: `Reference ${i + 1}`,
-        addedAt: now,
-      })),
-      conversationContext: {
-        messageCount: messages.length,
-        keyDecisions: recentChanges.map(c => c.reason),
-        userPreferences: [],
-        lastUpdated: now,
-      },
-    } as LayoutDesign;
+  const saveDesign = useCallback(
+    (name?: string): LayoutDesign => {
+      const now = new Date().toISOString();
+      const savedDesign: LayoutDesign = {
+        ...defaultLayoutDesign,
+        ...design,
+        id: design.id || `ld_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: name || design.name || 'Untitled Design',
+        version: (design.version || 0) + 1,
+        createdAt: design.createdAt || now,
+        updatedAt: now,
+        referenceMedia: referenceImages.map((img, i) => ({
+          id: `ref_${i}`,
+          type: 'image' as const,
+          source: img,
+          name: `Reference ${i + 1}`,
+          addedAt: now,
+        })),
+        conversationContext: {
+          messageCount: messages.length,
+          keyDecisions: recentChanges.map((c) => c.reason),
+          userPreferences: [],
+          lastUpdated: now,
+        },
+      } as LayoutDesign;
 
-    // Save to store
-    setCurrentLayoutDesign(savedDesign);
-    addSavedLayoutDesign(savedDesign);
+      // Save to store
+      setCurrentLayoutDesign(savedDesign);
+      addSavedLayoutDesign(savedDesign);
 
-    // Update local state with ID
-    setDesign(savedDesign);
+      // Update local state with ID
+      setDesign(savedDesign);
 
-    return savedDesign;
-  }, [design, referenceImages, messages.length, recentChanges, setCurrentLayoutDesign, addSavedLayoutDesign]);
+      return savedDesign;
+    },
+    [
+      design,
+      referenceImages,
+      messages.length,
+      recentChanges,
+      setCurrentLayoutDesign,
+      addSavedLayoutDesign,
+    ]
+  );
 
   /**
    * Apply the current design to the App Concept

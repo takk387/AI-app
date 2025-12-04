@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import DiffPreview from '../DiffPreview';
@@ -12,7 +12,13 @@ export interface DiffPreviewModalProps {
   onReject: () => void;
 }
 
-export function DiffPreviewModal({ isOpen, onClose, pendingDiff, onApprove, onReject }: DiffPreviewModalProps) {
+export function DiffPreviewModal({
+  isOpen,
+  onClose,
+  pendingDiff,
+  onApprove,
+  onReject,
+}: DiffPreviewModalProps) {
   if (!isOpen || !pendingDiff) return null;
 
   return (
@@ -35,15 +41,12 @@ export function DiffPreviewModal({ isOpen, onClose, pendingDiff, onApprove, onRe
                 <p className="text-sm text-blue-200/80">Smart targeted modifications</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
         </div>
-        
+
         <div className="p-6 overflow-y-auto max-h-[70vh]">
           <DiffPreview
             summary={pendingDiff.summary}

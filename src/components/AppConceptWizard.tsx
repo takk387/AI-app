@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { AppConcept, Feature, UIPreferences, TechnicalRequirements } from '../types/appConcept';
+import type {
+  AppConcept,
+  Feature,
+  UIPreferences,
+  TechnicalRequirements,
+} from '../types/appConcept';
 import type { FullTemplate } from '../types/architectureTemplates';
 import {
   validateBasicInfo,
@@ -9,14 +14,14 @@ import {
   validateFeatureName,
   validateFeatureDescription,
   getCharacterCount,
-  sanitizeInput
+  sanitizeInput,
 } from '../utils/wizardValidation';
 import type { ValidationError } from '../utils/wizardValidation';
 import {
   createAutoSaver,
   WIZARD_DRAFT_KEYS,
   formatDraftAge,
-  clearAllDrafts
+  clearAllDrafts,
 } from '../utils/wizardAutoSave';
 import { ValidatedField, ValidationSummary } from './ValidationMessage';
 import { FeatureLibrary } from './FeatureLibrary';
@@ -41,7 +46,7 @@ const STEPS = [
   { number: 3, title: 'Features', description: 'Define core functionality' },
   { number: 4, title: 'Design', description: 'Choose look and feel' },
   { number: 5, title: 'Technical', description: 'Set requirements' },
-  { number: 6, title: 'Review', description: 'Confirm and create' }
+  { number: 6, title: 'Review', description: 'Confirm and create' },
 ];
 
 /**
@@ -51,7 +56,7 @@ const defaultUIPreferences: UIPreferences = {
   style: 'modern',
   colorScheme: 'dark',
   layout: 'single-page',
-  primaryColor: '#3B82F6'
+  primaryColor: '#3B82F6',
 };
 
 /**
@@ -62,17 +67,13 @@ const defaultTechnicalRequirements: TechnicalRequirements = {
   needsDatabase: false,
   needsAPI: false,
   needsFileUpload: false,
-  needsRealtime: false
+  needsRealtime: false,
 };
 
 /**
  * AppConceptWizard component
  */
-export function AppConceptWizard({
-  onComplete,
-  onCancel,
-  initialConcept
-}: AppConceptWizardProps) {
+export function AppConceptWizard({ onComplete, onCancel, initialConcept }: AppConceptWizardProps) {
   // Step navigation
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -137,13 +138,23 @@ export function AppConceptWizard({
         targetUsers,
         coreFeatures: features,
         uiPreferences,
-        technical
+        technical,
       };
       autoSaver.start(conceptData);
     }
 
     return () => autoSaver.stop();
-  }, [name, description, purpose, targetUsers, features, uiPreferences, technical, autoSaver, showDraftPrompt]);
+  }, [
+    name,
+    description,
+    purpose,
+    targetUsers,
+    features,
+    uiPreferences,
+    technical,
+    autoSaver,
+    showDraftPrompt,
+  ]);
 
   // Resume draft
   const resumeDraft = useCallback(() => {
@@ -169,11 +180,13 @@ export function AppConceptWizard({
   // Handle template selection
   const handleTemplateSelect = useCallback((template: FullTemplate) => {
     setSelectedTemplate(template);
-    
+
     // Pre-populate description with template description (user-facing)
     setDescription(template.description);
-    setPurpose(`Build a ${template.name.toLowerCase()} application using the ${template.layoutStructure.type} layout pattern.`);
-    
+    setPurpose(
+      `Build a ${template.name.toLowerCase()} application using the ${template.layoutStructure.type} layout pattern.`
+    );
+
     // Pre-populate features from template with meaningful descriptions
     const featureDescriptions: Record<string, string> = {
       'Sidebar navigation': 'Collapsible sidebar menu for easy navigation between sections',
@@ -190,47 +203,47 @@ export function AppConceptWizard({
       'Checkout process': 'Multi-step checkout flow with payment integration',
       'User authentication': 'Login, registration, and password reset flows',
       'Onboarding flow': 'Multi-step wizard for new user setup',
-      'Dashboard': 'Main dashboard with overview metrics and quick actions',
+      Dashboard: 'Main dashboard with overview metrics and quick actions',
       'Settings pages': 'User profile and account settings management',
       'Hero section': 'Prominent headline with call-to-action button',
       'Features showcase': 'Grid of feature cards highlighting key benefits',
       'Call-to-action buttons': 'Prominent buttons guiding users to take action',
-      'Footer': 'Site footer with navigation links and social icons',
+      Footer: 'Site footer with navigation links and social icons',
       'Article listing': 'List of articles with pagination and filtering',
       'Article detail page': 'Full article view with rich content rendering',
       'Category navigation': 'Navigation by categories and tags',
-      'Search functionality': 'Search with autocomplete and filters'
+      'Search functionality': 'Search with autocomplete and filters',
     };
-    
+
     const templateFeatures: Feature[] = template.requiredFeatures.map((f, index) => ({
       id: `template-feature-${index}`,
       name: f,
       description: featureDescriptions[f] || `Implementation of ${f.toLowerCase()} functionality`,
-      priority: 'high' as const
+      priority: 'high' as const,
     }));
     setFeatures(templateFeatures);
-    
+
     // Pre-populate UI preferences based on template layout
     const layoutMap: Record<string, UIPreferences['layout']> = {
       sidebar: 'dashboard',
       topnav: 'multi-page',
       minimal: 'single-page',
-      split: 'dashboard'
+      split: 'dashboard',
     };
-    setUiPreferences(prev => ({
+    setUiPreferences((prev) => ({
       ...prev,
-      layout: layoutMap[template.layoutStructure.type] || 'single-page'
+      layout: layoutMap[template.layoutStructure.type] || 'single-page',
     }));
-    
+
     // Pre-populate technical requirements
-    setTechnical(prev => ({
+    setTechnical((prev) => ({
       ...prev,
       needsAuth: template.technicalRequirements.needsAuth,
       needsDatabase: template.technicalRequirements.needsDatabase,
       needsAPI: template.technicalRequirements.needsAPI,
-      needsFileUpload: template.technicalRequirements.needsFileUpload
+      needsFileUpload: template.technicalRequirements.needsFileUpload,
     }));
-    
+
     // Move to next step
     setCurrentStep(2);
   }, []);
@@ -300,7 +313,7 @@ export function AppConceptWizard({
       id: `feature-${Date.now()}`,
       name: sanitizeInput(newFeatureName),
       description: sanitizeInput(newFeatureDescription),
-      priority: newFeaturePriority
+      priority: newFeaturePriority,
     };
 
     setFeatures([...features, newFeature]);
@@ -310,22 +323,31 @@ export function AppConceptWizard({
     setErrors([]);
   }, [newFeatureName, newFeatureDescription, newFeaturePriority, features]);
 
-  const removeFeature = useCallback((id: string) => {
-    setFeatures(features.filter((f) => f.id !== id));
-  }, [features]);
+  const removeFeature = useCallback(
+    (id: string) => {
+      setFeatures(features.filter((f) => f.id !== id));
+    },
+    [features]
+  );
 
-  const updateFeaturePriority = useCallback((id: string, priority: 'high' | 'medium' | 'low') => {
-    setFeatures(features.map((f) => (f.id === id ? { ...f, priority } : f)));
-  }, [features]);
+  const updateFeaturePriority = useCallback(
+    (id: string, priority: 'high' | 'medium' | 'low') => {
+      setFeatures(features.map((f) => (f.id === id ? { ...f, priority } : f)));
+    },
+    [features]
+  );
 
   // Add feature from library
-  const addFeatureFromLibrary = useCallback((feature: Omit<Feature, 'id'>) => {
-    const newFeature: Feature = {
-      ...feature,
-      id: `feature-${Date.now()}`
-    };
-    setFeatures([...features, newFeature]);
-  }, [features]);
+  const addFeatureFromLibrary = useCallback(
+    (feature: Omit<Feature, 'id'>) => {
+      const newFeature: Feature = {
+        ...feature,
+        id: `feature-${Date.now()}`,
+      };
+      setFeatures([...features, newFeature]);
+    },
+    [features]
+  );
 
   // Handle completion
   const handleComplete = useCallback(() => {
@@ -338,7 +360,7 @@ export function AppConceptWizard({
       uiPreferences,
       technical,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     // Clear draft on successful completion
@@ -359,15 +381,18 @@ export function AppConceptWizard({
   };
 
   // Build current concept for preview
-  const currentConcept = useMemo((): Partial<AppConcept> => ({
-    name,
-    description,
-    purpose,
-    targetUsers,
-    coreFeatures: features,
-    uiPreferences,
-    technical
-  }), [name, description, purpose, targetUsers, features, uiPreferences, technical]);
+  const currentConcept = useMemo(
+    (): Partial<AppConcept> => ({
+      name,
+      description,
+      purpose,
+      targetUsers,
+      coreFeatures: features,
+      uiPreferences,
+      technical,
+    }),
+    [name, description, purpose, targetUsers, features, uiPreferences, technical]
+  );
 
   // Render step content
   const renderStepContent = () => {
@@ -501,14 +526,17 @@ export function AppConceptWizard({
                           <select
                             value={feature.priority}
                             onChange={(e) =>
-                              updateFeaturePriority(feature.id, e.target.value as 'high' | 'medium' | 'low')
+                              updateFeaturePriority(
+                                feature.id,
+                                e.target.value as 'high' | 'medium' | 'low'
+                              )
                             }
                             className={`text-xs px-2 py-0.5 rounded-full border-0 ${
                               feature.priority === 'high'
                                 ? 'bg-red-500/20 text-red-300'
                                 : feature.priority === 'medium'
-                                ? 'bg-yellow-500/20 text-yellow-300'
-                                : 'bg-green-500/20 text-green-300'
+                                  ? 'bg-yellow-500/20 text-yellow-300'
+                                  : 'bg-green-500/20 text-green-300'
                             }`}
                           >
                             <option value="high">High</option>
@@ -544,7 +572,9 @@ export function AppConceptWizard({
                 />
                 <select
                   value={newFeaturePriority}
-                  onChange={(e) => setNewFeaturePriority(e.target.value as 'high' | 'medium' | 'low')}
+                  onChange={(e) =>
+                    setNewFeaturePriority(e.target.value as 'high' | 'medium' | 'low')
+                  }
                   className="px-4 py-2.5 rounded-lg bg-slate-800 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="high">High Priority</option>
@@ -629,14 +659,14 @@ export function AppConceptWizard({
                     {[
                       { value: 'single-page', label: 'Single Page', icon: '📄' },
                       { value: 'multi-page', label: 'Multi-Page', icon: '📑' },
-                      { value: 'dashboard', label: 'Dashboard', icon: '📊' }
+                      { value: 'dashboard', label: 'Dashboard', icon: '📊' },
                     ].map((layout) => (
                       <button
                         key={layout.value}
                         onClick={() =>
                           setUiPreferences({
                             ...uiPreferences,
-                            layout: layout.value as UIPreferences['layout']
+                            layout: layout.value as UIPreferences['layout'],
                           })
                         }
                         className={`px-4 py-3 rounded-lg border text-left transition-all ${
@@ -684,9 +714,7 @@ export function AppConceptWizard({
                   preferences={uiPreferences}
                   concept={currentConcept}
                   className="h-[calc(100%-28px)]"
-                  onPreferenceChange={(prefs) =>
-                    setUiPreferences({ ...uiPreferences, ...prefs })
-                  }
+                  onPreferenceChange={(prefs) => setUiPreferences({ ...uiPreferences, ...prefs })}
                 />
               </div>
             </div>
@@ -708,7 +736,9 @@ export function AppConceptWizard({
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">🔐</span>
-                  <span className={`font-medium ${technical.needsAuth ? 'text-blue-200' : 'text-white'}`}>
+                  <span
+                    className={`font-medium ${technical.needsAuth ? 'text-blue-200' : 'text-white'}`}
+                  >
                     User Authentication
                   </span>
                 </div>
@@ -737,7 +767,9 @@ export function AppConceptWizard({
 
               {/* Database */}
               <div
-                onClick={() => setTechnical({ ...technical, needsDatabase: !technical.needsDatabase })}
+                onClick={() =>
+                  setTechnical({ ...technical, needsDatabase: !technical.needsDatabase })
+                }
                 className={`p-4 rounded-xl border cursor-pointer transition-all ${
                   technical.needsDatabase
                     ? 'bg-blue-600/20 border-blue-500/50'
@@ -746,7 +778,9 @@ export function AppConceptWizard({
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">🗄️</span>
-                  <span className={`font-medium ${technical.needsDatabase ? 'text-blue-200' : 'text-white'}`}>
+                  <span
+                    className={`font-medium ${technical.needsDatabase ? 'text-blue-200' : 'text-white'}`}
+                  >
                     Database Storage
                   </span>
                 </div>
@@ -764,7 +798,9 @@ export function AppConceptWizard({
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">🔌</span>
-                  <span className={`font-medium ${technical.needsAPI ? 'text-blue-200' : 'text-white'}`}>
+                  <span
+                    className={`font-medium ${technical.needsAPI ? 'text-blue-200' : 'text-white'}`}
+                  >
                     External APIs
                   </span>
                 </div>
@@ -773,7 +809,9 @@ export function AppConceptWizard({
 
               {/* File Upload */}
               <div
-                onClick={() => setTechnical({ ...technical, needsFileUpload: !technical.needsFileUpload })}
+                onClick={() =>
+                  setTechnical({ ...technical, needsFileUpload: !technical.needsFileUpload })
+                }
                 className={`p-4 rounded-xl border cursor-pointer transition-all ${
                   technical.needsFileUpload
                     ? 'bg-blue-600/20 border-blue-500/50'
@@ -782,7 +820,9 @@ export function AppConceptWizard({
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">📁</span>
-                  <span className={`font-medium ${technical.needsFileUpload ? 'text-blue-200' : 'text-white'}`}>
+                  <span
+                    className={`font-medium ${technical.needsFileUpload ? 'text-blue-200' : 'text-white'}`}
+                  >
                     File Upload
                   </span>
                 </div>
@@ -791,7 +831,9 @@ export function AppConceptWizard({
 
               {/* Realtime */}
               <div
-                onClick={() => setTechnical({ ...technical, needsRealtime: !technical.needsRealtime })}
+                onClick={() =>
+                  setTechnical({ ...technical, needsRealtime: !technical.needsRealtime })
+                }
                 className={`p-4 rounded-xl border cursor-pointer transition-all ${
                   technical.needsRealtime
                     ? 'bg-blue-600/20 border-blue-500/50'
@@ -800,7 +842,9 @@ export function AppConceptWizard({
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">⚡</span>
-                  <span className={`font-medium ${technical.needsRealtime ? 'text-blue-200' : 'text-white'}`}>
+                  <span
+                    className={`font-medium ${technical.needsRealtime ? 'text-blue-200' : 'text-white'}`}
+                  >
                     Real-time Updates
                   </span>
                 </div>
@@ -856,8 +900,8 @@ export function AppConceptWizard({
                           f.priority === 'high'
                             ? 'bg-red-500'
                             : f.priority === 'medium'
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
+                              ? 'bg-yellow-500'
+                              : 'bg-green-500'
                         }`}
                       />
                       <span className="text-slate-300">{f.name}</span>
@@ -962,7 +1006,8 @@ export function AppConceptWizard({
               <div className="text-4xl mb-4">📝</div>
               <h3 className="text-xl font-bold text-white mb-2">Resume Draft?</h3>
               <p className="text-slate-400 mb-6">
-                You have an unsaved draft from {draftAge}. Would you like to continue where you left off?
+                You have an unsaved draft from {draftAge}. Would you like to continue where you left
+                off?
               </p>
               <div className="flex gap-3">
                 <button
@@ -996,10 +1041,7 @@ export function AppConceptWizard({
                 </p>
               </div>
             </div>
-            <button
-              onClick={onCancel}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onCancel} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -1021,8 +1063,8 @@ export function AppConceptWizard({
                     step.number === currentStep
                       ? 'bg-blue-600 text-white'
                       : step.number < currentStep
-                      ? 'bg-green-600/20 text-green-300 hover:bg-green-600/30 cursor-pointer'
-                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        ? 'bg-green-600/20 text-green-300 hover:bg-green-600/30 cursor-pointer'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                   }`}
                 >
                   <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-sm">

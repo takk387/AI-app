@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import type { RollbackHistoryProps } from '@/types/review';
 
 /**
  * RollbackHistory - Restore points UI
- * 
+ *
  * Features:
  * - List of restore points with timestamps
  * - One-click rollback to any point
@@ -133,17 +133,13 @@ export default function RollbackHistory({
                         {point.metadata.approvedHunks !== undefined && (
                           <>
                             <span>•</span>
-                            <span className="text-green-400">
-                              ✓ {point.metadata.approvedHunks}
-                            </span>
+                            <span className="text-green-400">✓ {point.metadata.approvedHunks}</span>
                           </>
                         )}
                         {point.metadata.rejectedHunks !== undefined && (
                           <>
                             <span>•</span>
-                            <span className="text-red-400">
-                              ✗ {point.metadata.rejectedHunks}
-                            </span>
+                            <span className="text-red-400">✗ {point.metadata.rejectedHunks}</span>
                           </>
                         )}
                       </div>
@@ -196,9 +192,7 @@ export default function RollbackHistory({
                 {/* Expanded Files List */}
                 {expandedPoint === point.id && (
                   <div className="mt-3 ml-9 space-y-1">
-                    <p className="text-xs text-slate-400 mb-2">
-                      Files in this restore point:
-                    </p>
+                    <p className="text-xs text-slate-400 mb-2">Files in this restore point:</p>
                     {point.files.slice(0, 10).map((file, fileIdx) => (
                       <div
                         key={fileIdx}
@@ -206,9 +200,7 @@ export default function RollbackHistory({
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-slate-400">📄</span>
-                          <span className="text-sm text-slate-300 truncate">
-                            {file.path}
-                          </span>
+                          <span className="text-sm text-slate-300 truncate">{file.path}</span>
                         </div>
                         <button
                           onClick={() => onRollbackFile(point.id, file.path)}

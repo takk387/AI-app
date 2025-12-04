@@ -91,7 +91,7 @@ export interface AppSettings {
 }
 
 // Settings section IDs
-export type SettingsSection = 
+export type SettingsSection =
   | 'general'
   | 'editor'
   | 'ai'
@@ -146,13 +146,55 @@ export const DEFAULT_SETTINGS: AppSettings = {
     uiDensity: 'comfortable',
   },
   shortcuts: [
-    { id: 'save', name: 'Save', description: 'Save current changes', keys: 'Ctrl+S', category: 'general' },
-    { id: 'undo', name: 'Undo', description: 'Undo last action', keys: 'Ctrl+Z', category: 'general' },
-    { id: 'redo', name: 'Redo', description: 'Redo last undone action', keys: 'Ctrl+Shift+Z', category: 'general' },
-    { id: 'preview', name: 'Toggle Preview', description: 'Show/hide preview panel', keys: 'Ctrl+P', category: 'preview' },
-    { id: 'code', name: 'Toggle Code', description: 'Show/hide code panel', keys: 'Ctrl+E', category: 'editor' },
-    { id: 'search', name: 'Search', description: 'Open search dialog', keys: 'Ctrl+K', category: 'navigation' },
-    { id: 'settings', name: 'Settings', description: 'Open settings', keys: 'Ctrl+,', category: 'navigation' },
+    {
+      id: 'save',
+      name: 'Save',
+      description: 'Save current changes',
+      keys: 'Ctrl+S',
+      category: 'general',
+    },
+    {
+      id: 'undo',
+      name: 'Undo',
+      description: 'Undo last action',
+      keys: 'Ctrl+Z',
+      category: 'general',
+    },
+    {
+      id: 'redo',
+      name: 'Redo',
+      description: 'Redo last undone action',
+      keys: 'Ctrl+Shift+Z',
+      category: 'general',
+    },
+    {
+      id: 'preview',
+      name: 'Toggle Preview',
+      description: 'Show/hide preview panel',
+      keys: 'Ctrl+P',
+      category: 'preview',
+    },
+    {
+      id: 'code',
+      name: 'Toggle Code',
+      description: 'Show/hide code panel',
+      keys: 'Ctrl+E',
+      category: 'editor',
+    },
+    {
+      id: 'search',
+      name: 'Search',
+      description: 'Open search dialog',
+      keys: 'Ctrl+K',
+      category: 'navigation',
+    },
+    {
+      id: 'settings',
+      name: 'Settings',
+      description: 'Open settings',
+      keys: 'Ctrl+,',
+      category: 'navigation',
+    },
   ],
   account: {
     apiKeyConfigured: false,

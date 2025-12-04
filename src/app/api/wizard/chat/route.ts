@@ -106,7 +106,7 @@ async function extractStateFromConversation(
 Only include information that was explicitly discussed. Use null for anything not yet determined.
 
 CONVERSATION:
-${conversationHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')}
+${conversationHistory.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n')}
 
 Return ONLY the JSON object, no other text.`;
 
@@ -118,12 +118,15 @@ Return ONLY the JSON object, no other text.`;
       messages: [{ role: 'user', content: extractionPrompt }],
     });
 
-    const textBlock = response.content.find(block => block.type === 'text');
+    const textBlock = response.content.find((block) => block.type === 'text');
     if (textBlock && textBlock.type === 'text') {
       // Clean up the response - remove markdown code blocks if present
       let jsonText = textBlock.text.trim();
       if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/```json?\n?/g, '').replace(/```$/g, '').trim();
+        jsonText = jsonText
+          .replace(/```json?\n?/g, '')
+          .replace(/```$/g, '')
+          .trim();
       }
 
       const extracted = JSON.parse(jsonText);
@@ -164,7 +167,7 @@ function isConfirmingCompletion(message: string): boolean {
     /ready to build/i,
   ];
 
-  return confirmPatterns.some(pattern => pattern.test(message));
+  return confirmPatterns.some((pattern) => pattern.test(message));
 }
 
 /**
@@ -182,7 +185,7 @@ function isRequestingPhases(message: string): boolean {
     /how.*build/i,
   ];
 
-  return phasePatterns.some(pattern => pattern.test(message));
+  return phasePatterns.some((pattern) => pattern.test(message));
 }
 
 // ============================================================================
@@ -197,9 +200,12 @@ export async function POST(request: Request) {
     const { message, conversationHistory, currentState, referenceImages } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({
-        error: 'Anthropic API key not configured'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Anthropic API key not configured',
+        },
+        { status: 500 }
+      );
     }
 
     // Build conversation messages for Claude
@@ -254,23 +260,35 @@ ${currentState.name ? `**App Name:** ${currentState.name}` : ''}
 ${currentState.description ? `**Description:** ${currentState.description}` : ''}
 ${currentState.targetUsers ? `**Target Users:** ${currentState.targetUsers}` : ''}
 
-${currentState.roles && currentState.roles.length > 0 ? `
+${
+  currentState.roles && currentState.roles.length > 0
+    ? `
 **Roles Identified:**
-${currentState.roles.map(r => `- ${r.name}: ${r.capabilities.join(', ')}`).join('\n')}
-` : ''}
+${currentState.roles.map((r) => `- ${r.name}: ${r.capabilities.join(', ')}`).join('\n')}
+`
+    : ''
+}
 
-${currentState.features.length > 0 ? `
+${
+  currentState.features.length > 0
+    ? `
 **Features Discussed:**
-${currentState.features.map(f => `- ${f.name}: ${f.description}`).join('\n')}
-` : ''}
+${currentState.features.map((f) => `- ${f.name}: ${f.description}`).join('\n')}
+`
+    : ''
+}
 
-${Object.values(currentState.technical).some(v => v !== undefined) ? `
+${
+  Object.values(currentState.technical).some((v) => v !== undefined)
+    ? `
 **Technical Decisions:**
 ${currentState.technical.needsAuth !== undefined ? `- Authentication: ${currentState.technical.needsAuth ? 'Yes' : 'No'}` : ''}
 ${currentState.technical.needsDatabase !== undefined ? `- Database: ${currentState.technical.needsDatabase ? 'Yes' : 'No'}` : ''}
 ${currentState.technical.needsRealtime !== undefined ? `- Real-time: ${currentState.technical.needsRealtime ? 'Yes' : 'No'}` : ''}
 ${currentState.technical.needsFileUpload !== undefined ? `- File Upload: ${currentState.technical.needsFileUpload ? 'Yes' : 'No'}` : ''}
-` : ''}
+`
+    : ''
+}
 
 Continue the conversation naturally based on this context.`;
 
@@ -301,7 +319,7 @@ Ask any final technical questions if needed (platform, technology preferences) b
     });
 
     // Extract response text
-    const textBlock = response.content.find(block => block.type === 'text');
+    const textBlock = response.content.find((block) => block.type === 'text');
     const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
 
     // Update state by analyzing the full conversation
@@ -314,8 +332,11 @@ Ask any final technical questions if needed (platform, technology preferences) b
     const updatedState = await extractStateFromConversation(updatedHistory, currentState);
 
     // Check if we should show phase generation option
-    const showPhaseOption = updatedState.isComplete ||
-      (updatedState.features.length >= 3 && updatedState.name && updatedState.technical.needsAuth !== undefined);
+    const showPhaseOption =
+      updatedState.isComplete ||
+      (updatedState.features.length >= 3 &&
+        updatedState.name &&
+        updatedState.technical.needsAuth !== undefined);
 
     // Generate suggested actions based on conversation state
     const suggestedActions: Array<{ label: string; action: string }> = [];
@@ -355,16 +376,20 @@ Ask any final technical questions if needed (platform, technology preferences) b
       },
     };
 
-    console.log(`Wizard response generated in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`);
+    console.log(
+      `Wizard response generated in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`
+    );
 
     return NextResponse.json(result);
-
   } catch (error) {
     console.error('Wizard chat error:', error);
 
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : 'Failed to process wizard message',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Failed to process wizard message',
+      },
+      { status: 500 }
+    );
   }
 }
 

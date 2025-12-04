@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { BuildPhase, PhaseTask, ValidationCheck } from '../../types/buildPhases';
@@ -75,30 +75,35 @@ export function PhaseDetailView({
         <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                phase.status === 'completed' ? 'bg-green-500/20' :
-                phase.status === 'in-progress' ? 'bg-blue-500/20' :
-                phase.status === 'skipped' ? 'bg-slate-600/20' : 'bg-white/10'
-              }`}>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  phase.status === 'completed'
+                    ? 'bg-green-500/20'
+                    : phase.status === 'in-progress'
+                      ? 'bg-blue-500/20'
+                      : phase.status === 'skipped'
+                        ? 'bg-slate-600/20'
+                        : 'bg-white/10'
+                }`}
+              >
                 <span className="text-2xl">
-                  {phase.status === 'completed' ? '✅' :
-                   phase.status === 'in-progress' ? '⏳' :
-                   phase.status === 'skipped' ? '⏭️' : '📋'}
+                  {phase.status === 'completed'
+                    ? '✅'
+                    : phase.status === 'in-progress'
+                      ? '⏳'
+                      : phase.status === 'skipped'
+                        ? '⏭️'
+                        : '📋'}
                 </span>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">
                   Phase {phase.order}: {phase.name}
                 </h3>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  {phase.description}
-                </p>
+                <p className="text-sm text-slate-400 mt-0.5">{phase.description}</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -107,11 +112,15 @@ export function PhaseDetailView({
           <div className="flex gap-4 mt-4">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
               <span className="text-green-400">✅</span>
-              <span className="text-sm text-slate-300">{completedTasks}/{phase.tasks.length} Tasks</span>
+              <span className="text-sm text-slate-300">
+                {completedTasks}/{phase.tasks.length} Tasks
+              </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
               <span className="text-blue-400">🔍</span>
-              <span className="text-sm text-slate-300">{passedChecks}/{phase.validationChecks.length} Checks</span>
+              <span className="text-sm text-slate-300">
+                {passedChecks}/{phase.validationChecks.length} Checks
+              </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
               <span className="text-purple-400">⏱️</span>
@@ -194,18 +203,14 @@ export function PhaseDetailView({
                 <div
                   key={check.id}
                   className={`flex items-start gap-3 p-3 rounded-lg ${
-                    check.passed
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-red-500/10 text-red-400'
+                    check.passed ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
                   }`}
                 >
                   <span className="text-lg mt-0.5">{check.passed ? '✅' : '❌'}</span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-white">{check.name}</span>
-                      <span className="text-xs px-2 py-0.5 rounded bg-white/10">
-                        {check.type}
-                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded bg-white/10">{check.type}</span>
                     </div>
                     {check.message && (
                       <div className="text-xs mt-1 opacity-80">{check.message}</div>

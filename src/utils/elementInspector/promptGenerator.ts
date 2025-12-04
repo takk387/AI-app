@@ -4,7 +4,11 @@
  * selected elements and user descriptions.
  */
 
-import type { InspectedElement, PromptGenerationOptions, ExtractedStyles } from '@/types/elementInspector';
+import type {
+  InspectedElement,
+  PromptGenerationOptions,
+  ExtractedStyles,
+} from '@/types/elementInspector';
 
 const DEFAULT_OPTIONS: PromptGenerationOptions = {
   includeStyles: true,
@@ -49,17 +53,22 @@ export function generateClaudePrompt(
   }
 
   // Source File Hints
-  if (opts.includeSourceGuesses && selectedElements.some(el => el.guessedSourceFiles.length > 0)) {
+  if (
+    opts.includeSourceGuesses &&
+    selectedElements.some((el) => el.guessedSourceFiles.length > 0)
+  ) {
     sections.push('## Likely Source Files\n');
 
     const allGuesses = new Set<string>();
-    selectedElements.forEach(el => {
-      el.guessedSourceFiles.forEach(guess => allGuesses.add(guess));
+    selectedElements.forEach((el) => {
+      el.guessedSourceFiles.forEach((guess) => allGuesses.add(guess));
     });
 
-    Array.from(allGuesses).slice(0, 8).forEach(file => {
-      sections.push(`- \`${file}\``);
-    });
+    Array.from(allGuesses)
+      .slice(0, 8)
+      .forEach((file) => {
+        sections.push(`- \`${file}\``);
+      });
     sections.push('');
   }
 
@@ -109,9 +118,10 @@ function formatElementSection(
 
   // Text content
   if (element.textContent) {
-    const truncated = element.textContent.length > options.maxTextContentLength
-      ? element.textContent.slice(0, options.maxTextContentLength) + '...'
-      : element.textContent;
+    const truncated =
+      element.textContent.length > options.maxTextContentLength
+        ? element.textContent.slice(0, options.maxTextContentLength) + '...'
+        : element.textContent;
     lines.push(`**Text Content:** "${truncated}"\n`);
   }
 
@@ -124,7 +134,9 @@ function formatElementSection(
   }
 
   // Dimensions
-  lines.push(`**Dimensions:** ${Math.round(element.boundingRect.width)}px × ${Math.round(element.boundingRect.height)}px\n`);
+  lines.push(
+    `**Dimensions:** ${Math.round(element.boundingRect.width)}px × ${Math.round(element.boundingRect.height)}px\n`
+  );
 
   return lines.join('\n');
 }

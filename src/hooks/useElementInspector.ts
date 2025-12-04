@@ -61,7 +61,7 @@ export function useElementInspector(
    * Toggle inspect mode on/off
    */
   const toggleInspectMode = useCallback(() => {
-    setIsActive(prev => {
+    setIsActive((prev) => {
       const newValue = !prev;
 
       // Update body cursor
@@ -111,33 +111,36 @@ export function useElementInspector(
   /**
    * Toggle selection of an element
    */
-  const toggleElementSelection = useCallback((element: HTMLElement) => {
-    setSelectedElements(prev => {
-      // Check if already selected
-      const existingIndex = prev.findIndex(el => el.element === element);
+  const toggleElementSelection = useCallback(
+    (element: HTMLElement) => {
+      setSelectedElements((prev) => {
+        // Check if already selected
+        const existingIndex = prev.findIndex((el) => el.element === element);
 
-      if (existingIndex !== -1) {
-        // Remove from selection
-        return prev.filter((_, i) => i !== existingIndex);
-      }
+        if (existingIndex !== -1) {
+          // Remove from selection
+          return prev.filter((_, i) => i !== existingIndex);
+        }
 
-      // Check max selections
-      if (prev.length >= maxSelections) {
-        console.warn(`Maximum of ${maxSelections} elements can be selected`);
-        return prev;
-      }
+        // Check max selections
+        if (prev.length >= maxSelections) {
+          console.warn(`Maximum of ${maxSelections} elements can be selected`);
+          return prev;
+        }
 
-      // Add to selection
-      const elementData = extractElementData(element);
-      return [...prev, elementData];
-    });
-  }, [maxSelections, extractElementData]);
+        // Add to selection
+        const elementData = extractElementData(element);
+        return [...prev, elementData];
+      });
+    },
+    [maxSelections, extractElementData]
+  );
 
   /**
    * Remove a selected element by id
    */
   const removeSelectedElement = useCallback((id: string) => {
-    setSelectedElements(prev => prev.filter(el => el.id !== id));
+    setSelectedElements((prev) => prev.filter((el) => el.id !== id));
   }, []);
 
   /**
@@ -151,11 +154,7 @@ export function useElementInspector(
    * Generate the Claude prompt
    */
   const generatePrompt = useCallback(() => {
-    const prompt = generateClaudePrompt(
-      selectedElements,
-      problemDescription,
-      desiredChange
-    );
+    const prompt = generateClaudePrompt(selectedElements, problemDescription, desiredChange);
     setGeneratedPrompt(prompt);
     setIsPromptModalOpen(true);
   }, [selectedElements, problemDescription, desiredChange]);

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { HunkApprovalCardProps } from '@/types/review';
@@ -11,7 +11,7 @@ import {
 
 /**
  * HunkApprovalCard - Individual hunk approval/rejection UI
- * 
+ *
  * Features:
  * - Shows hunk summary and category
  * - Approve/Reject/Reset buttons
@@ -26,9 +26,9 @@ export default function HunkApprovalCard({
   expanded = true,
   onToggleExpand,
 }: HunkApprovalCardProps) {
-  const addedLines = hunk.lines.filter(l => l.type === 'added').length;
-  const removedLines = hunk.lines.filter(l => l.type === 'removed').length;
-  const unchangedLines = hunk.lines.filter(l => l.type === 'unchanged').length;
+  const addedLines = hunk.lines.filter((l) => l.type === 'added').length;
+  const removedLines = hunk.lines.filter((l) => l.type === 'removed').length;
+  const unchangedLines = hunk.lines.filter((l) => l.type === 'unchanged').length;
 
   const getStatusIcon = () => {
     switch (hunk.status) {
@@ -113,9 +113,7 @@ export default function HunkApprovalCard({
               <span className="text-white font-medium text-sm">
                 {hunk.summary || `Lines ${hunk.startLine}-${hunk.endLine}`}
               </span>
-              <span className={`text-xs ${getStatusColor(hunk.status)}`}>
-                {getStatusLabel()}
-              </span>
+              <span className={`text-xs ${getStatusColor(hunk.status)}`}>{getStatusLabel()}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className={getTypeColor()}>{getTypeLabel()}</span>
@@ -132,12 +130,8 @@ export default function HunkApprovalCard({
         <div className="flex items-center gap-4">
           {/* Line Stats */}
           <div className="flex items-center gap-3 text-xs">
-            {addedLines > 0 && (
-              <span className="text-green-400">+{addedLines}</span>
-            )}
-            {removedLines > 0 && (
-              <span className="text-red-400">-{removedLines}</span>
-            )}
+            {addedLines > 0 && <span className="text-green-400">+{addedLines}</span>}
+            {removedLines > 0 && <span className="text-red-400">-{removedLines}</span>}
             {unchangedLines > 0 && (
               <span className="text-slate-500">{unchangedLines} unchanged</span>
             )}
@@ -181,7 +175,7 @@ export default function HunkApprovalCard({
           <span>
             📍 Lines {hunk.startLine}–{hunk.endLine}
           </span>
-          {hunk.lines.some(l => l.comments.length > 0) && (
+          {hunk.lines.some((l) => l.comments.length > 0) && (
             <span className="flex items-center gap-1 text-blue-400">
               💬 {hunk.lines.reduce((sum, l) => sum + l.comments.length, 0)} comments
             </span>

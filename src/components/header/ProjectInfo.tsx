@@ -108,9 +108,7 @@ export const ProjectInfo: React.FC<ProjectInfoProps> = ({
         <span className={`status-dot ${dotClass}`} />
         <span>{statusLabel}</span>
         {lastSaved && status === 'saved' && (
-          <span className="hidden lg:inline text-zinc-500">
-            {lastSaved}
-          </span>
+          <span className="hidden lg:inline text-zinc-500">{lastSaved}</span>
         )}
       </div>
     </div>

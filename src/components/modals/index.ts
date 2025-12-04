@@ -1,6 +1,6 @@
 /**
  * Modal Components Module
- * 
+ *
  * Extracted modal and overlay components from AIBuilder.tsx
  * for better code organization and reusability.
  */

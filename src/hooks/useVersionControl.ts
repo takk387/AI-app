@@ -1,6 +1,6 @@
 /**
  * useVersionControl Hook - Handles undo/redo functionality and version management
- * 
+ *
  * Extracted from AIBuilder.tsx for reusability and better separation of concerns.
  * Provides version history management, undo/redo stacks, and version comparison.
  */
@@ -41,7 +41,11 @@ export interface UseVersionControlReturn {
   /** Revert to a specific version */
   revertToVersion: (version: AppVersion) => void;
   /** Save the current state as a new version */
-  saveVersion: (component: GeneratedComponent, changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE', description: string) => GeneratedComponent;
+  saveVersion: (
+    component: GeneratedComponent,
+    changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE',
+    description: string
+  ) => GeneratedComponent;
   /** Compare two versions */
   compareVersions: (v1: AppVersion, v2: AppVersion) => { v1: AppVersion; v2: AppVersion };
   /** Fork from a specific version */
@@ -64,20 +68,20 @@ function generateId(): string {
 
 /**
  * Hook for managing version control functionality
- * 
+ *
  * @param options - Configuration options
  * @returns Version control methods and state
- * 
+ *
  * @example
  * ```tsx
- * const { 
- *   undoStack, 
- *   redoStack, 
- *   canUndo, 
- *   canRedo, 
- *   undo, 
+ * const {
+ *   undoStack,
+ *   redoStack,
+ *   canUndo,
+ *   canRedo,
+ *   undo,
  *   redo,
- *   saveVersion 
+ *   saveVersion
  * } = useVersionControl({
  *   currentComponent,
  *   onComponentUpdate: (comp) => setCurrentComponent(comp),
@@ -96,7 +100,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
    * Push a version to the undo stack
    */
   const pushToUndoStack = useCallback((version: AppVersion) => {
-    setUndoStack(prev => [...prev, version]);
+    setUndoStack((prev) => [...prev, version]);
   }, []);
 
   /**
@@ -109,27 +113,30 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
   /**
    * Save the current state as a new version
    */
-  const saveVersion = useCallback((
-    component: GeneratedComponent, 
-    changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE', 
-    description: string
-  ): GeneratedComponent => {
-    const versions = component.versions || [];
-    
-    const newVersion: AppVersion = {
-      id: generateId(),
-      versionNumber: versions.length + 1,
-      code: component.code,
-      description: description,
-      timestamp: new Date().toISOString(),
-      changeType
-    };
-    
-    return {
-      ...component,
-      versions: [...versions, newVersion]
-    };
-  }, []);
+  const saveVersion = useCallback(
+    (
+      component: GeneratedComponent,
+      changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE',
+      description: string
+    ): GeneratedComponent => {
+      const versions = component.versions || [];
+
+      const newVersion: AppVersion = {
+        id: generateId(),
+        versionNumber: versions.length + 1,
+        code: component.code,
+        description: description,
+        timestamp: new Date().toISOString(),
+        changeType,
+      };
+
+      return {
+        ...component,
+        versions: [...versions, newVersion],
+      };
+    },
+    []
+  );
 
   /**
    * Undo the last change
@@ -147,9 +154,9 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
       code: currentComponent.code,
       description: currentComponent.description,
       timestamp: currentComponent.timestamp,
-      changeType: 'MINOR_CHANGE'
+      changeType: 'MINOR_CHANGE',
     };
-    setRedoStack(prev => [...prev, currentVersion]);
+    setRedoStack((prev) => [...prev, currentVersion]);
     setUndoStack(newUndoStack);
 
     // Apply previous version
@@ -157,7 +164,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
       ...currentComponent,
       code: previousVersion.code,
       description: previousVersion.description,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     onComponentUpdate(undoneComponent);
@@ -179,9 +186,9 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
       code: currentComponent.code,
       description: currentComponent.description,
       timestamp: currentComponent.timestamp,
-      changeType: 'MINOR_CHANGE'
+      changeType: 'MINOR_CHANGE',
     };
-    setUndoStack(prev => [...prev, currentVersion]);
+    setUndoStack((prev) => [...prev, currentVersion]);
     setRedoStack(newRedoStack);
 
     // Apply next version
@@ -189,7 +196,7 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
       ...currentComponent,
       code: nextVersion.code,
       description: nextVersion.description,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     onComponentUpdate(redoneComponent);
@@ -198,66 +205,77 @@ export function useVersionControl(options: UseVersionControlOptions): UseVersion
   /**
    * Revert to a specific version
    */
-  const revertToVersion = useCallback((version: AppVersion) => {
-    if (!currentComponent) return;
+  const revertToVersion = useCallback(
+    (version: AppVersion) => {
+      if (!currentComponent) return;
 
-    // Save current state to undo stack before reverting
-    const currentVersion: AppVersion = {
-      id: generateId(),
-      versionNumber: (currentComponent.versions?.length || 0) + 1,
-      code: currentComponent.code,
-      description: currentComponent.description,
-      timestamp: currentComponent.timestamp,
-      changeType: 'MINOR_CHANGE'
-    };
-    setUndoStack(prev => [...prev, currentVersion]);
-    setRedoStack([]); // Clear redo stack on new action
+      // Save current state to undo stack before reverting
+      const currentVersion: AppVersion = {
+        id: generateId(),
+        versionNumber: (currentComponent.versions?.length || 0) + 1,
+        code: currentComponent.code,
+        description: currentComponent.description,
+        timestamp: currentComponent.timestamp,
+        changeType: 'MINOR_CHANGE',
+      };
+      setUndoStack((prev) => [...prev, currentVersion]);
+      setRedoStack([]); // Clear redo stack on new action
 
-    // Revert to the selected version
-    const revertedComponent: GeneratedComponent = {
-      ...currentComponent,
-      code: version.code,
-      description: `Reverted to version ${version.versionNumber}`,
-      timestamp: new Date().toISOString()
-    };
+      // Revert to the selected version
+      const revertedComponent: GeneratedComponent = {
+        ...currentComponent,
+        code: version.code,
+        description: `Reverted to version ${version.versionNumber}`,
+        timestamp: new Date().toISOString(),
+      };
 
-    onComponentUpdate(revertedComponent);
-  }, [currentComponent, onComponentUpdate]);
+      onComponentUpdate(revertedComponent);
+    },
+    [currentComponent, onComponentUpdate]
+  );
 
   /**
    * Compare two versions
    */
-  const compareVersions = useCallback((v1: AppVersion, v2: AppVersion): { v1: AppVersion; v2: AppVersion } => {
-    return { v1, v2 };
-  }, []);
+  const compareVersions = useCallback(
+    (v1: AppVersion, v2: AppVersion): { v1: AppVersion; v2: AppVersion } => {
+      return { v1, v2 };
+    },
+    []
+  );
 
   /**
    * Fork from a specific version
    */
-  const forkFromVersion = useCallback((sourceApp: GeneratedComponent, version?: AppVersion): GeneratedComponent => {
-    const codeToFork = version ? version.code : sourceApp.code;
-    const descriptionSuffix = version ? ` (forked from v${version.versionNumber})` : ' (forked)';
+  const forkFromVersion = useCallback(
+    (sourceApp: GeneratedComponent, version?: AppVersion): GeneratedComponent => {
+      const codeToFork = version ? version.code : sourceApp.code;
+      const descriptionSuffix = version ? ` (forked from v${version.versionNumber})` : ' (forked)';
 
-    const forkedApp: GeneratedComponent = {
-      id: generateId(),
-      name: `${sourceApp.name} - Fork`,
-      code: codeToFork,
-      description: sourceApp.description + descriptionSuffix,
-      timestamp: new Date().toISOString(),
-      isFavorite: false,
-      conversationHistory: [],
-      versions: [{
+      const forkedApp: GeneratedComponent = {
         id: generateId(),
-        versionNumber: 1,
+        name: `${sourceApp.name} - Fork`,
         code: codeToFork,
-        description: `Forked from ${sourceApp.name}`,
+        description: sourceApp.description + descriptionSuffix,
         timestamp: new Date().toISOString(),
-        changeType: 'NEW_APP'
-      }]
-    };
+        isFavorite: false,
+        conversationHistory: [],
+        versions: [
+          {
+            id: generateId(),
+            versionNumber: 1,
+            code: codeToFork,
+            description: `Forked from ${sourceApp.name}`,
+            timestamp: new Date().toISOString(),
+            changeType: 'NEW_APP',
+          },
+        ],
+      };
 
-    return forkedApp;
-  }, []);
+      return forkedApp;
+    },
+    []
+  );
 
   return {
     undoStack,

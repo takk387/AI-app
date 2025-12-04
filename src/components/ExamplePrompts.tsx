@@ -142,9 +142,7 @@ export const ExamplePrompts: React.FC<ExamplePromptsProps> = ({
               className="bg-white/5 rounded-xl p-4 text-left hover:bg-white/10 transition-all border border-transparent hover:border-blue-500/30 group"
             >
               <div className="flex items-start gap-3">
-                {prompt.icon && (
-                  <span className="text-2xl flex-shrink-0">{prompt.icon}</span>
-                )}
+                {prompt.icon && <span className="text-2xl flex-shrink-0">{prompt.icon}</span>}
                 <p className="text-sm text-slate-300 group-hover:text-white transition-colors">
                   {prompt.text}
                 </p>
@@ -171,9 +169,7 @@ export const ExamplePrompts: React.FC<ExamplePromptsProps> = ({
             onClick={() => onSelect(prompt.text)}
             className="w-full text-left px-4 py-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all flex items-center gap-3 group border border-transparent hover:border-blue-500/20"
           >
-            {prompt.icon && (
-              <span className="text-xl flex-shrink-0">{prompt.icon}</span>
-            )}
+            {prompt.icon && <span className="text-xl flex-shrink-0">{prompt.icon}</span>}
             <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
               {prompt.text}
             </span>
@@ -245,9 +241,7 @@ export const CategorizedPrompts: React.FC<CategorizedPromptsProps> = ({ onSelect
                   onClick={() => onSelect(prompt.text)}
                   className="w-full text-left px-4 py-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all flex items-center gap-3 group border border-transparent hover:border-blue-500/20"
                 >
-                  {prompt.icon && (
-                    <span className="text-xl flex-shrink-0">{prompt.icon}</span>
-                  )}
+                  {prompt.icon && <span className="text-xl flex-shrink-0">{prompt.icon}</span>}
                   <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
                     {prompt.text}
                   </span>

@@ -1,6 +1,6 @@
 /**
  * StorageService - Production-grade file management service
- * 
+ *
  * Features:
  * - Dependency injection for universal compatibility (browser + server)
  * - Type-safe operations with comprehensive error handling
@@ -8,7 +8,7 @@
  * - File validation (size, type, extension)
  * - User-scoped security (files organized by user ID)
  * - Pagination support for listing files
- * 
+ *
  * @example Browser (Client Component)
  * ```typescript
  * import { createClient } from '@/utils/supabase/client';
@@ -16,7 +16,7 @@
  * const storage = new StorageService(supabase);
  * const result = await storage.upload('user-uploads', file);
  * ```
- * 
+ *
  * @example Server (API Route)
  * ```typescript
  * import { createClient } from '@/utils/supabase/server';
@@ -89,7 +89,7 @@ const RETRY_CONFIG = {
 
 /**
  * StorageService - Main service class for file management
- * 
+ *
  * Uses dependency injection pattern for universal compatibility.
  * The Supabase client must be passed to the constructor.
  */
@@ -107,17 +107,17 @@ export class StorageService {
 
   /**
    * Create a new StorageService instance
-   * 
+   *
    * @param client - Supabase client (browser or server)
    * @param analytics - Optional analytics service for tracking operations
-   * 
+   *
    * @example Browser context
    * ```typescript
    * import { createClient } from '@/utils/supabase/client';
    * const supabase = createClient();
    * const storage = new StorageService(supabase);
    * ```
-   * 
+   *
    * @example With analytics
    * ```typescript
    * import { createClient } from '@/utils/supabase/client';
@@ -126,7 +126,7 @@ export class StorageService {
    * const analytics = new StorageAnalyticsService(supabase);
    * const storage = new StorageService(supabase, analytics);
    * ```
-   * 
+   *
    * @example Server context
    * ```typescript
    * import { createClient } from '@/utils/supabase/server';
@@ -145,13 +145,13 @@ export class StorageService {
 
   /**
    * Upload a file to storage
-   * 
+   *
    * Features:
    * - Automatic validation (size, type, extension)
    * - Retry logic with exponential backoff
    * - User-scoped paths
    * - Comprehensive error handling
-   * 
+   *
    * @param bucket - Target bucket name
    * @param file - File to upload
    * @param config - Optional upload configuration
@@ -176,11 +176,9 @@ export class StorageService {
       const validation = this.validateFile(file, bucket, config);
       if (!validation.isValid) {
         const firstError = validation.errors[0];
-        const error = createStorageError(
-          firstError.code,
-          firstError.message,
-          { validationErrors: validation.errors }
-        );
+        const error = createStorageError(firstError.code, firstError.message, {
+          validationErrors: validation.errors,
+        });
 
         // Track validation error
         await this.analytics?.trackError({
@@ -203,13 +201,7 @@ export class StorageService {
       const path = this.generatePath(userId, file.name);
 
       // Upload with retry logic
-      const uploadResult = await this.uploadWithRetry(
-        bucket,
-        path,
-        file,
-        config,
-        operationId
-      );
+      const uploadResult = await this.uploadWithRetry(bucket, path, file, config, operationId);
 
       if (!uploadResult.success) {
         // Track upload error (already tracked in uploadWithRetry, but track final failure)
@@ -286,12 +278,12 @@ export class StorageService {
 
   /**
    * List files in a bucket
-   * 
+   *
    * Features:
    * - User-scoped (only shows current user's files)
    * - Pagination support
    * - Sorting options
-   * 
+   *
    * @param bucket - Bucket to list files from
    * @param options - Pagination and sorting options
    * @returns Paginated result with file metadata
@@ -313,13 +305,11 @@ export class StorageService {
       const sortBy = options?.sortBy || { column: 'name', order: 'asc' as const };
 
       // List files in user's directory
-      const { data: files, error } = await this.client.storage
-        .from(bucket)
-        .list(userId, {
-          limit,
-          offset,
-          sortBy,
-        });
+      const { data: files, error } = await this.client.storage.from(bucket).list(userId, {
+        limit,
+        offset,
+        sortBy,
+      });
 
       if (error) {
         const storageError = this.handleError(error, StorageErrorCode.UNKNOWN_ERROR);
@@ -412,19 +402,16 @@ export class StorageService {
 
   /**
    * Delete a file from storage
-   * 
+   *
    * Features:
    * - Ownership verification (users can only delete their own files)
    * - Comprehensive error handling
-   * 
+   *
    * @param bucket - Bucket containing the file
    * @param fileId - File ID (path) to delete
    * @returns Result indicating success or error
    */
-  async delete(
-    bucket: BucketName,
-    fileId: FileId
-  ): Promise<StorageResult<void>> {
+  async delete(bucket: BucketName, fileId: FileId): Promise<StorageResult<void>> {
     const operationId = generateOperationId('delete');
     const startTime = Date.now();
     const fileName = fileId.split('/').pop() || fileId;
@@ -457,9 +444,7 @@ export class StorageService {
       }
 
       // Delete the file
-      const { error } = await this.client.storage
-        .from(bucket)
-        .remove([fileId]);
+      const { error } = await this.client.storage.from(bucket).remove([fileId]);
 
       const duration = Date.now() - startTime;
 
@@ -517,7 +502,7 @@ export class StorageService {
 
   /**
    * Get URL for a file
-   * 
+   *
    * @param bucket - Bucket containing the file
    * @param path - File path
    * @param options - URL options
@@ -570,9 +555,7 @@ export class StorageService {
       }
 
       // Generate public URL
-      const { data } = this.client.storage
-        .from(bucket)
-        .getPublicUrl(path);
+      const { data } = this.client.storage.from(bucket).getPublicUrl(path);
 
       return {
         success: true,
@@ -588,15 +571,12 @@ export class StorageService {
 
   /**
    * Download a file from storage
-   * 
+   *
    * @param bucket - Bucket containing the file
    * @param path - File path
    * @returns Result with file blob
    */
-  async download(
-    bucket: BucketName,
-    path: FilePath
-  ): Promise<StorageResult<Blob>> {
+  async download(bucket: BucketName, path: FilePath): Promise<StorageResult<Blob>> {
     const operationId = generateOperationId('download');
     const startTime = Date.now();
     const fileName = path.split('/').pop() || path;
@@ -629,9 +609,7 @@ export class StorageService {
         };
       }
 
-      const { data, error } = await this.client.storage
-        .from(bucket)
-        .download(path);
+      const { data, error } = await this.client.storage.from(bucket).download(path);
 
       const duration = Date.now() - startTime;
 
@@ -696,19 +674,20 @@ export class StorageService {
 
   /**
    * Get current authenticated user ID from the injected client
-   * 
+   *
    * @returns User ID
    * @throws Error if user is not authenticated
    */
   private async getUserId(): Promise<UserId> {
-    const { data: { user }, error } = await this.client.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await this.client.auth.getUser();
 
     if (error || !user) {
-      throw createStorageError(
-        StorageErrorCode.NOT_AUTHENTICATED,
-        'User is not authenticated',
-        { error }
-      );
+      throw createStorageError(StorageErrorCode.NOT_AUTHENTICATED, 'User is not authenticated', {
+        error,
+      });
     }
 
     return user.id as UserId;
@@ -716,7 +695,7 @@ export class StorageService {
 
   /**
    * Validate a file against bucket rules and config
-   * 
+   *
    * @param file - File to validate
    * @param bucket - Target bucket
    * @param config - Optional upload config with overrides
@@ -767,7 +746,7 @@ export class StorageService {
   /**
    * Generate user-scoped file path
    * Format: {userId}/{filename}
-   * 
+   *
    * @param userId - User ID
    * @param filename - Original filename
    * @returns User-scoped path
@@ -775,16 +754,16 @@ export class StorageService {
   private generatePath(userId: UserId, filename: string): FilePath {
     // Sanitize filename (remove path separators, special chars)
     const sanitized = filename.replace(/[/\\]/g, '_');
-    
+
     // Add timestamp to prevent collisions
     const timestamp = Date.now();
     const extension = getFileExtension(filename);
-    
+
     // Calculate name without extension (only subtract dot if extension exists)
     const nameWithoutExt = extension
       ? sanitized.substring(0, sanitized.length - extension.length - 1)
       : sanitized;
-    
+
     const uniqueFilename = extension
       ? `${nameWithoutExt}_${timestamp}.${extension}`
       : `${sanitized}_${timestamp}`;
@@ -794,7 +773,7 @@ export class StorageService {
 
   /**
    * Upload file with retry logic
-   * 
+   *
    * @param bucket - Target bucket
    * @param path - File path
    * @param file - File to upload
@@ -812,17 +791,15 @@ export class StorageService {
 
     for (let attempt = 1; attempt <= RETRY_CONFIG.maxAttempts; attempt++) {
       try {
-        const { error } = await this.client.storage
-          .from(bucket)
-          .upload(path, file, {
-            cacheControl: config?.cacheControl || '3600',
-            contentType: config?.contentType || file.type,
-            upsert: config?.upsert || false,
-          });
+        const { error } = await this.client.storage.from(bucket).upload(path, file, {
+          cacheControl: config?.cacheControl || '3600',
+          contentType: config?.contentType || file.type,
+          upsert: config?.upsert || false,
+        });
 
         if (error) {
           lastError = this.handleError(error, StorageErrorCode.UPLOAD_FAILED);
-          
+
           // Track retry attempt
           if (operationId) {
             await this.analytics?.trackError({
@@ -834,7 +811,7 @@ export class StorageService {
               context: { fileName: file.name, fileSize: file.size },
             });
           }
-          
+
           // Check if error is retryable
           if (!isRetryableErrorUtil(lastError)) {
             return { success: false, error: lastError };
@@ -842,7 +819,8 @@ export class StorageService {
 
           // Wait before retry (exponential backoff)
           if (attempt < RETRY_CONFIG.maxAttempts) {
-            const delay = RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1);
+            const delay =
+              RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1);
             await this.sleep(delay);
             continue;
           }
@@ -852,7 +830,7 @@ export class StorageService {
         }
       } catch (error) {
         lastError = this.handleError(error, StorageErrorCode.UPLOAD_FAILED);
-        
+
         // Track retry attempt
         if (operationId) {
           await this.analytics?.trackError({
@@ -864,13 +842,14 @@ export class StorageService {
             context: { fileName: file.name, fileSize: file.size },
           });
         }
-        
+
         if (!isRetryableErrorUtil(lastError) || attempt === RETRY_CONFIG.maxAttempts) {
           return { success: false, error: lastError };
         }
 
         // Wait before retry
-        const delay = RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1);
+        const delay =
+          RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1);
         await this.sleep(delay);
       }
     }
@@ -878,16 +857,18 @@ export class StorageService {
     // All retries exhausted
     return {
       success: false,
-      error: lastError || createStorageError(
-        StorageErrorCode.UPLOAD_FAILED,
-        'Upload failed after all retry attempts'
-      ),
+      error:
+        lastError ||
+        createStorageError(
+          StorageErrorCode.UPLOAD_FAILED,
+          'Upload failed after all retry attempts'
+        ),
     };
   }
 
   /**
    * Get metadata for an uploaded file
-   * 
+   *
    * @param bucket - Bucket name
    * @param path - File path
    * @param userId - User ID (owner)
@@ -921,7 +902,7 @@ export class StorageService {
 
   /**
    * Handle errors and convert to StorageError
-   * 
+   *
    * @param error - Original error
    * @param defaultCode - Default error code if cannot determine
    * @returns Structured storage error
@@ -935,7 +916,7 @@ export class StorageService {
     // Handle Supabase storage errors
     if (error && typeof error === 'object' && 'message' in error) {
       const message = String((error as { message: string }).message);
-      
+
       // Map common Supabase error messages to codes
       if (message.includes('not found')) {
         return createStorageError(StorageErrorCode.NOT_FOUND, message, undefined, error);
@@ -964,7 +945,7 @@ export class StorageService {
 
   /**
    * Sleep for specified duration
-   * 
+   *
    * @param ms - Duration in milliseconds
    */
   private sleep(ms: number): Promise<void> {

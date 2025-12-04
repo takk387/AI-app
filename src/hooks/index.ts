@@ -1,14 +1,14 @@
 /**
  * Custom Hooks Index
- * 
+ *
  * This module re-exports all custom hooks for the AI Builder application.
  * Import hooks from this file for cleaner imports.
- * 
+ *
  * @example
  * ```tsx
- * import { 
- *   useDatabaseSync, 
- *   useFileStorage, 
+ * import {
+ *   useDatabaseSync,
+ *   useFileStorage,
  *   useVersionControl,
  *   useMessageSender,
  *   useChatSystem,
@@ -43,7 +43,7 @@ export type { UseKeyboardShortcutsOptions } from './useKeyboardShortcuts';
 
 // Smart context hook (compression + semantic memory)
 export { useSmartContext } from './useSmartContext';
-export type { 
+export type {
   UseSmartContextReturn,
   SmartContextOptions,
   SmartContextResult,
@@ -52,7 +52,10 @@ export type {
 // Re-export existing hooks for completeness
 // Note: useBuildPhases replaced by useDynamicBuildPhases
 export { useDynamicBuildPhases } from './useDynamicBuildPhases';
-export type { UseDynamicBuildPhasesOptions, UseDynamicBuildPhasesReturn } from './useDynamicBuildPhases';
+export type {
+  UseDynamicBuildPhasesOptions,
+  UseDynamicBuildPhasesReturn,
+} from './useDynamicBuildPhases';
 
 export { useResizable } from './useResizable';
 export type { UseResizableOptions, UseResizableReturn } from './useResizable';

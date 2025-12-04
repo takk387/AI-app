@@ -8,8 +8,8 @@ import html2canvas from 'html2canvas';
 export interface CaptureOptions {
   elementId?: string;
   element?: HTMLElement;
-  quality?: number;  // 0-1, default 0.7
-  maxWidth?: number;  // default 1200
+  quality?: number; // 0-1, default 0.7
+  maxWidth?: number; // default 1200
   maxHeight?: number; // default 800
   format?: 'jpeg' | 'png';
   backgroundColor?: string;
@@ -72,7 +72,7 @@ export async function captureElement(options: CaptureOptions): Promise<CaptureRe
     maxWidth = 1200,
     maxHeight = 800,
     format = 'jpeg',
-    backgroundColor = '#0F172A',  // Dark background matching preview
+    backgroundColor = '#0F172A', // Dark background matching preview
   } = options;
 
   try {
@@ -94,7 +94,7 @@ export async function captureElement(options: CaptureOptions): Promise<CaptureRe
     const canvas = await html2canvas(targetElement, {
       useCORS: true,
       allowTaint: true,
-      scale: 1,  // Use 1x scale for API efficiency
+      scale: 1, // Use 1x scale for API efficiency
       logging: false,
       backgroundColor,
       // Ignore elements that might cause issues
@@ -193,7 +193,7 @@ export function containsVisualKeywords(text: string): boolean {
   ];
 
   const lowerText = text.toLowerCase();
-  return visualKeywords.some(keyword => lowerText.includes(keyword));
+  return visualKeywords.some((keyword) => lowerText.includes(keyword));
 }
 
 /**
@@ -203,9 +203,7 @@ export function createDebouncedCapture(delayMs: number = 500) {
   let timeoutId: NodeJS.Timeout | null = null;
   let lastCapture: CaptureResult | null = null;
 
-  return async function debouncedCapture(
-    options: CaptureOptions
-  ): Promise<CaptureResult> {
+  return async function debouncedCapture(options: CaptureOptions): Promise<CaptureResult> {
     // Clear any pending capture
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -254,7 +252,7 @@ export function isValidImageDataUrl(dataUrl: string): boolean {
     'data:image/webp;base64,',
   ];
 
-  return validPrefixes.some(prefix => dataUrl.startsWith(prefix));
+  return validPrefixes.some((prefix) => dataUrl.startsWith(prefix));
 }
 
 /**

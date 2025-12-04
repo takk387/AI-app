@@ -36,17 +36,18 @@ function getElementSelector(element: HTMLElement): string {
 
   const tagName = element.tagName.toLowerCase();
   const classes = Array.from(element.classList)
-    .filter(cls => !cls.startsWith('__') && !cls.includes('css-')) // Filter internal classes
+    .filter((cls) => !cls.startsWith('__') && !cls.includes('css-')) // Filter internal classes
     .slice(0, 3) // Limit to 3 classes for readability
-    .map(cls => `.${escapeSelector(cls)}`)
+    .map((cls) => `.${escapeSelector(cls)}`)
     .join('');
 
   let selector = tagName + classes;
 
   // Add nth-child if needed for disambiguation
   if (!classes && element.parentElement) {
-    const siblings = Array.from(element.parentElement.children)
-      .filter(el => el.tagName === element.tagName);
+    const siblings = Array.from(element.parentElement.children).filter(
+      (el) => el.tagName === element.tagName
+    );
     if (siblings.length > 1) {
       const index = siblings.indexOf(element) + 1;
       selector += `:nth-child(${index})`;

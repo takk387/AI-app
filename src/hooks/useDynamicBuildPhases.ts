@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * useDynamicBuildPhases Hook
@@ -16,10 +16,7 @@ import type {
   PhaseExecutionResult,
 } from '@/types/dynamicPhases';
 import type { BuildPhase, BuildProgress, PhaseId } from '@/types/buildPhases';
-import {
-  PhaseExecutionManager,
-  buildPhaseExecutionPrompt,
-} from '@/services/PhaseExecutionManager';
+import { PhaseExecutionManager, buildPhaseExecutionPrompt } from '@/services/PhaseExecutionManager';
 import {
   adaptDynamicPhaseToUI,
   adaptAllPhasesToUI,
@@ -117,7 +114,7 @@ export function useDynamicBuildPhases(
   }, [plan]);
 
   const currentPhase = useMemo(() => {
-    return phases.find(p => p.status === 'in-progress') || null;
+    return phases.find((p) => p.status === 'in-progress') || null;
   }, [phases]);
 
   const progress = useMemo((): BuildProgress => {
@@ -160,80 +157,92 @@ export function useDynamicBuildPhases(
   /**
    * Start executing a specific phase
    */
-  const startPhase = useCallback((phaseNumber: number) => {
-    if (!mountedRef.current || !plan) return;
+  const startPhase = useCallback(
+    (phaseNumber: number) => {
+      if (!mountedRef.current || !plan) return;
 
-    const phase = plan.phases.find(p => p.number === phaseNumber);
-    if (!phase) {
-      onError?.(new Error(`Phase ${phaseNumber} not found`));
-      return;
-    }
+      const phase = plan.phases.find((p) => p.number === phaseNumber);
+      if (!phase) {
+        onError?.(new Error(`Phase ${phaseNumber} not found`));
+        return;
+      }
 
-    // Update phase status
-    phase.status = 'in-progress';
-    setPlan({ ...plan, currentPhaseNumber: phaseNumber });
-    setIsBuilding(true);
+      // Update phase status
+      phase.status = 'in-progress';
+      setPlan({ ...plan, currentPhaseNumber: phaseNumber });
+      setIsBuilding(true);
 
-    onPhaseStart?.(phase);
-    forceUpdate({});
-  }, [plan, onPhaseStart, onError]);
+      onPhaseStart?.(phase);
+      forceUpdate({});
+    },
+    [plan, onPhaseStart, onError]
+  );
 
   /**
    * Record phase completion
    */
-  const completePhase = useCallback((result: PhaseExecutionResult) => {
-    if (!mountedRef.current || !plan || !manager) return;
+  const completePhase = useCallback(
+    (result: PhaseExecutionResult) => {
+      if (!mountedRef.current || !plan || !manager) return;
 
-    try {
-      manager.recordPhaseResult(result);
-      const updatedPlan = manager.getPlan();
-      setPlan({ ...updatedPlan });
+      try {
+        manager.recordPhaseResult(result);
+        const updatedPlan = manager.getPlan();
+        setPlan({ ...updatedPlan });
 
-      const phase = updatedPlan.phases.find(p => p.number === result.phaseNumber);
-      if (phase) {
-        onPhaseComplete?.(phase, result);
+        const phase = updatedPlan.phases.find((p) => p.number === result.phaseNumber);
+        if (phase) {
+          onPhaseComplete?.(phase, result);
+        }
+
+        // Update accumulated code
+        if (result.success && result.generatedCode) {
+          setAccumulatedCodeState(result.generatedCode);
+        }
+
+        // Check if build is complete
+        if (manager.isComplete()) {
+          setIsBuilding(false);
+          onBuildComplete?.(updatedPlan);
+        }
+
+        forceUpdate({});
+      } catch (error) {
+        onError?.(error as Error);
       }
-
-      // Update accumulated code
-      if (result.success && result.generatedCode) {
-        setAccumulatedCodeState(result.generatedCode);
-      }
-
-      // Check if build is complete
-      if (manager.isComplete()) {
-        setIsBuilding(false);
-        onBuildComplete?.(updatedPlan);
-      }
-
-      forceUpdate({});
-    } catch (error) {
-      onError?.(error as Error);
-    }
-  }, [plan, manager, onPhaseComplete, onBuildComplete, onError]);
+    },
+    [plan, manager, onPhaseComplete, onBuildComplete, onError]
+  );
 
   /**
    * Skip a phase
    */
-  const skipPhase = useCallback((phaseNumber: number) => {
-    if (!mountedRef.current || !plan || !manager) return;
+  const skipPhase = useCallback(
+    (phaseNumber: number) => {
+      if (!mountedRef.current || !plan || !manager) return;
 
-    manager.skipPhase(phaseNumber);
-    const updatedPlan = manager.getPlan();
-    setPlan({ ...updatedPlan });
-    forceUpdate({});
-  }, [plan, manager]);
+      manager.skipPhase(phaseNumber);
+      const updatedPlan = manager.getPlan();
+      setPlan({ ...updatedPlan });
+      forceUpdate({});
+    },
+    [plan, manager]
+  );
 
   /**
    * Retry a failed phase
    */
-  const retryPhase = useCallback((phaseNumber: number) => {
-    if (!mountedRef.current || !plan || !manager) return;
+  const retryPhase = useCallback(
+    (phaseNumber: number) => {
+      if (!mountedRef.current || !plan || !manager) return;
 
-    manager.resetPhase(phaseNumber);
-    const updatedPlan = manager.getPlan();
-    setPlan({ ...updatedPlan });
-    forceUpdate({});
-  }, [plan, manager]);
+      manager.resetPhase(phaseNumber);
+      const updatedPlan = manager.getPlan();
+      setPlan({ ...updatedPlan });
+      forceUpdate({});
+    },
+    [plan, manager]
+  );
 
   /**
    * Pause the build
@@ -269,25 +278,31 @@ export function useDynamicBuildPhases(
   /**
    * Get execution context for a phase
    */
-  const getExecutionContext = useCallback((phaseNumber: number): PhaseExecutionContext | null => {
-    if (!manager) return null;
+  const getExecutionContext = useCallback(
+    (phaseNumber: number): PhaseExecutionContext | null => {
+      if (!manager) return null;
 
-    try {
-      return manager.getExecutionContext(phaseNumber);
-    } catch {
-      return null;
-    }
-  }, [manager]);
+      try {
+        return manager.getExecutionContext(phaseNumber);
+      } catch {
+        return null;
+      }
+    },
+    [manager]
+  );
 
   /**
    * Get the prompt for executing a phase
    */
-  const getExecutionPrompt = useCallback((phaseNumber: number): string | null => {
-    const context = getExecutionContext(phaseNumber);
-    if (!context) return null;
+  const getExecutionPrompt = useCallback(
+    (phaseNumber: number): string | null => {
+      const context = getExecutionContext(phaseNumber);
+      if (!context) return null;
 
-    return buildPhaseExecutionPrompt(context);
-  }, [getExecutionContext]);
+      return buildPhaseExecutionPrompt(context);
+    },
+    [getExecutionContext]
+  );
 
   /**
    * Get the next pending phase
@@ -310,16 +325,22 @@ export function useDynamicBuildPhases(
   /**
    * Get phase by number
    */
-  const getPhaseByNumber = useCallback((phaseNumber: number): DynamicPhase | undefined => {
-    return phases.find(p => p.number === phaseNumber);
-  }, [phases]);
+  const getPhaseByNumber = useCallback(
+    (phaseNumber: number): DynamicPhase | undefined => {
+      return phases.find((p) => p.number === phaseNumber);
+    },
+    [phases]
+  );
 
   /**
    * Get UI phase by ID (for legacy compatibility)
    */
-  const getPhaseById = useCallback((phaseId: PhaseId): BuildPhase | undefined => {
-    return uiPhases.find(p => p.id === phaseId);
-  }, [uiPhases]);
+  const getPhaseById = useCallback(
+    (phaseId: PhaseId): BuildPhase | undefined => {
+      return uiPhases.find((p) => p.id === phaseId);
+    },
+    [uiPhases]
+  );
 
   // ========== Code Management ==========
 
@@ -334,28 +355,34 @@ export function useDynamicBuildPhases(
   /**
    * Add generated files to tracking
    */
-  const addGeneratedFiles = useCallback((files: string[]) => {
-    if (!mountedRef.current || !plan) return;
+  const addGeneratedFiles = useCallback(
+    (files: string[]) => {
+      if (!mountedRef.current || !plan) return;
 
-    const updated = {
-      ...plan,
-      accumulatedFiles: [...plan.accumulatedFiles, ...files],
-    };
-    setPlan(updated);
-  }, [plan]);
+      const updated = {
+        ...plan,
+        accumulatedFiles: [...plan.accumulatedFiles, ...files],
+      };
+      setPlan(updated);
+    },
+    [plan]
+  );
 
   /**
    * Add implemented features to tracking
    */
-  const addImplementedFeatures = useCallback((features: string[]) => {
-    if (!mountedRef.current || !plan) return;
+  const addImplementedFeatures = useCallback(
+    (features: string[]) => {
+      if (!mountedRef.current || !plan) return;
 
-    const updated = {
-      ...plan,
-      accumulatedFeatures: [...plan.accumulatedFeatures, ...features],
-    };
-    setPlan(updated);
-  }, [plan]);
+      const updated = {
+        ...plan,
+        accumulatedFeatures: [...plan.accumulatedFeatures, ...features],
+      };
+      setPlan(updated);
+    },
+    [plan]
+  );
 
   // ========== Return ==========
 

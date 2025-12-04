@@ -1,7 +1,7 @@
 /**
  * Retry Logic with Specific Fixes
  * Phase 5.2: Architectural Improvements
- * 
+ *
  * Implements intelligent retry mechanism with error-specific correction prompts
  * to guide the AI toward successful responses.
  */
@@ -13,34 +13,38 @@ import { ErrorCategory } from './analytics';
 // ============================================================================
 
 export interface RetryConfig {
-  maxAttempts: number;        // Maximum retry attempts (default: 2)
+  maxAttempts: number; // Maximum retry attempts (default: 2)
   retryableErrors: ErrorCategory[]; // Which error types can be retried
-  includeOriginalPrompt: boolean;   // Include original request in retry
+  includeOriginalPrompt: boolean; // Include original request in retry
 }
 
 export interface RetryContext {
-  attemptNumber: number;      // Current attempt (1-based)
-  previousError: string;      // Error message from previous attempt
+  attemptNumber: number; // Current attempt (1-based)
+  previousError: string; // Error message from previous attempt
   errorCategory: ErrorCategory; // Categorized error type
-  originalResponse?: string;  // AI's problematic response
-  validationDetails?: any;    // Validation error details
+  originalResponse?: string; // AI's problematic response
+  validationDetails?: any; // Validation error details
 }
 
 export interface RetryResult {
-  shouldRetry: boolean;       // Whether to attempt retry
-  correctionPrompt?: string;  // Additional prompt to guide AI
-  retryDelay?: number;        // Milliseconds to wait before retry
+  shouldRetry: boolean; // Whether to attempt retry
+  correctionPrompt?: string; // Additional prompt to guide AI
+  retryDelay?: number; // Milliseconds to wait before retry
 }
 
 // Phase-specific error categories
-export type PhaseErrorCategory = ErrorCategory | 'phase_extraction_error' | 'phase_too_large' | 'phase_truncation';
+export type PhaseErrorCategory =
+  | ErrorCategory
+  | 'phase_extraction_error'
+  | 'phase_too_large'
+  | 'phase_truncation';
 
 export interface PhaseRetryContext {
-  attemptNumber: number;      // Current attempt (1-based)
-  previousError: string;      // Error message from previous attempt
+  attemptNumber: number; // Current attempt (1-based)
+  previousError: string; // Error message from previous attempt
   errorCategory: PhaseErrorCategory; // Phase-specific categorized error type
-  originalResponse?: string;  // AI's problematic response
-  validationDetails?: any;    // Validation error details
+  originalResponse?: string; // AI's problematic response
+  validationDetails?: any; // Validation error details
   phaseNumber?: number;
   estimatedTokens?: number;
 }
@@ -54,12 +58,7 @@ export interface PhaseRetryContext {
  */
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxAttempts: 2,
-  retryableErrors: [
-    'parsing_error',
-    'validation_error',
-    'ai_error',
-    'timeout_error',
-  ],
+  retryableErrors: ['parsing_error', 'validation_error', 'ai_error', 'timeout_error'],
   includeOriginalPrompt: true,
 };
 
@@ -76,17 +75,17 @@ export function shouldRetryError(
   if (attemptNumber >= config.maxAttempts) {
     return false;
   }
-  
+
   // Don't retry non-retryable errors
   if (!config.retryableErrors.includes(errorCategory)) {
     return false;
   }
-  
+
   // Don't retry rate limit errors (they need exponential backoff)
   if (errorCategory === 'rate_limit_error') {
     return false;
   }
-  
+
   return true;
 }
 
@@ -98,21 +97,18 @@ export function generateRetryStrategy(
   config: RetryConfig = DEFAULT_RETRY_CONFIG
 ): RetryResult {
   // Check if retry is allowed
-  if (!shouldRetryError(
-    context.previousError,
-    context.errorCategory,
-    context.attemptNumber,
-    config
-  )) {
+  if (
+    !shouldRetryError(context.previousError, context.errorCategory, context.attemptNumber, config)
+  ) {
     return { shouldRetry: false };
   }
-  
+
   // Generate error-specific correction prompt
   const correctionPrompt = generateCorrectionPrompt(context);
-  
+
   // Calculate retry delay (if needed)
   const retryDelay = calculateRetryDelay(context);
-  
+
   return {
     shouldRetry: true,
     correctionPrompt,
@@ -131,16 +127,16 @@ function generateCorrectionPrompt(context: RetryContext): string {
   switch (context.errorCategory) {
     case 'parsing_error':
       return generateParsingErrorPrompt(context);
-    
+
     case 'validation_error':
       return generateValidationErrorPrompt(context);
-    
+
     case 'ai_error':
       return generateAIErrorPrompt(context);
-    
+
     case 'timeout_error':
       return generateTimeoutErrorPrompt(context);
-    
+
     default:
       return generateGenericErrorPrompt(context);
   }
@@ -186,10 +182,10 @@ Now, please retry the request with valid JSON output:`;
  * Correction prompt for validation errors
  */
 function generateValidationErrorPrompt(context: RetryContext): string {
-  const validationIssues = context.validationDetails 
+  const validationIssues = context.validationDetails
     ? formatValidationIssues(context.validationDetails)
     : 'See error details above';
-    
+
   return `
 ⚠️ PREVIOUS ATTEMPT FAILED - CODE VALIDATION ERROR
 
@@ -296,9 +292,9 @@ function formatValidationIssues(validationDetails: any): string {
   if (!validationDetails || !Array.isArray(validationDetails)) {
     return '(validation details unavailable)';
   }
-  
+
   const issues: string[] = [];
-  
+
   validationDetails.forEach((detail: any, index: number) => {
     if (detail.errors && Array.isArray(detail.errors)) {
       detail.errors.forEach((error: any) => {
@@ -306,10 +302,8 @@ function formatValidationIssues(validationDetails: any): string {
       });
     }
   });
-  
-  return issues.length > 0 
-    ? issues.join('\n')
-    : '(no specific issues listed)';
+
+  return issues.length > 0 ? issues.join('\n') : '(no specific issues listed)';
 }
 
 // ============================================================================
@@ -324,12 +318,12 @@ function calculateRetryDelay(context: RetryContext): number {
   if (context.attemptNumber === 1) {
     return 0;
   }
-  
+
   // Exponential backoff for rate limit errors
   if (context.errorCategory === 'rate_limit_error') {
     return Math.min(1000 * Math.pow(2, context.attemptNumber), 30000);
   }
-  
+
   // Small delay for other errors to avoid overwhelming the API
   return 500 * context.attemptNumber;
 }
@@ -340,7 +334,7 @@ function calculateRetryDelay(context: RetryContext): number {
 
 /**
  * Execute a function with retry logic
- * 
+ *
  * @param fn - Async function to execute
  * @param createRetryContext - Function to create retry context from error
  * @param config - Retry configuration
@@ -352,37 +346,39 @@ export async function executeWithRetry<T>(
   config: RetryConfig = DEFAULT_RETRY_CONFIG
 ): Promise<T> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < config.maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      
+
       // Create retry context
       const context = createRetryContext(lastError, attempt + 1);
-      
+
       // Check if should retry
       const strategy = generateRetryStrategy(context, config);
-      
+
       if (!strategy.shouldRetry) {
         // No more retries, throw error
         throw lastError;
       }
-      
+
       // Log retry attempt
-      console.log(`[Retry] Attempt ${attempt + 1}/${config.maxAttempts} failed. Retrying with correction...`);
-      
+      console.log(
+        `[Retry] Attempt ${attempt + 1}/${config.maxAttempts} failed. Retrying with correction...`
+      );
+
       // Wait before retry if needed
       if (strategy.retryDelay && strategy.retryDelay > 0) {
-        await new Promise(resolve => setTimeout(resolve, strategy.retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, strategy.retryDelay));
       }
-      
+
       // Continue to next iteration with correction prompt available
       // (caller should check for retry context and include correction prompt)
     }
   }
-  
+
   // All retries exhausted
   throw lastError || new Error('Unknown error during retry');
 }
@@ -398,7 +394,7 @@ export function isPatternMatchingError(error: string, errorCategory: ErrorCatego
   if (errorCategory !== 'ai_error' && errorCategory !== 'unknown_error') {
     return false;
   }
-  
+
   const patterns = [
     'could not find',
     'not found',
@@ -407,18 +403,15 @@ export function isPatternMatchingError(error: string, errorCategory: ErrorCatego
     'search pattern',
     'searchfor',
   ];
-  
+
   const errorLower = error.toLowerCase();
-  return patterns.some(pattern => errorLower.includes(pattern));
+  return patterns.some((pattern) => errorLower.includes(pattern));
 }
 
 /**
  * Generate enhanced prompt for pattern matching errors
  */
-export function generatePatternMatchingPrompt(
-  fileContents: string,
-  searchPattern: string
-): string {
+export function generatePatternMatchingPrompt(fileContents: string, searchPattern: string): string {
   return `
 ⚠️ PATTERN MATCHING ERROR DETECTED
 
@@ -568,9 +561,9 @@ export function generatePhaseRetryStrategy(context: PhaseRetryContext): RetryRes
   if (context.attemptNumber >= 2) {
     return { shouldRetry: false };
   }
-  
+
   let correctionPrompt: string;
-  
+
   switch (context.errorCategory) {
     case 'phase_extraction_error':
       correctionPrompt = generatePhaseExtractionPrompt(context);
@@ -584,7 +577,7 @@ export function generatePhaseRetryStrategy(context: PhaseRetryContext): RetryRes
     default:
       correctionPrompt = generateGenericErrorPrompt(context);
   }
-  
+
   return {
     shouldRetry: true,
     correctionPrompt,

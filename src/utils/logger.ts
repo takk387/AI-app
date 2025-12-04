@@ -301,7 +301,10 @@ export function generateRequestId(): string {
  * }
  * ```
  */
-export function createRequestLogger(route: string, userId?: string): {
+export function createRequestLogger(
+  route: string,
+  userId?: string
+): {
   requestId: string;
   log: ChildLogger;
   startTime: number;

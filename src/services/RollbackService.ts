@@ -1,6 +1,6 @@
 /**
  * RollbackService - Manages restore points for staged rollback
- * 
+ *
  * Features:
  * - Create and store restore points before changes
  * - One-click rollback to previous state
@@ -37,7 +37,7 @@ export class RollbackService implements IRollbackService {
    */
   private loadFromStorage(): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -77,7 +77,7 @@ export class RollbackService implements IRollbackService {
    */
   private saveToStorage(): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.restorePoints));
     } catch (error) {
@@ -108,7 +108,7 @@ export class RollbackService implements IRollbackService {
       id: this.generateId(),
       label,
       timestamp: new Date(),
-      files: files.map(f => ({ ...f })), // Deep copy files
+      files: files.map((f) => ({ ...f })), // Deep copy files
       metadata: { ...metadata },
     };
 
@@ -136,14 +136,14 @@ export class RollbackService implements IRollbackService {
    * Returns the files from that restore point
    */
   async rollbackTo(pointId: string): Promise<{ path: string; content: string }[]> {
-    const point = this.restorePoints.find(p => p.id === pointId);
-    
+    const point = this.restorePoints.find((p) => p.id === pointId);
+
     if (!point) {
       throw new Error(`Restore point not found: ${pointId}`);
     }
 
     // Return a copy of the files
-    return point.files.map(f => ({ ...f }));
+    return point.files.map((f) => ({ ...f }));
   }
 
   /**
@@ -153,14 +153,14 @@ export class RollbackService implements IRollbackService {
     pointId: string,
     filePath: string
   ): Promise<{ path: string; content: string } | null> {
-    const point = this.restorePoints.find(p => p.id === pointId);
-    
+    const point = this.restorePoints.find((p) => p.id === pointId);
+
     if (!point) {
       throw new Error(`Restore point not found: ${pointId}`);
     }
 
-    const file = point.files.find(f => f.path === filePath);
-    
+    const file = point.files.find((f) => f.path === filePath);
+
     if (!file) {
       return null;
     }
@@ -172,8 +172,8 @@ export class RollbackService implements IRollbackService {
    * Delete a restore point
    */
   deleteRestorePoint(pointId: string): void {
-    const index = this.restorePoints.findIndex(p => p.id === pointId);
-    
+    const index = this.restorePoints.findIndex((p) => p.id === pointId);
+
     if (index !== -1) {
       this.restorePoints.splice(index, 1);
       this.saveToStorage();
@@ -217,14 +217,14 @@ export class RollbackService implements IRollbackService {
    * Get a restore point by ID
    */
   getRestorePoint(pointId: string): RestorePoint | undefined {
-    return this.restorePoints.find(p => p.id === pointId);
+    return this.restorePoints.find((p) => p.id === pointId);
   }
 
   /**
    * Check if a restore point exists
    */
   hasRestorePoint(pointId: string): boolean {
-    return this.restorePoints.some(p => p.id === pointId);
+    return this.restorePoints.some((p) => p.id === pointId);
   }
 
   /**
@@ -238,8 +238,8 @@ export class RollbackService implements IRollbackService {
    * Get files from a restore point
    */
   getFiles(pointId: string): { path: string; content: string }[] | undefined {
-    const point = this.restorePoints.find(p => p.id === pointId);
-    return point?.files.map(f => ({ ...f }));
+    const point = this.restorePoints.find((p) => p.id === pointId);
+    return point?.files.map((f) => ({ ...f }));
   }
 
   /**
@@ -298,9 +298,7 @@ export async function createRestorePoint(
 /**
  * Rollback to a restore point (convenience function)
  */
-export async function rollbackTo(
-  pointId: string
-): Promise<{ path: string; content: string }[]> {
+export async function rollbackTo(pointId: string): Promise<{ path: string; content: string }[]> {
   return getRollbackService().rollbackTo(pointId);
 }
 

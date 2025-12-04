@@ -10,31 +10,30 @@ interface StorageStatsProps {
 
 /**
  * StorageStats Component
- * 
+ *
  * Displays storage usage, quota, and breakdown by file type.
  * Shows warnings when approaching quota limits.
  */
 export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
   // Calculate usage percentage (handle undefined quota)
-  const usagePercentage = stats.quota && stats.quota > 0 
-    ? (stats.totalSize / stats.quota) * 100 
-    : 0;
-  
+  const usagePercentage =
+    stats.quota && stats.quota > 0 ? (stats.totalSize / stats.quota) * 100 : 0;
+
   // Determine warning level
   const isWarning = usagePercentage >= 80;
   const isCritical = usagePercentage >= 95;
-  
+
   // Format bytes to human-readable
   const formatBytes = (bytes: number): string => {
     const units = ['B', 'KB', 'MB', 'GB'];
     let size = bytes;
     let unitIndex = 0;
-    
+
     while (size >= 1024 && unitIndex < units.length - 1) {
       size /= 1024;
       unitIndex++;
     }
-    
+
     return `${size.toFixed(1)} ${units[unitIndex]}`;
   };
 
@@ -74,14 +73,12 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
       {/* Usage Bar */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2 text-xs">
-          <span className="text-slate-300">
-            {formatBytes(stats.totalSize)} used
-          </span>
+          <span className="text-slate-300">{formatBytes(stats.totalSize)} used</span>
           <span className="text-slate-400">
             {stats.quota ? `of ${formatBytes(stats.quota)}` : '(no quota)'}
           </span>
         </div>
-        
+
         <div className="h-2 bg-slate-800/50 rounded-full overflow-hidden">
           <div
             className={`h-full ${getProgressColor()} transition-all duration-500 rounded-full`}
@@ -93,7 +90,7 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
             aria-label={`Storage usage: ${usagePercentage.toFixed(1)}%`}
           />
         </div>
-        
+
         <div className="mt-1 text-xs text-slate-400 text-center">
           {usagePercentage.toFixed(1)}% used
         </div>
@@ -105,25 +102,22 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
           <div className="flex items-start gap-2">
             <span className="text-red-400 text-lg">🚨</span>
             <div>
-              <p className="text-red-200 text-xs font-medium mb-1">
-                Storage Almost Full!
-              </p>
+              <p className="text-red-200 text-xs font-medium mb-1">Storage Almost Full!</p>
               <p className="text-red-200/70 text-xs">
-                You&apos;re using {usagePercentage.toFixed(1)}% of your storage. Delete some files or upgrade to continue uploading.
+                You&apos;re using {usagePercentage.toFixed(1)}% of your storage. Delete some files
+                or upgrade to continue uploading.
               </p>
             </div>
           </div>
         </div>
       )}
-      
+
       {isWarning && !isCritical && (
         <div className="mb-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
           <div className="flex items-start gap-2">
             <span className="text-yellow-400 text-lg">⚠️</span>
             <div>
-              <p className="text-yellow-200 text-xs font-medium mb-1">
-                Storage Running Low
-              </p>
+              <p className="text-yellow-200 text-xs font-medium mb-1">Storage Running Low</p>
               <p className="text-yellow-200/70 text-xs">
                 You&apos;ve used {usagePercentage.toFixed(1)}% of your storage quota.
               </p>
@@ -136,11 +130,9 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-slate-800/30 rounded-lg p-2">
           <div className="text-slate-400 text-xs mb-1">Total Files</div>
-          <div className="text-white font-semibold text-lg">
-            {stats.totalFiles}
-          </div>
+          <div className="text-white font-semibold text-lg">{stats.totalFiles}</div>
         </div>
-        
+
         <div className="bg-slate-800/30 rounded-lg p-2">
           <div className="text-slate-400 text-xs mb-1">Available</div>
           <div className="text-white font-semibold text-lg">

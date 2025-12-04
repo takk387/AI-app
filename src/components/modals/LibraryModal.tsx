@@ -1,24 +1,14 @@
-"use client";
+'use client';
 
 import React from 'react';
-import { 
-  FileCard, 
-  FileGrid, 
-  FileFilters, 
-  FileUploader, 
-  StorageStats 
-} from '../storage';
+import { FileCard, FileGrid, FileFilters, FileUploader, StorageStats } from '../storage';
 import type { GeneratedComponent } from '@/types/aiBuilderTypes';
-import type { 
-  FileMetadata, 
-  StorageStats as StorageStatsType,
-  FileId
-} from '@/types/storage';
+import type { FileMetadata, StorageStats as StorageStatsType, FileId } from '@/types/storage';
 
 export interface LibraryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  
+
   // Apps tab
   components: GeneratedComponent[];
   filteredComponents: GeneratedComponent[];
@@ -29,7 +19,7 @@ export interface LibraryModalProps {
   onDeleteComponent: (id: string) => void;
   onExportComponent: (component: GeneratedComponent) => void;
   exportingAppId?: string | null;
-  
+
   // Files tab
   contentTab: 'apps' | 'files';
   onContentTabChange: (tab: 'apps' | 'files') => void;
@@ -41,7 +31,10 @@ export interface LibraryModalProps {
   onFileTypeFilterChange: (filter: string) => void;
   fileSortBy: 'name' | 'size' | 'created_at' | 'updated_at';
   fileSortOrder: 'asc' | 'desc';
-  onSortChange: (sortBy: 'name' | 'size' | 'created_at' | 'updated_at', order: 'asc' | 'desc') => void;
+  onSortChange: (
+    sortBy: 'name' | 'size' | 'created_at' | 'updated_at',
+    order: 'asc' | 'desc'
+  ) => void;
   selectedFiles: Set<string>;
   onFileSelect: (fileId: string) => void;
   onFileUpload: (files: File[]) => Promise<void>;
@@ -111,10 +104,7 @@ export function LibraryModal({
                 ({contentTab === 'apps' ? components.length : storageFiles.length})
               </span>
             </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -178,79 +168,75 @@ export function LibraryModal({
           {contentTab === 'apps' ? (
             // Apps Tab Content
             filteredComponents.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📭</div>
-              <p className="text-slate-400">
-                {searchQuery ? 'No components found' : 'No components yet. Start building!'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredComponents.map((comp) => (
-                <div
-                  key={comp.id}
-                  className="bg-white/5 rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-all cursor-pointer group"
-                  onClick={() => onLoadComponent(comp)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                      {comp.name}
-                    </h3>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleFavorite(comp.id);
-                        }}
-                        className="text-xl hover:scale-125 transition-transform"
-                      >
-                        {comp.isFavorite ? '⭐' : '☆'}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onExportComponent(comp);
-                        }}
-                        className="text-lg hover:scale-125 transition-transform text-green-400 hover:text-green-300"
-                        title="Export & Deploy"
-                        disabled={exportingAppId === comp.id}
-                      >
-                        {exportingAppId === comp.id ? '⏳' : '📦'}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Delete "${comp.name}"?`)) {
-                            onDeleteComponent(comp.id);
-                          }
-                        }}
-                        className="text-lg hover:scale-125 transition-transform text-red-400 hover:text-red-300"
-                        title="Delete app"
-                      >
-                        🗑️
-                      </button>
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📭</div>
+                <p className="text-slate-400">
+                  {searchQuery ? 'No components found' : 'No components yet. Start building!'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredComponents.map((comp) => (
+                  <div
+                    key={comp.id}
+                    className="bg-white/5 rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-all cursor-pointer group"
+                    onClick={() => onLoadComponent(comp)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                        {comp.name}
+                      </h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleFavorite(comp.id);
+                          }}
+                          className="text-xl hover:scale-125 transition-transform"
+                        >
+                          {comp.isFavorite ? '⭐' : '☆'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onExportComponent(comp);
+                          }}
+                          className="text-lg hover:scale-125 transition-transform text-green-400 hover:text-green-300"
+                          title="Export & Deploy"
+                          disabled={exportingAppId === comp.id}
+                        >
+                          {exportingAppId === comp.id ? '⏳' : '📦'}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete "${comp.name}"?`)) {
+                              onDeleteComponent(comp.id);
+                            }
+                          }}
+                          className="text-lg hover:scale-125 transition-transform text-red-400 hover:text-red-300"
+                          title="Delete app"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-400 line-clamp-2 mb-3">{comp.description}</p>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>{new Date(comp.timestamp).toLocaleDateString()}</span>
+                      <span className="text-blue-400">→ Load</span>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-400 line-clamp-2 mb-3">
-                    {comp.description}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{new Date(comp.timestamp).toLocaleDateString()}</span>
-                    <span className="text-blue-400">→ Load</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
+                ))}
+              </div>
+            )
           ) : (
             // Files Tab Content
             <>
               {!user ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4">
                   <div className="text-6xl mb-4">🔒</div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Sign In Required
-                  </h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">Sign In Required</h3>
                   <p className="text-slate-400 text-center max-w-md">
                     Please sign in to access file storage
                   </p>
@@ -267,9 +253,7 @@ export function LibraryModal({
                   />
 
                   {/* Storage Stats */}
-                  {storageStats && (
-                    <StorageStats stats={storageStats} />
-                  )}
+                  {storageStats && <StorageStats stats={storageStats} />}
 
                   {/* File Grid */}
                   <FileGrid
@@ -286,9 +270,7 @@ export function LibraryModal({
                   {selectedFiles.size > 0 && (
                     <div className="fixed bottom-6 right-6 bg-slate-800 rounded-xl border border-white/20 shadow-2xl p-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-white text-sm">
-                          {selectedFiles.size} selected
-                        </span>
+                        <span className="text-white text-sm">{selectedFiles.size} selected</span>
                         <button
                           onClick={onBulkDelete}
                           className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all"

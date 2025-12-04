@@ -57,9 +57,7 @@ export function InspectorPanel({
       {/* Selected Elements */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-gray-400 uppercase tracking-wide">
-            Selected Elements
-          </span>
+          <span className="text-xs text-gray-400 uppercase tracking-wide">Selected Elements</span>
           {selectedElements.length > 0 && (
             <button
               onClick={onClearAll}
@@ -121,9 +119,10 @@ export function InspectorPanel({
           disabled={selectedElements.length === 0}
           className={`
             w-full py-3 rounded-lg font-medium transition-all
-            ${selectedElements.length > 0
-              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg'
-              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+            ${
+              selectedElements.length > 0
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg'
+                : 'bg-gray-700 text-gray-400 cursor-not-allowed'
             }
           `}
         >

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { ChatMessage, StagePlan } from '@/types/aiBuilderTypes';
@@ -40,7 +40,9 @@ export function StagingConsentModal({
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">Build in Phases?</h3>
-              <p className="text-sm text-purple-200/80">Large app detected - suggested phased approach</p>
+              <p className="text-sm text-purple-200/80">
+                Large app detected - suggested phased approach
+              </p>
             </div>
           </div>
         </div>
@@ -48,13 +50,9 @@ export function StagingConsentModal({
         {/* Modal Content */}
         <div className="px-6 py-5">
           <div className="mb-6">
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
-              Your request:
-            </label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Your request:</label>
             <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
-              <p className="text-white text-sm leading-relaxed">
-                &quot;{pendingRequest}&quot;
-              </p>
+              <p className="text-white text-sm leading-relaxed">&quot;{pendingRequest}&quot;</p>
             </div>
           </div>
 
@@ -62,9 +60,7 @@ export function StagingConsentModal({
             <div className="flex items-start gap-3">
               <span className="text-2xl">💡</span>
               <div>
-                <p className="text-sm font-medium text-blue-200 mb-2">
-                  Why Build in Phases?
-                </p>
+                <p className="text-sm font-medium text-blue-200 mb-2">Why Build in Phases?</p>
                 <ul className="text-xs text-blue-200/70 leading-relaxed space-y-1.5">
                   <li>✅ Each phase gets fully working code you can test</li>
                   <li>✅ See progress step-by-step with live previews</li>
@@ -80,9 +76,7 @@ export function StagingConsentModal({
             <div className="flex items-start gap-3">
               <span className="text-2xl">🎯</span>
               <div>
-                <p className="text-sm font-medium text-purple-200 mb-2">
-                  How It Works
-                </p>
+                <p className="text-sm font-medium text-purple-200 mb-2">How It Works</p>
                 <ol className="text-xs text-purple-200/70 leading-relaxed space-y-1.5">
                   <li>1. I&apos;ll analyze and break your request into 2-4 logical phases</li>
                   <li>2. Build Phase 1 (foundation + core features)</li>
@@ -97,11 +91,10 @@ export function StagingConsentModal({
             <div className="flex items-start gap-3">
               <span className="text-2xl">⚡</span>
               <div>
-                <p className="text-sm font-medium text-green-200 mb-1">
-                  Or Build All at Once?
-                </p>
+                <p className="text-sm font-medium text-green-200 mb-1">Or Build All at Once?</p>
                 <p className="text-xs text-green-200/70 leading-relaxed">
-                  I can also generate everything in one go. This is faster but gives you less control over the direction, and the result might need more refinement.
+                  I can also generate everything in one go. This is faster but gives you less
+                  control over the direction, and the result might need more refinement.
                 </p>
               </div>
             </div>

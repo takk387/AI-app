@@ -37,8 +37,8 @@ export function saveWizardDraft<T>(key: string, data: T): void {
       metadata: {
         key,
         savedAt: new Date().toISOString(),
-        version: 1
-      }
+        version: 1,
+      },
     };
 
     localStorage.setItem(key, JSON.stringify(draft));
@@ -249,9 +249,7 @@ export class AutoSaver<T> {
     if (!metadata) {
       return { exists: false };
     }
-    const ageInMinutes = Math.floor(
-      (Date.now() - new Date(metadata.savedAt).getTime()) / 60000
-    );
+    const ageInMinutes = Math.floor((Date.now() - new Date(metadata.savedAt).getTime()) / 60000);
     return {
       exists: true,
       timestamp: metadata.savedAt,
@@ -298,7 +296,7 @@ export function getAllDrafts(): Array<{
   return Object.values(WIZARD_DRAFT_KEYS)
     .map((key) => ({
       key,
-      metadata: getDraftMetadata(key)
+      metadata: getDraftMetadata(key),
     }))
     .filter((draft) => draft.metadata !== null);
 }

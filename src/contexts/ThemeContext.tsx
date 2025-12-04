@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
@@ -60,7 +60,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Update data-theme attribute
     document.documentElement.setAttribute('data-theme', resolved);
-    
+
     // Update class for Tailwind dark mode
     if (resolved === 'dark') {
       document.documentElement.classList.add('dark');
@@ -74,12 +74,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted || theme !== 'system') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleChange = (e: MediaQueryListEvent) => {
       const newResolvedTheme = e.matches ? 'dark' : 'light';
       setResolvedTheme(newResolvedTheme);
       document.documentElement.setAttribute('data-theme', newResolvedTheme);
-      
+
       if (newResolvedTheme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
@@ -109,12 +109,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return (
-      <ThemeContext.Provider value={{ 
-        theme: 'system', 
-        resolvedTheme: 'dark', 
-        setTheme: () => {}, 
-        toggleTheme: () => {} 
-      }}>
+      <ThemeContext.Provider
+        value={{
+          theme: 'system',
+          resolvedTheme: 'dark',
+          setTheme: () => {},
+          toggleTheme: () => {},
+        }}
+      >
         {children}
       </ThemeContext.Provider>
     );

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme, type UseTheme } from '@/hooks/useTheme';
@@ -25,10 +25,10 @@ const iconSizeClasses = {
   lg: 'text-2xl',
 };
 
-export function ThemeToggle({ 
-  size = 'md', 
+export function ThemeToggle({
+  size = 'md',
   showLabel = false,
-  showDropdown = true 
+  showDropdown = true,
 }: ThemeToggleProps) {
   const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -63,9 +63,10 @@ export function ThemeToggle({
   ];
 
   const currentIcon = resolvedTheme === 'dark' ? '🌙' : '☀️';
-  const currentLabel = theme === 'system' 
-    ? `System (${resolvedTheme})` 
-    : theme.charAt(0).toUpperCase() + theme.slice(1);
+  const currentLabel =
+    theme === 'system'
+      ? `System (${resolvedTheme})`
+      : theme.charAt(0).toUpperCase() + theme.slice(1);
 
   if (!showDropdown) {
     // Simple toggle button (just toggles between light and dark)
@@ -91,9 +92,7 @@ export function ThemeToggle({
         <span className={`${iconSizeClasses[size]} transition-transform duration-300`}>
           {currentIcon}
         </span>
-        {showLabel && (
-          <span className="text-sm font-medium">{currentLabel}</span>
-        )}
+        {showLabel && <span className="text-sm font-medium">{currentLabel}</span>}
       </button>
     );
   }
@@ -124,9 +123,7 @@ export function ThemeToggle({
         <span className={`${iconSizeClasses[size]} transition-transform duration-300`}>
           {currentIcon}
         </span>
-        {showLabel && (
-          <span className="text-sm font-medium">{currentLabel}</span>
-        )}
+        {showLabel && <span className="text-sm font-medium">{currentLabel}</span>}
       </button>
 
       {/* Dropdown Menu */}
@@ -154,9 +151,10 @@ export function ThemeToggle({
                 w-full px-4 py-2.5 text-left
                 flex items-center gap-3
                 transition-colors duration-200
-                ${theme === option.value 
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ${
+                  theme === option.value
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }
               `}
               role="menuitem"
@@ -164,9 +162,7 @@ export function ThemeToggle({
             >
               <span className="text-lg">{option.icon}</span>
               <span className="text-sm font-medium">{option.label}</span>
-              {theme === option.value && (
-                <span className="ml-auto text-blue-500">✓</span>
-              )}
+              {theme === option.value && <span className="ml-auto text-blue-500">✓</span>}
             </button>
           ))}
         </div>

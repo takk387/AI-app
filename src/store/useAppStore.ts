@@ -83,7 +83,9 @@ interface ComponentsSlice {
   loadingApps: boolean;
   dbSyncError: string | null;
   // Actions
-  setComponents: (components: GeneratedComponent[] | ((prev: GeneratedComponent[]) => GeneratedComponent[])) => void;
+  setComponents: (
+    components: GeneratedComponent[] | ((prev: GeneratedComponent[]) => GeneratedComponent[])
+  ) => void;
   setCurrentComponent: (component: GeneratedComponent | null) => void;
   setLoadingApps: (loading: boolean) => void;
   setDbSyncError: (error: string | null) => void;
@@ -181,7 +183,9 @@ interface DataSlice {
   setExportingApp: (app: GeneratedComponent | null) => void;
   setCompareVersions: (versions: CompareVersions) => void;
   setCurrentStagePlan: (plan: CurrentStagePlan | null) => void;
-  setNewAppStagePlan: (plan: StagePlan | null | ((prev: StagePlan | null) => StagePlan | null)) => void;
+  setNewAppStagePlan: (
+    plan: StagePlan | null | ((prev: StagePlan | null) => StagePlan | null)
+  ) => void;
   setAppConcept: (concept: AppConcept | null) => void;
   setImplementationPlan: (plan: ImplementationPlan | null) => void;
   setQualityReport: (report: QualityReport | null) => void;
@@ -230,14 +234,15 @@ interface FileStorageSlice {
 /**
  * Complete store state combining all slices
  */
-export interface AppState extends 
-  ChatSlice, 
-  ModeSlice, 
-  ComponentsSlice, 
-  VersionControlSlice, 
-  UISlice, 
-  DataSlice, 
-  FileStorageSlice {}
+export interface AppState
+  extends
+    ChatSlice,
+    ModeSlice,
+    ComponentsSlice,
+    VersionControlSlice,
+    UISlice,
+    DataSlice,
+    FileStorageSlice {}
 
 // ============================================================================
 // STORE IMPLEMENTATION
@@ -256,16 +261,18 @@ export const useAppStore = create<AppState>()(
       userInput: '',
       isGenerating: false,
       generationProgress: '',
-      
-      setChatMessages: (messages) => set((state) => ({
-        chatMessages: typeof messages === 'function' ? messages(state.chatMessages) : messages
-      })),
+
+      setChatMessages: (messages) =>
+        set((state) => ({
+          chatMessages: typeof messages === 'function' ? messages(state.chatMessages) : messages,
+        })),
       setUserInput: (input) => set({ userInput: input }),
       setIsGenerating: (isGenerating) => set({ isGenerating }),
       setGenerationProgress: (progress) => set({ generationProgress: progress }),
-      addChatMessage: (message) => set((state) => ({
-        chatMessages: [...state.chatMessages, message]
-      })),
+      addChatMessage: (message) =>
+        set((state) => ({
+          chatMessages: [...state.chatMessages, message],
+        })),
       clearChatMessages: () => set({ chatMessages: [] }),
 
       // ========================================================================
@@ -273,7 +280,7 @@ export const useAppStore = create<AppState>()(
       // ========================================================================
       currentMode: 'PLAN',
       lastUserRequest: '',
-      
+
       setCurrentMode: (mode) => set({ currentMode: mode }),
       setLastUserRequest: (request) => set({ lastUserRequest: request }),
 
@@ -284,24 +291,28 @@ export const useAppStore = create<AppState>()(
       currentComponent: null,
       loadingApps: true,
       dbSyncError: null,
-      
-      setComponents: (components) => set((state) => ({
-        components: typeof components === 'function' ? components(state.components) : components
-      })),
+
+      setComponents: (components) =>
+        set((state) => ({
+          components: typeof components === 'function' ? components(state.components) : components,
+        })),
       setCurrentComponent: (component) => set({ currentComponent: component }),
       setLoadingApps: (loading) => set({ loadingApps: loading }),
       setDbSyncError: (error) => set({ dbSyncError: error }),
-      addComponent: (component) => set((state) => ({
-        components: [...state.components, component]
-      })),
-      updateComponent: (id, updates) => set((state) => ({
-        components: state.components.map(comp => 
-          comp.id === id ? { ...comp, ...updates } : comp
-        )
-      })),
-      removeComponent: (id) => set((state) => ({
-        components: state.components.filter(comp => comp.id !== id)
-      })),
+      addComponent: (component) =>
+        set((state) => ({
+          components: [...state.components, component],
+        })),
+      updateComponent: (id, updates) =>
+        set((state) => ({
+          components: state.components.map((comp) =>
+            comp.id === id ? { ...comp, ...updates } : comp
+          ),
+        })),
+      removeComponent: (id) =>
+        set((state) => ({
+          components: state.components.filter((comp) => comp.id !== id),
+        })),
 
       // ========================================================================
       // VERSION CONTROL SLICE
@@ -309,20 +320,24 @@ export const useAppStore = create<AppState>()(
       undoStack: [],
       redoStack: [],
       showVersionHistory: false,
-      
-      setUndoStack: (stack) => set((state) => ({
-        undoStack: typeof stack === 'function' ? stack(state.undoStack) : stack
-      })),
-      setRedoStack: (stack) => set((state) => ({
-        redoStack: typeof stack === 'function' ? stack(state.redoStack) : stack
-      })),
+
+      setUndoStack: (stack) =>
+        set((state) => ({
+          undoStack: typeof stack === 'function' ? stack(state.undoStack) : stack,
+        })),
+      setRedoStack: (stack) =>
+        set((state) => ({
+          redoStack: typeof stack === 'function' ? stack(state.redoStack) : stack,
+        })),
       setShowVersionHistory: (show) => set({ showVersionHistory: show }),
-      pushToUndoStack: (version) => set((state) => ({
-        undoStack: [...state.undoStack, version]
-      })),
-      pushToRedoStack: (version) => set((state) => ({
-        redoStack: [...state.redoStack, version]
-      })),
+      pushToUndoStack: (version) =>
+        set((state) => ({
+          undoStack: [...state.undoStack, version],
+        })),
+      pushToRedoStack: (version) =>
+        set((state) => ({
+          redoStack: [...state.redoStack, version],
+        })),
       clearRedoStack: () => set({ redoStack: [] }),
 
       // ========================================================================
@@ -344,7 +359,7 @@ export const useAppStore = create<AppState>()(
       showQualityReport: false,
       showPerformanceReport: false,
       searchQuery: '',
-      
+
       setIsClient: (isClient) => set({ isClient }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setShowLibrary: (show) => set({ showLibrary: show }),
@@ -390,9 +405,10 @@ export const useAppStore = create<AppState>()(
       setExportingApp: (app) => set({ exportingApp: app }),
       setCompareVersions: (versions) => set({ compareVersions: versions }),
       setCurrentStagePlan: (plan) => set({ currentStagePlan: plan }),
-      setNewAppStagePlan: (plan) => set((state) => ({
-        newAppStagePlan: typeof plan === 'function' ? plan(state.newAppStagePlan) : plan
-      })),
+      setNewAppStagePlan: (plan) =>
+        set((state) => ({
+          newAppStagePlan: typeof plan === 'function' ? plan(state.newAppStagePlan) : plan,
+        })),
       setAppConcept: (concept) => set({ appConcept: concept }),
       setImplementationPlan: (plan) => set({ implementationPlan: plan }),
       setQualityReport: (report) => set({ qualityReport: report }),
@@ -402,12 +418,14 @@ export const useAppStore = create<AppState>()(
       setUploadedImage: (image) => set({ uploadedImage: image }),
       setCurrentLayoutDesign: (design) => set({ currentLayoutDesign: design }),
       setSavedLayoutDesigns: (designs) => set({ savedLayoutDesigns: designs }),
-      addSavedLayoutDesign: (design) => set((state) => ({
-        savedLayoutDesigns: [...state.savedLayoutDesigns, design]
-      })),
-      removeSavedLayoutDesign: (id) => set((state) => ({
-        savedLayoutDesigns: state.savedLayoutDesigns.filter(d => d.id !== id)
-      })),
+      addSavedLayoutDesign: (design) =>
+        set((state) => ({
+          savedLayoutDesigns: [...state.savedLayoutDesigns, design],
+        })),
+      removeSavedLayoutDesign: (id) =>
+        set((state) => ({
+          savedLayoutDesigns: state.savedLayoutDesigns.filter((d) => d.id !== id),
+        })),
 
       // ========================================================================
       // FILE STORAGE SLICE
@@ -423,7 +441,7 @@ export const useAppStore = create<AppState>()(
       storageStats: null,
       uploadingFiles: new Set<string>(),
       deletingFiles: new Set<string>(),
-      
+
       setContentTab: (tab) => set({ contentTab: tab }),
       setStorageFiles: (files) => set({ storageFiles: files }),
       setLoadingFiles: (loading) => set({ loadingFiles: loading }),
@@ -435,15 +453,16 @@ export const useAppStore = create<AppState>()(
       setStorageStats: (stats) => set({ storageStats: stats }),
       setUploadingFiles: (files) => set({ uploadingFiles: files }),
       setDeletingFiles: (files) => set({ deletingFiles: files }),
-      toggleFileSelection: (fileId) => set((state) => {
-        const newSelection = new Set(state.selectedFiles);
-        if (newSelection.has(fileId)) {
-          newSelection.delete(fileId);
-        } else {
-          newSelection.add(fileId);
-        }
-        return { selectedFiles: newSelection };
-      }),
+      toggleFileSelection: (fileId) =>
+        set((state) => {
+          const newSelection = new Set(state.selectedFiles);
+          if (newSelection.has(fileId)) {
+            newSelection.delete(fileId);
+          } else {
+            newSelection.add(fileId);
+          }
+          return { selectedFiles: newSelection };
+        }),
       clearFileSelection: () => set({ selectedFiles: new Set<string>() }),
     })),
     {
@@ -460,100 +479,107 @@ export const useAppStore = create<AppState>()(
 /**
  * Select chat-related state (uses shallow comparison to prevent unnecessary re-renders)
  */
-export const useChatState = () => useAppStore(
-  useShallow((state) => ({
-    chatMessages: state.chatMessages,
-    userInput: state.userInput,
-    isGenerating: state.isGenerating,
-    generationProgress: state.generationProgress,
-  }))
-);
+export const useChatState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      chatMessages: state.chatMessages,
+      userInput: state.userInput,
+      isGenerating: state.isGenerating,
+      generationProgress: state.generationProgress,
+    }))
+  );
 
 /**
  * Select mode-related state
  */
-export const useModeState = () => useAppStore(
-  useShallow((state) => ({
-    currentMode: state.currentMode,
-    lastUserRequest: state.lastUserRequest,
-  }))
-);
+export const useModeState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      currentMode: state.currentMode,
+      lastUserRequest: state.lastUserRequest,
+    }))
+  );
 
 /**
  * Select component-related state
  */
-export const useComponentsState = () => useAppStore(
-  useShallow((state) => ({
-    components: state.components,
-    currentComponent: state.currentComponent,
-    loadingApps: state.loadingApps,
-    dbSyncError: state.dbSyncError,
-  }))
-);
+export const useComponentsState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      components: state.components,
+      currentComponent: state.currentComponent,
+      loadingApps: state.loadingApps,
+      dbSyncError: state.dbSyncError,
+    }))
+  );
 
 /**
  * Select version control state
  */
-export const useVersionControlState = () => useAppStore(
-  useShallow((state) => ({
-    undoStack: state.undoStack,
-    redoStack: state.redoStack,
-    showVersionHistory: state.showVersionHistory,
-  }))
-);
+export const useVersionControlState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      undoStack: state.undoStack,
+      redoStack: state.redoStack,
+      showVersionHistory: state.showVersionHistory,
+    }))
+  );
 
 /**
  * Select UI state
  */
-export const useUIState = () => useAppStore(
-  useShallow((state) => ({
-    isClient: state.isClient,
-    activeTab: state.activeTab,
-    showLibrary: state.showLibrary,
-    showDiffPreview: state.showDiffPreview,
-    showApprovalModal: state.showApprovalModal,
-    showDeploymentModal: state.showDeploymentModal,
-    showCompareModal: state.showCompareModal,
-    showNewAppStagingModal: state.showNewAppStagingModal,
-    showConceptWizard: state.showConceptWizard,
-    showConversationalWizard: state.showConversationalWizard,
-    showLayoutBuilder: state.showLayoutBuilder,
-    showSettings: state.showSettings,
-    showAdvancedPhasedBuild: state.showAdvancedPhasedBuild,
-    showQualityReport: state.showQualityReport,
-    showPerformanceReport: state.showPerformanceReport,
-    searchQuery: state.searchQuery,
-  }))
-);
+export const useUIState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      isClient: state.isClient,
+      activeTab: state.activeTab,
+      showLibrary: state.showLibrary,
+      showDiffPreview: state.showDiffPreview,
+      showApprovalModal: state.showApprovalModal,
+      showDeploymentModal: state.showDeploymentModal,
+      showCompareModal: state.showCompareModal,
+      showNewAppStagingModal: state.showNewAppStagingModal,
+      showConceptWizard: state.showConceptWizard,
+      showConversationalWizard: state.showConversationalWizard,
+      showLayoutBuilder: state.showLayoutBuilder,
+      showSettings: state.showSettings,
+      showAdvancedPhasedBuild: state.showAdvancedPhasedBuild,
+      showQualityReport: state.showQualityReport,
+      showPerformanceReport: state.showPerformanceReport,
+      searchQuery: state.searchQuery,
+    }))
+  );
 
 /**
  * Select layout builder state
  */
-export const useLayoutBuilderState = () => useAppStore(
-  useShallow((state) => ({
-    showLayoutBuilder: state.showLayoutBuilder,
-    currentLayoutDesign: state.currentLayoutDesign,
-    savedLayoutDesigns: state.savedLayoutDesigns,
-  }))
-);
+export const useLayoutBuilderState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      showLayoutBuilder: state.showLayoutBuilder,
+      currentLayoutDesign: state.currentLayoutDesign,
+      savedLayoutDesigns: state.savedLayoutDesigns,
+    }))
+  );
 
 /**
  * Select file storage state
  */
-export const useFileStorageState = () => useAppStore(
-  useShallow((state) => ({
-    contentTab: state.contentTab,
-    storageFiles: state.storageFiles,
-    loadingFiles: state.loadingFiles,
-    selectedFiles: state.selectedFiles,
-    fileSearchQuery: state.fileSearchQuery,
-    fileTypeFilter: state.fileTypeFilter,
-    fileSortBy: state.fileSortBy,
-    fileSortOrder: state.fileSortOrder,
-    storageStats: state.storageStats,
-    uploadingFiles: state.uploadingFiles,
-    deletingFiles: state.deletingFiles,
-  }))
-);
+export const useFileStorageState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      contentTab: state.contentTab,
+      storageFiles: state.storageFiles,
+      loadingFiles: state.loadingFiles,
+      selectedFiles: state.selectedFiles,
+      fileSearchQuery: state.fileSearchQuery,
+      fileTypeFilter: state.fileTypeFilter,
+      fileSortBy: state.fileSortBy,
+      fileSortOrder: state.fileSortOrder,
+      storageStats: state.storageStats,
+      uploadingFiles: state.uploadingFiles,
+      deletingFiles: state.deletingFiles,
+    }))
+  );
 
 export default useAppStore;

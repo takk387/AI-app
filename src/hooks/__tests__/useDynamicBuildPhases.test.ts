@@ -9,11 +9,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useDynamicBuildPhases } from '../useDynamicBuildPhases';
-import type {
-  DynamicPhase,
-  DynamicPhasePlan,
-  PhaseExecutionResult,
-} from '@/types/dynamicPhases';
+import type { DynamicPhase, DynamicPhasePlan, PhaseExecutionResult } from '@/types/dynamicPhases';
 import type { AppConcept } from '@/types/appConcept';
 
 // ============================================================================
@@ -32,9 +28,7 @@ function createMockAppConcept(overrides?: Partial<AppConcept>): AppConcept {
       { name: 'User Dashboard', description: 'Main user dashboard' },
       { name: 'Profile Page', description: 'User profile management' },
     ],
-    pages: [
-      { name: 'Home', route: '/', description: 'Home page' },
-    ],
+    pages: [{ name: 'Home', route: '/', description: 'Home page' }],
     techStack: {
       framework: 'nextjs',
       styling: 'tailwind',
@@ -47,10 +41,7 @@ function createMockAppConcept(overrides?: Partial<AppConcept>): AppConcept {
 /**
  * Create a mock DynamicPhase for testing
  */
-function createMockPhase(
-  number: number,
-  overrides?: Partial<DynamicPhase>
-): DynamicPhase {
+function createMockPhase(number: number, overrides?: Partial<DynamicPhase>): DynamicPhase {
   return {
     number,
     name: `Phase ${number}`,
@@ -75,9 +66,7 @@ function createMockPlan(
   phaseCount: number = 3,
   overrides?: Partial<DynamicPhasePlan>
 ): DynamicPhasePlan {
-  const phases = Array.from({ length: phaseCount }, (_, i) =>
-    createMockPhase(i + 1)
-  );
+  const phases = Array.from({ length: phaseCount }, (_, i) => createMockPhase(i + 1));
 
   return {
     id: `plan-${Date.now()}`,
@@ -277,9 +266,7 @@ describe('useDynamicBuildPhases', () => {
 
       expect(result.current.isBuilding).toBe(true);
       expect(result.current.plan?.currentPhaseNumber).toBe(1);
-      expect(mockOnPhaseStart).toHaveBeenCalledWith(
-        expect.objectContaining({ number: 1 })
-      );
+      expect(mockOnPhaseStart).toHaveBeenCalledWith(expect.objectContaining({ number: 1 }));
     });
 
     it('should update phase status to in-progress', () => {

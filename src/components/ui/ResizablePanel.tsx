@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 
@@ -31,7 +31,7 @@ export const ResizablePanelContext = React.createContext<ResizablePanelContextVa
 
 /**
  * ResizablePanel - A panel that can be resized within a ResizablePanelGroup
- * 
+ *
  * @example
  * ```tsx
  * <ResizablePanelGroup direction="horizontal">
@@ -59,11 +59,11 @@ export function ResizablePanel({
   id,
 }: ResizablePanelProps) {
   const context = React.useContext(ResizablePanelContext);
-  
+
   // Get size from context or use default
   const currentSize = context?.size ?? defaultSize ?? 50;
   const isCollapsed = context?.isCollapsed ?? false;
-  
+
   // Panel styles
   const panelStyle: React.CSSProperties = {
     ...style,

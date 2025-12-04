@@ -20,7 +20,7 @@ interface FileUploaderProps {
 
 /**
  * FileUploader Component
- * 
+ *
  * Drag & drop file uploader with validation and progress tracking.
  * Supports multiple file upload with preview and cancellation.
  */
@@ -43,12 +43,12 @@ export function FileUploader({
     const units = ['B', 'KB', 'MB', 'GB'];
     let size = bytes;
     let unitIndex = 0;
-    
+
     while (size >= 1024 && unitIndex < units.length - 1) {
       size /= 1024;
       unitIndex++;
     }
-    
+
     return `${size.toFixed(1)} ${units[unitIndex]}`;
   };
 
@@ -132,7 +132,7 @@ export function FileUploader({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     if (!disabled) {
       handleFiles(e.dataTransfer.files);
     }
@@ -166,9 +166,10 @@ export function FileUploader({
       <div
         className={`
           relative rounded-xl border-2 border-dashed transition-all duration-300
-          ${isDragging
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+          ${
+            isDragging
+              ? 'border-blue-500 bg-blue-500/10'
+              : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
@@ -183,14 +184,10 @@ export function FileUploader({
           <h3 className="text-white font-semibold text-lg mb-2">
             {isDragging ? 'Drop files here' : 'Upload Files'}
           </h3>
-          <p className="text-slate-400 text-sm mb-4">
-            Drag & drop files here, or click to browse
-          </p>
+          <p className="text-slate-400 text-sm mb-4">Drag & drop files here, or click to browse</p>
           <div className="text-xs text-slate-500 space-y-1">
             <p>Maximum file size: {formatSize(maxFileSize)}</p>
-            {allowedTypes.length > 0 && (
-              <p>Allowed types: {allowedTypes.join(', ')}</p>
-            )}
+            {allowedTypes.length > 0 && <p>Allowed types: {allowedTypes.join(', ')}</p>}
             {allowedExtensions.length > 0 && (
               <p>Allowed extensions: {allowedExtensions.join(', ')}</p>
             )}
@@ -231,12 +228,8 @@ export function FileUploader({
               >
                 <div className="text-2xl">📄</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">
-                    {file.name}
-                  </p>
-                  <p className="text-slate-400 text-xs">
-                    {formatSize(file.size)}
-                  </p>
+                  <p className="text-white text-sm font-medium truncate">{file.name}</p>
+                  <p className="text-slate-400 text-xs">{formatSize(file.size)}</p>
                 </div>
                 <button
                   onClick={() => removeFile(index)}
@@ -258,16 +251,27 @@ export function FileUploader({
             {isUploading ? (
               <>
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div
+                    className="w-2 h-2 bg-white rounded-full animate-bounce"
+                    style={{ animationDelay: '0ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-white rounded-full animate-bounce"
+                    style={{ animationDelay: '150ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-white rounded-full animate-bounce"
+                    style={{ animationDelay: '300ms' }}
+                  ></div>
                 </div>
                 <span>Uploading...</span>
               </>
             ) : (
               <>
                 <span>📤</span>
-                <span>Upload {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'}</span>
+                <span>
+                  Upload {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'}
+                </span>
               </>
             )}
           </button>

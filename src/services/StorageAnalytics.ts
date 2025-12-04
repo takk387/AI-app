@@ -1,10 +1,10 @@
 /**
  * Storage Analytics Service
  * Phase 4: Monitoring & Analytics
- * 
+ *
  * Tracks storage operations (upload, download, delete) and stores metrics
  * in both the database (analytics_events table) and in-memory for real-time monitoring.
- * 
+ *
  * Architecture:
  * - Dependency injection pattern (SupabaseClient passed via constructor)
  * - Works in both client and server contexts
@@ -15,12 +15,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
-import type { 
-  StorageError, 
-  StorageErrorCode,
-  BucketName,
-  FileId
-} from '@/types/storage';
+import type { StorageError, StorageErrorCode, BucketName, FileId } from '@/types/storage';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -124,12 +119,12 @@ export interface QuotaEventData extends BaseEventData {
 /**
  * Union type for all event data
  */
-export type StorageEventData = 
-  | UploadEventData 
-  | DownloadEventData 
-  | DeleteEventData 
+export type StorageEventData =
+  | UploadEventData
+  | DownloadEventData
+  | DeleteEventData
   | ListEventData
-  | ErrorEventData 
+  | ErrorEventData
   | QuotaEventData;
 
 /**
@@ -171,16 +166,16 @@ export class StorageAnalyticsService {
 
   /**
    * Create a new StorageAnalyticsService
-   * 
+   *
    * @param client - Supabase client (browser or server)
-   * 
+   *
    * @example
    * ```typescript
    * // Client component
    * import { createClient } from '@/utils/supabase/client';
    * const supabase = createClient();
    * const analytics = new StorageAnalyticsService(supabase);
-   * 
+   *
    * // Server component / API route
    * import { createClient } from '@/utils/supabase/server';
    * const supabase = await createClient();
@@ -190,7 +185,7 @@ export class StorageAnalyticsService {
   constructor(client: SupabaseClient<Database>) {
     this.client = client;
     this.performanceTrackers = new Map();
-    
+
     // Initialize in-memory metrics
     this.inMemoryMetrics = {
       totalUploads: 0,
@@ -238,7 +233,7 @@ export class StorageAnalyticsService {
     if (data.success) {
       this.inMemoryMetrics.successfulUploads++;
       this.inMemoryMetrics.totalBytesUploaded += data.fileSize;
-      
+
       if (data.duration) {
         this.updateAverageUploadDuration(data.duration);
       }
@@ -248,10 +243,10 @@ export class StorageAnalyticsService {
     this.inMemoryMetrics.lastUpdated = Date.now();
 
     // Store in database
-    const eventType: StorageEventType = data.success 
-      ? 'storage_upload_complete' 
+    const eventType: StorageEventType = data.success
+      ? 'storage_upload_complete'
       : 'storage_upload_error';
-    
+
     await this.storeEvent(eventType, eventData);
 
     // Log in development
@@ -285,7 +280,7 @@ export class StorageAnalyticsService {
     if (data.success) {
       this.inMemoryMetrics.totalDownloads++;
       this.inMemoryMetrics.totalBytesDownloaded += data.fileSize;
-      
+
       if (data.duration) {
         this.updateAverageDownloadDuration(data.duration);
       }
@@ -293,10 +288,10 @@ export class StorageAnalyticsService {
     this.inMemoryMetrics.lastUpdated = Date.now();
 
     // Store in database
-    const eventType: StorageEventType = data.success 
-      ? 'storage_download_complete' 
+    const eventType: StorageEventType = data.success
+      ? 'storage_download_complete'
       : 'storage_download_error';
-    
+
     await this.storeEvent(eventType, eventData);
 
     // Log in development
@@ -332,18 +327,16 @@ export class StorageAnalyticsService {
     this.inMemoryMetrics.lastUpdated = Date.now();
 
     // Store in database
-    const eventType: StorageEventType = data.success 
-      ? 'storage_delete_complete' 
+    const eventType: StorageEventType = data.success
+      ? 'storage_delete_complete'
       : 'storage_delete_error';
-    
+
     await this.storeEvent(eventType, eventData);
 
     // Log in development
     if (process.env.NODE_ENV === 'development') {
       const status = data.success ? '✅' : '❌';
-      console.log(
-        `[Storage Analytics] ${status} Delete: ${data.fileName}`
-      );
+      console.log(`[Storage Analytics] ${status} Delete: ${data.fileName}`);
     }
   }
 
@@ -366,17 +359,15 @@ export class StorageAnalyticsService {
     };
 
     // Store in database
-    const eventType: StorageEventType = data.success 
-      ? 'storage_list_complete' 
+    const eventType: StorageEventType = data.success
+      ? 'storage_list_complete'
       : 'storage_list_error';
-    
+
     await this.storeEvent(eventType, eventData);
 
     // Log in development
     if (process.env.NODE_ENV === 'development' && !data.success) {
-      console.log(
-        `[Storage Analytics] ❌ List operation failed - ${data.duration || 0}ms`
-      );
+      console.log(`[Storage Analytics] ❌ List operation failed - ${data.duration || 0}ms`);
     }
   }
 
@@ -415,14 +406,11 @@ export class StorageAnalyticsService {
     await this.storeEvent('storage_upload_error', eventData); // Generic error storage
 
     // Log error
-    console.error(
-      `[Storage Analytics] Error: ${data.error.code} - ${data.error.message}`,
-      {
-        operationId: data.operationId,
-        isRetryable: data.isRetryable,
-        retryAttempt: data.retryAttempt,
-      }
-    );
+    console.error(`[Storage Analytics] Error: ${data.error.code} - ${data.error.message}`, {
+      operationId: data.operationId,
+      isRetryable: data.isRetryable,
+      retryAttempt: data.retryAttempt,
+    });
   }
 
   /**
@@ -436,7 +424,7 @@ export class StorageAnalyticsService {
     warningLevel: 'medium' | 'high' | 'critical';
   }): Promise<void> {
     const usagePercentage = (data.currentUsage / data.quotaLimit) * 100;
-    
+
     const eventData: QuotaEventData = {
       operationId: data.operationId,
       bucket: data.bucket,
@@ -453,10 +441,9 @@ export class StorageAnalyticsService {
     this.inMemoryMetrics.lastUpdated = Date.now();
 
     // Store in database
-    const eventType: StorageEventType = usagePercentage >= 100 
-      ? 'storage_quota_exceeded' 
-      : 'storage_quota_warning';
-    
+    const eventType: StorageEventType =
+      usagePercentage >= 100 ? 'storage_quota_exceeded' : 'storage_quota_warning';
+
     await this.storeEvent(eventType, eventData);
 
     // Log warning
@@ -612,15 +599,15 @@ export class StorageAnalyticsService {
     eventData: StorageEventData
   ): Promise<void> {
     try {
-      const { data: { user } } = await this.client.auth.getUser();
+      const {
+        data: { user },
+      } = await this.client.auth.getUser();
 
-      const { error } = await this.client
-        .from('analytics_events')
-        .insert({
-          user_id: user?.id || null,
-          event_type: eventType,
-          event_data: eventData as any, // JSONB type
-        });
+      const { error } = await this.client.from('analytics_events').insert({
+        user_id: user?.id || null,
+        event_type: eventType,
+        event_data: eventData as any, // JSONB type
+      });
 
       if (error) {
         console.error('[Storage Analytics] Error storing event:', error);
@@ -636,10 +623,9 @@ export class StorageAnalyticsService {
   private updateAverageUploadDuration(newDuration: number): void {
     const currentAvg = this.inMemoryMetrics.averageUploadDuration;
     const count = this.inMemoryMetrics.successfulUploads;
-    
+
     // Calculate running average
-    this.inMemoryMetrics.averageUploadDuration = 
-      ((currentAvg * (count - 1)) + newDuration) / count;
+    this.inMemoryMetrics.averageUploadDuration = (currentAvg * (count - 1) + newDuration) / count;
   }
 
   /**
@@ -648,10 +634,9 @@ export class StorageAnalyticsService {
   private updateAverageDownloadDuration(newDuration: number): void {
     const currentAvg = this.inMemoryMetrics.averageDownloadDuration;
     const count = this.inMemoryMetrics.totalDownloads;
-    
+
     // Calculate running average
-    this.inMemoryMetrics.averageDownloadDuration = 
-      ((currentAvg * (count - 1)) + newDuration) / count;
+    this.inMemoryMetrics.averageDownloadDuration = (currentAvg * (count - 1) + newDuration) / count;
   }
 
   /**
@@ -659,11 +644,11 @@ export class StorageAnalyticsService {
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
-    
+
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
   }
 }
@@ -682,10 +667,7 @@ export function generateOperationId(prefix: string = 'op'): string {
 /**
  * Calculate storage usage percentage
  */
-export function calculateUsagePercentage(
-  currentUsage: number,
-  quotaLimit: number
-): number {
+export function calculateUsagePercentage(currentUsage: number, quotaLimit: number): number {
   if (quotaLimit === 0) return 0;
   return Math.round((currentUsage / quotaLimit) * 100 * 10) / 10; // One decimal place
 }

@@ -42,9 +42,7 @@ function createFeature(
 /**
  * Create a minimal AppConcept for testing
  */
-function createMockAppConcept(
-  overrides?: Partial<AppConcept>
-): AppConcept {
+function createMockAppConcept(overrides?: Partial<AppConcept>): AppConcept {
   // Reset counter for consistent test IDs
   featureIdCounter = 0;
 
@@ -172,10 +170,7 @@ describe('DynamicPhaseGenerator', () => {
       const phaseNames = result.plan!.phases.map((p) => p.name.toLowerCase());
       // Should have some form of setup/foundation phase
       const hasSetup = phaseNames.some(
-        (name) =>
-          name.includes('setup') ||
-          name.includes('foundation') ||
-          name.includes('initial')
+        (name) => name.includes('setup') || name.includes('foundation') || name.includes('initial')
       );
       expect(hasSetup).toBe(true);
     });
@@ -194,9 +189,7 @@ describe('DynamicPhaseGenerator', () => {
       expect(complexResult.success).toBe(true);
 
       // Complex app should have more phases
-      expect(complexResult.plan!.phases.length).toBeGreaterThan(
-        simpleResult.plan!.phases.length
-      );
+      expect(complexResult.plan!.phases.length).toBeGreaterThan(simpleResult.plan!.phases.length);
     });
 
     it('should warn when phases exceed maxPhases configuration', () => {
@@ -208,9 +201,7 @@ describe('DynamicPhaseGenerator', () => {
       expect(result.success).toBe(true);
       // maxPhases is used for warnings, not enforcement - service may generate more phases
       if (result.plan!.phases.length > 5) {
-        expect(result.warnings).toContainEqual(
-          expect.stringContaining('High phase count')
-        );
+        expect(result.warnings).toContainEqual(expect.stringContaining('High phase count'));
       }
     });
 
@@ -272,9 +263,7 @@ describe('DynamicPhaseGenerator', () => {
 
       expect(result.plan!.createdAt).toBeDefined();
       expect(result.plan!.updatedAt).toBeDefined();
-      expect(new Date(result.plan!.createdAt).getTime()).toBeLessThanOrEqual(
-        Date.now()
-      );
+      expect(new Date(result.plan!.createdAt).getTime()).toBeLessThanOrEqual(Date.now());
     });
   });
 
@@ -324,9 +313,7 @@ describe('DynamicPhaseGenerator', () => {
         (p) =>
           p.domain === 'database' ||
           p.features.some(
-            (f) =>
-              f.toLowerCase().includes('database') ||
-              f.toLowerCase().includes('schema')
+            (f) => f.toLowerCase().includes('database') || f.toLowerCase().includes('schema')
           )
       );
       expect(hasDbPhase).toBe(true);
@@ -351,9 +338,7 @@ describe('DynamicPhaseGenerator', () => {
           p.domain === 'integration' ||
           p.name.toLowerCase().includes('payment') ||
           p.features.some(
-            (f) =>
-              f.toLowerCase().includes('stripe') ||
-              f.toLowerCase().includes('payment')
+            (f) => f.toLowerCase().includes('stripe') || f.toLowerCase().includes('payment')
           )
       );
       expect(hasPaymentPhase).toBe(true);
@@ -377,9 +362,7 @@ describe('DynamicPhaseGenerator', () => {
         (p) =>
           p.domain === 'real-time' ||
           p.features.some(
-            (f) =>
-              f.toLowerCase().includes('real-time') ||
-              f.toLowerCase().includes('websocket')
+            (f) => f.toLowerCase().includes('real-time') || f.toLowerCase().includes('websocket')
           )
       );
       expect(hasRealTimePhase).toBe(true);
@@ -497,9 +480,7 @@ describe('DynamicPhaseGenerator', () => {
 
       // Auth phase should have higher token estimate
       const authPhase = result.plan!.phases.find(
-        (p) =>
-          p.domain === 'auth' ||
-          p.features.some((f) => f.toLowerCase().includes('auth'))
+        (p) => p.domain === 'auth' || p.features.some((f) => f.toLowerCase().includes('auth'))
       );
 
       if (authPhase) {
@@ -515,10 +496,7 @@ describe('DynamicPhaseGenerator', () => {
 
       expect(result.success).toBe(true);
 
-      const calculatedTotal = result.plan!.phases.reduce(
-        (sum, p) => sum + p.estimatedTokens,
-        0
-      );
+      const calculatedTotal = result.plan!.phases.reduce((sum, p) => sum + p.estimatedTokens, 0);
       expect(result.plan!.estimatedTotalTokens).toBe(calculatedTotal);
     });
 
@@ -646,9 +624,7 @@ describe('DynamicPhaseGenerator', () => {
       const result = generator.generatePhasePlan(complexApp);
 
       expect(result.success).toBe(true);
-      expect(['moderate', 'complex', 'enterprise']).toContain(
-        result.plan!.complexity
-      );
+      expect(['moderate', 'complex', 'enterprise']).toContain(result.plan!.complexity);
     });
 
     it('should provide domain breakdown in analysis', () => {

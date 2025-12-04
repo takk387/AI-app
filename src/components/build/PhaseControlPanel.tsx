@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { BuildPhase, PhaseId, BuildProgress } from '../../types/buildPhases';
@@ -39,7 +39,9 @@ export function PhaseControlPanel({
   const canRetry = hasFailedTasks;
 
   return (
-    <div className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-white/10 p-4 ${className}`}>
+    <div
+      className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-white/10 p-4 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold flex items-center gap-2">
@@ -47,9 +49,11 @@ export function PhaseControlPanel({
           <span>Build Controls</span>
         </h3>
         {isBuilding && (
-          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-            isPaused ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-          }`}>
+          <div
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              isPaused ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+            }`}
+          >
             {isPaused ? 'Paused' : 'Building...'}
           </div>
         )}
@@ -102,10 +106,8 @@ export function PhaseControlPanel({
               View Details →
             </button>
           </div>
-          <div className="text-xs text-slate-400 mb-2">
-            {currentPhase.description}
-          </div>
-          
+          <div className="text-xs text-slate-400 mb-2">{currentPhase.description}</div>
+
           {/* Task Progress */}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
@@ -117,7 +119,8 @@ export function PhaseControlPanel({
               />
             </div>
             <div className="text-xs text-slate-500">
-              {currentPhase.tasks.filter((t) => t.status === 'completed').length}/{currentPhase.tasks.length}
+              {currentPhase.tasks.filter((t) => t.status === 'completed').length}/
+              {currentPhase.tasks.length}
             </div>
           </div>
         </div>
@@ -169,14 +172,10 @@ export function PhaseControlPanel({
                 key={phase.id}
                 onClick={() => onViewPhaseDetails(phase.id)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-sm transition-all ${
-                  isCurrentPhase
-                    ? 'bg-blue-500/20 text-white'
-                    : 'hover:bg-white/5 text-slate-300'
+                  isCurrentPhase ? 'bg-blue-500/20 text-white' : 'hover:bg-white/5 text-slate-300'
                 }`}
               >
-                <span className={statusColors[phase.status]}>
-                  {statusIcons[phase.status]}
-                </span>
+                <span className={statusColors[phase.status]}>{statusIcons[phase.status]}</span>
                 <span className="flex-1 truncate">{phase.name}</span>
                 <span className="text-xs text-slate-500">{phase.estimatedTime}</span>
               </button>

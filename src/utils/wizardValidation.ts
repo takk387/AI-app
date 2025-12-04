@@ -21,7 +21,7 @@ export function validateAppName(name: string): ValidationError | null {
     return {
       field: 'name',
       message: 'App name is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -29,7 +29,7 @@ export function validateAppName(name: string): ValidationError | null {
     return {
       field: 'name',
       message: 'App name must be at least 2 characters',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -37,7 +37,7 @@ export function validateAppName(name: string): ValidationError | null {
     return {
       field: 'name',
       message: 'App name must be 50 characters or less',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -47,7 +47,7 @@ export function validateAppName(name: string): ValidationError | null {
     return {
       field: 'name',
       message: 'App name can only contain letters, numbers, spaces, hyphens, and underscores',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -62,7 +62,7 @@ export function validateDescription(description: string): ValidationError | null
     return {
       field: 'description',
       message: 'Description is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -70,7 +70,7 @@ export function validateDescription(description: string): ValidationError | null
     return {
       field: 'description',
       message: 'Description must be at least 10 characters',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -78,7 +78,7 @@ export function validateDescription(description: string): ValidationError | null
     return {
       field: 'description',
       message: 'Description must be 500 characters or less',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -93,7 +93,7 @@ export function validatePurpose(purpose: string): ValidationError | null {
     return {
       field: 'purpose',
       message: 'Purpose is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -101,7 +101,7 @@ export function validatePurpose(purpose: string): ValidationError | null {
     return {
       field: 'purpose',
       message: 'Purpose must be at least 10 characters',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -109,7 +109,7 @@ export function validatePurpose(purpose: string): ValidationError | null {
     return {
       field: 'purpose',
       message: 'Purpose must be 300 characters or less',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -124,7 +124,7 @@ export function validateTargetUsers(users: string): ValidationError | null {
     return {
       field: 'targetUsers',
       message: 'Target users is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -132,7 +132,7 @@ export function validateTargetUsers(users: string): ValidationError | null {
     return {
       field: 'targetUsers',
       message: 'Target users must be at least 5 characters',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -140,7 +140,7 @@ export function validateTargetUsers(users: string): ValidationError | null {
     return {
       field: 'targetUsers',
       message: 'Target users must be 200 characters or less',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -158,7 +158,7 @@ export function validateFeatureName(
     return {
       field: 'featureName',
       message: 'Feature name is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -166,7 +166,7 @@ export function validateFeatureName(
     return {
       field: 'featureName',
       message: 'Feature name must be at least 2 characters',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -174,7 +174,7 @@ export function validateFeatureName(
     return {
       field: 'featureName',
       message: 'Feature name must be 50 characters or less',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -186,7 +186,7 @@ export function validateFeatureName(
     return {
       field: 'featureName',
       message: 'A feature with this name already exists',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -201,7 +201,7 @@ export function validateFeatureDescription(description: string): ValidationError
     return {
       field: 'featureDescription',
       message: 'Feature description is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -209,7 +209,7 @@ export function validateFeatureDescription(description: string): ValidationError
     return {
       field: 'featureDescription',
       message: 'Feature description must be at least 10 characters',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -217,7 +217,7 @@ export function validateFeatureDescription(description: string): ValidationError
     return {
       field: 'featureDescription',
       message: 'Feature description must be 300 characters or less',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -234,7 +234,7 @@ export function validateFeatures(
     return {
       field: 'features',
       message: 'At least one feature is required',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -242,7 +242,7 @@ export function validateFeatures(
     return {
       field: 'features',
       message: 'Maximum 20 features allowed',
-      type: 'warning'
+      type: 'warning',
     };
   }
 
@@ -262,7 +262,7 @@ export function validateColor(color: string): ValidationError | null {
     return {
       field: 'color',
       message: 'Invalid color format. Use hex format (e.g., #3B82F6)',
-      type: 'error'
+      type: 'error',
     };
   }
 
@@ -294,7 +294,7 @@ export function validateBasicInfo(data: {
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -322,7 +322,7 @@ export function getCharacterCount(
     remaining,
     percentage,
     isOverLimit: current > limit,
-    isNearLimit: percentage >= 80 && percentage < 100
+    isNearLimit: percentage >= 80 && percentage < 100,
   };
 }
 
@@ -334,7 +334,7 @@ export function sanitizeInput(input: string): string {
   if (!input) return '';
 
   let result = input.trim();
-  
+
   // Encode HTML special characters to prevent injection
   // Using a character-by-character approach to avoid regex bypass issues
   const encoded: string[] = [];
@@ -362,11 +362,11 @@ export function sanitizeInput(input: string): string {
         }
     }
   }
-  
+
   result = encoded.join('');
-  
+
   // Remove multiple spaces
   result = result.replace(/\s+/g, ' ');
-  
+
   return result.trim();
 }

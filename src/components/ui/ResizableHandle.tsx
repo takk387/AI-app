@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useCallback, useRef } from 'react';
 
@@ -29,14 +29,14 @@ export const ResizableHandleContext = React.createContext<ResizableHandleContext
 
 /**
  * ResizableHandle - A draggable divider between resizable panels
- * 
+ *
  * Features:
  * - Drag to resize adjacent panels
  * - Keyboard accessible (Arrow keys to resize, Home/End for min/max)
  * - Touch support for mobile devices
  * - Visual feedback on hover and drag
  * - Double-click to collapse/expand
- * 
+ *
  * @example
  * ```tsx
  * <ResizablePanelGroup direction="horizontal">
@@ -62,50 +62,65 @@ export function ResizableHandle({
     return null;
   }
 
-  const { direction, isDragging, isActive, startResize, onDoubleClick: contextOnDoubleClick } = context;
+  const {
+    direction,
+    isDragging,
+    isActive,
+    startResize,
+    onDoubleClick: contextOnDoubleClick,
+  } = context;
   const isHorizontal = direction === 'horizontal';
 
   // Handle mouse down
-  const handleMouseDown = useCallback((event: React.MouseEvent) => {
-    console.log('[ResizableHandle] handleMouseDown called, disabled:', disabled);
-    if (disabled) return;
+  const handleMouseDown = useCallback(
+    (event: React.MouseEvent) => {
+      console.log('[ResizableHandle] handleMouseDown called, disabled:', disabled);
+      if (disabled) return;
 
-    // Check for double-click
-    const now = Date.now();
-    if (now - lastClickTimeRef.current < DOUBLE_CLICK_THRESHOLD_MS) {
-      // Double-click detected
-      const handler = onDoubleClickProp || contextOnDoubleClick;
-      if (handler) {
-        handler();
-        lastClickTimeRef.current = 0;
-        return;
+      // Check for double-click
+      const now = Date.now();
+      if (now - lastClickTimeRef.current < DOUBLE_CLICK_THRESHOLD_MS) {
+        // Double-click detected
+        const handler = onDoubleClickProp || contextOnDoubleClick;
+        if (handler) {
+          handler();
+          lastClickTimeRef.current = 0;
+          return;
+        }
       }
-    }
-    lastClickTimeRef.current = now;
+      lastClickTimeRef.current = now;
 
-    console.log('[ResizableHandle] calling startResize');
-    startResize(event);
-  }, [disabled, startResize, onDoubleClickProp, contextOnDoubleClick]);
+      console.log('[ResizableHandle] calling startResize');
+      startResize(event);
+    },
+    [disabled, startResize, onDoubleClickProp, contextOnDoubleClick]
+  );
 
   // Handle touch start
-  const handleTouchStart = useCallback((event: React.TouchEvent) => {
-    if (disabled) return;
-    startResize(event);
-  }, [disabled, startResize]);
+  const handleTouchStart = useCallback(
+    (event: React.TouchEvent) => {
+      if (disabled) return;
+      startResize(event);
+    },
+    [disabled, startResize]
+  );
 
   // Handle keyboard events for accessibility
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (disabled) return;
-    
-    const relevantKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
-    if (relevantKeys.includes(event.key)) {
-      startResize(event);
-    }
-  }, [disabled, startResize]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (disabled) return;
+
+      const relevantKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+      if (relevantKeys.includes(event.key)) {
+        startResize(event);
+      }
+    },
+    [disabled, startResize]
+  );
 
   // Calculate hit area sizes
   const hitAreaSize = isDragging ? hitAreaMargins.coarse : hitAreaMargins.fine;
-  
+
   // Handle styles - width/height handled by CSS, just add cursor and touch-action
   const handleStyle: React.CSSProperties = {
     ...style,
@@ -114,7 +129,7 @@ export function ResizableHandle({
     flexShrink: 0,
     touchAction: 'none',
     // Direction-specific cursor only
-    cursor: disabled ? 'default' : (isHorizontal ? 'col-resize' : 'row-resize'),
+    cursor: disabled ? 'default' : isHorizontal ? 'col-resize' : 'row-resize',
   };
 
   // Build class names
@@ -125,7 +140,9 @@ export function ResizableHandle({
     isActive ? 'resize-handle-active' : '',
     disabled ? 'resize-handle-disabled' : '',
     className,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
@@ -144,7 +161,7 @@ export function ResizableHandle({
       data-handle-hit-area={hitAreaSize}
     >
       {/* Visual indicator */}
-      <div 
+      <div
         className="resize-handle-indicator"
         style={{
           position: 'absolute',

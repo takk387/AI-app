@@ -1,7 +1,11 @@
-"use client";
+'use client';
 
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
-import { ResizablePanelContext, type ResizablePanelProps, RESIZABLE_PANEL_TYPE } from './ResizablePanel';
+import {
+  ResizablePanelContext,
+  type ResizablePanelProps,
+  RESIZABLE_PANEL_TYPE,
+} from './ResizablePanel';
 import { ResizableHandleContext, RESIZABLE_HANDLE_TYPE } from './ResizableHandle';
 import { useResizable } from '@/hooks/useResizable';
 import { loadPanelLayout, savePanelLayout, mergePersistedLayout } from '@/utils/panelPersistence';
@@ -33,7 +37,9 @@ function isResizablePanel(child: React.ReactElement): boolean {
   if (type?.displayName === 'ResizablePanel') return true;
   // Check props as last fallback
   const props = child.props as Partial<ResizablePanelProps>;
-  return props.defaultSize !== undefined || props.minSize !== undefined || props.maxSize !== undefined;
+  return (
+    props.defaultSize !== undefined || props.minSize !== undefined || props.maxSize !== undefined
+  );
 }
 
 // Type guard to check if element is a ResizableHandle
@@ -51,7 +57,7 @@ function isResizableHandle(child: React.ReactElement): boolean {
 // Extract panel data from children
 function extractPanelData(children: React.ReactNode): PanelData[] {
   const panels: PanelData[] = [];
-  
+
   React.Children.forEach(children, (child) => {
     if (React.isValidElement(child) && isResizablePanel(child)) {
       const props = child.props as Partial<ResizablePanelProps>;
@@ -64,24 +70,24 @@ function extractPanelData(children: React.ReactNode): PanelData[] {
       });
     }
   });
-  
+
   return panels;
 }
 
 /**
  * ResizablePanelGroup - Container that manages multiple resizable panels
- * 
+ *
  * Features:
  * - Manages layout of child ResizablePanels and ResizableHandles
  * - Handles drag-to-resize with smooth animations
  * - Persists layout to localStorage when persistenceKey is provided
  * - Supports both horizontal and vertical layouts
  * - Enforces min/max constraints from child panels
- * 
+ *
  * @example
  * ```tsx
- * <ResizablePanelGroup 
- *   direction="horizontal" 
+ * <ResizablePanelGroup
+ *   direction="horizontal"
  *   persistenceKey="ai-builder-layout"
  *   onLayoutChange={(sizes) => console.log('Layout changed:', sizes)}
  * >
@@ -105,13 +111,13 @@ export function ResizablePanelGroup({
   autoSaveId,
 }: ResizablePanelGroupProps) {
   const actualPersistenceKey = persistenceKey || autoSaveId;
-  
+
   // Extract panel configuration from children
   const panelData = useMemo(() => extractPanelData(children), [children]);
-  
+
   // Calculate initial sizes - compute once on mount to avoid race conditions
   const [initialSizes] = useState<number[]>(() => {
-    const defaultSizes = panelData.map((p) => p.defaultSize ?? (100 / panelData.length));
+    const defaultSizes = panelData.map((p) => p.defaultSize ?? 100 / panelData.length);
 
     // Try to load persisted layout synchronously during initialization
     if (actualPersistenceKey && typeof window !== 'undefined') {
@@ -134,7 +140,7 @@ export function ResizablePanelGroup({
   // Extract min/max sizes
   const minSizes = useMemo(() => panelData.map((p) => p.minSize ?? 5), [panelData]);
   const maxSizes = useMemo(() => panelData.map((p) => p.maxSize ?? 95), [panelData]);
-  
+
   // Use the resize hook
   const {
     sizes,
@@ -171,7 +177,11 @@ export function ResizablePanelGroup({
   // Sync initial sizes to the resize hook on first render only
   // Skip sync if currently dragging to prevent race condition
   useEffect(() => {
-    if (!hasSyncedRef.current && initialSizes.length === panelData.length && !isDraggingRef.current) {
+    if (
+      !hasSyncedRef.current &&
+      initialSizes.length === panelData.length &&
+      !isDraggingRef.current
+    ) {
       hasSyncedRef.current = true;
       setSizes(initialSizes);
     }
@@ -181,43 +191,49 @@ export function ResizablePanelGroup({
   const [collapsedPanels, setCollapsedPanels] = useState<Set<number>>(new Set());
 
   // Handle panel collapse/expand
-  const handleCollapse = useCallback((index: number) => {
-    setCollapsedPanels(prev => new Set(prev).add(index));
-    collapsePanel(index);
-  }, [collapsePanel]);
+  const handleCollapse = useCallback(
+    (index: number) => {
+      setCollapsedPanels((prev) => new Set(prev).add(index));
+      collapsePanel(index);
+    },
+    [collapsePanel]
+  );
 
-  const handleExpand = useCallback((index: number) => {
-    setCollapsedPanels(prev => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
-    expandPanel(index);
-  }, [expandPanel]);
+  const handleExpand = useCallback(
+    (index: number) => {
+      setCollapsedPanels((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+      expandPanel(index);
+    },
+    [expandPanel]
+  );
 
   // Build enhanced children with contexts
   const enhancedChildren = useMemo(() => {
     let panelIndex = 0;
     let handleIndex = 0;
-    
+
     return React.Children.map(children, (child) => {
       if (!React.isValidElement(child)) return child;
-      
+
       // Check if it's a ResizablePanel using type guard
       if (isResizablePanel(child)) {
         const currentIndex = panelIndex;
         const size = sizes[currentIndex] ?? 50;
         const isCollapsed = collapsedPanels.has(currentIndex);
-        
+
         const contextValue = {
           size,
           isCollapsed,
           collapse: () => handleCollapse(currentIndex),
           expand: () => handleExpand(currentIndex),
         };
-        
+
         panelIndex++;
-        
+
         // Create flex basis style
         const panelStyle: React.CSSProperties = {
           flexBasis: `${size}%`,
@@ -228,7 +244,7 @@ export function ResizablePanelGroup({
           overflow: 'hidden',
           transition: isDragging ? 'none' : 'flex-basis 0.15s ease-out',
         };
-        
+
         return (
           <ResizablePanelContext.Provider value={contextValue}>
             <div style={panelStyle} className="resizable-panel-wrapper">
@@ -237,16 +253,16 @@ export function ResizablePanelGroup({
           </ResizablePanelContext.Provider>
         );
       }
-      
+
       // Check if it's a ResizableHandle using type guard
       if (isResizableHandle(child)) {
         const currentHandleIndex = handleIndex;
-        
+
         const contextValue = {
           direction,
           isDragging,
           isActive: activeIndex === currentHandleIndex,
-          startResize: (event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) => 
+          startResize: (event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) =>
             startResize(currentHandleIndex, event),
           onDoubleClick: () => {
             // Toggle collapse of left/top panel
@@ -258,20 +274,30 @@ export function ResizablePanelGroup({
             }
           },
         };
-        
+
         handleIndex++;
-        
+
         return (
           <ResizableHandleContext.Provider value={contextValue}>
             {child}
           </ResizableHandleContext.Provider>
         );
       }
-      
+
       // Return other children unchanged
       return child;
     });
-  }, [children, sizes, collapsedPanels, direction, isDragging, activeIndex, startResize, handleCollapse, handleExpand]);
+  }, [
+    children,
+    sizes,
+    collapsedPanels,
+    direction,
+    isDragging,
+    activeIndex,
+    startResize,
+    handleCollapse,
+    handleExpand,
+  ]);
 
   // Container styles
   const containerStyle: React.CSSProperties = {
@@ -289,7 +315,9 @@ export function ResizablePanelGroup({
     `resizable-panel-group-${direction}`,
     isDragging ? 'resizable-panel-group-dragging' : '',
     className,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div

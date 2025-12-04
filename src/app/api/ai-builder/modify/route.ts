@@ -3,17 +3,23 @@ import Anthropic from '@anthropic-ai/sdk';
 import { executeASTOperation, isASTOperation, type ASTOperation } from '@/utils/astExecutor';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildModifyPrompt } from '@/prompts/builder';
-import { analytics, generateRequestId, categorizeError, PerformanceTracker, type ErrorCategory } from '@/utils/analytics';
-import { 
-  generateRetryStrategy, 
-  type RetryContext, 
+import {
+  analytics,
+  generateRequestId,
+  categorizeError,
+  PerformanceTracker,
+  type ErrorCategory,
+} from '@/utils/analytics';
+import {
+  generateRetryStrategy,
+  type RetryContext,
   DEFAULT_RETRY_CONFIG,
-  type RetryConfig 
+  type RetryConfig,
 } from '@/utils/retryLogic';
-import { 
-  generateModifications, 
-  type GenerationContext, 
-  type GenerationError 
+import {
+  generateModifications,
+  type GenerationContext,
+  type GenerationError,
 } from './generation-logic';
 
 // Vercel serverless function config
@@ -26,10 +32,25 @@ const anthropic = new Anthropic({
 
 // TypeScript interfaces for diff format
 interface DiffChange {
-  type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND' 
-      | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT' | 'AST_MODIFY_CLASSNAME'
-      | 'AST_INSERT_JSX' | 'AST_ADD_USEEFFECT' | 'AST_MODIFY_PROP' | 'AST_ADD_AUTHENTICATION'
-      | 'AST_ADD_REF' | 'AST_ADD_MEMO' | 'AST_ADD_CALLBACK' | 'AST_ADD_REDUCER';
+  type:
+    | 'ADD_IMPORT'
+    | 'INSERT_AFTER'
+    | 'INSERT_BEFORE'
+    | 'REPLACE'
+    | 'DELETE'
+    | 'APPEND'
+    | 'AST_WRAP_ELEMENT'
+    | 'AST_ADD_STATE'
+    | 'AST_ADD_IMPORT'
+    | 'AST_MODIFY_CLASSNAME'
+    | 'AST_INSERT_JSX'
+    | 'AST_ADD_USEEFFECT'
+    | 'AST_MODIFY_PROP'
+    | 'AST_ADD_AUTHENTICATION'
+    | 'AST_ADD_REF'
+    | 'AST_ADD_MEMO'
+    | 'AST_ADD_CALLBACK'
+    | 'AST_ADD_REDUCER';
   line?: number;
   searchFor?: string;
   content?: string;
@@ -115,33 +136,39 @@ export async function POST(request: Request) {
   // ============================================================================
   const requestId = generateRequestId();
   const perfTracker = new PerformanceTracker();
-  
+
   try {
     const { prompt, currentAppState, conversationHistory, image, hasImage } = await request.json();
     perfTracker.checkpoint('request_parsed');
-    
+
     // Log request start after parsing body
     analytics.logRequestStart('ai-builder/modify', requestId, {
       hasConversationHistory: !!conversationHistory,
     });
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({
-        error: 'Anthropic API key not configured. Add ANTHROPIC_API_KEY to .env.local'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Anthropic API key not configured. Add ANTHROPIC_API_KEY to .env.local',
+        },
+        { status: 500 }
+      );
     }
 
     if (!currentAppState) {
-      return NextResponse.json({
-        error: 'Current app state is required for modifications'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Current app state is required for modifications',
+        },
+        { status: 400 }
+      );
     }
 
     // ============================================================================
     // OPTIMIZED PROMPT SYSTEM - Phase 3 Implementation
     // Old prompt: ~6,500 tokens | New prompt: ~2,000 tokens | Reduction: 69%
     // ============================================================================
-    
+
     const baseInstructions = `You are an expert code modification assistant. Generate MINIMAL, TARGETED changes to existing code - NOT rewrite entire files.
 
 CRITICAL RULES:
@@ -195,13 +222,14 @@ ${JSON.stringify(currentAppState, null, 2)}`;
 
     console.log('✅ Phase 3: Using compressed modular prompts');
     console.log('📊 Token estimate:', estimatedPromptTokens, 'tokens');
-    
+
     perfTracker.checkpoint('prompt_built');
 
     // Extract current file contents for AI reference
     let fileContentsSection = '';
     if (currentAppState && currentAppState.files && Array.isArray(currentAppState.files)) {
-      fileContentsSection = '\n\n📁 **CURRENT FILE CONTENTS** (Read these EXACTLY for your SEARCH blocks):\n\n';
+      fileContentsSection =
+        '\n\n📁 **CURRENT FILE CONTENTS** (Read these EXACTLY for your SEARCH blocks):\n\n';
       currentAppState.files.forEach((file: any) => {
         fileContentsSection += `\n${'='.repeat(60)}\n`;
         fileContentsSection += `FILE: ${file.path}\n`;
@@ -209,7 +237,8 @@ ${JSON.stringify(currentAppState, null, 2)}`;
         fileContentsSection += file.content;
         fileContentsSection += `\n${'='.repeat(60)}\n`;
       });
-      fileContentsSection += '\n⚠️ CRITICAL: Your SEARCH blocks must match the code above EXACTLY (character-for-character, including all whitespace and indentation).\n';
+      fileContentsSection +=
+        '\n⚠️ CRITICAL: Your SEARCH blocks must match the code above EXACTLY (character-for-character, including all whitespace and indentation).\n';
     }
 
     // Build conversation context
@@ -226,49 +255,51 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     }
 
     // Add current modification request WITH file contents and optional image
-    const enhancedPrompt = fileContentsSection 
+    const enhancedPrompt = fileContentsSection
       ? `${fileContentsSection}\n\n🎯 **USER REQUEST:**\n${prompt}`
       : prompt;
-    
+
     // Add user message with optional image
     if (hasImage && image) {
       const imageMatch = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
       if (imageMatch) {
         let mediaType = imageMatch[1];
         const base64Data = imageMatch[2];
-        
+
         const validMediaTypes: { [key: string]: string } = {
           'image/jpeg': 'image/jpeg',
           'image/jpg': 'image/jpeg',
           'image/png': 'image/png',
           'image/gif': 'image/gif',
-          'image/webp': 'image/webp'
+          'image/webp': 'image/webp',
         };
-        
+
         const normalizedType = validMediaTypes[mediaType.toLowerCase()];
         if (!normalizedType) {
           console.error('Unsupported image type:', mediaType);
-          throw new Error(`Unsupported image type: ${mediaType}. Please use JPEG, PNG, GIF, or WebP.`);
+          throw new Error(
+            `Unsupported image type: ${mediaType}. Please use JPEG, PNG, GIF, or WebP.`
+          );
         }
-        
+
         console.log('Image media type:', normalizedType, 'Original:', mediaType);
-        
-        messages.push({ 
-          role: 'user', 
+
+        messages.push({
+          role: 'user',
           content: [
             {
               type: 'image',
               source: {
                 type: 'base64',
                 media_type: normalizedType,
-                data: base64Data
-              }
+                data: base64Data,
+              },
             },
             {
               type: 'text',
-              text: enhancedPrompt
-            }
-          ]
+              text: enhancedPrompt,
+            },
+          ],
         });
       } else {
         console.error('Invalid image data URL format');
@@ -283,11 +314,11 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     // ============================================================================
     const modelName = 'claude-sonnet-4-5-20250929';
     const maxRetries = DEFAULT_RETRY_CONFIG.maxAttempts;
-    
+
     let result: any;
     let lastError: GenerationError | null = null;
     let attemptNumber = 1;
-    
+
     for (attemptNumber = 1; attemptNumber <= maxRetries; attemptNumber++) {
       try {
         // Build generation context
@@ -299,7 +330,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
           currentAppState,
           correctionPrompt: undefined, // Will be set below if this is a retry
         };
-        
+
         // If this is a retry, add correction prompt
         if (attemptNumber > 1 && lastError) {
           const retryContext: RetryContext = {
@@ -309,53 +340,58 @@ ${JSON.stringify(currentAppState, null, 2)}`;
             originalResponse: lastError.originalResponse,
             validationDetails: lastError.validationDetails,
           };
-          
+
           const retryStrategy = generateRetryStrategy(retryContext, DEFAULT_RETRY_CONFIG);
-          
+
           if (!retryStrategy.shouldRetry) {
             console.log(`❌ Retry not allowed for error category: ${lastError.category}`);
             throw lastError;
           }
-          
+
           console.log(`🔄 Retry attempt ${attemptNumber}/${maxRetries} - ${lastError.category}`);
           generationContext.correctionPrompt = retryStrategy.correctionPrompt;
-          
+
           // Wait if retry delay specified
           if (retryStrategy.retryDelay && retryStrategy.retryDelay > 0) {
-            await new Promise(resolve => setTimeout(resolve, retryStrategy.retryDelay));
+            await new Promise((resolve) => setTimeout(resolve, retryStrategy.retryDelay));
           }
         }
-        
+
         perfTracker.checkpoint('ai_request_sent');
-        
+
         // Generate modifications with retry support
         result = await generateModifications(generationContext, attemptNumber);
-        
+
         perfTracker.checkpoint('ai_response_received');
-        
+
         // Log token usage
         if (result.inputTokens > 0 || result.outputTokens > 0) {
-          analytics.logTokenUsage(requestId, result.inputTokens, result.outputTokens, result.cachedTokens);
+          analytics.logTokenUsage(
+            requestId,
+            result.inputTokens,
+            result.outputTokens,
+            result.cachedTokens
+          );
         }
-        
+
         perfTracker.checkpoint('validation_complete');
-        
+
         // Success! Break out of retry loop
-        console.log(attemptNumber > 1 
-          ? `✅ Retry attempt ${attemptNumber} succeeded!` 
-          : '✅ Generation successful on first attempt'
+        console.log(
+          attemptNumber > 1
+            ? `✅ Retry attempt ${attemptNumber} succeeded!`
+            : '✅ Generation successful on first attempt'
         );
         break;
-        
       } catch (error) {
         lastError = error as GenerationError;
-        
+
         console.error(`❌ Attempt ${attemptNumber}/${maxRetries} failed:`, lastError.message);
-        
+
         // If this was the last attempt, throw the error
         if (attemptNumber >= maxRetries) {
           console.error(`❌ All ${maxRetries} retry attempts exhausted`);
-          
+
           // Log final error to analytics
           analytics.logRequestError(requestId, lastError, lastError.category || 'unknown_error', {
             modelUsed: modelName,
@@ -364,27 +400,32 @@ ${JSON.stringify(currentAppState, null, 2)}`;
               attemptsUsed: attemptNumber,
             },
           });
-          
+
           // Return user-friendly error based on category
           if (lastError.category === 'parsing_error') {
-            return NextResponse.json({
-              error: 'The AI had trouble understanding how to modify your app. This can happen with complex changes. Try breaking your request into smaller steps, or use simpler language.',
-              suggestion: 'Try asking for one change at a time, like "add a button" or "change the color to blue".',
-              technicalDetails: {
-                responsePreview: lastError.originalResponse?.substring(0, 500),
-                parseError: lastError.message,
-                attempts: attemptNumber,
-              }
-            }, { status: 500 });
+            return NextResponse.json(
+              {
+                error:
+                  'The AI had trouble understanding how to modify your app. This can happen with complex changes. Try breaking your request into smaller steps, or use simpler language.',
+                suggestion:
+                  'Try asking for one change at a time, like "add a button" or "change the color to blue".',
+                technicalDetails: {
+                  responsePreview: lastError.originalResponse?.substring(0, 500),
+                  parseError: lastError.message,
+                  attempts: attemptNumber,
+                },
+              },
+              { status: 500 }
+            );
           }
-          
+
           throw lastError;
         }
-        
+
         // Otherwise, continue to next retry attempt
       }
     }
-    
+
     // Extract results from successful generation
     const diffResponse = result.diffResponse;
     const responseText = result.responseText;
@@ -392,16 +433,19 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     const totalSnippets = result.totalSnippets;
     const validatedSnippets = result.validatedSnippets;
     const errorsFound = result.errorsFound;
-    
+
     // Add validation warnings if errors remain
-    const validationWarnings = validationErrors.length > 0 ? {
-      hasWarnings: true,
-      message: `Code validation detected ${validationErrors.length} issue(s) in modification instructions. Review before applying.`,
-      details: validationErrors
-    } : undefined;
-    
+    const validationWarnings =
+      validationErrors.length > 0
+        ? {
+            hasWarnings: true,
+            message: `Code validation detected ${validationErrors.length} issue(s) in modification instructions. Review before applying.`,
+            details: validationErrors,
+          }
+        : undefined;
+
     perfTracker.checkpoint('response_prepared');
-    
+
     // Log successful completion
     analytics.logRequestComplete(requestId, {
       modelUsed: modelName,
@@ -418,26 +462,21 @@ ${JSON.stringify(currentAppState, null, 2)}`;
         retriedSuccessfully: attemptNumber > 1,
       },
     });
-    
+
     if (process.env.NODE_ENV === 'development') {
       perfTracker.log('Modify Route');
     }
 
     return NextResponse.json({
       ...diffResponse,
-      ...(validationWarnings && { validationWarnings })
+      ...(validationWarnings && { validationWarnings }),
     });
-    
   } catch (error) {
     console.error('Error in modify route:', error);
-    
+
     // Log error to analytics
-    analytics.logRequestError(
-      requestId,
-      error as Error,
-      categorizeError(error as Error)
-    );
-    
+    analytics.logRequestError(requestId, error as Error, categorizeError(error as Error));
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate modifications' },
       { status: 500 }

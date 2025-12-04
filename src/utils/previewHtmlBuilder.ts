@@ -186,11 +186,13 @@ export async function buildPreviewHtml(input: BuildInput): Promise<string> {
   }
 
   // Create entry wrapper that renders App
+  // Import React explicitly for classic JSX transform (React.createElement)
   const entryCode = `
+    import React from 'react';
     import App from './App';
     import { createRoot } from 'react-dom/client';
     const root = createRoot(document.getElementById('root'));
-    root.render(<App />);
+    root.render(React.createElement(App));
   `;
 
   const allFiles = [...files, { path: '/entry.tsx', content: entryCode }];
@@ -206,7 +208,10 @@ export async function buildPreviewHtml(input: BuildInput): Promise<string> {
     write: false,
     format: 'iife',
     target: 'es2020',
-    jsx: 'automatic',
+    // Use classic JSX transform (React.createElement) for CDN compatibility
+    jsx: 'transform',
+    jsxFactory: 'React.createElement',
+    jsxFragment: 'React.Fragment',
     minify: false,
     plugins: [createVirtualFsPlugin(allFiles, dependencies)],
     // No externals - we use shim modules that map to window globals
@@ -255,7 +260,13 @@ export async function buildPreviewHtml(input: BuildInput): Promise<string> {
     ${hasLucide ? 'window.LucideReact = lucide;' : ''}
   </script>
   <script>
-    ${bundledCode}
+    // Wrap in try-catch to display errors visibly
+    try {
+      ${bundledCode}
+    } catch (err) {
+      console.error('App render error:', err);
+      document.getElementById('root').innerHTML = '<div style="padding:20px;color:red;font-family:monospace;"><h2>Render Error</h2><pre>' + err.message + '</pre></div>';
+    }
   </script>
 </body>
 </html>`;

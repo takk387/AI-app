@@ -1,6 +1,6 @@
 /**
  * ImpactAnalyzer - Analyzes the impact of code changes
- * 
+ *
  * Features:
  * - Categorize changes by type (styling, logic, etc.)
  * - Assess risk level of changes
@@ -22,20 +22,8 @@ import type {
  * Pattern matchers for different change categories
  */
 const CATEGORY_PATTERNS: Record<ChangeCategory, RegExp[]> = {
-  structure: [
-    /\.(tsx?|jsx?)$/,
-    /export\s+(default\s+)?(function|class|const)/,
-    /import\s+.*from/,
-  ],
-  styling: [
-    /\.css$/,
-    /\.scss$/,
-    /\.less$/,
-    /tailwind/i,
-    /className/,
-    /style\s*=/,
-    /styled\./,
-  ],
+  structure: [/\.(tsx?|jsx?)$/, /export\s+(default\s+)?(function|class|const)/, /import\s+.*from/],
+  styling: [/\.css$/, /\.scss$/, /\.less$/, /tailwind/i, /className/, /style\s*=/, /styled\./],
   logic: [
     /function\s+\w+/,
     /const\s+\w+\s*=/,
@@ -48,11 +36,7 @@ const CATEGORY_PATTERNS: Record<ChangeCategory, RegExp[]> = {
     /\.then\(/,
     /\.catch\(/,
   ],
-  content: [
-    /['"`][^'"`]{10,}['"`]/,
-    /<[^>]+>[^<]+<\/[^>]+>/,
-    /\.(md|txt|json)$/,
-  ],
+  content: [/['"`][^'"`]{10,}['"`]/, /<[^>]+>[^<]+<\/[^>]+>/, /\.(md|txt|json)$/],
   configuration: [
     /\.config\.(ts|js|mjs)$/,
     /\.env/,
@@ -124,7 +108,7 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
    * Analyze changes and produce an impact analysis
    */
   async analyzeChanges(changes: FileChange[]): Promise<ImpactAnalysis> {
-    const filesAffected = changes.map(c => c.path);
+    const filesAffected = changes.map((c) => c.path);
     const componentsAffected = this.findAffectedComponents(changes);
     const breakingChanges = this.detectBreakingChanges(changes);
     const suggestedTests = this.suggestTests(changes);
@@ -146,7 +130,7 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
    */
   categorizeChange(content: string, filePath: string): ChangeCategory {
     const combinedContent = `${filePath}\n${content}`;
-    
+
     // Check each category's patterns
     const scores: Record<ChangeCategory, number> = {
       structure: 0,
@@ -253,14 +237,19 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
       const importMatches = content.matchAll(/import\s+.*from\s+['"]([^'"]+)['"]/g);
       for (const match of importMatches) {
         const importPath = match[1];
-        const componentName = importPath.split('/').pop()?.replace(/\.(tsx?|jsx?)$/, '');
+        const componentName = importPath
+          .split('/')
+          .pop()
+          ?.replace(/\.(tsx?|jsx?)$/, '');
         if (componentName) {
           components.add(componentName);
         }
       }
 
       // Extract component names from exports
-      const exportMatches = content.matchAll(/export\s+(default\s+)?(function|class|const)\s+(\w+)/g);
+      const exportMatches = content.matchAll(
+        /export\s+(default\s+)?(function|class|const)\s+(\w+)/g
+      );
       for (const match of exportMatches) {
         components.add(match[3]);
       }
@@ -280,8 +269,10 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
       const originalContent = change.originalContent || '';
 
       // Check for removed exports
-      const originalExports: string[] = originalContent.match(/export\s+(default\s+)?(function|class|const)\s+(\w+)/g) || [];
-      const newExports: string[] = content.match(/export\s+(default\s+)?(function|class|const)\s+(\w+)/g) || [];
+      const originalExports: string[] =
+        originalContent.match(/export\s+(default\s+)?(function|class|const)\s+(\w+)/g) || [];
+      const newExports: string[] =
+        content.match(/export\s+(default\s+)?(function|class|const)\s+(\w+)/g) || [];
 
       for (const exp of originalExports) {
         if (!newExports.includes(exp)) {
@@ -304,7 +295,9 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
         if (pattern.test(originalContent) && !pattern.test(content)) {
           const matchResult = originalContent.match(pattern);
           if (matchResult) {
-            breakingChanges.push(`Potentially removed: ${matchResult[0].substring(0, 40)} in ${change.path}`);
+            breakingChanges.push(
+              `Potentially removed: ${matchResult[0].substring(0, 40)} in ${change.path}`
+            );
           }
         }
       }
@@ -428,7 +421,7 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
   parseHunksFromDiff(diffContent: string, filePath: string): DiffHunk[] {
     const hunks: DiffHunk[] = [];
     const lines = diffContent.split('\n');
-    
+
     let currentHunk: DiffHunk | null = null;
     let lineNumber = 0;
     let hunkId = 0;
@@ -436,7 +429,7 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
     for (const line of lines) {
       // Detect hunk header
       const hunkMatch = line.match(/^@@\s+-(\d+),?\d*\s+\+(\d+),?\d*\s+@@/);
-      
+
       if (hunkMatch) {
         // Save previous hunk
         if (currentHunk) {
@@ -504,9 +497,9 @@ export class ImpactAnalyzer implements IImpactAnalyzer {
 
     // Generate summaries for each hunk
     for (const hunk of hunks) {
-      const addedCount = hunk.lines.filter(l => l.type === 'added').length;
-      const removedCount = hunk.lines.filter(l => l.type === 'removed').length;
-      
+      const addedCount = hunk.lines.filter((l) => l.type === 'added').length;
+      const removedCount = hunk.lines.filter((l) => l.type === 'removed').length;
+
       if (addedCount > 0 && removedCount > 0) {
         hunk.summary = `Modified ${addedCount + removedCount} lines`;
       } else if (addedCount > 0) {

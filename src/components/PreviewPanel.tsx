@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import CodePreview from './CodePreview';
@@ -149,11 +149,10 @@ export function PreviewPanel({
           // Empty State
           <div className="h-full flex flex-col items-center justify-center text-center">
             <div className="text-6xl mb-4">💬</div>
-            <h3 className="text-xl font-semibold text-white mb-2">
-              Start Building Your App
-            </h3>
+            <h3 className="text-xl font-semibold text-white mb-2">Start Building Your App</h3>
             <p className="text-slate-400 max-w-md">
-              Describe what you want to build in the chat, and I&apos;ll create a complete app with live preview for you.
+              Describe what you want to build in the chat, and I&apos;ll create a complete app with
+              live preview for you.
             </p>
           </div>
         ) : (

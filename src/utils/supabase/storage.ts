@@ -27,14 +27,12 @@ export async function uploadFile(
   }
 ) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, {
-      cacheControl: options?.cacheControl || '3600',
-      contentType: options?.contentType || file.type,
-      upsert: options?.upsert || false,
-    });
+
+  const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: options?.cacheControl || '3600',
+    contentType: options?.contentType || file.type,
+    upsert: options?.upsert || false,
+  });
 
   if (error) {
     console.error('Upload error:', error);
@@ -49,10 +47,8 @@ export async function uploadFile(
  */
 export async function downloadFile(bucket: string, path: string) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .download(path);
+
+  const { data, error } = await supabase.storage.from(bucket).download(path);
 
   if (error) {
     console.error('Download error:', error);
@@ -67,10 +63,8 @@ export async function downloadFile(bucket: string, path: string) {
  */
 export function getPublicUrl(bucket: string, path: string) {
   const supabase = createBrowserClient();
-  
-  const { data } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(path);
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
 
   return data.publicUrl;
 }
@@ -78,16 +72,10 @@ export function getPublicUrl(bucket: string, path: string) {
 /**
  * Create a signed URL for private file access
  */
-export async function createSignedUrl(
-  bucket: string,
-  path: string,
-  expiresIn: number = 3600
-) {
+export async function createSignedUrl(bucket: string, path: string, expiresIn: number = 3600) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(path, expiresIn);
+
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
 
   if (error) {
     console.error('Signed URL error:', error);
@@ -102,10 +90,8 @@ export async function createSignedUrl(
  */
 export async function deleteFile(bucket: string, paths: string[]) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .remove(paths);
+
+  const { data, error } = await supabase.storage.from(bucket).remove(paths);
 
   if (error) {
     console.error('Delete error:', error);
@@ -128,14 +114,12 @@ export async function listFiles(
   }
 ) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .list(path, {
-      limit: options?.limit || 100,
-      offset: options?.offset || 0,
-      sortBy: options?.sortBy || { column: 'name', order: 'asc' },
-    });
+
+  const { data, error } = await supabase.storage.from(bucket).list(path, {
+    limit: options?.limit || 100,
+    offset: options?.offset || 0,
+    sortBy: options?.sortBy || { column: 'name', order: 'asc' },
+  });
 
   if (error) {
     console.error('List files error:', error);
@@ -148,16 +132,10 @@ export async function listFiles(
 /**
  * Move/rename a file
  */
-export async function moveFile(
-  bucket: string,
-  fromPath: string,
-  toPath: string
-) {
+export async function moveFile(bucket: string, fromPath: string, toPath: string) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .move(fromPath, toPath);
+
+  const { data, error } = await supabase.storage.from(bucket).move(fromPath, toPath);
 
   if (error) {
     console.error('Move file error:', error);
@@ -170,16 +148,10 @@ export async function moveFile(
 /**
  * Copy a file
  */
-export async function copyFile(
-  bucket: string,
-  fromPath: string,
-  toPath: string
-) {
+export async function copyFile(bucket: string, fromPath: string, toPath: string) {
   const supabase = createBrowserClient();
-  
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .copy(fromPath, toPath);
+
+  const { data, error } = await supabase.storage.from(bucket).copy(fromPath, toPath);
 
   if (error) {
     console.error('Copy file error:', error);

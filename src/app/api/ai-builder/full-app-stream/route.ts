@@ -8,17 +8,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildFullAppPrompt } from '@/prompts/builder';
-import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
 import {
-  type StreamEvent,
-  formatSSE,
-  type CompleteEvent,
-} from '@/types/streaming';
-import {
-  detectTruncation,
-  getTokenBudget,
-  type PhaseContext,
-} from '../full-app/generation-logic';
+  analytics,
+  generateRequestId,
+  categorizeError,
+  PerformanceTracker,
+} from '@/utils/analytics';
+import { type StreamEvent, formatSSE, type CompleteEvent } from '@/types/streaming';
+import { detectTruncation, getTokenBudget, type PhaseContext } from '../full-app/generation-logic';
 
 // Vercel serverless function config
 export const maxDuration = 60;
@@ -71,7 +68,7 @@ export async function POST(request: Request) {
   // Start the generation in the background
   (async () => {
     let requestBody: any;
-    
+
     try {
       // Parse request body with error handling
       try {
@@ -80,7 +77,9 @@ export async function POST(request: Request) {
         await writeEvent({
           type: 'error',
           timestamp: Date.now(),
-          message: 'Invalid request: ' + (parseError instanceof Error ? parseError.message : 'Failed to parse JSON'),
+          message:
+            'Invalid request: ' +
+            (parseError instanceof Error ? parseError.message : 'Failed to parse JSON'),
           code: 'INVALID_REQUEST',
           recoverable: false,
         });
@@ -97,7 +96,7 @@ export async function POST(request: Request) {
         hasImage,
         isPhaseBuilding,
         phaseContext: rawPhaseContext,
-        currentAppState
+        currentAppState,
       } = requestBody;
 
       perfTracker.checkpoint('request_parsed');
@@ -146,11 +145,15 @@ Files in the app:
 ${currentAppState.files.map((f: { path: string }) => `- ${f.path}`).join('\n')}
 
 FILE CONTENTS:
-${currentAppState.files.map((f: { path: string; content: string }) => `
+${currentAppState.files
+  .map(
+    (f: { path: string; content: string }) => `
 --- ${f.path} ---
 ${f.content}
 --- END ${f.path} ---
-`).join('\n')}
+`
+  )
+  .join('\n')}
 ===END CURRENT APP CONTEXT===
 
 When building new features or making changes, reference the actual code above. Preserve existing functionality unless explicitly asked to change it.`;
@@ -170,12 +173,16 @@ COMPLEX APPS - STAGING STRATEGY:
 - Stage 1: Solid foundation, invite extensions
 - Conversational descriptions: "I've created your [app]! Want to add [X], [Y], [Z]?"
 
-${isModification ? `
+${
+  isModification
+    ? `
 MODIFICATION MODE for "${currentAppName}":
 - Classify: MAJOR_CHANGE (new features, redesigns) or MINOR_CHANGE (bug fixes, tweaks)
 - PRESERVE all existing UI/styling/functionality not mentioned
 - Use EXACT delimiter format (===NAME===, ===FILE:===, etc.)
-` : ''}${currentAppContext}`;
+`
+    : ''
+}${currentAppContext}`;
 
       const systemPrompt = buildFullAppPrompt(baseInstructions, hasImage, isModification);
       perfTracker.checkpoint('prompt_built');
@@ -197,7 +204,11 @@ MODIFICATION MODE for "${currentAppName}":
       if (hasImage && image) {
         const imageMatch = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
         if (imageMatch) {
-          const mediaType = imageMatch[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+          const mediaType = imageMatch[1] as
+            | 'image/jpeg'
+            | 'image/png'
+            | 'image/gif'
+            | 'image/webp';
           const base64Data = imageMatch[2];
 
           messages.push({
@@ -208,14 +219,14 @@ MODIFICATION MODE for "${currentAppName}":
                 source: {
                   type: 'base64',
                   media_type: mediaType,
-                  data: base64Data
-                }
+                  data: base64Data,
+                },
               },
               {
                 type: 'text',
-                text: prompt
-              }
-            ]
+                text: prompt,
+              },
+            ],
           });
         } else {
           messages.push({ role: 'user', content: prompt });
@@ -225,13 +236,16 @@ MODIFICATION MODE for "${currentAppName}":
       }
 
       // Build phase context
-      const phaseContext: PhaseContext | undefined = isPhaseBuilding && rawPhaseContext ? {
-        phaseNumber: rawPhaseContext.phaseNumber || 1,
-        previousPhaseCode: rawPhaseContext.previousPhaseCode || null,
-        allPhases: rawPhaseContext.allPhases || [],
-        completedPhases: rawPhaseContext.completedPhases || [],
-        cumulativeFeatures: rawPhaseContext.cumulativeFeatures || [],
-      } : undefined;
+      const phaseContext: PhaseContext | undefined =
+        isPhaseBuilding && rawPhaseContext
+          ? {
+              phaseNumber: rawPhaseContext.phaseNumber || 1,
+              previousPhaseCode: rawPhaseContext.previousPhaseCode || null,
+              allPhases: rawPhaseContext.allPhases || [],
+              completedPhases: rawPhaseContext.completedPhases || [],
+              cumulativeFeatures: rawPhaseContext.cumulativeFeatures || [],
+            }
+          : undefined;
 
       const modelName = 'claude-sonnet-4-5-20250929';
       const phaseNumber = phaseContext?.phaseNumber || 1;
@@ -259,16 +273,16 @@ MODIFICATION MODE for "${currentAppName}":
         temperature: 1,
         thinking: {
           type: 'enabled',
-          budget_tokens: tokenBudget.thinking_budget
+          budget_tokens: tokenBudget.thinking_budget,
         },
         system: [
           {
             type: 'text',
             text: systemPrompt,
-            cache_control: { type: 'ephemeral' }
-          }
+            cache_control: { type: 'ephemeral' },
+          },
         ],
-        messages
+        messages,
       });
 
       // Monitor abort signal and cancel AI stream if needed
@@ -298,7 +312,7 @@ MODIFICATION MODE for "${currentAppName}":
 
           // Check timeout
           if (Date.now() - startTime > timeout) {
-            throw new Error(`AI response timeout after ${timeout/1000}s`);
+            throw new Error(`AI response timeout after ${timeout / 1000}s`);
           }
 
           if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
@@ -309,15 +323,15 @@ MODIFICATION MODE for "${currentAppName}":
             // Only check the new portion plus some overlap for partial markers
             const searchStart = Math.max(0, lastFileCheckPosition - 50);
             const searchText = responseText.slice(searchStart);
-            
+
             // Use a safe regex match with bounds checking
             let match;
             const fileRegex = /===FILE:(.*?)===/g;
             fileRegex.lastIndex = 0;
-            
+
             while ((match = fileRegex.exec(searchText)) !== null) {
               const matchPosition = searchStart + match.index;
-              
+
               // Only process if this is a new match we haven't seen
               if (matchPosition >= lastFileCheckPosition) {
                 const newFilePath = match[1].trim();
@@ -383,7 +397,6 @@ MODIFICATION MODE for "${currentAppName}":
             charCount: 0,
           });
         }
-
       } catch (streamError) {
         await writeEvent({
           type: 'error',
@@ -435,7 +448,9 @@ MODIFICATION MODE for "${currentAppName}":
       const appType = appTypeMatch ? appTypeMatch[1].trim().split('\n')[0].trim() : 'FRONTEND_ONLY';
 
       // Extract files
-      const fileMatches = responseText.matchAll(/===FILE:([\s\S]*?)===\s*([\s\S]*?)(?====FILE:|===DEPENDENCIES===|===SETUP===|===END===|$)/g);
+      const fileMatches = responseText.matchAll(
+        /===FILE:([\s\S]*?)===\s*([\s\S]*?)(?====FILE:|===DEPENDENCIES===|===SETUP===|===END===|$)/g
+      );
       const files: Array<{ path: string; content: string; description: string }> = [];
 
       for (const match of fileMatches) {
@@ -444,7 +459,7 @@ MODIFICATION MODE for "${currentAppName}":
         files.push({
           path,
           content,
-          description: `${path.split('/').pop()} file`
+          description: `${path.split('/').pop()} file`,
         });
       }
 
@@ -491,9 +506,12 @@ MODIFICATION MODE for "${currentAppName}":
         }
 
         const file = files[i];
-        if (file.path.endsWith('.tsx') || file.path.endsWith('.ts') ||
-            file.path.endsWith('.jsx') || file.path.endsWith('.js')) {
-
+        if (
+          file.path.endsWith('.tsx') ||
+          file.path.endsWith('.ts') ||
+          file.path.endsWith('.jsx') ||
+          file.path.endsWith('.js')
+        ) {
           try {
             const validation = await validateGeneratedCode(file.content, file.path);
 
@@ -503,7 +521,9 @@ MODIFICATION MODE for "${currentAppName}":
               const fixedCode = autoFixCode(file.content, validation.errors);
               if (fixedCode !== file.content) {
                 file.content = fixedCode;
-                autoFixedCount += validation.errors.filter(e => e.type === 'UNCLOSED_STRING').length;
+                autoFixedCount += validation.errors.filter(
+                  (e) => e.type === 'UNCLOSED_STRING'
+                ).length;
 
                 const revalidation = await validateGeneratedCode(fixedCode, file.path);
                 if (!revalidation.valid) {
@@ -539,22 +559,29 @@ MODIFICATION MODE for "${currentAppName}":
         const depsText = dependenciesMatch[1].trim();
         const depsLines = depsText.split('\n');
         for (const line of depsLines) {
-          const [pkg, version] = line.split(':').map(s => s.trim());
+          const [pkg, version] = line.split(':').map((s) => s.trim());
           if (pkg && version) {
             dependencies[pkg] = version;
           }
         }
       }
 
-      const changeType = changeTypeMatch ? changeTypeMatch[1].trim().split('\n')[0].trim() : 'NEW_APP';
+      const changeType = changeTypeMatch
+        ? changeTypeMatch[1].trim().split('\n')[0].trim()
+        : 'NEW_APP';
       const changeSummary = changeSummaryMatch ? changeSummaryMatch[1].trim() : '';
-      const setupInstructions = setupMatch ? setupMatch[1].trim() : 'Run npm install && npm run dev';
+      const setupInstructions = setupMatch
+        ? setupMatch[1].trim()
+        : 'Run npm install && npm run dev';
 
-      const validationWarnings = validationErrors.length > 0 ? {
-        hasWarnings: true,
-        message: `Code validation detected ${totalErrors - autoFixedCount} potential issue(s).`,
-        details: validationErrors
-      } : undefined;
+      const validationWarnings =
+        validationErrors.length > 0
+          ? {
+              hasWarnings: true,
+              message: `Code validation detected ${totalErrors - autoFixedCount} potential issue(s).`,
+              details: validationErrors,
+            }
+          : undefined;
 
       // Send complete event with all data
       const completeEvent: CompleteEvent = {
@@ -615,17 +642,12 @@ MODIFICATION MODE for "${currentAppName}":
           console.error('Performance tracking failed:', perfError);
         }
       }
-
     } catch (error) {
       console.error('Streaming error:', error);
 
       // Log error (wrapped to avoid masking original error)
       try {
-        analytics.logRequestError(
-          requestId,
-          error as Error,
-          categorizeError(error as Error)
-        );
+        analytics.logRequestError(requestId, error as Error, categorizeError(error as Error));
       } catch (analyticsError) {
         console.error('Analytics error logging failed:', analyticsError);
       }
@@ -647,7 +669,7 @@ MODIFICATION MODE for "${currentAppName}":
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 }

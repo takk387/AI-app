@@ -1,12 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  MessageIcon,
-  CodeIcon,
-  EyeIcon,
-  ColumnsIcon,
-} from '../ui/Icons';
+import { MessageIcon, CodeIcon, EyeIcon, ColumnsIcon } from '../ui/Icons';
 
 type ViewMode = 'chat' | 'code' | 'preview' | 'split';
 
@@ -22,10 +17,7 @@ const viewModes: { id: ViewMode; icon: React.ReactNode; label: string }[] = [
   { id: 'split', icon: <ColumnsIcon size={16} />, label: 'Split' },
 ];
 
-export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
-  currentView,
-  onViewChange,
-}) => {
+export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ currentView, onViewChange }) => {
   return (
     <div className="flex items-center bg-zinc-900 rounded-md p-0.5 border border-zinc-800">
       {viewModes.map((mode) => (
@@ -34,9 +26,10 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
           onClick={() => onViewChange(mode.id)}
           className={`
             px-2.5 py-1.5 rounded text-sm flex items-center gap-1.5 transition-colors
-            ${currentView === mode.id
-              ? 'bg-zinc-700 text-white'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+            ${
+              currentView === mode.id
+                ? 'bg-zinc-700 text-white'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
             }
           `}
           title={mode.label}

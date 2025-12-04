@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { ReviewSummaryProps } from '@/types/review';
@@ -11,7 +11,7 @@ import {
 
 /**
  * ReviewSummary - Overview of approved/rejected changes
- * 
+ *
  * Features:
  * - Summary statistics
  * - Progress visualization
@@ -33,14 +33,17 @@ export default function ReviewSummary({
   const pendingPercentage = totalHunks > 0 ? Math.round((pendingHunks / totalHunks) * 100) : 0;
 
   // Group changes by category
-  const byCategory = changes.reduce((acc, change) => {
-    const cat = change.category;
-    if (!acc[cat]) acc[cat] = { count: 0, hunks: 0, approved: 0 };
-    acc[cat].count++;
-    acc[cat].hunks += change.hunks.length;
-    acc[cat].approved += change.hunks.filter(h => h.status === 'approved').length;
-    return acc;
-  }, {} as Record<string, { count: number; hunks: number; approved: number }>);
+  const byCategory = changes.reduce(
+    (acc, change) => {
+      const cat = change.category;
+      if (!acc[cat]) acc[cat] = { count: 0, hunks: 0, approved: 0 };
+      acc[cat].count++;
+      acc[cat].hunks += change.hunks.length;
+      acc[cat].approved += change.hunks.filter((h) => h.status === 'approved').length;
+      return acc;
+    },
+    {} as Record<string, { count: number; hunks: number; approved: number }>
+  );
 
   const canApply = approvedHunks > 0;
   const hasHighRisk = impactAnalysis.overallRisk === 'high';
@@ -100,15 +103,21 @@ export default function ReviewSummary({
         <div className="flex items-center justify-between mt-3 text-xs">
           <div className="flex items-center gap-1 text-green-400">
             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span>{approvedHunks} Approved ({approvalPercentage}%)</span>
+            <span>
+              {approvedHunks} Approved ({approvalPercentage}%)
+            </span>
           </div>
           <div className="flex items-center gap-1 text-red-400">
             <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-            <span>{rejectedHunks} Rejected ({rejectionPercentage}%)</span>
+            <span>
+              {rejectedHunks} Rejected ({rejectionPercentage}%)
+            </span>
           </div>
           <div className="flex items-center gap-1 text-slate-400">
             <span className="w-2 h-2 bg-slate-500 rounded-full"></span>
-            <span>{pendingHunks} Pending ({pendingPercentage}%)</span>
+            <span>
+              {pendingHunks} Pending ({pendingPercentage}%)
+            </span>
           </div>
         </div>
       </div>
@@ -118,10 +127,7 @@ export default function ReviewSummary({
         <h4 className="text-sm text-slate-400 mb-3">By Category</h4>
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(byCategory).map(([category, data]) => (
-            <div
-              key={category}
-              className="px-3 py-2 rounded-lg bg-black/20 border border-white/5"
-            >
+            <div key={category} className="px-3 py-2 rounded-lg bg-black/20 border border-white/5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-300">
                   {getCategoryIcon(category as any)} {getCategoryDisplayName(category as any)}
@@ -173,9 +179,7 @@ export default function ReviewSummary({
       <div className="p-4 border-b border-white/10">
         <h4 className="text-sm text-slate-400 mb-2">Files</h4>
         <div className="flex items-center gap-3 text-xs">
-          <span className="text-white">
-            📁 {impactAnalysis.filesAffected.length} affected
-          </span>
+          <span className="text-white">📁 {impactAnalysis.filesAffected.length} affected</span>
           <span className="text-purple-400">
             ⚛️ {impactAnalysis.componentsAffected.length} components
           </span>

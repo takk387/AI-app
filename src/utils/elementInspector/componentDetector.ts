@@ -40,7 +40,7 @@ function testIdToComponentName(testId: string): string | null {
 
   return testId
     .split(/[-_]/)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join('');
 }
 
@@ -48,8 +48,8 @@ function testIdToComponentName(testId: string): string | null {
  * Get component name from React fiber
  */
 function getReactFiberComponentName(element: HTMLElement): string | null {
-  const fiberKey = Object.keys(element).find(key =>
-    key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')
+  const fiberKey = Object.keys(element).find(
+    (key) => key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')
   );
 
   if (!fiberKey) return null;
@@ -87,8 +87,15 @@ function getReactFiberComponentName(element: HTMLElement): string | null {
  */
 function isGenericComponentName(name: string): boolean {
   const genericNames = [
-    'div', 'span', 'Fragment', 'Suspense', 'Provider',
-    'Consumer', 'Context', 'ForwardRef', 'Memo'
+    'div',
+    'span',
+    'Fragment',
+    'Suspense',
+    'Provider',
+    'Consumer',
+    'Context',
+    'ForwardRef',
+    'Memo',
   ];
   return genericNames.includes(name);
 }

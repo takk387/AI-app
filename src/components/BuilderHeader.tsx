@@ -1,18 +1,11 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useThemeContext } from '../contexts/ThemeContext';
 
 // New header components
 import { ProjectDropdown, BuildDropdown, SettingsDropdown, ProjectInfo } from './header';
-import {
-  RocketIcon,
-  LayoutIcon,
-  WandIcon,
-  SaveIcon,
-  MenuIcon,
-  XIcon,
-} from './ui/Icons';
+import { RocketIcon, LayoutIcon, WandIcon, SaveIcon, MenuIcon, XIcon } from './ui/Icons';
 
 // ============================================================================
 // TYPES
@@ -159,10 +152,7 @@ function MobileMenu({
   ];
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 md:hidden"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 md:hidden" onClick={onClose}>
       <div
         className="absolute right-0 top-0 h-full w-80 max-w-full bg-zinc-900 border-l border-zinc-800 p-6 space-y-6 animate-slide-in-right"
         onClick={(e) => e.stopPropagation()}
@@ -170,10 +160,7 @@ function MobileMenu({
         {/* Close Button */}
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-white">Menu</h3>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-md hover:bg-zinc-800 transition-colors">
             <XIcon size={20} className="text-zinc-400" />
           </button>
         </div>
@@ -207,7 +194,10 @@ function MobileMenu({
           <div className="space-y-2">
             {onLayoutBuilder && (
               <button
-                onClick={() => { onLayoutBuilder(); onClose(); }}
+                onClick={() => {
+                  onLayoutBuilder();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 <LayoutIcon size={16} />
@@ -216,7 +206,10 @@ function MobileMenu({
             )}
             {onWizard && (
               <button
-                onClick={() => { onWizard(); onClose(); }}
+                onClick={() => {
+                  onWizard();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 <WandIcon size={16} />
@@ -225,7 +218,10 @@ function MobileMenu({
             )}
             {onPlanApp && (
               <button
-                onClick={() => { onPlanApp(); onClose(); }}
+                onClick={() => {
+                  onPlanApp();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 <RocketIcon size={16} />
@@ -234,7 +230,10 @@ function MobileMenu({
             )}
             {hasAppConcept && onPhasedBuild && (
               <button
-                onClick={() => { onPhasedBuild(); onClose(); }}
+                onClick={() => {
+                  onPhasedBuild();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 Phased Build
@@ -242,7 +241,10 @@ function MobileMenu({
             )}
             {isPhasedMode && onTogglePhasedPanel && (
               <button
-                onClick={() => { onTogglePhasedPanel(); onClose(); }}
+                onClick={() => {
+                  onTogglePhasedPanel();
+                  onClose();
+                }}
                 className={`w-full linear-btn-secondary justify-start ${showPhasedBuildPanel ? 'bg-zinc-700' : ''}`}
               >
                 Phases
@@ -250,11 +252,16 @@ function MobileMenu({
             )}
             {versionCount !== undefined && versionCount > 0 && onShowHistory && (
               <button
-                onClick={() => { onShowHistory(); onClose(); }}
+                onClick={() => {
+                  onShowHistory();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 History
-                <span className="ml-auto px-1.5 py-0.5 text-xs bg-zinc-700 rounded">{versionCount}</span>
+                <span className="ml-auto px-1.5 py-0.5 text-xs bg-zinc-700 rounded">
+                  {versionCount}
+                </span>
               </button>
             )}
           </div>
@@ -266,7 +273,10 @@ function MobileMenu({
           <div className="space-y-2">
             {onNewApp && (
               <button
-                onClick={() => { onNewApp(); onClose(); }}
+                onClick={() => {
+                  onNewApp();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 New App
@@ -274,23 +284,34 @@ function MobileMenu({
             )}
             {onShowLibrary && (
               <button
-                onClick={() => { onShowLibrary(); onClose(); }}
+                onClick={() => {
+                  onShowLibrary();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 My Apps
                 {appCount && appCount > 0 && (
-                  <span className="ml-auto px-1.5 py-0.5 text-xs bg-zinc-700 rounded">{appCount}</span>
+                  <span className="ml-auto px-1.5 py-0.5 text-xs bg-zinc-700 rounded">
+                    {appCount}
+                  </span>
                 )}
               </button>
             )}
             <button
-              onClick={() => { onNewProject(); onClose(); }}
+              onClick={() => {
+                onNewProject();
+                onClose();
+              }}
               className="w-full linear-btn-secondary justify-start"
             >
               New App
             </button>
             <button
-              onClick={() => { onSave(); onClose(); }}
+              onClick={() => {
+                onSave();
+                onClose();
+              }}
               disabled={isSaving}
               className="w-full linear-btn-primary justify-start disabled:opacity-50"
             >
@@ -307,7 +328,10 @@ function MobileMenu({
             {exportFormats.map((option) => (
               <button
                 key={option.format}
-                onClick={() => { onExport(option.format); onClose(); }}
+                onClick={() => {
+                  onExport(option.format);
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 {option.label}
@@ -321,14 +345,20 @@ function MobileMenu({
           <h4 className="text-sm font-medium text-zinc-500">Settings</h4>
           <div className="space-y-2">
             <button
-              onClick={() => { onOpenSettings(); onClose(); }}
+              onClick={() => {
+                onOpenSettings();
+                onClose();
+              }}
               className="w-full linear-btn-secondary justify-start"
             >
               Settings
             </button>
             {onHelp && (
               <button
-                onClick={() => { onHelp(); onClose(); }}
+                onClick={() => {
+                  onHelp();
+                  onClose();
+                }}
                 className="w-full linear-btn-secondary justify-start"
               >
                 Help & Shortcuts
@@ -491,11 +521,7 @@ export function BuilderHeader({
         <div className="hidden md:flex items-center gap-2">
           {/* Layout Builder - Always visible */}
           {onLayoutBuilder && (
-            <button
-              onClick={onLayoutBuilder}
-              className="linear-btn-ghost"
-              title="Layout Builder"
-            >
+            <button onClick={onLayoutBuilder} className="linear-btn-ghost" title="Layout Builder">
               <LayoutIcon size={16} />
               <span className="hidden lg:inline">Layout</span>
             </button>
@@ -503,11 +529,7 @@ export function BuilderHeader({
 
           {/* Wizard - Always visible */}
           {onWizard && (
-            <button
-              onClick={onWizard}
-              className="linear-btn-ghost"
-              title="App Wizard"
-            >
+            <button onClick={onWizard} className="linear-btn-ghost" title="App Wizard">
               <WandIcon size={16} />
               <span className="hidden lg:inline">Wizard</span>
             </button>
@@ -525,18 +547,22 @@ export function BuilderHeader({
           </button>
         </div>
 
-
         {/* Spacer for mobile */}
         <div className="flex-1 md:hidden" />
 
         {/* Mobile status indicator */}
         <div className="md:hidden flex items-center gap-2 text-sm text-zinc-400">
-          <span className={`status-dot ${
-            projectStatus === 'saved' ? 'status-dot-saved' :
-            projectStatus === 'generating' ? 'status-dot-generating' :
-            projectStatus === 'error' ? 'status-dot-error' :
-            'status-dot-draft'
-          }`} />
+          <span
+            className={`status-dot ${
+              projectStatus === 'saved'
+                ? 'status-dot-saved'
+                : projectStatus === 'generating'
+                  ? 'status-dot-generating'
+                  : projectStatus === 'error'
+                    ? 'status-dot-error'
+                    : 'status-dot-draft'
+            }`}
+          />
           <span className="capitalize">{projectStatus}</span>
         </div>
 

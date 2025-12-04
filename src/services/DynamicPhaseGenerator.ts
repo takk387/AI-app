@@ -79,7 +79,6 @@ export class DynamicPhaseGenerator {
         warnings,
         analysisDetails: this.getAnalysisDetails(allClassifications, featuresByDomain),
       };
-
     } catch (error) {
       return {
         success: false,
@@ -109,7 +108,7 @@ export class DynamicPhaseGenerator {
 
     // Check for complex patterns first
     for (const pattern of complexPatterns) {
-      if (pattern.patterns.some(p => combined.includes(p))) {
+      if (pattern.patterns.some((p) => combined.includes(p))) {
         return {
           originalFeature: feature,
           domain: pattern.domain,
@@ -118,14 +117,14 @@ export class DynamicPhaseGenerator {
           requiresOwnPhase: pattern.requiresOwnPhase,
           suggestedPhaseName: pattern.suggestedName,
           dependencies: this.inferDependencies(feature, pattern.domain),
-          keywords: pattern.patterns.filter(p => combined.includes(p)),
+          keywords: pattern.patterns.filter((p) => combined.includes(p)),
         };
       }
     }
 
     // Check for moderate patterns
     for (const pattern of moderatePatterns) {
-      if (pattern.patterns.some(p => combined.includes(p))) {
+      if (pattern.patterns.some((p) => combined.includes(p))) {
         return {
           originalFeature: feature,
           domain: pattern.domain,
@@ -134,7 +133,7 @@ export class DynamicPhaseGenerator {
           requiresOwnPhase: false,
           suggestedPhaseName: feature.name,
           dependencies: this.inferDependencies(feature, pattern.domain),
-          keywords: pattern.patterns.filter(p => combined.includes(p)),
+          keywords: pattern.patterns.filter((p) => combined.includes(p)),
         };
       }
     }
@@ -156,7 +155,7 @@ export class DynamicPhaseGenerator {
    * Classify all features
    */
   private classifyFeatures(features: Feature[]): FeatureClassification[] {
-    return features.map(f => this.classifyFeature(f));
+    return features.map((f) => this.classifyFeature(f));
   }
 
   /**
@@ -267,17 +266,31 @@ export class DynamicPhaseGenerator {
     const lowerDesc = feature.description.toLowerCase();
 
     // Features that typically depend on auth
-    if (lowerDesc.includes('user') || lowerDesc.includes('account') || lowerDesc.includes('profile')) {
+    if (
+      lowerDesc.includes('user') ||
+      lowerDesc.includes('account') ||
+      lowerDesc.includes('profile')
+    ) {
       deps.push('Authentication System');
     }
 
     // Features that typically depend on database
-    if (lowerDesc.includes('save') || lowerDesc.includes('store') || lowerDesc.includes('persist') || lowerDesc.includes('history')) {
+    if (
+      lowerDesc.includes('save') ||
+      lowerDesc.includes('store') ||
+      lowerDesc.includes('persist') ||
+      lowerDesc.includes('history')
+    ) {
       deps.push('Database Setup');
     }
 
     // Features that depend on storage
-    if (lowerDesc.includes('image') || lowerDesc.includes('photo') || lowerDesc.includes('file') || lowerDesc.includes('upload')) {
+    if (
+      lowerDesc.includes('image') ||
+      lowerDesc.includes('photo') ||
+      lowerDesc.includes('file') ||
+      lowerDesc.includes('upload')
+    ) {
       deps.push('File Storage');
     }
 
@@ -306,7 +319,7 @@ export class DynamicPhaseGenerator {
         // Check if this specific feature type already exists
         const existing = groups.get(isolatedDomain)!;
         const alreadyExists = existing.some(
-          c => c.suggestedPhaseName === classification.suggestedPhaseName
+          (c) => c.suggestedPhaseName === classification.suggestedPhaseName
         );
 
         if (!alreadyExists) {
@@ -346,16 +359,18 @@ export class DynamicPhaseGenerator {
       const dbFeatures = featuresByDomain.get('database')!;
       // Include data model details in database phase
       const dataModelContext = concept.technical.dataModels
-        ? `. Data models: ${concept.technical.dataModels.map(m => m.name).join(', ')}`
+        ? `. Data models: ${concept.technical.dataModels.map((m) => m.name).join(', ')}`
         : '';
-      phases.push(this.createPhaseFromFeatures(
-        phaseNumber++,
-        'Database Schema',
-        `Set up database tables, types, and configuration${dataModelContext}`,
-        'database',
-        dbFeatures,
-        concept
-      ));
+      phases.push(
+        this.createPhaseFromFeatures(
+          phaseNumber++,
+          'Database Schema',
+          `Set up database tables, types, and configuration${dataModelContext}`,
+          'database',
+          dbFeatures,
+          concept
+        )
+      );
       featuresByDomain.delete('database');
     }
 
@@ -363,17 +378,20 @@ export class DynamicPhaseGenerator {
     if (featuresByDomain.has('auth')) {
       const authFeatures = featuresByDomain.get('auth')!;
       // Include role context in auth phase
-      const roleContext = concept.roles && concept.roles.length > 0
-        ? `. User roles: ${concept.roles.map(r => r.name).join(', ')}`
-        : '';
-      phases.push(this.createPhaseFromFeatures(
-        phaseNumber++,
-        'Authentication System',
-        `Implement ${concept.technical.authType || 'email'} authentication${roleContext}`,
-        'auth',
-        authFeatures,
-        concept
-      ));
+      const roleContext =
+        concept.roles && concept.roles.length > 0
+          ? `. User roles: ${concept.roles.map((r) => r.name).join(', ')}`
+          : '';
+      phases.push(
+        this.createPhaseFromFeatures(
+          phaseNumber++,
+          'Authentication System',
+          `Implement ${concept.technical.authType || 'email'} authentication${roleContext}`,
+          'auth',
+          authFeatures,
+          concept
+        )
+      );
       featuresByDomain.delete('auth');
     }
 
@@ -402,14 +420,16 @@ export class DynamicPhaseGenerator {
       const subPhases = this.splitFeaturesIntoPhases(features, domain);
 
       for (const subPhase of subPhases) {
-        phases.push(this.createPhaseFromFeatures(
-          phaseNumber++,
-          subPhase.name,
-          subPhase.description,
-          domain,
-          subPhase.features,
-          concept  // Pass concept for rich context
-        ));
+        phases.push(
+          this.createPhaseFromFeatures(
+            phaseNumber++,
+            subPhase.name,
+            subPhase.description,
+            domain,
+            subPhase.features,
+            concept // Pass concept for rich context
+          )
+        );
       }
     }
 
@@ -426,7 +446,11 @@ export class DynamicPhaseGenerator {
     features: FeatureClassification[],
     domain: FeatureDomain
   ): Array<{ name: string; description: string; features: FeatureClassification[] }> {
-    const subPhases: Array<{ name: string; description: string; features: FeatureClassification[] }> = [];
+    const subPhases: Array<{
+      name: string;
+      description: string;
+      features: FeatureClassification[];
+    }> = [];
 
     let currentFeatures: FeatureClassification[] = [];
     let currentTokens = 0;
@@ -444,13 +468,22 @@ export class DynamicPhaseGenerator {
     });
 
     for (const feature of sortedFeatures) {
-      const wouldExceedTokens = currentTokens + feature.estimatedTokens > this.config.maxTokensPerPhase;
+      const wouldExceedTokens =
+        currentTokens + feature.estimatedTokens > this.config.maxTokensPerPhase;
       const wouldExceedFeatures = currentFeatures.length >= this.config.maxFeaturesPerPhase;
 
       if ((wouldExceedTokens || wouldExceedFeatures) && currentFeatures.length > 0) {
         // Save current phase and start new one
         subPhases.push({
-          name: this.generatePhaseName(domain, currentFeatures, subPhaseIndex, subPhases.length + Math.ceil((sortedFeatures.length - currentFeatures.length) / this.config.maxFeaturesPerPhase)),
+          name: this.generatePhaseName(
+            domain,
+            currentFeatures,
+            subPhaseIndex,
+            subPhases.length +
+              Math.ceil(
+                (sortedFeatures.length - currentFeatures.length) / this.config.maxFeaturesPerPhase
+              )
+          ),
           description: this.generatePhaseDescription(currentFeatures),
           features: currentFeatures,
         });
@@ -492,23 +525,23 @@ export class DynamicPhaseGenerator {
 
     // Domain-based naming
     const domainNames: Record<FeatureDomain, string> = {
-      'setup': 'Project Setup',
-      'database': 'Database',
-      'auth': 'Authentication',
+      setup: 'Project Setup',
+      database: 'Database',
+      auth: 'Authentication',
       'core-entity': 'Core Features',
-      'feature': 'Features',
+      feature: 'Features',
       'ui-component': 'UI Components',
-      'integration': 'Integrations',
+      integration: 'Integrations',
       'real-time': 'Real-time',
-      'storage': 'Storage',
-      'notification': 'Notifications',
-      'offline': 'Offline Support',
-      'search': 'Search',
-      'analytics': 'Analytics',
-      'admin': 'Admin',
+      storage: 'Storage',
+      notification: 'Notifications',
+      offline: 'Offline Support',
+      search: 'Search',
+      analytics: 'Analytics',
+      admin: 'Admin',
       'ui-role': 'Role Views',
-      'testing': 'Testing',
-      'polish': 'Polish',
+      testing: 'Testing',
+      polish: 'Polish',
     };
 
     const baseName = domainNames[domain] || 'Features';
@@ -529,7 +562,7 @@ export class DynamicPhaseGenerator {
       return features[0].originalFeature.description;
     }
 
-    const featureNames = features.map(f => f.originalFeature.name);
+    const featureNames = features.map((f) => f.originalFeature.name);
     if (featureNames.length <= 3) {
       return `Implement ${featureNames.join(', ')}`;
     }
@@ -634,7 +667,7 @@ export class DynamicPhaseGenerator {
         'README.md with setup instructions',
         'Final code cleanup',
         ...(concept.roles && concept.roles.length > 0
-          ? [`Role-specific UX polish for: ${concept.roles.map(r => r.name).join(', ')}`]
+          ? [`Role-specific UX polish for: ${concept.roles.map((r) => r.name).join(', ')}`]
           : []),
       ],
       featureDetails: [],
@@ -658,7 +691,7 @@ export class DynamicPhaseGenerator {
         roles: concept.roles,
         conversationContext: concept.conversationContext,
       },
-      relevantRoles: concept.roles?.map(r => r.name),
+      relevantRoles: concept.roles?.map((r) => r.name),
     };
   }
 
@@ -697,7 +730,7 @@ export class DynamicPhaseGenerator {
       name,
       description: enrichedDescription,
       domain,
-      features: features.map(f => f.originalFeature.name),
+      features: features.map((f) => f.originalFeature.name),
       featureDetails: features,
       estimatedTokens: totalTokens,
       estimatedTime: `${estimatedMinutes}-${estimatedMinutes + 2} min`,
@@ -706,13 +739,15 @@ export class DynamicPhaseGenerator {
       testCriteria: this.generateTestCriteria(features, domain),
       status: 'pending',
       // Include concept context if available
-      conceptContext: concept ? {
-        purpose: concept.purpose,
-        targetUsers: concept.targetUsers,
-        uiPreferences: concept.uiPreferences,
-        roles: concept.roles,
-        dataModels: concept.technical.dataModels,
-      } : undefined,
+      conceptContext: concept
+        ? {
+            purpose: concept.purpose,
+            targetUsers: concept.targetUsers,
+            uiPreferences: concept.uiPreferences,
+            roles: concept.roles,
+            dataModels: concept.technical.dataModels,
+          }
+        : undefined,
       relevantRoles: relevantRoles.length > 0 ? relevantRoles : undefined,
     };
   }
@@ -726,7 +761,8 @@ export class DynamicPhaseGenerator {
     const relevantRoles: Set<string> = new Set();
 
     for (const feature of features) {
-      const featureText = `${feature.originalFeature.name} ${feature.originalFeature.description}`.toLowerCase();
+      const featureText =
+        `${feature.originalFeature.name} ${feature.originalFeature.description}`.toLowerCase();
 
       for (const role of roles) {
         const roleName = role.name.toLowerCase();
@@ -832,7 +868,7 @@ export class DynamicPhaseGenerator {
       // Domain-based implicit dependencies
       if (phase.domain !== 'setup' && phase.domain !== 'database') {
         // Most features depend on database if it exists
-        const dbPhase = phases.find(p => p.domain === 'database');
+        const dbPhase = phases.find((p) => p.domain === 'database');
         if (dbPhase && dbPhase.number < phase.number) {
           deps.add(dbPhase.number);
           depNames.add('Database Schema');
@@ -842,7 +878,7 @@ export class DynamicPhaseGenerator {
       // Auth-dependent domains
       const authDependentDomains: FeatureDomain[] = ['admin', 'ui-role', 'analytics'];
       if (authDependentDomains.includes(phase.domain)) {
-        const authPhase = phases.find(p => p.domain === 'auth');
+        const authPhase = phases.find((p) => p.domain === 'auth');
         if (authPhase && authPhase.number < phase.number) {
           deps.add(authPhase.number);
           depNames.add('Authentication System');
@@ -861,7 +897,11 @@ export class DynamicPhaseGenerator {
   /**
    * Validate the generated phase plan
    */
-  private validatePhasePlan(phases: DynamicPhase[]): { isValid: boolean; errors: string[]; warnings: string[] } {
+  private validatePhasePlan(phases: DynamicPhase[]): {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -870,7 +910,9 @@ export class DynamicPhaseGenerator {
       errors.push(`Too few phases: ${phases.length} (minimum: ${this.config.minPhases})`);
     }
     if (phases.length > this.config.maxPhases) {
-      warnings.push(`High phase count: ${phases.length} (recommended max: ${this.config.maxPhases})`);
+      warnings.push(
+        `High phase count: ${phases.length} (recommended max: ${this.config.maxPhases})`
+      );
     }
 
     // Check for circular dependencies
@@ -881,7 +923,7 @@ export class DynamicPhaseGenerator {
       visited.add(phaseNum);
       recursionStack.add(phaseNum);
 
-      const phase = phases.find(p => p.number === phaseNum);
+      const phase = phases.find((p) => p.number === phaseNum);
       if (phase) {
         for (const dep of phase.dependencies) {
           if (!visited.has(dep)) {
@@ -905,12 +947,14 @@ export class DynamicPhaseGenerator {
     // Check token estimates
     for (const phase of phases) {
       if (phase.estimatedTokens > this.config.maxTokensPerPhase * 1.5) {
-        warnings.push(`Phase ${phase.number} (${phase.name}) may exceed context limits: ${phase.estimatedTokens} tokens`);
+        warnings.push(
+          `Phase ${phase.number} (${phase.name}) may exceed context limits: ${phase.estimatedTokens} tokens`
+        );
       }
     }
 
     // Check for orphan features
-    const allFeatures = phases.flatMap(p => p.features);
+    const allFeatures = phases.flatMap((p) => p.features);
     if (allFeatures.length === 0) {
       warnings.push('No features were included in the phase plan');
     }
@@ -980,7 +1024,7 @@ export class DynamicPhaseGenerator {
       domainBreakdown[domain] = features.length;
     }
 
-    const complexFeatures = classifications.filter(c => c.complexity === 'complex').length;
+    const complexFeatures = classifications.filter((c) => c.complexity === 'complex').length;
     const totalTokens = classifications.reduce((sum, c) => sum + c.estimatedTokens, 0);
     const avgTokensPerPhase = totalTokens / Math.max(1, featuresByDomain.size + 2); // +2 for setup and polish
 

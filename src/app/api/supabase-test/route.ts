@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 /**
  * Enhanced Test endpoint to verify Supabase connection and storage functionality
  * Access at: /api/supabase-test
- * 
+ *
  * Tests:
  * - Environment variables
  * - Client creation
@@ -29,8 +29,7 @@ export async function GET() {
     // 1. Check environment variables
     // ========================================================================
     const hasEnvVars = !!(
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
     if (!hasEnvVars) {
@@ -74,10 +73,12 @@ export async function GET() {
         ? `Auth check failed (expected if not authenticated): ${authError.message}`
         : 'Auth endpoint accessible',
       hasSession: !!authData.session,
-      user: authData.session?.user?.id ? {
-        id: authData.session.user.id,
-        email: authData.session.user.email,
-      } : null,
+      user: authData.session?.user?.id
+        ? {
+            id: authData.session.user.id,
+            email: authData.session.user.email,
+          }
+        : null,
     };
 
     // ========================================================================
@@ -110,14 +111,15 @@ export async function GET() {
       };
       testResults.success = false;
     } else {
-      const existingBuckets = buckets?.map(b => b.name) || [];
-      const missingBuckets = requiredBuckets.filter(name => !existingBuckets.includes(name));
-      
+      const existingBuckets = buckets?.map((b) => b.name) || [];
+      const missingBuckets = requiredBuckets.filter((name) => !existingBuckets.includes(name));
+
       testResults.tests.storageBuckets = {
         status: missingBuckets.length === 0 ? 'PASS' : 'FAIL',
-        message: missingBuckets.length === 0
-          ? 'All required storage buckets exist'
-          : `Missing buckets: ${missingBuckets.join(', ')}`,
+        message:
+          missingBuckets.length === 0
+            ? 'All required storage buckets exist'
+            : `Missing buckets: ${missingBuckets.join(', ')}`,
         required: requiredBuckets,
         existing: existingBuckets,
         missing: missingBuckets,
@@ -147,23 +149,26 @@ export async function GET() {
         .from('user-uploads')
         .list(fakeUserId);
 
-      const cannotListOtherFiles = !!otherListError || (otherListData?.length === 0);
+      const cannotListOtherFiles = !!otherListError || otherListData?.length === 0;
 
       testResults.tests.rlsPolicies = {
-        status: (canListOwnFiles && cannotListOtherFiles) ? 'PASS' : 'WARNING',
-        message: (canListOwnFiles && cannotListOtherFiles)
-          ? 'RLS policies appear to be working correctly'
-          : 'RLS policies may not be configured correctly',
+        status: canListOwnFiles && cannotListOtherFiles ? 'PASS' : 'WARNING',
+        message:
+          canListOwnFiles && cannotListOtherFiles
+            ? 'RLS policies appear to be working correctly'
+            : 'RLS policies may not be configured correctly',
         details: {
           canListOwnFiles: {
             status: canListOwnFiles ? 'PASS' : 'FAIL',
-            message: canListOwnFiles ? 'Can list own files' : `Cannot list own files: ${listError?.message}`,
+            message: canListOwnFiles
+              ? 'Can list own files'
+              : `Cannot list own files: ${listError?.message}`,
           },
           cannotListOtherFiles: {
             status: cannotListOtherFiles ? 'PASS' : 'WARNING',
-            message: cannotListOtherFiles 
-              ? 'Cannot access other users\' files (expected)' 
-              : 'May be able to access other users\' files (unexpected)',
+            message: cannotListOtherFiles
+              ? "Cannot access other users' files (expected)"
+              : "May be able to access other users' files (unexpected)",
           },
         },
       };
@@ -200,9 +205,7 @@ export async function GET() {
         } else {
           // Register cleanup task
           cleanupTasks.push(async () => {
-            await supabase.storage
-              .from('user-uploads')
-              .remove([testFilePath]);
+            await supabase.storage.from('user-uploads').remove([testFilePath]);
           });
 
           // Test 7b: Download the file
@@ -263,7 +266,7 @@ export async function GET() {
 
     if (cleanupTasks.length > 0) {
       try {
-        await Promise.all(cleanupTasks.map(task => task()));
+        await Promise.all(cleanupTasks.map((task) => task()));
         cleanupStatus = 'PASS';
         cleanupMessage = `Successfully cleaned up ${cleanupTasks.length} test file(s)`;
       } catch (cleanupError: any) {
@@ -292,7 +295,7 @@ export async function GET() {
     if (failures.length > 0) {
       testResults.nextSteps = [
         '❌ Some tests failed. Please fix the following:',
-        ...failures.map(name => {
+        ...failures.map((name) => {
           if (name === 'storageBuckets') {
             return '• Create missing storage buckets in Supabase Dashboard → Storage';
           }
@@ -307,7 +310,7 @@ export async function GET() {
     } else if (warnings.length > 0) {
       testResults.nextSteps = [
         '⚠️ All critical tests passed, but some warnings:',
-        ...warnings.map(name => {
+        ...warnings.map((name) => {
           if (name === 'databaseConnection') {
             return '• Create database tables (see docs/SUPABASE_SETUP.md)';
           }
@@ -340,12 +343,11 @@ export async function GET() {
       : 'Some Supabase tests failed';
 
     return NextResponse.json(testResults);
-
   } catch (error: any) {
     // Execute cleanup tasks even on error
     if (cleanupTasks.length > 0) {
       try {
-        await Promise.all(cleanupTasks.map(task => task()));
+        await Promise.all(cleanupTasks.map((task) => task()));
       } catch (cleanupError) {
         console.error('Cleanup failed during error handling:', cleanupError);
       }

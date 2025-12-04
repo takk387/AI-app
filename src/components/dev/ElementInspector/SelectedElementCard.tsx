@@ -28,9 +28,7 @@ export function SelectedElementCard({
           <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-green-500/20 text-green-400 text-xs rounded-full">
             {index}
           </span>
-          <span className="text-sm text-white truncate font-mono">
-            {element.displayName}
-          </span>
+          <span className="text-sm text-white truncate font-mono">{element.displayName}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -38,9 +36,7 @@ export function SelectedElementCard({
             className="p-1 hover:bg-gray-600 rounded transition-colors"
             title={isExpanded ? 'Collapse' : 'Expand'}
           >
-            <span className="text-gray-400 text-xs">
-              {isExpanded ? '▼' : '▶'}
-            </span>
+            <span className="text-gray-400 text-xs">{isExpanded ? '▼' : '▶'}</span>
           </button>
           <button
             onClick={onRemove}
@@ -109,7 +105,9 @@ export function SelectedElementCard({
               {element.computedStyles.display !== 'block' && (
                 <div>display: {element.computedStyles.display}</div>
               )}
-              <div>size: {element.computedStyles.width} × {element.computedStyles.height}</div>
+              <div>
+                size: {element.computedStyles.width} × {element.computedStyles.height}
+              </div>
               <div>color: {element.computedStyles.color}</div>
               {element.computedStyles.backgroundColor !== 'transparent' && (
                 <div>bg: {element.computedStyles.backgroundColor}</div>

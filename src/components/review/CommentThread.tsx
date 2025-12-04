@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import type { CommentThreadProps } from '@/types/review';
 
 /**
  * CommentThread - Inline commenting system for code review
- * 
+ *
  * Features:
  * - Display comments on a specific line
  * - Add new comments
@@ -52,8 +52,8 @@ export default function CommentThread({
     });
   };
 
-  const unresolvedCount = comments.filter(c => !c.resolved).length;
-  const needsAttentionCount = comments.filter(c => c.needsAttention).length;
+  const unresolvedCount = comments.filter((c) => !c.resolved).length;
+  const needsAttentionCount = comments.filter((c) => c.needsAttention).length;
 
   return (
     <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 overflow-hidden">
@@ -61,9 +61,7 @@ export default function CommentThread({
       <div className="px-3 py-2 border-b border-blue-500/20 bg-blue-500/5 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs">
           <span className="text-blue-400">💬</span>
-          <span className="text-blue-300 font-medium">
-            Line {lineNumber}
-          </span>
+          <span className="text-blue-300 font-medium">Line {lineNumber}</span>
           <span className="text-blue-400/60">
             • {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
           </span>
@@ -95,23 +93,19 @@ export default function CommentThread({
               comment.resolved
                 ? 'opacity-60'
                 : comment.needsAttention
-                ? 'bg-red-500/10 border-l-2 border-red-500'
-                : ''
+                  ? 'bg-red-500/10 border-l-2 border-red-500'
+                  : ''
             }`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 {/* Author & Time */}
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-white">
-                    {comment.author}
-                  </span>
+                  <span className="text-xs font-medium text-white">{comment.author}</span>
                   <span className="text-xs text-slate-500">
                     {formatTimestamp(comment.timestamp)}
                   </span>
-                  {comment.resolved && (
-                    <span className="text-xs text-green-400">✓ Resolved</span>
-                  )}
+                  {comment.resolved && <span className="text-xs text-green-400">✓ Resolved</span>}
                   {comment.needsAttention && (
                     <span className="text-xs text-red-400">⚠️ Needs Attention</span>
                   )}

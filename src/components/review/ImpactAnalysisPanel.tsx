@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import type { ImpactAnalysisPanelProps } from '@/types/review';
@@ -6,7 +6,7 @@ import { getRiskLevelColor, getRiskLevelBgColor } from '@/types/review';
 
 /**
  * ImpactAnalysisPanel - Displays change impact assessment
- * 
+ *
  * Features:
  * - Files affected overview
  * - Components that may be impacted
@@ -20,7 +20,9 @@ export default function ImpactAnalysisPanel({
   onToggleExpand,
 }: ImpactAnalysisPanelProps) {
   const [expanded, setExpanded] = useState(initialExpanded);
-  const [activeTab, setActiveTab] = useState<'files' | 'components' | 'breaking' | 'tests'>('files');
+  const [activeTab, setActiveTab] = useState<'files' | 'components' | 'breaking' | 'tests'>(
+    'files'
+  );
 
   const handleToggle = () => {
     setExpanded(!expanded);
@@ -29,13 +31,20 @@ export default function ImpactAnalysisPanel({
 
   const tabs = [
     { id: 'files', label: 'Files', icon: '📁', count: analysis.filesAffected.length },
-    { id: 'components', label: 'Components', icon: '⚛️', count: analysis.componentsAffected.length },
+    {
+      id: 'components',
+      label: 'Components',
+      icon: '⚛️',
+      count: analysis.componentsAffected.length,
+    },
     { id: 'breaking', label: 'Breaking', icon: '⚠️', count: analysis.breakingChanges.length },
     { id: 'tests', label: 'Tests', icon: '🧪', count: analysis.suggestedTests.length },
   ] as const;
 
   return (
-    <div className={`rounded-xl border overflow-hidden ${getRiskLevelBgColor(analysis.overallRisk)}`}>
+    <div
+      className={`rounded-xl border overflow-hidden ${getRiskLevelBgColor(analysis.overallRisk)}`}
+    >
       {/* Header */}
       <button
         onClick={handleToggle}
@@ -46,7 +55,8 @@ export default function ImpactAnalysisPanel({
           <div className="text-left">
             <h3 className="text-white font-semibold">Impact Analysis</h3>
             <p className="text-xs text-slate-400">
-              {analysis.filesAffected.length} files • {analysis.componentsAffected.length} components
+              {analysis.filesAffected.length} files • {analysis.componentsAffected.length}{' '}
+              components
             </p>
           </div>
         </div>
@@ -191,17 +201,12 @@ export default function ImpactAnalysisPanel({
                 <span>Dependencies:</span>
                 <div className="flex flex-wrap gap-1">
                   {analysis.dependencies.slice(0, 5).map((dep, idx) => (
-                    <span
-                      key={idx}
-                      className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300"
-                    >
+                    <span key={idx} className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
                       {dep}
                     </span>
                   ))}
                   {analysis.dependencies.length > 5 && (
-                    <span className="text-slate-500">
-                      +{analysis.dependencies.length - 5} more
-                    </span>
+                    <span className="text-slate-500">+{analysis.dependencies.length - 5} more</span>
                   )}
                 </div>
               </div>

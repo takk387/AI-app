@@ -41,7 +41,7 @@ async function getBrowser(): Promise<Browser> {
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      '--single-process',  // Reduce memory in containers
+      '--single-process', // Reduce memory in containers
     ],
   });
 
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     // Set timeout for page load
     await page.setContent(html, {
       waitUntil: 'networkidle0',
-      timeout: 15000
+      timeout: 15000,
     });
 
     // Wait for React to actually render content into #root
@@ -108,13 +108,18 @@ export async function POST(req: NextRequest) {
         },
         { timeout: 10000 }
       );
+      console.log('React rendered successfully');
     } catch {
-      // If waitForFunction times out, log but continue - might still have content
-      console.warn('React render wait timed out, capturing anyway');
+      // If waitForFunction times out, log what's in #root for debugging
+      const rootContent = await page.evaluate(() => {
+        const root = document.getElementById('root');
+        return root ? root.innerHTML.substring(0, 500) : 'root element not found';
+      });
+      console.warn('React render wait timed out. Root content:', rootContent);
     }
 
     // Additional small delay for any final paints/layout
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const screenshot = await page.screenshot({
       type: 'jpeg',
@@ -125,7 +130,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       image: `data:image/jpeg;base64,${screenshot}`,
       width,
-      height
+      height,
     });
   } catch (error) {
     console.error('Screenshot error:', error);

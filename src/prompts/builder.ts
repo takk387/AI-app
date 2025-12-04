@@ -36,20 +36,28 @@ CRITICAL REMINDERS:
  * Build system prompt for full-app route
  * Combines: base rules + frontend + fullstack + examples
  */
-export function buildFullAppPrompt(baseInstructions: string, includeImageContext: boolean = false, isModification: boolean = false): string {
-  const imageContext = includeImageContext ? `
+export function buildFullAppPrompt(
+  baseInstructions: string,
+  includeImageContext: boolean = false,
+  isModification: boolean = false
+): string {
+  const imageContext = includeImageContext
+    ? `
 🎨 IMAGE-INSPIRED DESIGN:
 Analyze uploaded image for colors, style, patterns. Apply aesthetic to app design using Tailwind CSS.
-` : '';
+`
+    : '';
 
-  const modificationContext = isModification ? `
+  const modificationContext = isModification
+    ? `
 MODIFICATION MODE:
 - Check conversation history for ===INTERNAL_PLAN===
 - Maintain consistency with existing architecture
 - Classify as MAJOR_CHANGE or MINOR_CHANGE
 - Update INTERNAL_PLAN with completed features
 - Use exact same delimiter format as new apps
-`.trim() : '';
+`.trim()
+    : '';
 
   return `${baseInstructions}
 ${imageContext}

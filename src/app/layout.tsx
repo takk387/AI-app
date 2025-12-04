@@ -1,25 +1,21 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import AuthGuard from "../components/AuthGuard";
-import ErrorBoundary from "../components/ErrorBoundary";
-import { AuthProvider } from "../contexts/AuthContext";
-import { ThemeProvider } from "../contexts/ThemeContext";
-import { SettingsProvider } from "../contexts/SettingsContext";
-import { DevTools } from "../components/dev/DevTools";
+import type { Metadata } from 'next';
+import './globals.css';
+import AuthGuard from '../components/AuthGuard';
+import ErrorBoundary from '../components/ErrorBoundary';
+import { AuthProvider } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
+import { SettingsProvider } from '../contexts/SettingsContext';
+import { DevTools } from '../components/dev/DevTools';
 
 export const metadata: Metadata = {
-  title: "Personal AI App Builder",
-  description: "Build React components and apps using AI - the right way",
+  title: 'Personal AI App Builder',
+  description: 'Build React components and apps using AI - the right way',
   icons: {
-    icon: "/favicon.ico",
+    icon: '/favicon.ico',
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans">

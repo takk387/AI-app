@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import { getDeploymentInstructions, type DeploymentInstructions } from '@/utils/exportApp';
@@ -42,7 +42,12 @@ export function DeploymentModal({
               className="text-slate-400 hover:text-white transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -58,7 +63,8 @@ export function DeploymentModal({
                 <div>
                   <h3 className="text-white font-semibold mb-1">Download Started</h3>
                   <p className="text-sm text-slate-300">
-                    Your app has been packaged as a ZIP file with all necessary files, including package.json, configuration files, and a README with deployment instructions.
+                    Your app has been packaged as a ZIP file with all necessary files, including
+                    package.json, configuration files, and a README with deployment instructions.
                   </p>
                 </div>
               </div>
@@ -121,9 +127,7 @@ export function DeploymentModal({
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-xs text-blue-400 font-medium">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-slate-300 leading-relaxed pt-0.5">
-                        {step}
-                      </span>
+                      <span className="text-sm text-slate-300 leading-relaxed pt-0.5">{step}</span>
                     </li>
                   ))}
                 </ol>
@@ -157,7 +161,9 @@ export function DeploymentModal({
                 <div className="text-sm text-slate-300">
                   <p className="font-semibold text-white mb-1">Tip:</p>
                   <p>
-                    For the best experience, we recommend deploying to Vercel. It&apos;s optimized for Next.js apps and provides automatic deployments, preview URLs, and zero-config setup.
+                    For the best experience, we recommend deploying to Vercel. It&apos;s optimized
+                    for Next.js apps and provides automatic deployments, preview URLs, and
+                    zero-config setup.
                   </p>
                 </div>
               </div>

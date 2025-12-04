@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 
@@ -23,7 +23,9 @@ interface DiffPreviewProps {
 }
 
 export default function DiffPreview({ summary, files, onApprove, onReject }: DiffPreviewProps) {
-  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set(files.map(f => f.path)));
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(
+    new Set(files.map((f) => f.path))
+  );
 
   const toggleFile = (path: string) => {
     const newExpanded = new Set(expandedFiles);
@@ -37,42 +39,42 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
 
   const getChangeTypeIcon = (type: DiffChange['type']) => {
     const icons = {
-      'ADD_IMPORT': '➕',
-      'INSERT_AFTER': '📝',
-      'INSERT_BEFORE': '📝',
-      'REPLACE': '🔄',
-      'DELETE': '❌',
-      'APPEND': '➕'
+      ADD_IMPORT: '➕',
+      INSERT_AFTER: '📝',
+      INSERT_BEFORE: '📝',
+      REPLACE: '🔄',
+      DELETE: '❌',
+      APPEND: '➕',
     };
     return icons[type];
   };
 
   const getChangeTypeColor = (type: DiffChange['type']) => {
     const colors = {
-      'ADD_IMPORT': 'text-green-400',
-      'INSERT_AFTER': 'text-blue-400',
-      'INSERT_BEFORE': 'text-blue-400',
-      'REPLACE': 'text-yellow-400',
-      'DELETE': 'text-red-400',
-      'APPEND': 'text-green-400'
+      ADD_IMPORT: 'text-green-400',
+      INSERT_AFTER: 'text-blue-400',
+      INSERT_BEFORE: 'text-blue-400',
+      REPLACE: 'text-yellow-400',
+      DELETE: 'text-red-400',
+      APPEND: 'text-green-400',
     };
     return colors[type];
   };
 
   const getActionIcon = (action: FileDiff['action']) => {
     const icons = {
-      'MODIFY': '📝',
-      'CREATE': '➕',
-      'DELETE': '🗑️'
+      MODIFY: '📝',
+      CREATE: '➕',
+      DELETE: '🗑️',
     };
     return icons[action];
   };
 
   const getActionColor = (action: FileDiff['action']) => {
     const colors = {
-      'MODIFY': 'border-blue-500/30 bg-blue-500/10',
-      'CREATE': 'border-green-500/30 bg-green-500/10',
-      'DELETE': 'border-red-500/30 bg-red-500/10'
+      MODIFY: 'border-blue-500/30 bg-blue-500/10',
+      CREATE: 'border-green-500/30 bg-green-500/10',
+      DELETE: 'border-red-500/30 bg-red-500/10',
     };
     return colors[action];
   };
@@ -111,8 +113,12 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
             <h3 className="text-white font-semibold mb-1">Proposed Changes</h3>
             <p className="text-sm text-blue-200 leading-relaxed">{summary}</p>
             <div className="flex items-center gap-4 mt-3 text-xs text-blue-200/80">
-              <span>📁 {files.length} {files.length === 1 ? 'file' : 'files'}</span>
-              <span>🔧 {totalChanges} {totalChanges === 1 ? 'change' : 'changes'}</span>
+              <span>
+                📁 {files.length} {files.length === 1 ? 'file' : 'files'}
+              </span>
+              <span>
+                🔧 {totalChanges} {totalChanges === 1 ? 'change' : 'changes'}
+              </span>
             </div>
           </div>
         </div>
@@ -123,7 +129,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
         <div className="flex items-start gap-2">
           <span className="text-lg">💡</span>
           <div className="text-sm text-yellow-200/90">
-            <span className="font-medium">Smart modifications:</span> Only the specific code you requested will be changed. Everything else stays exactly the same.
+            <span className="font-medium">Smart modifications:</span> Only the specific code you
+            requested will be changed. Everything else stays exactly the same.
           </div>
         </div>
       </div>
@@ -145,7 +152,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                 <div className="text-left">
                   <div className="text-white font-medium text-sm">{file.path}</div>
                   <div className="text-xs text-slate-400 mt-0.5">
-                    {file.action} • {file.changes.length} {file.changes.length === 1 ? 'change' : 'changes'}
+                    {file.action} • {file.changes.length}{' '}
+                    {file.changes.length === 1 ? 'change' : 'changes'}
                   </div>
                 </div>
               </div>
@@ -157,7 +165,12 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
@@ -180,24 +193,31 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                         <div className="text-xs text-slate-400 mb-2">
                           {formatChangeDescription(change)}
                         </div>
-                        
+
                         {/* Show code preview for certain change types */}
-                        {(change.type === 'ADD_IMPORT' || change.type === 'APPEND') && change.content && (
-                          <div className="mt-2">
-                            <div className="text-xs text-green-400 mb-1">+ Adding:</div>
-                            <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-green-300">
-                              <code>{change.content.substring(0, 200)}{change.content.length > 200 ? '...' : ''}</code>
-                            </pre>
-                          </div>
-                        )}
-                        
+                        {(change.type === 'ADD_IMPORT' || change.type === 'APPEND') &&
+                          change.content && (
+                            <div className="mt-2">
+                              <div className="text-xs text-green-400 mb-1">+ Adding:</div>
+                              <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-green-300">
+                                <code>
+                                  {change.content.substring(0, 200)}
+                                  {change.content.length > 200 ? '...' : ''}
+                                </code>
+                              </pre>
+                            </div>
+                          )}
+
                         {change.type === 'REPLACE' && (
                           <div className="mt-2 space-y-2">
                             {change.searchFor && (
                               <div>
                                 <div className="text-xs text-red-400 mb-1">- Removing:</div>
                                 <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-red-300 line-through">
-                                  <code>{change.searchFor.substring(0, 100)}{change.searchFor.length > 100 ? '...' : ''}</code>
+                                  <code>
+                                    {change.searchFor.substring(0, 100)}
+                                    {change.searchFor.length > 100 ? '...' : ''}
+                                  </code>
                                 </pre>
                               </div>
                             )}
@@ -205,7 +225,10 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                               <div>
                                 <div className="text-xs text-green-400 mb-1">+ Adding:</div>
                                 <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-green-300">
-                                  <code>{change.replaceWith.substring(0, 100)}{change.replaceWith.length > 100 ? '...' : ''}</code>
+                                  <code>
+                                    {change.replaceWith.substring(0, 100)}
+                                    {change.replaceWith.length > 100 ? '...' : ''}
+                                  </code>
                                 </pre>
                               </div>
                             )}
@@ -244,7 +267,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
         <div className="flex items-start gap-2 text-xs text-slate-400">
           <span>🛡️</span>
           <p>
-            Your current version will be saved in history before applying these changes. You can always undo or revert if needed.
+            Your current version will be saved in history before applying these changes. You can
+            always undo or revert if needed.
           </p>
         </div>
       </div>

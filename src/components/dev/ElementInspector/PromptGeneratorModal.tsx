@@ -48,15 +48,10 @@ export function PromptGeneratorModal({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Generated Prompt</h3>
-                <p className="text-sm text-cyan-200/80">
-                  Review and copy to Claude
-                </p>
+                <p className="text-sm text-cyan-200/80">Review and copy to Claude</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -71,9 +66,7 @@ export function PromptGeneratorModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-white/10 bg-black/20 flex items-center justify-between">
-          <div className="text-sm text-gray-400">
-            {prompt.length} characters
-          </div>
+          <div className="text-sm text-gray-400">{prompt.length} characters</div>
           <div className="flex gap-3">
             <button
               onClick={onClose}
@@ -85,15 +78,20 @@ export function PromptGeneratorModal({
               onClick={handleCopy}
               className={`
                 px-6 py-2 rounded-lg font-medium transition-all
-                ${copyStatus === 'copied'
-                  ? 'bg-green-500 text-white'
-                  : copyStatus === 'error'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg'
+                ${
+                  copyStatus === 'copied'
+                    ? 'bg-green-500 text-white'
+                    : copyStatus === 'error'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg'
                 }
               `}
             >
-              {copyStatus === 'copied' ? '✓ Copied!' : copyStatus === 'error' ? 'Copy Failed' : '📋 Copy to Clipboard'}
+              {copyStatus === 'copied'
+                ? '✓ Copied!'
+                : copyStatus === 'error'
+                  ? 'Copy Failed'
+                  : '📋 Copy to Clipboard'}
             </button>
           </div>
         </div>

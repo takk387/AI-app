@@ -7,7 +7,8 @@ import type { FullTemplate } from '../../types/architectureTemplates';
 export const landingPageTemplate: FullTemplate = {
   id: 'landing-page',
   name: 'Landing Page',
-  description: 'Marketing sites, portfolios, and product launches with hero sections, features, and call-to-action elements.',
+  description:
+    'Marketing sites, portfolios, and product launches with hero sections, features, and call-to-action elements.',
   icon: '🎯',
   category: 'marketing',
   features: [
@@ -17,7 +18,7 @@ export const landingPageTemplate: FullTemplate = {
     'Pricing table',
     'FAQ accordion',
     'Contact form',
-    'Footer'
+    'Footer',
   ],
   complexity: 'simple',
   estimatedComponents: 10,
@@ -29,22 +30,17 @@ export const landingPageTemplate: FullTemplate = {
 - FAQ accordion with common questions
 - Contact form with validation
 - Footer with navigation links and social icons`,
-  requiredFeatures: [
-    'Hero section',
-    'Features showcase',
-    'Call-to-action buttons',
-    'Footer'
-  ],
+  requiredFeatures: ['Hero section', 'Features showcase', 'Call-to-action buttons', 'Footer'],
   suggestedFeatures: [
     'Testimonials',
     'Pricing table',
     'FAQ section',
     'Newsletter signup',
-    'Social proof badges'
+    'Social proof badges',
   ],
   layoutStructure: {
     type: 'minimal',
-    regions: ['header', 'hero', 'features', 'social-proof', 'pricing', 'faq', 'contact', 'footer']
+    regions: ['header', 'hero', 'features', 'social-proof', 'pricing', 'faq', 'contact', 'footer'],
   },
   components: [
     { name: 'HeroSection', description: 'Main hero with headline and CTA', priority: 'core' },
@@ -56,14 +52,14 @@ export const landingPageTemplate: FullTemplate = {
     { name: 'PricingCard', description: 'Single pricing tier', priority: 'optional' },
     { name: 'FAQAccordion', description: 'Collapsible FAQ section', priority: 'optional' },
     { name: 'ContactForm', description: 'Contact form with validation', priority: 'optional' },
-    { name: 'Footer', description: 'Footer with links and social', priority: 'core' }
+    { name: 'Footer', description: 'Footer with links and social', priority: 'core' },
   ],
   technicalRequirements: {
     needsAuth: false,
     needsDatabase: false,
     needsAPI: false,
-    needsFileUpload: false
-  }
+    needsFileUpload: false,
+  },
 };
 
 export default landingPageTemplate;

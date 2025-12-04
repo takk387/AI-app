@@ -201,7 +201,7 @@ ${currentConcept.coreFeatures?.length ? `- **Features:** ${currentConcept.coreFe
 
 ## STILL NEEDED
 
-${missingInfo.length > 0 ? missingInfo.map(i => `- ${i}`).join('\n') : 'All core information gathered - ready to summarize and confirm'}
+${missingInfo.length > 0 ? missingInfo.map((i) => `- ${i}`).join('\n') : 'All core information gathered - ready to summarize and confirm'}
 
 Continue the conversation naturally to gather any missing information. Don't explicitly mention this checklist to the user.`;
 }
@@ -221,7 +221,7 @@ The user has provided all necessary information. Present this complete summary a
 **Target Users:** ${concept.targetUsers}
 
 **Features:**
-${concept.coreFeatures.map(f => `- ${f.name}: ${f.description} (${f.priority} priority)`).join('\n')}
+${concept.coreFeatures.map((f) => `- ${f.name}: ${f.description} (${f.priority} priority)`).join('\n')}
 
 **Technical Requirements:**
 - Authentication: ${concept.technical.needsAuth ? `Yes (${concept.technical.authType || 'email'})` : 'No'}
@@ -281,7 +281,7 @@ A few questions:
   },
   {
     context: 'User describes roles',
-    user: 'There\'s the owner Stacey who manages everything, a supervisor Rickey who works on-site, and the workers',
+    user: "There's the owner Stacey who manages everything, a supervisor Rickey who works on-site, and the workers",
     assistant: `Got it - three distinct roles. Let me make sure I understand each one:
 
 | Role | Description |

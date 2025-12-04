@@ -33,13 +33,20 @@ function formatTime(ms: number): string {
  */
 function getPhaseIcon(phase: ProgressType['phase']): string {
   switch (phase) {
-    case 'starting': return '🚀';
-    case 'thinking': return '🧠';
-    case 'generating': return '⚡';
-    case 'validating': return '🔍';
-    case 'complete': return '✅';
-    case 'error': return '❌';
-    default: return '⏳';
+    case 'starting':
+      return '🚀';
+    case 'thinking':
+      return '🧠';
+    case 'generating':
+      return '⚡';
+    case 'validating':
+      return '🔍';
+    case 'complete':
+      return '✅';
+    case 'error':
+      return '❌';
+    default:
+      return '⏳';
   }
 }
 
@@ -48,13 +55,20 @@ function getPhaseIcon(phase: ProgressType['phase']): string {
  */
 function getPhaseColor(phase: ProgressType['phase']): string {
   switch (phase) {
-    case 'starting': return 'text-blue-400';
-    case 'thinking': return 'text-purple-400';
-    case 'generating': return 'text-yellow-400';
-    case 'validating': return 'text-cyan-400';
-    case 'complete': return 'text-green-400';
-    case 'error': return 'text-red-400';
-    default: return 'text-slate-400';
+    case 'starting':
+      return 'text-blue-400';
+    case 'thinking':
+      return 'text-purple-400';
+    case 'generating':
+      return 'text-yellow-400';
+    case 'validating':
+      return 'text-cyan-400';
+    case 'complete':
+      return 'text-green-400';
+    case 'error':
+      return 'text-red-400';
+    default:
+      return 'text-slate-400';
   }
 }
 
@@ -93,9 +107,7 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-sm font-mono">
-            {formatTime(elapsedTime)}
-          </span>
+          <span className="text-slate-400 text-sm font-mono">{formatTime(elapsedTime)}</span>
           {progress.isStreaming && onCancel && (
             <button
               onClick={onCancel}
@@ -108,15 +120,15 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
       </div>
 
       {/* Current message */}
-      <p className="text-slate-300 text-sm mb-3 truncate">
-        {progress.message}
-      </p>
+      <p className="text-slate-300 text-sm mb-3 truncate">{progress.message}</p>
 
       {/* Progress bar */}
       {progress.totalFiles > 0 && (
         <div className="mb-3">
           <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>Files: {completedCount} / {totalCount}</span>
+            <span>
+              Files: {completedCount} / {totalCount}
+            </span>
             <span>{Math.round(progressPercent)}%</span>
           </div>
           <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -154,9 +166,7 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
       {progress.currentFile && progress.phase === 'generating' && (
         <div className="mt-2 flex items-center gap-2">
           <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-          <span className="text-xs text-yellow-400/80 truncate">
-            {progress.currentFile}
-          </span>
+          <span className="text-xs text-yellow-400/80 truncate">{progress.currentFile}</span>
         </div>
       )}
 
@@ -187,9 +197,7 @@ export function InlineStreamingProgress({ progress }: { progress: ProgressType }
   return (
     <div className="flex items-center gap-2 text-sm">
       <span className="animate-pulse">{getPhaseIcon(progress.phase)}</span>
-      <span className={getPhaseColor(progress.phase)}>
-        {progress.message || 'Processing...'}
-      </span>
+      <span className={getPhaseColor(progress.phase)}>{progress.message || 'Processing...'}</span>
       {progress.totalFiles > 0 && (
         <span className="text-slate-500">
           ({progress.filesCompleted.length}/{progress.totalFiles} files)

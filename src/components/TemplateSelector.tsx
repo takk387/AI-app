@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import type { FullTemplate, TemplateCategory, TemplateComplexity } from '../types/architectureTemplates';
-import { 
-  architectureTemplates, 
-  filterTemplates, 
-  getAllCategories, 
+import type {
+  FullTemplate,
+  TemplateCategory,
+  TemplateComplexity,
+} from '../types/architectureTemplates';
+import {
+  architectureTemplates,
+  filterTemplates,
+  getAllCategories,
   getCategoryDisplayName,
-  getRecommendedTemplates 
+  getRecommendedTemplates,
 } from '../data/templates';
 import TemplatePreview from './TemplatePreview';
 
@@ -40,7 +44,7 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
     return filterTemplates({
       category: selectedCategory === 'all' ? undefined : selectedCategory,
       complexity: selectedComplexity === 'all' ? undefined : selectedComplexity,
-      searchQuery: searchQuery || undefined
+      searchQuery: searchQuery || undefined,
     });
   }, [selectedCategory, selectedComplexity, searchQuery]);
 
@@ -48,19 +52,27 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
 
   const getComplexityColor = (complexity: TemplateComplexity) => {
     switch (complexity) {
-      case 'simple': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'moderate': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      case 'complex': return 'bg-red-500/20 text-red-300 border-red-500/30';
+      case 'simple':
+        return 'bg-green-500/20 text-green-300 border-green-500/30';
+      case 'moderate':
+        return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+      case 'complex':
+        return 'bg-red-500/20 text-red-300 border-red-500/30';
     }
   };
 
   const getCategoryColor = (category: TemplateCategory) => {
     switch (category) {
-      case 'admin': return 'bg-blue-500/20 text-blue-300';
-      case 'commerce': return 'bg-purple-500/20 text-purple-300';
-      case 'content': return 'bg-orange-500/20 text-orange-300';
-      case 'marketing': return 'bg-pink-500/20 text-pink-300';
-      case 'saas': return 'bg-cyan-500/20 text-cyan-300';
+      case 'admin':
+        return 'bg-blue-500/20 text-blue-300';
+      case 'commerce':
+        return 'bg-purple-500/20 text-purple-300';
+      case 'content':
+        return 'bg-orange-500/20 text-orange-300';
+      case 'marketing':
+        return 'bg-pink-500/20 text-pink-300';
+      case 'saas':
+        return 'bg-cyan-500/20 text-cyan-300';
     }
   };
 
@@ -161,7 +173,9 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
                   {template.name}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(template.category)}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(template.category)}`}
+                  >
                     {getCategoryDisplayName(template.category)}
                   </span>
                 </div>
@@ -169,10 +183,7 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
             </div>
 
             {/* Description */}
-            <p 
-              className="text-sm text-slate-400 mb-4 line-clamp-2"
-              title={template.description}
-            >
+            <p className="text-sm text-slate-400 mb-4 line-clamp-2" title={template.description}>
               {template.description}
             </p>
 
@@ -196,7 +207,9 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
             {/* Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-white/5">
               <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full border ${getComplexityColor(template.complexity)}`}>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full border ${getComplexityColor(template.complexity)}`}
+                >
                   {template.complexity}
                 </span>
                 <span className="text-xs text-slate-500">

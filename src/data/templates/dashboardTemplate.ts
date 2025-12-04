@@ -7,7 +7,8 @@ import type { FullTemplate } from '../../types/architectureTemplates';
 export const dashboardTemplate: FullTemplate = {
   id: 'dashboard',
   name: 'Dashboard',
-  description: 'Admin panels, analytics views, and data monitoring applications with sidebar navigation and widget-based layouts.',
+  description:
+    'Admin panels, analytics views, and data monitoring applications with sidebar navigation and widget-based layouts.',
   icon: '📊',
   category: 'admin',
   features: [
@@ -17,7 +18,7 @@ export const dashboardTemplate: FullTemplate = {
     'User profile menu',
     'Search functionality',
     'Notifications',
-    'Grid layout'
+    'Grid layout',
   ],
   complexity: 'moderate',
   estimatedComponents: 12,
@@ -32,39 +33,55 @@ export const dashboardTemplate: FullTemplate = {
     'Sidebar navigation',
     'Header with user menu',
     'Dashboard grid layout',
-    'Metric cards'
+    'Metric cards',
   ],
   suggestedFeatures: [
     'Charts and graphs',
     'Data tables',
     'Activity timeline',
     'Quick actions panel',
-    'Settings page'
+    'Settings page',
   ],
   layoutStructure: {
     type: 'sidebar',
-    regions: ['sidebar', 'header', 'main', 'widgets']
+    regions: ['sidebar', 'header', 'main', 'widgets'],
   },
   components: [
-    { name: 'Sidebar', description: 'Collapsible navigation sidebar with menu items', priority: 'core' },
-    { name: 'Header', description: 'Top bar with search, notifications, and user menu', priority: 'core' },
+    {
+      name: 'Sidebar',
+      description: 'Collapsible navigation sidebar with menu items',
+      priority: 'core',
+    },
+    {
+      name: 'Header',
+      description: 'Top bar with search, notifications, and user menu',
+      priority: 'core',
+    },
     { name: 'DashboardGrid', description: 'Responsive grid layout for widgets', priority: 'core' },
     { name: 'MetricCard', description: 'Card displaying key metrics with icons', priority: 'core' },
-    { name: 'ChartWidget', description: 'Placeholder for chart visualizations', priority: 'optional' },
+    {
+      name: 'ChartWidget',
+      description: 'Placeholder for chart visualizations',
+      priority: 'optional',
+    },
     { name: 'ActivityFeed', description: 'Recent activity timeline', priority: 'optional' },
     { name: 'QuickActions', description: 'Common action shortcuts panel', priority: 'optional' },
-    { name: 'NotificationDropdown', description: 'Notification list dropdown', priority: 'optional' },
+    {
+      name: 'NotificationDropdown',
+      description: 'Notification list dropdown',
+      priority: 'optional',
+    },
     { name: 'UserMenu', description: 'User profile dropdown menu', priority: 'core' },
     { name: 'SearchBar', description: 'Global search input', priority: 'optional' },
     { name: 'DataTable', description: 'Sortable data table component', priority: 'optional' },
-    { name: 'StatsSummary', description: 'Summary statistics section', priority: 'optional' }
+    { name: 'StatsSummary', description: 'Summary statistics section', priority: 'optional' },
   ],
   technicalRequirements: {
     needsAuth: true,
     needsDatabase: true,
     needsAPI: true,
-    needsFileUpload: false
-  }
+    needsFileUpload: false,
+  },
 };
 
 export default dashboardTemplate;

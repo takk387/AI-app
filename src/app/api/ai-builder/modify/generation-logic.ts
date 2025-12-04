@@ -1,7 +1,7 @@
 /**
  * AI Generation Logic for Modify Route
  * Phase 5.2: Extracted for retry support
- * 
+ *
  * Separates AI generation logic from route handler to enable intelligent retries
  */
 
@@ -15,7 +15,7 @@ export interface GenerationContext {
   messages: any[];
   modelName: string;
   currentAppState: any;
-  correctionPrompt?: string;  // Added for retry with specific fixes
+  correctionPrompt?: string; // Added for retry with specific fixes
 }
 
 export interface GenerationResult {
@@ -44,36 +44,38 @@ export async function generateModifications(
   attemptNumber: number = 1
 ): Promise<GenerationResult> {
   const { anthropic, systemPrompt, messages, modelName, correctionPrompt } = context;
-  
+
   // Add correction prompt if this is a retry
-  const enhancedMessages = correctionPrompt && attemptNumber > 1
-    ? [...messages, { role: 'user', content: correctionPrompt }]
-    : messages;
-  
-  console.log(attemptNumber > 1 
-    ? `🔄 Retry attempt ${attemptNumber} with correction prompt`
-    : 'Generating modifications with Claude Sonnet 4.5...'
+  const enhancedMessages =
+    correctionPrompt && attemptNumber > 1
+      ? [...messages, { role: 'user', content: correctionPrompt }]
+      : messages;
+
+  console.log(
+    attemptNumber > 1
+      ? `🔄 Retry attempt ${attemptNumber} with correction prompt`
+      : 'Generating modifications with Claude Sonnet 4.5...'
   );
-  
+
   // Use streaming for better handling with timeout
   const stream = await anthropic.messages.stream({
     model: modelName,
-    max_tokens: 28000,  // Match foundation phase for complex modifications
-    temperature: 1,  // Required for extended thinking
+    max_tokens: 28000, // Match foundation phase for complex modifications
+    temperature: 1, // Required for extended thinking
     thinking: {
       type: 'enabled',
-      budget_tokens: 12000  // Increased for complex modification planning
+      budget_tokens: 12000, // Increased for complex modification planning
     },
     system: [
       {
         type: 'text',
         text: systemPrompt,
-        cache_control: { type: 'ephemeral' }
-      }
+        cache_control: { type: 'ephemeral' },
+      },
     ],
-    messages: enhancedMessages
+    messages: enhancedMessages,
   });
-  
+
   // Collect the full response with timeout
   let responseText = '';
   let inputTokens = 0;
@@ -81,11 +83,13 @@ export async function generateModifications(
   let cachedTokens = 0;
   const timeout = 120000; // 120 seconds (2 minutes) - matches foundation phase
   const startTime = Date.now();
-  
+
   try {
     for await (const chunk of stream) {
       if (Date.now() - startTime > timeout) {
-        const error = new Error('AI response timeout - the modification was taking too long. Please try a simpler request or try again.') as GenerationError;
+        const error = new Error(
+          'AI response timeout - the modification was taking too long. Please try a simpler request or try again.'
+        ) as GenerationError;
         error.category = 'timeout_error';
         throw error;
       }
@@ -102,14 +106,16 @@ export async function generateModifications(
     }
   } catch (streamError) {
     console.error('Streaming error:', streamError);
-    const error = new Error(streamError instanceof Error ? streamError.message : 'Failed to receive AI response') as GenerationError;
+    const error = new Error(
+      streamError instanceof Error ? streamError.message : 'Failed to receive AI response'
+    ) as GenerationError;
     error.category = 'ai_error';
     throw error;
   }
-  
+
   console.log('Modification response length:', responseText.length, 'chars');
   console.log('Response preview:', responseText.substring(0, 500));
-  
+
   if (!responseText) {
     const error = new Error('No response from Claude') as GenerationError;
     error.category = 'ai_error';
@@ -118,14 +124,14 @@ export async function generateModifications(
 
   // Parse JSON response
   let diffResponse: any;
-  
+
   try {
     // Try to extract JSON if wrapped in markdown code blocks
     const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
     const jsonString = jsonMatch ? jsonMatch[1] : responseText;
-    
+
     diffResponse = JSON.parse(jsonString.trim());
-    
+
     // Validate response structure
     if (!diffResponse.changeType || !diffResponse.summary || !diffResponse.files) {
       const error = new Error('Invalid diff response structure') as GenerationError;
@@ -133,17 +139,16 @@ export async function generateModifications(
       error.originalResponse = responseText;
       throw error;
     }
-    
+
     console.log('Parsed diff response:', {
       changeType: diffResponse.changeType,
       summary: diffResponse.summary,
-      filesCount: diffResponse.files.length
+      filesCount: diffResponse.files.length,
     });
-    
   } catch (parseError) {
     console.error('Failed to parse diff response:', parseError);
     console.error('Response text:', responseText);
-    
+
     const error = parseError as GenerationError;
     error.category = 'parsing_error';
     error.originalResponse = responseText;
@@ -154,36 +159,39 @@ export async function generateModifications(
   // VALIDATION LAYER - Validate code snippets in diff instructions
   // ============================================================================
   console.log('🔍 Validating code snippets in modification instructions...');
-  
+
   const validationErrors: Array<{ file: string; change: number; errors: ValidationError[] }> = [];
   let totalSnippets = 0;
   let validatedSnippets = 0;
   let errorsFound = 0;
-  
+
   // Validate code snippets in each file's changes
   for (const fileDiff of diffResponse.files) {
     // Only validate .tsx/.ts/.jsx/.js files
     if (!fileDiff.path.match(/\.(tsx|ts|jsx|js)$/)) {
       continue;
     }
-    
+
     for (const [index, change] of fileDiff.changes.entries()) {
       // Collect code snippets to validate
       const snippetsToValidate: Array<{ field: string; code: string }> = [];
-      
+
       if (change.content) snippetsToValidate.push({ field: 'content', code: change.content });
-      if (change.replaceWith) snippetsToValidate.push({ field: 'replaceWith', code: change.replaceWith });
+      if (change.replaceWith)
+        snippetsToValidate.push({ field: 'replaceWith', code: change.replaceWith });
       if (change.jsx) snippetsToValidate.push({ field: 'jsx', code: change.jsx });
       if (change.body) snippetsToValidate.push({ field: 'body', code: change.body });
-      
+
       for (const { field, code } of snippetsToValidate) {
         totalSnippets++;
         const validation = await validateGeneratedCode(code, fileDiff.path);
-        
+
         if (!validation.valid) {
-          console.log(`⚠️ Found ${validation.errors.length} error(s) in ${fileDiff.path} change #${index + 1} (${field})`);
+          console.log(
+            `⚠️ Found ${validation.errors.length} error(s) in ${fileDiff.path} change #${index + 1} (${field})`
+          );
           errorsFound += validation.errors.length;
-          
+
           // Attempt auto-fix
           const fixedCode = autoFixCode(code, validation.errors);
           if (fixedCode !== code) {
@@ -193,14 +201,14 @@ export async function generateModifications(
             else if (field === 'replaceWith') change.replaceWith = fixedCode;
             else if (field === 'jsx') change.jsx = fixedCode;
             else if (field === 'body') change.body = fixedCode;
-            
+
             validatedSnippets++;
           } else {
             // Couldn't auto-fix, add to errors
             validationErrors.push({
               file: fileDiff.path,
               change: index + 1,
-              errors: validation.errors
+              errors: validation.errors,
             });
           }
         } else {
@@ -209,7 +217,7 @@ export async function generateModifications(
       }
     }
   }
-  
+
   // Log validation summary
   if (totalSnippets > 0) {
     console.log(`📊 Validation Summary:`);
@@ -218,16 +226,18 @@ export async function generateModifications(
     console.log(`   Successfully validated/fixed: ${validatedSnippets}`);
     console.log(`   Remaining issues: ${validationErrors.length}`);
   }
-  
+
   // If validation failed and we have unfixed errors, throw for retry
   if (validationErrors.length > 0 && attemptNumber === 1) {
-    const error = new Error(`Validation failed: ${validationErrors.length} issues found`) as GenerationError;
+    const error = new Error(
+      `Validation failed: ${validationErrors.length} issues found`
+    ) as GenerationError;
     error.category = 'validation_error';
     error.validationDetails = validationErrors;
     error.originalResponse = responseText;
     throw error;
   }
-  
+
   return {
     diffResponse,
     responseText,

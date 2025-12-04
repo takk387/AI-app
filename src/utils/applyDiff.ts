@@ -1,17 +1,25 @@
 /**
  * Diff Application Utility
- * 
+ *
  * Applies targeted code modifications (diffs) to existing files
  * without rewriting entire files.
- * 
+ *
  * Now supports both string-based diffs and AST-based operations.
  */
 
 import { executeASTOperation, isASTOperation, type ASTOperation } from './astExecutor';
 
 interface DiffChange {
-  type: 'ADD_IMPORT' | 'INSERT_AFTER' | 'INSERT_BEFORE' | 'REPLACE' | 'DELETE' | 'APPEND'
-      | 'AST_WRAP_ELEMENT' | 'AST_ADD_STATE' | 'AST_ADD_IMPORT';
+  type:
+    | 'ADD_IMPORT'
+    | 'INSERT_AFTER'
+    | 'INSERT_BEFORE'
+    | 'REPLACE'
+    | 'DELETE'
+    | 'APPEND'
+    | 'AST_WRAP_ELEMENT'
+    | 'AST_ADD_STATE'
+    | 'AST_ADD_IMPORT';
   line?: number;
   searchFor?: string;
   content?: string;
@@ -58,14 +66,14 @@ export async function applyDiff(
   const result: ApplyDiffResult = {
     success: true,
     modifiedFiles: [],
-    errors: []
+    errors: [],
   };
 
   // In dry-run mode, just validate without applying changes
   if (dryRun) {
     // Validate that all search patterns can be found
     for (const fileDiff of diffs) {
-      const file = currentFiles.find(f => f.path === fileDiff.path);
+      const file = currentFiles.find((f) => f.path === fileDiff.path);
       if (fileDiff.action === 'MODIFY' && !file) {
         result.errors.push(`File not found for modification: ${fileDiff.path}`);
         result.success = false;
@@ -78,7 +86,7 @@ export async function applyDiff(
 
   // Create a map of current files for easy lookup
   const fileMap = new Map<string, string>();
-  currentFiles.forEach(file => {
+  currentFiles.forEach((file) => {
     fileMap.set(file.path, file.content);
   });
 
@@ -100,7 +108,7 @@ export async function applyDiff(
 
       // MODIFY action - apply changes to existing file
       let fileContent = fileMap.get(fileDiff.path);
-      
+
       if (!fileContent) {
         result.errors.push(`File not found: ${fileDiff.path}`);
         result.success = false;
@@ -120,7 +128,6 @@ export async function applyDiff(
 
       // Update file in map
       fileMap.set(fileDiff.path, fileContent);
-      
     } catch (error) {
       const errorMsg = `Failed to process ${fileDiff.path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       result.errors.push(errorMsg);
@@ -145,27 +152,27 @@ async function applyChange(content: string, change: DiffChange): Promise<string>
   if (change.type.startsWith('AST_')) {
     return await applyASTChange(content, change);
   }
-  
+
   // Handle traditional string-based operations
   switch (change.type) {
     case 'ADD_IMPORT':
       return addImport(content, change.content || '');
-    
+
     case 'INSERT_AFTER':
       return insertAfter(content, change.searchFor || '', change.content || '');
-    
+
     case 'INSERT_BEFORE':
       return insertBefore(content, change.searchFor || '', change.content || '');
-    
+
     case 'REPLACE':
       return replace(content, change.searchFor || '', change.replaceWith || '');
-    
+
     case 'DELETE':
       return deleteCode(content, change.searchFor || '');
-    
+
     case 'APPEND':
       return append(content, change.content || '');
-    
+
     default:
       throw new Error(`Unknown change type: ${(change as any).type}`);
   }
@@ -177,7 +184,7 @@ async function applyChange(content: string, change: DiffChange): Promise<string>
 async function applyASTChange(content: string, change: DiffChange): Promise<string> {
   // Convert DiffChange to ASTOperation
   const operation: ASTOperation = change as any;
-  
+
   // Validate required fields based on operation type
   if (change.type === 'AST_WRAP_ELEMENT') {
     if (!change.targetElement || !change.wrapperComponent) {
@@ -192,15 +199,15 @@ async function applyASTChange(content: string, change: DiffChange): Promise<stri
       throw new Error('AST_ADD_IMPORT requires source');
     }
   }
-  
+
   // Execute the AST operation
   const result = await executeASTOperation(content, operation);
-  
+
   if (!result.success) {
     const errors = result.errors?.join('; ') || 'Unknown AST operation error';
     throw new Error(errors);
   }
-  
+
   return result.code || content;
 }
 
@@ -209,12 +216,12 @@ async function applyASTChange(content: string, change: DiffChange): Promise<stri
  */
 function addImport(content: string, importStatement: string): string {
   const lines = content.split('\n');
-  
+
   // Check if import already exists
   if (content.includes(importStatement.trim())) {
     return content; // Already exists, no need to add
   }
-  
+
   // Find the last import statement
   let lastImportIndex = -1;
   for (let i = 0; i < lines.length; i++) {
@@ -225,11 +232,11 @@ function addImport(content: string, importStatement: string): string {
       break;
     }
   }
-  
+
   // Insert after last import, or at the beginning if no imports
   const insertIndex = lastImportIndex !== -1 ? lastImportIndex + 1 : 0;
   lines.splice(insertIndex, 0, importStatement);
-  
+
   return lines.join('\n');
 }
 
@@ -238,22 +245,24 @@ function addImport(content: string, importStatement: string): string {
  */
 function insertAfter(content: string, searchFor: string, insertContent: string): string {
   const index = content.indexOf(searchFor);
-  
+
   if (index === -1) {
     throw new Error(`Search pattern not found: "${searchFor.substring(0, 50)}..."`);
   }
-  
+
   // Find the end of the line containing the search pattern
   const endOfLine = content.indexOf('\n', index + searchFor.length);
   const insertPosition = endOfLine !== -1 ? endOfLine + 1 : content.length;
-  
+
   // Handle escaped newlines in insertContent
   const processedContent = insertContent.replace(/\\n/g, '\n');
-  
-  return content.substring(0, insertPosition) + 
-         processedContent + 
-         (processedContent.endsWith('\n') ? '' : '\n') +
-         content.substring(insertPosition);
+
+  return (
+    content.substring(0, insertPosition) +
+    processedContent +
+    (processedContent.endsWith('\n') ? '' : '\n') +
+    content.substring(insertPosition)
+  );
 }
 
 /**
@@ -261,21 +270,23 @@ function insertAfter(content: string, searchFor: string, insertContent: string):
  */
 function insertBefore(content: string, searchFor: string, insertContent: string): string {
   const index = content.indexOf(searchFor);
-  
+
   if (index === -1) {
     throw new Error(`Search pattern not found: "${searchFor.substring(0, 50)}..."`);
   }
-  
+
   // Find the start of the line containing the search pattern
   let startOfLine = content.lastIndexOf('\n', index - 1) + 1;
-  
+
   // Handle escaped newlines in insertContent
   const processedContent = insertContent.replace(/\\n/g, '\n');
-  
-  return content.substring(0, startOfLine) + 
-         processedContent + 
-         (processedContent.endsWith('\n') ? '' : '\n') +
-         content.substring(startOfLine);
+
+  return (
+    content.substring(0, startOfLine) +
+    processedContent +
+    (processedContent.endsWith('\n') ? '' : '\n') +
+    content.substring(startOfLine)
+  );
 }
 
 /**
@@ -285,10 +296,10 @@ function replace(content: string, searchFor: string, replaceWith: string): strin
   if (!content.includes(searchFor)) {
     throw new Error(`Search pattern not found: "${searchFor.substring(0, 50)}..."`);
   }
-  
+
   // Handle escaped characters
   const processedReplaceWith = replaceWith.replace(/\\n/g, '\n');
-  
+
   // Replace first occurrence only (for safety)
   return content.replace(searchFor, processedReplaceWith);
 }
@@ -298,16 +309,16 @@ function replace(content: string, searchFor: string, replaceWith: string): strin
  */
 function deleteCode(content: string, searchFor: string): string {
   const index = content.indexOf(searchFor);
-  
+
   if (index === -1) {
     throw new Error(`Search pattern not found: "${searchFor.substring(0, 50)}..."`);
   }
-  
+
   // Find the start and end of the line(s) to delete
   const startOfLine = content.lastIndexOf('\n', index - 1) + 1;
   const endOfLine = content.indexOf('\n', index + searchFor.length);
   const deleteEnd = endOfLine !== -1 ? endOfLine + 1 : content.length;
-  
+
   return content.substring(0, startOfLine) + content.substring(deleteEnd);
 }
 
@@ -317,10 +328,10 @@ function deleteCode(content: string, searchFor: string): string {
 function append(content: string, appendContent: string): string {
   // Handle escaped newlines
   const processedContent = appendContent.replace(/\\n/g, '\n');
-  
+
   // Ensure there's a newline before appending if content doesn't end with one
   const separator = content.endsWith('\n') ? '' : '\n';
-  
+
   return content + separator + processedContent;
 }
 
@@ -330,12 +341,14 @@ function append(content: string, appendContent: string): string {
 export async function previewDiff(
   currentFiles: Array<{ path: string; content: string }>,
   diffs: FileDiff[]
-): Promise<{
-  path: string;
-  before: string;
-  after: string;
-  changes: Array<{ type: string; description: string }>;
-}[]> {
+): Promise<
+  {
+    path: string;
+    before: string;
+    after: string;
+    changes: Array<{ type: string; description: string }>;
+  }[]
+> {
   const previews: Array<{
     path: string;
     before: string;
@@ -346,18 +359,18 @@ export async function previewDiff(
   const result = await applyDiff(currentFiles, diffs, true);
 
   for (const modifiedFile of result.modifiedFiles) {
-    const originalFile = currentFiles.find(f => f.path === modifiedFile.path);
-    const diff = diffs.find(d => d.path === modifiedFile.path);
-    
+    const originalFile = currentFiles.find((f) => f.path === modifiedFile.path);
+    const diff = diffs.find((d) => d.path === modifiedFile.path);
+
     if (originalFile && diff) {
       previews.push({
         path: modifiedFile.path,
         before: originalFile.content,
         after: modifiedFile.content,
-        changes: diff.changes.map(change => ({
+        changes: diff.changes.map((change) => ({
           type: change.type,
-          description: getChangeDescription(change)
-        }))
+          description: getChangeDescription(change),
+        })),
       });
     }
   }

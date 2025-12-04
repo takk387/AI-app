@@ -52,10 +52,7 @@ export function guessSourceFiles(
 /**
  * Guess file paths from component name
  */
-function guessFromComponentName(
-  componentName: string,
-  config: SourceFileGuessConfig
-): string[] {
+function guessFromComponentName(componentName: string, config: SourceFileGuessConfig): string[] {
   const guesses: string[] = [];
 
   // Known feature folders in this codebase
@@ -87,10 +84,7 @@ function guessFromComponentName(
 /**
  * Guess file paths from class name
  */
-function guessFromClassName(
-  className: string,
-  config: SourceFileGuessConfig
-): string[] {
+function guessFromClassName(className: string, config: SourceFileGuessConfig): string[] {
   const guesses: string[] = [];
 
   // Skip utility/generic classes
@@ -114,9 +108,6 @@ function guessFromClassName(
 /**
  * Guess file paths from element ID
  */
-function guessFromElementId(
-  elementId: string,
-  config: SourceFileGuessConfig
-): string[] {
+function guessFromElementId(elementId: string, config: SourceFileGuessConfig): string[] {
   return guessFromClassName(elementId, config);
 }

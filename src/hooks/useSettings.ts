@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
 import { useSettingsContext } from '@/contexts/SettingsContext';
-import type { 
-  AppSettings, 
+import type {
+  AppSettings,
   SettingsSection,
   GeneralSettings,
   EditorSettings,
@@ -16,7 +16,7 @@ import type {
 export interface UseSettings {
   settings: AppSettings;
   isLoading: boolean;
-  
+
   // Update functions
   updateGeneralSettings: (updates: Partial<GeneralSettings>) => void;
   updateEditorSettings: (updates: Partial<EditorSettings>) => void;
@@ -26,7 +26,7 @@ export interface UseSettings {
   updateAppearanceSettings: (updates: Partial<ThemeSettings>) => void;
   updateShortcut: (shortcutId: string, keys: string) => void;
   updateAccountSettings: (updates: Partial<AccountSettings>) => void;
-  
+
   // Bulk operations
   resetSettings: () => void;
   resetSection: (section: SettingsSection) => void;
@@ -37,7 +37,7 @@ export interface UseSettings {
 
 /**
  * Custom hook for accessing and controlling application settings.
- * 
+ *
  * @returns {UseSettings} Object containing:
  *   - settings: Current app settings
  *   - isLoading: Whether settings are being loaded
@@ -54,14 +54,14 @@ export interface UseSettings {
  *   - exportSettingsToJson: Function to export settings as JSON
  *   - importSettingsFromJson: Function to import settings from JSON
  *   - downloadSettingsFile: Function to download settings as a file
- * 
+ *
  * @example
  * ```tsx
  * const { settings, updateEditorSettings, resetSettings } = useSettings();
- * 
+ *
  * // Update editor font size
  * updateEditorSettings({ fontSize: 16 });
- * 
+ *
  * // Reset all settings
  * resetSettings();
  * ```

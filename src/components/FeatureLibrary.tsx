@@ -26,7 +26,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Secure email/password login with session management',
     priority: 'high',
     category: 'Authentication',
-    icon: '🔐'
+    icon: '🔐',
   },
   {
     id: 'auth-signup',
@@ -34,7 +34,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'New user signup with email verification',
     priority: 'high',
     category: 'Authentication',
-    icon: '📝'
+    icon: '📝',
   },
   {
     id: 'auth-oauth',
@@ -42,7 +42,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Login with Google, GitHub, or other providers',
     priority: 'medium',
     category: 'Authentication',
-    icon: '🔗'
+    icon: '🔗',
   },
   {
     id: 'auth-password-reset',
@@ -50,7 +50,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Forgot password flow with email recovery',
     priority: 'high',
     category: 'Authentication',
-    icon: '🔄'
+    icon: '🔄',
   },
   {
     id: 'auth-2fa',
@@ -58,7 +58,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Additional security with 2FA verification',
     priority: 'low',
     category: 'Authentication',
-    icon: '🛡️'
+    icon: '🛡️',
   },
 
   // Data Management
@@ -68,7 +68,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Create, read, update, and delete data records',
     priority: 'high',
     category: 'Data Management',
-    icon: '📊'
+    icon: '📊',
   },
   {
     id: 'data-search',
@@ -76,7 +76,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Search functionality with advanced filters',
     priority: 'high',
     category: 'Data Management',
-    icon: '🔍'
+    icon: '🔍',
   },
   {
     id: 'data-sort',
@@ -84,7 +84,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Data sorting with paginated results',
     priority: 'medium',
     category: 'Data Management',
-    icon: '📑'
+    icon: '📑',
   },
   {
     id: 'data-export',
@@ -92,7 +92,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Export data to CSV, Excel, or PDF',
     priority: 'low',
     category: 'Data Management',
-    icon: '📤'
+    icon: '📤',
   },
   {
     id: 'data-import',
@@ -100,7 +100,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Bulk import data from files',
     priority: 'low',
     category: 'Data Management',
-    icon: '📥'
+    icon: '📥',
   },
 
   // User Experience
@@ -110,7 +110,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Toggle between light and dark themes',
     priority: 'medium',
     category: 'User Experience',
-    icon: '🌙'
+    icon: '🌙',
   },
   {
     id: 'ux-responsive',
@@ -118,7 +118,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Mobile-first responsive layout',
     priority: 'high',
     category: 'User Experience',
-    icon: '📱'
+    icon: '📱',
   },
   {
     id: 'ux-loading',
@@ -126,7 +126,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Skeleton loaders and progress indicators',
     priority: 'medium',
     category: 'User Experience',
-    icon: '⏳'
+    icon: '⏳',
   },
   {
     id: 'ux-keyboard',
@@ -134,7 +134,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Power user keyboard navigation',
     priority: 'low',
     category: 'User Experience',
-    icon: '⌨️'
+    icon: '⌨️',
   },
   {
     id: 'ux-accessibility',
@@ -142,7 +142,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'WCAG compliant accessible design',
     priority: 'medium',
     category: 'User Experience',
-    icon: '♿'
+    icon: '♿',
   },
 
   // Communication
@@ -152,7 +152,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Real-time notification system',
     priority: 'medium',
     category: 'Communication',
-    icon: '🔔'
+    icon: '🔔',
   },
   {
     id: 'comm-email',
@@ -160,7 +160,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Transactional and marketing emails',
     priority: 'medium',
     category: 'Communication',
-    icon: '📧'
+    icon: '📧',
   },
   {
     id: 'comm-chat',
@@ -168,7 +168,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Live messaging between users',
     priority: 'medium',
     category: 'Communication',
-    icon: '💬'
+    icon: '💬',
   },
   {
     id: 'comm-comments',
@@ -176,7 +176,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Threaded commenting system',
     priority: 'medium',
     category: 'Communication',
-    icon: '💭'
+    icon: '💭',
   },
 
   // E-commerce
@@ -186,7 +186,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Add to cart with quantity management',
     priority: 'high',
     category: 'E-commerce',
-    icon: '🛒'
+    icon: '🛒',
   },
   {
     id: 'ecom-checkout',
@@ -194,7 +194,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Multi-step checkout process',
     priority: 'high',
     category: 'E-commerce',
-    icon: '💳'
+    icon: '💳',
   },
   {
     id: 'ecom-inventory',
@@ -202,7 +202,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Track stock levels and availability',
     priority: 'medium',
     category: 'E-commerce',
-    icon: '📦'
+    icon: '📦',
   },
   {
     id: 'ecom-wishlist',
@@ -210,7 +210,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Save items for later purchase',
     priority: 'low',
     category: 'E-commerce',
-    icon: '❤️'
+    icon: '❤️',
   },
 
   // Analytics
@@ -220,7 +220,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Visual metrics and KPI tracking',
     priority: 'medium',
     category: 'Analytics',
-    icon: '📈'
+    icon: '📈',
   },
   {
     id: 'analytics-charts',
@@ -228,7 +228,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Interactive data visualizations',
     priority: 'medium',
     category: 'Analytics',
-    icon: '📊'
+    icon: '📊',
   },
   {
     id: 'analytics-reports',
@@ -236,7 +236,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Automated report creation',
     priority: 'low',
     category: 'Analytics',
-    icon: '📋'
+    icon: '📋',
   },
 
   // Social
@@ -246,7 +246,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Customizable user profile pages',
     priority: 'high',
     category: 'Social',
-    icon: '👤'
+    icon: '👤',
   },
   {
     id: 'social-follow',
@@ -254,7 +254,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Social following system',
     priority: 'medium',
     category: 'Social',
-    icon: '👥'
+    icon: '👥',
   },
   {
     id: 'social-feed',
@@ -262,7 +262,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Timeline of user activities',
     priority: 'medium',
     category: 'Social',
-    icon: '📰'
+    icon: '📰',
   },
   {
     id: 'social-share',
@@ -270,7 +270,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Share content to social platforms',
     priority: 'low',
     category: 'Social',
-    icon: '🔗'
+    icon: '🔗',
   },
 
   // Content
@@ -280,7 +280,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'WYSIWYG content editor',
     priority: 'medium',
     category: 'Content',
-    icon: '✏️'
+    icon: '✏️',
   },
   {
     id: 'content-media',
@@ -288,7 +288,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Image and video gallery',
     priority: 'medium',
     category: 'Content',
-    icon: '🖼️'
+    icon: '🖼️',
   },
   {
     id: 'content-upload',
@@ -296,7 +296,7 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Drag-and-drop file uploads',
     priority: 'medium',
     category: 'Content',
-    icon: '📁'
+    icon: '📁',
   },
   {
     id: 'content-markdown',
@@ -304,16 +304,14 @@ const featureTemplates: FeatureTemplate[] = [
     description: 'Markdown content rendering',
     priority: 'low',
     category: 'Content',
-    icon: '📝'
-  }
+    icon: '📝',
+  },
 ];
 
 /**
  * Get unique categories from templates
  */
-const categories = Array.from(
-  new Set(featureTemplates.map((t) => t.category))
-);
+const categories = Array.from(new Set(featureTemplates.map((t) => t.category)));
 
 /**
  * FeatureLibrary component
@@ -329,7 +327,7 @@ export function FeatureLibrary({
   isOpen,
   onClose,
   onSelectFeature,
-  existingFeatureNames = []
+  existingFeatureNames = [],
 }: FeatureLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -343,8 +341,7 @@ export function FeatureLibrary({
         template.description.toLowerCase().includes(searchQuery.toLowerCase());
 
       // Filter by category
-      const matchesCategory =
-        selectedCategory === null || template.category === selectedCategory;
+      const matchesCategory = selectedCategory === null || template.category === selectedCategory;
 
       // Exclude already added features
       const notAdded = !existingFeatureNames.some(
@@ -359,7 +356,7 @@ export function FeatureLibrary({
     onSelectFeature({
       name: template.name,
       description: template.description,
-      priority: template.priority
+      priority: template.priority,
     });
   };
 
@@ -388,10 +385,7 @@ export function FeatureLibrary({
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -471,16 +465,14 @@ export function FeatureLibrary({
                             template.priority === 'high'
                               ? 'bg-red-500/20 text-red-300'
                               : template.priority === 'medium'
-                              ? 'bg-yellow-500/20 text-yellow-300'
-                              : 'bg-green-500/20 text-green-300'
+                                ? 'bg-yellow-500/20 text-yellow-300'
+                                : 'bg-green-500/20 text-green-300'
                           }`}
                         >
                           {template.priority}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 line-clamp-2">
-                        {template.description}
-                      </p>
+                      <p className="text-xs text-slate-400 line-clamp-2">{template.description}</p>
                       <p className="text-xs text-purple-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         Click to add →
                       </p>

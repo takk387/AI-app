@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import type { BuildPhase, PhaseId, BuildProgress } from '../../types/buildPhases';
@@ -69,9 +69,9 @@ export function PhaseProgressIndicator({
 
   // Render compact view for many phases
   const renderCompactView = () => {
-    const completedCount = phases.filter(p => p.status === 'completed').length;
-    const inProgressPhase = phases.find(p => p.status === 'in-progress');
-    const pendingCount = phases.filter(p => p.status === 'pending').length;
+    const completedCount = phases.filter((p) => p.status === 'completed').length;
+    const inProgressPhase = phases.find((p) => p.status === 'in-progress');
+    const pendingCount = phases.filter((p) => p.status === 'pending').length;
 
     return (
       <div className="space-y-3">
@@ -79,7 +79,9 @@ export function PhaseProgressIndicator({
         <div className="flex items-center gap-4 text-sm">
           <span className="text-green-400">✅ {completedCount} done</span>
           {inProgressPhase && (
-            <span className="text-blue-400">⏳ Phase {inProgressPhase.order}: {inProgressPhase.name}</span>
+            <span className="text-blue-400">
+              ⏳ Phase {inProgressPhase.order}: {inProgressPhase.name}
+            </span>
           )}
           <span className="text-slate-400">⏸️ {pendingCount} pending</span>
         </div>
@@ -163,29 +165,20 @@ export function PhaseProgressIndicator({
 
               {/* Phase Info */}
               <div className="mt-3 text-center">
-                <div className="text-xs font-medium text-white">
-                  Phase {phase.order}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">
-                  {phase.name}
-                </div>
+                <div className="text-xs font-medium text-white">Phase {phase.order}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{phase.name}</div>
               </div>
 
               {/* Hover Tooltip */}
               <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-48 p-3 bg-slate-800 rounded-lg border border-white/10 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                <div className="text-sm font-medium text-white mb-1">
-                  {phase.name}
-                </div>
-                <div className="text-xs text-slate-400 mb-2">
-                  {phase.description}
-                </div>
-                <div className="text-xs text-slate-500">
-                  Est. time: {phase.estimatedTime}
-                </div>
+                <div className="text-sm font-medium text-white mb-1">{phase.name}</div>
+                <div className="text-xs text-slate-400 mb-2">{phase.description}</div>
+                <div className="text-xs text-slate-500">Est. time: {phase.estimatedTime}</div>
                 {phase.tasks.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-white/10">
                     <div className="text-xs text-slate-500">
-                      {phase.tasks.filter((t) => t.status === 'completed').length}/{phase.tasks.length} tasks
+                      {phase.tasks.filter((t) => t.status === 'completed').length}/
+                      {phase.tasks.length} tasks
                     </div>
                   </div>
                 )}
@@ -205,18 +198,12 @@ export function PhaseProgressIndicator({
           <span>🏗️</span>
           <span>Build Progress</span>
           {usesCompactMode && (
-            <span className="text-xs font-normal text-slate-400">
-              ({phases.length} phases)
-            </span>
+            <span className="text-xs font-normal text-slate-400">({phases.length} phases)</span>
           )}
         </h3>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-slate-400">
-            {progress.percentComplete}% Complete
-          </div>
-          <div className="text-xs text-slate-500">
-            ~{progress.estimatedTimeRemaining} remaining
-          </div>
+          <div className="text-sm text-slate-400">{progress.percentComplete}% Complete</div>
+          <div className="text-xs text-slate-500">~{progress.estimatedTimeRemaining} remaining</div>
         </div>
       </div>
 

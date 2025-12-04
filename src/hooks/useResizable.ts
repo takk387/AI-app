@@ -21,7 +21,10 @@ export interface UseResizableReturn {
   setSizes: (sizes: number[]) => void;
   isDragging: boolean;
   activeIndex: number | null;
-  startResize: (index: number, event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) => void;
+  startResize: (
+    index: number,
+    event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent
+  ) => void;
   handleResize: (event: MouseEvent | TouchEvent) => void;
   stopResize: () => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -72,12 +75,12 @@ export function useResizable({
       savePanelLayout(sizesToSave, { key });
     }, 100); // Short delay since savePanelLayout already debounces
   }, []);
-  
+
   // Initialize sizes from persistence or defaults
-  const initialSizes = persistenceKey 
-    ? loadPanelLayout({ key: persistenceKey }) || defaultSizes 
+  const initialSizes = persistenceKey
+    ? loadPanelLayout({ key: persistenceKey }) || defaultSizes
     : defaultSizes;
-  
+
   const [sizes, setSizesState] = useState<number[]>(normalizeSizes(initialSizes));
   const [isDragging, setIsDragging] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -94,135 +97,143 @@ export function useResizable({
   latestSizesRef.current = sizes;
 
   // Set sizes and trigger callbacks
-  const setSizes = useCallback((newSizes: number[]) => {
-    const normalized = normalizeSizes(newSizes);
-    setSizesState(normalized);
-    onLayoutChange?.(normalized);
-    if (persistenceKey) {
-      persistSizesDebounced(persistenceKey, normalized);
-    }
-  }, [onLayoutChange, persistenceKey, persistSizesDebounced]);
+  const setSizes = useCallback(
+    (newSizes: number[]) => {
+      const normalized = normalizeSizes(newSizes);
+      setSizesState(normalized);
+      onLayoutChange?.(normalized);
+      if (persistenceKey) {
+        persistSizesDebounced(persistenceKey, normalized);
+      }
+    },
+    [onLayoutChange, persistenceKey, persistSizesDebounced]
+  );
 
   // Start resize operation
-  const startResize = useCallback((
-    index: number, 
-    event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent
-  ) => {
-    // Handle keyboard events for accessibility
-    if ('key' in event) {
-      const step = 5; // 5% step for keyboard navigation
-      const newSizes = [...sizes];
-      
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        // Decrease left/top panel, increase right/bottom panel
-        const decrease = Math.min(step, newSizes[index] - (minSizes[index] || 5));
-        if (decrease > 0) {
-          newSizes[index] -= decrease;
-          newSizes[index + 1] = (newSizes[index + 1] || 0) + decrease;
-          setSizes(newSizes);
-        }
-      } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-        event.preventDefault();
-        // Increase left/top panel, decrease right/bottom panel
-        const maxAllowed = maxSizes[index] || 95;
-        const increase = Math.min(step, maxAllowed - newSizes[index], (newSizes[index + 1] || 0) - (minSizes[index + 1] || 5));
-        if (increase > 0) {
-          newSizes[index] += increase;
-          newSizes[index + 1] = (newSizes[index + 1] || 0) - increase;
-          setSizes(newSizes);
-        }
-      } else if (event.key === 'Home') {
-        event.preventDefault();
-        // Collapse to minimum
-        const minSize = minSizes[index] || 5;
-        const diff = newSizes[index] - minSize;
-        newSizes[index] = minSize;
-        newSizes[index + 1] = (newSizes[index + 1] || 0) + diff;
-        setSizes(newSizes);
-      } else if (event.key === 'End') {
-        event.preventDefault();
-        // Expand to maximum
-        const maxSize = maxSizes[index] || 95;
-        const diff = maxSize - newSizes[index];
-        const availableFromNext = (newSizes[index + 1] || 0) - (minSizes[index + 1] || 5);
-        const actualDiff = Math.min(diff, availableFromNext);
-        newSizes[index] += actualDiff;
-        newSizes[index + 1] = (newSizes[index + 1] || 0) - actualDiff;
-        setSizes(newSizes);
-      }
-      return;
-    }
+  const startResize = useCallback(
+    (index: number, event: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) => {
+      // Handle keyboard events for accessibility
+      if ('key' in event) {
+        const step = 5; // 5% step for keyboard navigation
+        const newSizes = [...sizes];
 
-    event.preventDefault();
-    // Set both state and refs - refs are used in event handlers to avoid stale closures
-    setIsDragging(true);
-    setActiveIndex(index);
-    isDraggingRef.current = true;
-    activeIndexRef.current = index;
-    startPositionRef.current = getPositionFromEvent(event, direction);
-    startSizesRef.current = [...sizes];
-  }, [sizes, setSizes, direction, minSizes, maxSizes]);
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          // Decrease left/top panel, increase right/bottom panel
+          const decrease = Math.min(step, newSizes[index] - (minSizes[index] || 5));
+          if (decrease > 0) {
+            newSizes[index] -= decrease;
+            newSizes[index + 1] = (newSizes[index + 1] || 0) + decrease;
+            setSizes(newSizes);
+          }
+        } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          event.preventDefault();
+          // Increase left/top panel, decrease right/bottom panel
+          const maxAllowed = maxSizes[index] || 95;
+          const increase = Math.min(
+            step,
+            maxAllowed - newSizes[index],
+            (newSizes[index + 1] || 0) - (minSizes[index + 1] || 5)
+          );
+          if (increase > 0) {
+            newSizes[index] += increase;
+            newSizes[index + 1] = (newSizes[index + 1] || 0) - increase;
+            setSizes(newSizes);
+          }
+        } else if (event.key === 'Home') {
+          event.preventDefault();
+          // Collapse to minimum
+          const minSize = minSizes[index] || 5;
+          const diff = newSizes[index] - minSize;
+          newSizes[index] = minSize;
+          newSizes[index + 1] = (newSizes[index + 1] || 0) + diff;
+          setSizes(newSizes);
+        } else if (event.key === 'End') {
+          event.preventDefault();
+          // Expand to maximum
+          const maxSize = maxSizes[index] || 95;
+          const diff = maxSize - newSizes[index];
+          const availableFromNext = (newSizes[index + 1] || 0) - (minSizes[index + 1] || 5);
+          const actualDiff = Math.min(diff, availableFromNext);
+          newSizes[index] += actualDiff;
+          newSizes[index + 1] = (newSizes[index + 1] || 0) - actualDiff;
+          setSizes(newSizes);
+        }
+        return;
+      }
+
+      event.preventDefault();
+      // Set both state and refs - refs are used in event handlers to avoid stale closures
+      setIsDragging(true);
+      setActiveIndex(index);
+      isDraggingRef.current = true;
+      activeIndexRef.current = index;
+      startPositionRef.current = getPositionFromEvent(event, direction);
+      startSizesRef.current = [...sizes];
+    },
+    [sizes, setSizes, direction, minSizes, maxSizes]
+  );
 
   // Handle resize during drag - uses refs to avoid stale closure issues
-  const handleResize = useCallback((event: MouseEvent | TouchEvent) => {
-    // Use refs instead of state to get current values in event handlers
-    const currentActiveIndex = activeIndexRef.current;
-    if (!isDraggingRef.current || currentActiveIndex === null || !containerRef.current) return;
+  const handleResize = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      // Use refs instead of state to get current values in event handlers
+      const currentActiveIndex = activeIndexRef.current;
+      if (!isDraggingRef.current || currentActiveIndex === null || !containerRef.current) return;
 
-    const container = containerRef.current;
-    const containerRect = container.getBoundingClientRect();
-    const containerSize = direction === 'horizontal'
-      ? containerRect.width
-      : containerRect.height;
+      const container = containerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const containerSize = direction === 'horizontal' ? containerRect.width : containerRect.height;
 
-    const currentPosition = getPositionFromEvent(event, direction);
-    const delta = currentPosition - startPositionRef.current;
-    const deltaPercent = (delta / containerSize) * 100;
+      const currentPosition = getPositionFromEvent(event, direction);
+      const delta = currentPosition - startPositionRef.current;
+      const deltaPercent = (delta / containerSize) * 100;
 
-    const newSizes = [...startSizesRef.current];
+      const newSizes = [...startSizesRef.current];
 
-    // Calculate new sizes for the two adjacent panels
-    let newLeftSize = newSizes[currentActiveIndex] + deltaPercent;
-    let newRightSize = (newSizes[currentActiveIndex + 1] || 0) - deltaPercent;
+      // Calculate new sizes for the two adjacent panels
+      let newLeftSize = newSizes[currentActiveIndex] + deltaPercent;
+      let newRightSize = (newSizes[currentActiveIndex + 1] || 0) - deltaPercent;
 
-    // Apply min/max constraints
-    const minLeft = minSizes[currentActiveIndex] || 5;
-    const maxLeft = maxSizes[currentActiveIndex] || 95;
-    const minRight = minSizes[currentActiveIndex + 1] || 5;
-    const maxRight = maxSizes[currentActiveIndex + 1] || 95;
+      // Apply min/max constraints
+      const minLeft = minSizes[currentActiveIndex] || 5;
+      const maxLeft = maxSizes[currentActiveIndex] || 95;
+      const minRight = minSizes[currentActiveIndex + 1] || 5;
+      const maxRight = maxSizes[currentActiveIndex + 1] || 95;
 
-    // Constrain left panel
-    if (newLeftSize < minLeft) {
-      const diff = minLeft - newLeftSize;
-      newLeftSize = minLeft;
-      newRightSize += diff;
-    } else if (newLeftSize > maxLeft) {
-      const diff = newLeftSize - maxLeft;
-      newLeftSize = maxLeft;
-      newRightSize += diff;
-    }
+      // Constrain left panel
+      if (newLeftSize < minLeft) {
+        const diff = minLeft - newLeftSize;
+        newLeftSize = minLeft;
+        newRightSize += diff;
+      } else if (newLeftSize > maxLeft) {
+        const diff = newLeftSize - maxLeft;
+        newLeftSize = maxLeft;
+        newRightSize += diff;
+      }
 
-    // Constrain right panel
-    if (newRightSize < minRight) {
-      const diff = minRight - newRightSize;
-      newRightSize = minRight;
-      newLeftSize -= diff;
-    } else if (newRightSize > maxRight) {
-      const diff = newRightSize - maxRight;
-      newRightSize = maxRight;
-      newLeftSize += diff;
-    }
+      // Constrain right panel
+      if (newRightSize < minRight) {
+        const diff = minRight - newRightSize;
+        newRightSize = minRight;
+        newLeftSize -= diff;
+      } else if (newRightSize > maxRight) {
+        const diff = newRightSize - maxRight;
+        newRightSize = maxRight;
+        newLeftSize += diff;
+      }
 
-    // Final boundary check
-    newLeftSize = Math.max(minLeft, Math.min(maxLeft, newLeftSize));
-    newRightSize = Math.max(minRight, Math.min(maxRight, newRightSize));
+      // Final boundary check
+      newLeftSize = Math.max(minLeft, Math.min(maxLeft, newLeftSize));
+      newRightSize = Math.max(minRight, Math.min(maxRight, newRightSize));
 
-    newSizes[currentActiveIndex] = newLeftSize;
-    newSizes[currentActiveIndex + 1] = newRightSize;
+      newSizes[currentActiveIndex] = newLeftSize;
+      newSizes[currentActiveIndex + 1] = newRightSize;
 
-    setSizesState(newSizes);
-  }, [direction, minSizes, maxSizes]);
+      setSizesState(newSizes);
+    },
+    [direction, minSizes, maxSizes]
+  );
 
   // Stop resize operation - uses ref to get latest sizes to avoid stale closures
   const stopResize = useCallback(() => {
@@ -241,48 +252,54 @@ export function useResizable({
   }, [onLayoutChange, persistenceKey, persistSizesDebounced]);
 
   // Collapse a panel (store current size and minimize)
-  const collapsePanel = useCallback((index: number) => {
-    const currentSize = sizes[index];
-    const minSize = minSizes[index] || 5;
-    
-    if (currentSize > minSize) {
-      collapsedSizesRef.current.set(index, currentSize);
-      const newSizes = [...sizes];
-      const diff = currentSize - minSize;
-      newSizes[index] = minSize;
-      
-      // Distribute the freed space to adjacent panels
-      if (index + 1 < newSizes.length) {
-        newSizes[index + 1] += diff;
-      } else if (index > 0) {
-        newSizes[index - 1] += diff;
+  const collapsePanel = useCallback(
+    (index: number) => {
+      const currentSize = sizes[index];
+      const minSize = minSizes[index] || 5;
+
+      if (currentSize > minSize) {
+        collapsedSizesRef.current.set(index, currentSize);
+        const newSizes = [...sizes];
+        const diff = currentSize - minSize;
+        newSizes[index] = minSize;
+
+        // Distribute the freed space to adjacent panels
+        if (index + 1 < newSizes.length) {
+          newSizes[index + 1] += diff;
+        } else if (index > 0) {
+          newSizes[index - 1] += diff;
+        }
+
+        setSizes(newSizes);
       }
-      
-      setSizes(newSizes);
-    }
-  }, [sizes, setSizes, minSizes]);
+    },
+    [sizes, setSizes, minSizes]
+  );
 
   // Expand a previously collapsed panel
-  const expandPanel = useCallback((index: number) => {
-    const savedSize = collapsedSizesRef.current.get(index);
-    if (savedSize !== undefined) {
-      const newSizes = [...sizes];
-      const currentSize = sizes[index];
-      const diff = savedSize - currentSize;
-      
-      newSizes[index] = savedSize;
-      
-      // Take space from adjacent panels
-      if (index + 1 < newSizes.length) {
-        const available = newSizes[index + 1] - (minSizes[index + 1] || 5);
-        const take = Math.min(diff, available);
-        newSizes[index + 1] -= take;
+  const expandPanel = useCallback(
+    (index: number) => {
+      const savedSize = collapsedSizesRef.current.get(index);
+      if (savedSize !== undefined) {
+        const newSizes = [...sizes];
+        const currentSize = sizes[index];
+        const diff = savedSize - currentSize;
+
+        newSizes[index] = savedSize;
+
+        // Take space from adjacent panels
+        if (index + 1 < newSizes.length) {
+          const available = newSizes[index + 1] - (minSizes[index + 1] || 5);
+          const take = Math.min(diff, available);
+          newSizes[index + 1] -= take;
+        }
+
+        collapsedSizesRef.current.delete(index);
+        setSizes(normalizeSizes(newSizes));
       }
-      
-      collapsedSizesRef.current.delete(index);
-      setSizes(normalizeSizes(newSizes));
-    }
-  }, [sizes, setSizes, minSizes]);
+    },
+    [sizes, setSizes, minSizes]
+  );
 
   // Add and remove event listeners
   useEffect(() => {
@@ -291,11 +308,11 @@ export function useResizable({
         e.preventDefault();
         handleResize(e);
       };
-      
+
       const handleTouchMove = (e: TouchEvent) => {
         handleResize(e);
       };
-      
+
       const handleMouseUp = () => stopResize();
       const handleTouchEnd = () => stopResize();
 

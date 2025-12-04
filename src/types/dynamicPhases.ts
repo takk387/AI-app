@@ -5,7 +5,13 @@
  * feature count, and domain grouping. Replaces the fixed 5-phase system.
  */
 
-import type { AppConcept, Feature, TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
+import type {
+  AppConcept,
+  Feature,
+  TechnicalRequirements,
+  UIPreferences,
+  UserRole,
+} from '@/types/appConcept';
 
 // ============================================================================
 // FEATURE CLASSIFICATION
@@ -16,23 +22,23 @@ import type { AppConcept, Feature, TechnicalRequirements, UIPreferences, UserRol
  * Each domain may become its own phase or be grouped with related domains
  */
 export type FeatureDomain =
-  | 'setup'           // Project structure, config, dependencies
-  | 'database'        // Schema, ORM, migrations, seed data
-  | 'auth'            // Authentication, authorization, sessions
-  | 'core-entity'     // Main business objects (products, orders, users)
-  | 'feature'         // Standard app features
-  | 'ui-component'    // Reusable UI components
-  | 'integration'     // External services (Stripe, Firebase, APIs)
-  | 'real-time'       // WebSocket, live updates, subscriptions
-  | 'storage'         // File upload, media handling, CDN
-  | 'notification'    // Push, email, in-app notifications
-  | 'offline'         // Offline support, sync, local storage
-  | 'search'          // Search, filtering, indexing
-  | 'analytics'       // Tracking, dashboards, reporting
-  | 'admin'           // Admin panels, moderation tools
-  | 'ui-role'         // Role-specific dashboards/views
-  | 'testing'         // Test setup, fixtures, mocks
-  | 'polish';         // Animations, UX refinements, documentation
+  | 'setup' // Project structure, config, dependencies
+  | 'database' // Schema, ORM, migrations, seed data
+  | 'auth' // Authentication, authorization, sessions
+  | 'core-entity' // Main business objects (products, orders, users)
+  | 'feature' // Standard app features
+  | 'ui-component' // Reusable UI components
+  | 'integration' // External services (Stripe, Firebase, APIs)
+  | 'real-time' // WebSocket, live updates, subscriptions
+  | 'storage' // File upload, media handling, CDN
+  | 'notification' // Push, email, in-app notifications
+  | 'offline' // Offline support, sync, local storage
+  | 'search' // Search, filtering, indexing
+  | 'analytics' // Tracking, dashboards, reporting
+  | 'admin' // Admin panels, moderation tools
+  | 'ui-role' // Role-specific dashboards/views
+  | 'testing' // Test setup, fixtures, mocks
+  | 'polish'; // Animations, UX refinements, documentation
 
 /**
  * Classification result for a single feature
@@ -44,8 +50,8 @@ export interface FeatureClassification {
   estimatedTokens: number;
   requiresOwnPhase: boolean;
   suggestedPhaseName: string;
-  dependencies: string[];  // Names of features this depends on
-  keywords: string[];      // Keywords that triggered this classification
+  dependencies: string[]; // Names of features this depends on
+  keywords: string[]; // Keywords that triggered this classification
 }
 
 /**
@@ -74,7 +80,10 @@ export interface PhaseConceptContext {
   uiPreferences?: UIPreferences;
   roles?: UserRole[];
   conversationContext?: string;
-  dataModels?: Array<{ name: string; fields: Array<{ name: string; type: string; required: boolean }> }>;
+  dataModels?: Array<{
+    name: string;
+    fields: Array<{ name: string; type: string; required: boolean }>;
+  }>;
 }
 
 /**
@@ -89,8 +98,8 @@ export interface DynamicPhase {
   featureDetails: FeatureClassification[];
   estimatedTokens: number;
   estimatedTime: string;
-  dependencies: number[];     // Phase numbers this depends on
-  dependencyNames: string[];  // Human-readable dependency names
+  dependencies: number[]; // Phase numbers this depends on
+  dependencyNames: string[]; // Human-readable dependency names
   testCriteria: string[];
   status: 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped';
   generatedCode?: string;
@@ -155,34 +164,34 @@ export interface PhasePlanGenerationResult {
  */
 export interface PhaseGeneratorConfig {
   // Token limits
-  maxTokensPerPhase: number;        // Default: 8000
-  targetTokensPerPhase: number;     // Default: 5000 (aim for this, allow up to max)
+  maxTokensPerPhase: number; // Default: 8000
+  targetTokensPerPhase: number; // Default: 5000 (aim for this, allow up to max)
 
   // Feature limits
-  maxFeaturesPerPhase: number;      // Default: 4
-  minFeaturesPerPhase: number;      // Default: 1
+  maxFeaturesPerPhase: number; // Default: 4
+  minFeaturesPerPhase: number; // Default: 1
 
   // Phase limits
-  minPhases: number;                // Default: 2
-  maxPhases: number;                // Default: 30
+  minPhases: number; // Default: 2
+  maxPhases: number; // Default: 30
 
   // Domains that always get their own phase
   alwaysSeparateDomains: FeatureDomain[];
 
   // Token estimation multipliers
   complexityMultipliers: {
-    simple: number;     // Default: 1.0
-    moderate: number;   // Default: 1.5
-    complex: number;    // Default: 2.5
+    simple: number; // Default: 1.0
+    moderate: number; // Default: 1.5
+    complex: number; // Default: 2.5
   };
 
   // Base token estimates per feature type
   baseTokenEstimates: {
-    simpleFeature: number;      // Default: 1200
-    moderateFeature: number;    // Default: 2000
-    complexFeature: number;     // Default: 3500
-    setupPhase: number;         // Default: 2000
-    polishPhase: number;        // Default: 2500
+    simpleFeature: number; // Default: 1200
+    moderateFeature: number; // Default: 2000
+    complexFeature: number; // Default: 3500
+    setupPhase: number; // Default: 2000
+    polishPhase: number; // Default: 2500
   };
 }
 
@@ -250,7 +259,10 @@ export interface PhaseExecutionContext {
     uiPreferences?: UIPreferences;
     roles?: UserRole[];
     conversationContext?: string;
-    dataModels?: Array<{ name: string; fields: Array<{ name: string; type: string; required: boolean }> }>;
+    dataModels?: Array<{
+      name: string;
+      fields: Array<{ name: string; type: string; required: boolean }>;
+    }>;
   };
 
   // Phase-specific concept context
@@ -294,7 +306,19 @@ export interface PhaseExecutionResult {
 export const COMPLEX_FEATURE_PATTERNS: ComplexFeaturePattern[] = [
   // Authentication
   {
-    patterns: ['auth', 'authentication', 'login', 'signup', 'sign up', 'sign-up', 'register', 'oauth', 'sso', 'jwt', 'session'],
+    patterns: [
+      'auth',
+      'authentication',
+      'login',
+      'signup',
+      'sign up',
+      'sign-up',
+      'register',
+      'oauth',
+      'sso',
+      'jwt',
+      'session',
+    ],
     domain: 'auth',
     complexity: 'complex',
     requiresOwnPhase: true,
@@ -303,7 +327,17 @@ export const COMPLEX_FEATURE_PATTERNS: ComplexFeaturePattern[] = [
   },
   // Database
   {
-    patterns: ['database', 'schema', 'migration', 'orm', 'prisma', 'supabase', 'postgres', 'mysql', 'mongodb'],
+    patterns: [
+      'database',
+      'schema',
+      'migration',
+      'orm',
+      'prisma',
+      'supabase',
+      'postgres',
+      'mysql',
+      'mongodb',
+    ],
     domain: 'database',
     complexity: 'complex',
     requiresOwnPhase: true,
@@ -321,7 +355,16 @@ export const COMPLEX_FEATURE_PATTERNS: ComplexFeaturePattern[] = [
   },
   // Real-time
   {
-    patterns: ['real-time', 'realtime', 'websocket', 'socket', 'live', 'sync', 'presence', 'collaborative'],
+    patterns: [
+      'real-time',
+      'realtime',
+      'websocket',
+      'socket',
+      'live',
+      'sync',
+      'presence',
+      'collaborative',
+    ],
     domain: 'real-time',
     complexity: 'complex',
     requiresOwnPhase: true,
@@ -392,14 +435,34 @@ export const MODERATE_FEATURE_PATTERNS: Array<{
   domain: FeatureDomain;
   baseTokenEstimate: number;
 }> = [
-  { patterns: ['form', 'multi-step', 'wizard', 'validation'], domain: 'ui-component', baseTokenEstimate: 2000 },
-  { patterns: ['table', 'data grid', 'pagination', 'sorting'], domain: 'ui-component', baseTokenEstimate: 2200 },
-  { patterns: ['drag', 'drop', 'sortable', 'reorder'], domain: 'ui-component', baseTokenEstimate: 2500 },
-  { patterns: ['calendar', 'date picker', 'scheduling'], domain: 'feature', baseTokenEstimate: 2000 },
+  {
+    patterns: ['form', 'multi-step', 'wizard', 'validation'],
+    domain: 'ui-component',
+    baseTokenEstimate: 2000,
+  },
+  {
+    patterns: ['table', 'data grid', 'pagination', 'sorting'],
+    domain: 'ui-component',
+    baseTokenEstimate: 2200,
+  },
+  {
+    patterns: ['drag', 'drop', 'sortable', 'reorder'],
+    domain: 'ui-component',
+    baseTokenEstimate: 2500,
+  },
+  {
+    patterns: ['calendar', 'date picker', 'scheduling'],
+    domain: 'feature',
+    baseTokenEstimate: 2000,
+  },
   { patterns: ['map', 'location', 'geolocation'], domain: 'integration', baseTokenEstimate: 2500 },
   { patterns: ['export', 'pdf', 'csv', 'download'], domain: 'feature', baseTokenEstimate: 1800 },
   { patterns: ['import', 'bulk', 'batch'], domain: 'feature', baseTokenEstimate: 2000 },
-  { patterns: ['filter', 'advanced filter', 'faceted'], domain: 'feature', baseTokenEstimate: 1800 },
+  {
+    patterns: ['filter', 'advanced filter', 'faceted'],
+    domain: 'feature',
+    baseTokenEstimate: 1800,
+  },
   { patterns: ['comment', 'reply', 'thread'], domain: 'feature', baseTokenEstimate: 2200 },
   { patterns: ['rating', 'review', 'feedback'], domain: 'feature', baseTokenEstimate: 1500 },
 ];
@@ -417,8 +480,8 @@ export type FeaturesByDomain = Map<FeatureDomain, FeatureClassification[]>;
  * Phase dependency graph
  */
 export interface PhaseDependencyGraph {
-  nodes: number[];  // Phase numbers
-  edges: Array<{ from: number; to: number }>;  // Dependencies
+  nodes: number[]; // Phase numbers
+  edges: Array<{ from: number; to: number }>; // Dependencies
 }
 
 /**

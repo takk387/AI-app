@@ -28,29 +28,40 @@ const getScoreBgColor = (score: number): string => {
 
 const getSeverityColor = (severity: string): string => {
   switch (severity) {
-    case 'critical': return 'bg-red-500/20 text-red-300 border-red-500/30';
-    case 'high': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
-    case 'medium': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-    case 'low': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-    default: return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+    case 'critical':
+      return 'bg-red-500/20 text-red-300 border-red-500/30';
+    case 'high':
+      return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+    case 'medium':
+      return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+    case 'low':
+      return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+    default:
+      return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
   }
 };
 
-const MetricCard: React.FC<{ label: string; score: number; icon: string }> = ({ label, score, icon }) => (
+const MetricCard: React.FC<{ label: string; score: number; icon: string }> = ({
+  label,
+  score,
+  icon,
+}) => (
   <div className={`p-4 rounded-xl border transition-all hover:scale-105 ${getScoreBgColor(score)}`}>
     <div className="flex items-center gap-2 mb-2">
       <span className="text-xl">{icon}</span>
       <span className="text-sm text-slate-300 font-medium">{label}</span>
     </div>
-    <div className={`text-2xl font-bold ${getScoreColor(score)}`}>
-      {score}
-    </div>
+    <div className={`text-2xl font-bold ${getScoreColor(score)}`}>{score}</div>
     <div className="mt-1 w-full bg-slate-700/50 rounded-full h-1.5">
       <div
         className={`h-1.5 rounded-full transition-all ${
-          score >= 90 ? 'bg-green-500' :
-          score >= 70 ? 'bg-yellow-500' :
-          score >= 50 ? 'bg-orange-500' : 'bg-red-500'
+          score >= 90
+            ? 'bg-green-500'
+            : score >= 70
+              ? 'bg-yellow-500'
+              : score >= 50
+                ? 'bg-orange-500'
+                : 'bg-red-500'
         }`}
         style={{ width: `${score}%` }}
       />
@@ -69,11 +80,15 @@ export function CodeQualityReport({
 
   if (!isOpen) return null;
 
-  const groupedIssues = report?.issues.reduce((acc, issue) => {
-    if (!acc[issue.severity]) acc[issue.severity] = [];
-    acc[issue.severity].push(issue);
-    return acc;
-  }, {} as Record<string, QualityIssue[]>) || {};
+  const groupedIssues =
+    report?.issues.reduce(
+      (acc, issue) => {
+        if (!acc[issue.severity]) acc[issue.severity] = [];
+        acc[issue.severity].push(issue);
+        return acc;
+      },
+      {} as Record<string, QualityIssue[]>
+    ) || {};
 
   const severityOrder = ['critical', 'high', 'medium', 'low'];
 
@@ -97,7 +112,9 @@ export function CodeQualityReport({
                 <span className="text-3xl">📊</span>
               </div>
               <div>
-                <h3 id="quality-report-title" className="text-xl font-bold text-white">Code Quality Report</h3>
+                <h3 id="quality-report-title" className="text-xl font-bold text-white">
+                  Code Quality Report
+                </h3>
                 {report && (
                   <p className="text-sm text-blue-200/80">
                     Generated {new Date(report.timestamp).toLocaleString()}
@@ -139,7 +156,9 @@ export function CodeQualityReport({
             <div className="space-y-6">
               {/* Overall Score */}
               <div className="flex items-center justify-center">
-                <div className={`relative w-32 h-32 rounded-full flex items-center justify-center ${getScoreBgColor(report.metrics.overall)} border-4`}>
+                <div
+                  className={`relative w-32 h-32 rounded-full flex items-center justify-center ${getScoreBgColor(report.metrics.overall)} border-4`}
+                >
                   <div className="text-center">
                     <div className={`text-4xl font-bold ${getScoreColor(report.metrics.overall)}`}>
                       {report.metrics.overall}
@@ -151,11 +170,13 @@ export function CodeQualityReport({
 
               {/* Pass/Fail Status */}
               <div className="flex justify-center">
-                <div className={`px-4 py-2 rounded-full border ${
-                  report.passed
-                    ? 'bg-green-500/20 border-green-500/30 text-green-300'
-                    : 'bg-red-500/20 border-red-500/30 text-red-300'
-                }`}>
+                <div
+                  className={`px-4 py-2 rounded-full border ${
+                    report.passed
+                      ? 'bg-green-500/20 border-green-500/30 text-green-300'
+                      : 'bg-red-500/20 border-red-500/30 text-red-300'
+                  }`}
+                >
                   {report.passed ? '✓ Quality Check Passed' : '✗ Quality Check Failed'}
                 </div>
               </div>
@@ -179,34 +200,53 @@ export function CodeQualityReport({
                     {severityOrder.map((severity) => {
                       const issues = groupedIssues[severity];
                       if (!issues || issues.length === 0) return null;
-                      
+
                       const isExpanded = expandedSeverity === severity;
-                      
+
                       return (
-                        <div key={severity} className="rounded-xl border border-white/10 overflow-hidden">
+                        <div
+                          key={severity}
+                          className="rounded-xl border border-white/10 overflow-hidden"
+                        >
                           <button
                             onClick={() => setExpandedSeverity(isExpanded ? null : severity)}
                             className="w-full px-4 py-3 flex items-center justify-between bg-slate-800/50 hover:bg-slate-800 transition-all"
                             aria-expanded={isExpanded}
                           >
                             <div className="flex items-center gap-3">
-                              <span className={`px-2 py-1 rounded-full border text-xs font-medium capitalize ${getSeverityColor(severity)}`}>
+                              <span
+                                className={`px-2 py-1 rounded-full border text-xs font-medium capitalize ${getSeverityColor(severity)}`}
+                              >
                                 {severity}
                               </span>
-                              <span className="text-white">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
+                              <span className="text-white">
+                                {issues.length} issue{issues.length !== 1 ? 's' : ''}
+                              </span>
                             </div>
                             <span className="text-slate-400">{isExpanded ? '▼' : '▶'}</span>
                           </button>
                           {isExpanded && (
                             <div className="p-4 space-y-3 bg-black/20">
                               {issues.map((issue) => (
-                                <div key={issue.id} className="p-3 rounded-lg bg-slate-800/50 border border-white/10">
+                                <div
+                                  key={issue.id}
+                                  className="p-3 rounded-lg bg-slate-800/50 border border-white/10"
+                                >
                                   <div className="flex items-start gap-2">
-                                    <span className={`text-xs ${
-                                      issue.type === 'error' ? 'text-red-400' :
-                                      issue.type === 'warning' ? 'text-yellow-400' : 'text-blue-400'
-                                    }`}>
-                                      {issue.type === 'error' ? '❌' : issue.type === 'warning' ? '⚠️' : 'ℹ️'}
+                                    <span
+                                      className={`text-xs ${
+                                        issue.type === 'error'
+                                          ? 'text-red-400'
+                                          : issue.type === 'warning'
+                                            ? 'text-yellow-400'
+                                            : 'text-blue-400'
+                                      }`}
+                                    >
+                                      {issue.type === 'error'
+                                        ? '❌'
+                                        : issue.type === 'warning'
+                                          ? '⚠️'
+                                          : 'ℹ️'}
                                     </span>
                                     <div className="flex-1">
                                       <p className="text-sm text-slate-300">{issue.message}</p>

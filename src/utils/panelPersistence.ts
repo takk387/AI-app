@@ -33,32 +33,29 @@ function getStorageKey(key: string, version: number): string {
 function isValidLayout(layout: unknown): layout is PanelLayout {
   if (typeof layout !== 'object' || layout === null) return false;
   const obj = layout as Record<string, unknown>;
-  
+
   if (!Array.isArray(obj.sizes)) return false;
-  if (!obj.sizes.every(s => typeof s === 'number' && s >= 0)) return false;
+  if (!obj.sizes.every((s) => typeof s === 'number' && s >= 0)) return false;
   if (typeof obj.timestamp !== 'number') return false;
-  
+
   return true;
 }
 
 /**
  * Saves panel sizes to localStorage with debouncing
  */
-export function savePanelLayout(
-  sizes: number[],
-  options: PersistenceOptions
-): void {
+export function savePanelLayout(sizes: number[], options: PersistenceOptions): void {
   if (typeof window === 'undefined') return;
-  
+
   const { key, version = DEFAULT_VERSION } = options;
   const storageKey = getStorageKey(key, version);
-  
+
   // Clear existing timeout for this key
   const existingTimeout = saveTimeouts.get(storageKey);
   if (existingTimeout) {
     clearTimeout(existingTimeout);
   }
-  
+
   // Debounce the save operation
   const timeout = setTimeout(() => {
     try {
@@ -73,7 +70,7 @@ export function savePanelLayout(
       console.warn('Failed to save panel layout:', error);
     }
   }, DEBOUNCE_DELAY);
-  
+
   saveTimeouts.set(storageKey, timeout);
 }
 
@@ -81,21 +78,19 @@ export function savePanelLayout(
  * Loads panel sizes from localStorage
  * Returns null if no valid layout is found or if it's expired
  */
-export function loadPanelLayout(
-  options: PersistenceOptions
-): number[] | null {
+export function loadPanelLayout(options: PersistenceOptions): number[] | null {
   if (typeof window === 'undefined') return null;
-  
+
   const { key, version = DEFAULT_VERSION, maxAge = DEFAULT_MAX_AGE } = options;
   const storageKey = getStorageKey(key, version);
-  
+
   try {
     const stored = localStorage.getItem(storageKey);
     if (!stored) return null;
-    
+
     const parsed = JSON.parse(stored);
     if (!isValidLayout(parsed)) return null;
-    
+
     // Check if layout has expired
     const age = Date.now() - parsed.timestamp;
     if (age > maxAge) {
@@ -103,7 +98,7 @@ export function loadPanelLayout(
       localStorage.removeItem(storageKey);
       return null;
     }
-    
+
     return parsed.sizes;
   } catch (error) {
     // JSON parsing failed or other error
@@ -117,10 +112,10 @@ export function loadPanelLayout(
  */
 export function clearPanelLayout(options: PersistenceOptions): void {
   if (typeof window === 'undefined') return;
-  
+
   const { key, version = DEFAULT_VERSION } = options;
   const storageKey = getStorageKey(key, version);
-  
+
   try {
     localStorage.removeItem(storageKey);
   } catch (error) {
@@ -133,18 +128,18 @@ export function clearPanelLayout(options: PersistenceOptions): void {
  */
 export function clearAllPanelLayouts(): void {
   if (typeof window === 'undefined') return;
-  
+
   try {
     const keysToRemove: string[] = [];
-    
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith(STORAGE_PREFIX)) {
         keysToRemove.push(key);
       }
     }
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
   } catch (error) {
     console.warn('Failed to clear all panel layouts:', error);
   }
@@ -156,21 +151,21 @@ export function clearAllPanelLayouts(): void {
  */
 export function normalizeSizes(sizes: number[]): number[] {
   if (sizes.length === 0) return [];
-  
+
   // Ensure all values are positive
-  const positiveSizes = sizes.map(s => Math.max(0, s));
-  
+  const positiveSizes = sizes.map((s) => Math.max(0, s));
+
   // Calculate total
   const total = positiveSizes.reduce((sum, size) => sum + size, 0);
-  
+
   // If total is 0, distribute equally
   if (total === 0) {
     const equalSize = 100 / sizes.length;
     return sizes.map(() => equalSize);
   }
-  
+
   // Normalize to 100%
-  return positiveSizes.map(size => (size / total) * 100);
+  return positiveSizes.map((size) => (size / total) * 100);
 }
 
 /**
@@ -199,18 +194,18 @@ export function calculateInitialSizes(
 ): number[] {
   // Start with default sizes or equal distribution
   let sizes: number[];
-  
+
   if (defaultSizes && defaultSizes.length === panelCount) {
     sizes = [...defaultSizes];
   } else {
     const equalSize = 100 / panelCount;
     sizes = Array(panelCount).fill(equalSize);
   }
-  
+
   // Normalize and constrain
   sizes = normalizeSizes(sizes);
   sizes = constrainSizes(sizes, minSizes, maxSizes);
-  
+
   // Re-normalize after constraints
   return normalizeSizes(sizes);
 }
@@ -230,20 +225,21 @@ export function mergePersistedLayout(
   if (!persistedSizes || persistedSizes.length !== panelCount) {
     return calculateInitialSizes(panelCount, defaultSizes, minSizes, maxSizes);
   }
-  
+
   // Validate persisted sizes against constraints
   const constrained = constrainSizes(persistedSizes, minSizes, maxSizes);
-  
+
   // Check if constraints changed the sizes significantly
-  const totalDiff = persistedSizes.reduce((sum, size, i) => 
-    sum + Math.abs(size - constrained[i]), 0
+  const totalDiff = persistedSizes.reduce(
+    (sum, size, i) => sum + Math.abs(size - constrained[i]),
+    0
   );
-  
+
   // If constraints didn't change much, use persisted (renormalized)
   if (totalDiff < 5) {
     return normalizeSizes(constrained);
   }
-  
+
   // Otherwise, prefer fresh calculation
   return calculateInitialSizes(panelCount, defaultSizes, minSizes, maxSizes);
 }

@@ -7,7 +7,8 @@ import type { FullTemplate } from '../../types/architectureTemplates';
 export const crudTemplate: FullTemplate = {
   id: 'crud',
   name: 'CRUD Application',
-  description: 'Data management applications with list views, forms, and full create, read, update, delete functionality.',
+  description:
+    'Data management applications with list views, forms, and full create, read, update, delete functionality.',
   icon: '📝',
   category: 'admin',
   features: [
@@ -17,7 +18,7 @@ export const crudTemplate: FullTemplate = {
     'Detail view',
     'Search & filter',
     'Pagination',
-    'Delete confirmation'
+    'Delete confirmation',
   ],
   complexity: 'simple',
   estimatedComponents: 10,
@@ -35,21 +36,25 @@ export const crudTemplate: FullTemplate = {
     'Item list/table',
     'Create form',
     'Edit functionality',
-    'Delete with confirmation'
+    'Delete with confirmation',
   ],
   suggestedFeatures: [
     'Bulk actions',
     'Export to CSV',
     'Advanced filtering',
     'Sorting',
-    'Inline editing'
+    'Inline editing',
   ],
   layoutStructure: {
     type: 'topnav',
-    regions: ['header', 'toolbar', 'content', 'pagination']
+    regions: ['header', 'toolbar', 'content', 'pagination'],
   },
   components: [
-    { name: 'DataTable', description: 'Table/grid display with sortable columns', priority: 'core' },
+    {
+      name: 'DataTable',
+      description: 'Table/grid display with sortable columns',
+      priority: 'core',
+    },
     { name: 'CreateForm', description: 'Form for creating new items', priority: 'core' },
     { name: 'EditForm', description: 'Form for editing existing items', priority: 'core' },
     { name: 'DetailView', description: 'Modal or page showing item details', priority: 'core' },
@@ -58,14 +63,14 @@ export const crudTemplate: FullTemplate = {
     { name: 'Pagination', description: 'Page navigation component', priority: 'core' },
     { name: 'DeleteDialog', description: 'Confirmation dialog for deletions', priority: 'core' },
     { name: 'EmptyState', description: 'Display when no items exist', priority: 'optional' },
-    { name: 'LoadingState', description: 'Loading skeleton/spinner', priority: 'optional' }
+    { name: 'LoadingState', description: 'Loading skeleton/spinner', priority: 'optional' },
   ],
   technicalRequirements: {
     needsAuth: false,
     needsDatabase: true,
     needsAPI: true,
-    needsFileUpload: false
-  }
+    needsFileUpload: false,
+  },
 };
 
 export default crudTemplate;

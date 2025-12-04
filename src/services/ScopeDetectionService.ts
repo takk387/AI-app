@@ -57,7 +57,11 @@ const FULL_APP_PATTERNS = [
 // Patterns indicating complex features
 const COMPLEX_FEATURE_PATTERNS = [
   { pattern: /auth(entication)?|login|signup|sign[\s-]?up|register/i, feature: 'auth', weight: 2 },
-  { pattern: /database|data\s+persist|store\s+data|mongodb|postgres|mysql|supabase|prisma/i, feature: 'database', weight: 2 },
+  {
+    pattern: /database|data\s+persist|store\s+data|mongodb|postgres|mysql|supabase|prisma/i,
+    feature: 'database',
+    weight: 2,
+  },
   { pattern: /real[\s-]?time|live\s+update|websocket|socket\.io/i, feature: 'realtime', weight: 2 },
   { pattern: /upload|file|image|media|storage|s3|cloudinary/i, feature: 'fileUpload', weight: 1.5 },
   { pattern: /payment|stripe|checkout|billing|subscription/i, feature: 'payment', weight: 2 },
@@ -116,10 +120,10 @@ export class ScopeDetectionService {
     const fullConversation = this.buildFullContext(prompt, conversationHistory);
 
     // Check for full app patterns
-    const isFullAppRequest = FULL_APP_PATTERNS.some(p => p.test(fullConversation));
+    const isFullAppRequest = FULL_APP_PATTERNS.some((p) => p.test(fullConversation));
 
     // Check for simple modification patterns (if it matches, probably not a new app)
-    const isSimpleRequest = SIMPLE_MODIFICATION_PATTERNS.some(p => p.test(prompt));
+    const isSimpleRequest = SIMPLE_MODIFICATION_PATTERNS.some((p) => p.test(prompt));
     if (isSimpleRequest && !isFullAppRequest) {
       return {
         requiresPhases: false,
@@ -182,7 +186,12 @@ export class ScopeDetectionService {
       suggestedPhaseCount,
       detectedFeatures,
       detectedTechnical,
-      confidence: this.calculateConfidence(isFullAppRequest, detectedFeatures.length, wordCount, complexityScore),
+      confidence: this.calculateConfidence(
+        isFullAppRequest,
+        detectedFeatures.length,
+        wordCount,
+        complexityScore
+      ),
       reason: this.generateReason(requiresPhases, complexity, detectedFeatures, isFullAppRequest),
     };
   }
@@ -195,14 +204,18 @@ export class ScopeDetectionService {
     _currentComponent: GeneratedComponentInfo
   ): ScopeDetectionResult {
     // For modifications, only use phases for major rewrites
-    const isRewrite = /rewrite|rebuild|completely\s+change|redesign|overhaul|redo\s+from/i.test(prompt);
+    const isRewrite = /rewrite|rebuild|completely\s+change|redesign|overhaul|redo\s+from/i.test(
+      prompt
+    );
     const isAddingMajorFeature = COMPLEX_FEATURE_PATTERNS.some(
       ({ pattern, feature }) =>
         pattern.test(prompt) && ['auth', 'database', 'payment', 'realtime'].includes(feature)
     );
 
     // Check if adding multiple features at once
-    const featureCount = COMPLEX_FEATURE_PATTERNS.filter(({ pattern }) => pattern.test(prompt)).length;
+    const featureCount = COMPLEX_FEATURE_PATTERNS.filter(({ pattern }) =>
+      pattern.test(prompt)
+    ).length;
 
     if (isRewrite) {
       return {
@@ -221,9 +234,9 @@ export class ScopeDetectionService {
         requiresPhases: true,
         complexity: 'moderate',
         suggestedPhaseCount: Math.min(3 + featureCount, 8),
-        detectedFeatures: COMPLEX_FEATURE_PATTERNS
-          .filter(({ pattern }) => pattern.test(prompt))
-          .map(({ feature }) => feature),
+        detectedFeatures: COMPLEX_FEATURE_PATTERNS.filter(({ pattern }) =>
+          pattern.test(prompt)
+        ).map(({ feature }) => feature),
         detectedTechnical: {},
         confidence: 0.75,
         reason: `Adding ${featureCount} major feature(s) - phased approach recommended`,
@@ -246,7 +259,7 @@ export class ScopeDetectionService {
    */
   private buildFullContext(prompt: string, history: ChatMessage[]): string {
     const recentMessages = history.slice(-10);
-    return recentMessages.map(m => m.content).join(' ') + ' ' + prompt;
+    return recentMessages.map((m) => m.content).join(' ') + ' ' + prompt;
   }
 
   /**

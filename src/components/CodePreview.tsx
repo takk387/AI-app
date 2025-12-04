@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 
@@ -29,7 +29,7 @@ export default function CodePreview({ code }: CodePreviewProps) {
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      
+
       <div className="bg-slate-900 rounded-lg border border-white/10 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-white/10">
           <div className="flex items-center space-x-2">
@@ -39,11 +39,9 @@ export default function CodePreview({ code }: CodePreviewProps) {
           </div>
           <span className="text-sm text-slate-400">GeneratedComponent.tsx</span>
         </div>
-        
+
         <pre className="p-4 text-sm overflow-x-auto max-h-96 overflow-y-auto">
-          <code className="text-slate-100 whitespace-pre-wrap">
-            {code}
-          </code>
+          <code className="text-slate-100 whitespace-pre-wrap">{code}</code>
         </pre>
       </div>
     </div>

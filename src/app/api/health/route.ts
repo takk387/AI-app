@@ -43,10 +43,7 @@ async function checkSupabaseConnection(): Promise<CheckResult> {
     const supabase = await createClient();
 
     // Simple query to test connection
-    const { error } = await supabase
-      .from('generated_apps')
-      .select('id')
-      .limit(1);
+    const { error } = await supabase.from('generated_apps').select('id').limit(1);
 
     const latency = Math.round(performance.now() - startTime);
 
@@ -205,7 +202,9 @@ async function withTimeout<T extends CheckResult>(
 /**
  * Determine overall health status based on individual checks
  */
-function determineOverallStatus(checks: HealthCheckResponse['checks']): 'ok' | 'degraded' | 'unhealthy' {
+function determineOverallStatus(
+  checks: HealthCheckResponse['checks']
+): 'ok' | 'degraded' | 'unhealthy' {
   const criticalChecks = [checks.database, checks.aiService];
   const nonCriticalChecks = [checks.storage];
 

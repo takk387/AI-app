@@ -7,7 +7,8 @@ import type { FullTemplate } from '../../types/architectureTemplates';
 export const blogTemplate: FullTemplate = {
   id: 'blog',
   name: 'Blog / CMS',
-  description: 'Content management and publishing platforms with article listings, rich content display, and categories.',
+  description:
+    'Content management and publishing platforms with article listings, rich content display, and categories.',
   icon: '📰',
   category: 'content',
   features: [
@@ -17,7 +18,7 @@ export const blogTemplate: FullTemplate = {
     'Author profiles',
     'Comments section',
     'Search',
-    'Related posts'
+    'Related posts',
   ],
   complexity: 'moderate',
   estimatedComponents: 14,
@@ -34,18 +35,18 @@ export const blogTemplate: FullTemplate = {
     'Article listing',
     'Article detail page',
     'Category navigation',
-    'Search functionality'
+    'Search functionality',
   ],
   suggestedFeatures: [
     'Comments system',
     'Social sharing',
     'Reading time estimate',
     'Table of contents',
-    'Newsletter subscription'
+    'Newsletter subscription',
   ],
   layoutStructure: {
     type: 'topnav',
-    regions: ['header', 'content', 'sidebar', 'footer']
+    regions: ['header', 'content', 'sidebar', 'footer'],
   },
   components: [
     { name: 'ArticleList', description: 'Grid/list of article cards', priority: 'core' },
@@ -61,14 +62,14 @@ export const blogTemplate: FullTemplate = {
     { name: 'SearchResults', description: 'Search results display', priority: 'optional' },
     { name: 'RelatedPosts', description: 'Related articles sidebar', priority: 'optional' },
     { name: 'TableOfContents', description: 'Article TOC navigation', priority: 'optional' },
-    { name: 'ShareButtons', description: 'Social sharing buttons', priority: 'optional' }
+    { name: 'ShareButtons', description: 'Social sharing buttons', priority: 'optional' },
   ],
   technicalRequirements: {
     needsAuth: false,
     needsDatabase: true,
     needsAPI: true,
-    needsFileUpload: true
-  }
+    needsFileUpload: true,
+  },
 };
 
 export default blogTemplate;

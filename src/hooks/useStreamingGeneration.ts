@@ -40,190 +40,195 @@ export function useStreamingGeneration(
   const abortControllerRef = useRef<AbortController | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  const updateProgress = useCallback((updates: Partial<StreamingProgress>) => {
-    setProgress(prev => {
-      const newProgress = { ...prev, ...updates };
-      if (startTimeRef.current > 0) {
-        newProgress.elapsedTime = Date.now() - startTimeRef.current;
-      }
-      options.onProgress?.(newProgress);
-      return newProgress;
-    });
-  }, [options]);
-
-  const handleEvent = useCallback((event: StreamEvent): CompleteEvent['data'] | null => {
-    switch (event.type) {
-      case 'start':
-        startTimeRef.current = Date.now();
-        updateProgress({
-          isStreaming: true,
-          phase: 'starting',
-          message: event.message,
-          startTime: Date.now(),
-        });
-        options.onStart?.();
-        break;
-
-      case 'thinking':
-        updateProgress({
-          phase: 'thinking',
-          message: event.message,
-        });
-        break;
-
-      case 'file_start':
-        updateProgress({
-          phase: 'generating',
-          message: `Generating ${event.filePath}...`,
-          currentFile: event.filePath,
-          currentFileIndex: event.fileIndex,
-          totalFiles: event.totalFiles,
-        });
-        options.onFileStart?.(event.filePath, event.fileIndex, event.totalFiles);
-        break;
-
-      case 'file_progress':
-        updateProgress({
-          message: `Generating ${event.filePath}... (${Math.round(event.totalChars / 100) / 10}k chars)`,
-        });
-        break;
-
-      case 'file_complete':
-        setProgress(prev => ({
-          ...prev,
-          filesCompleted: [...prev.filesCompleted, event.filePath],
-          message: `Completed ${event.filePath}`,
-          totalFiles: event.totalFiles,
-        }));
-        options.onFileComplete?.(event.filePath, event.fileIndex, event.totalFiles);
-        break;
-
-      case 'validation':
-        updateProgress({
-          phase: 'validating',
-          message: event.message,
-        });
-        break;
-
-      case 'complete':
-        updateProgress({
-          isStreaming: false,
-          phase: 'complete',
-          message: 'Generation complete!',
-          stats: {
-            inputTokens: event.stats.inputTokens,
-            outputTokens: event.stats.outputTokens,
-            cachedTokens: event.stats.cachedTokens,
-          },
-        });
-        options.onComplete?.(event.data, event.stats);
-        return event.data;
-
-      case 'error':
-        updateProgress({
-          isStreaming: false,
-          phase: 'error',
-          message: event.message,
-        });
-        options.onError?.(event.message, event.recoverable);
-        break;
-    }
-    return null;
-  }, [updateProgress, options]);
-
-  const generate = useCallback(async (
-    requestBody: Record<string, unknown>
-  ): Promise<CompleteEvent['data'] | null> => {
-    // Reset progress
-    setProgress(initialStreamingProgress);
-    startTimeRef.current = 0;
-
-    // Create abort controller
-    abortControllerRef.current = new AbortController();
-
-    try {
-      const response = await fetch('/api/ai-builder/full-app-stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current.signal,
+  const updateProgress = useCallback(
+    (updates: Partial<StreamingProgress>) => {
+      setProgress((prev) => {
+        const newProgress = { ...prev, ...updates };
+        if (startTimeRef.current > 0) {
+          newProgress.elapsedTime = Date.now() - startTimeRef.current;
+        }
+        options.onProgress?.(newProgress);
+        return newProgress;
       });
+    },
+    [options]
+  );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  const handleEvent = useCallback(
+    (event: StreamEvent): CompleteEvent['data'] | null => {
+      switch (event.type) {
+        case 'start':
+          startTimeRef.current = Date.now();
+          updateProgress({
+            isStreaming: true,
+            phase: 'starting',
+            message: event.message,
+            startTime: Date.now(),
+          });
+          options.onStart?.();
+          break;
+
+        case 'thinking':
+          updateProgress({
+            phase: 'thinking',
+            message: event.message,
+          });
+          break;
+
+        case 'file_start':
+          updateProgress({
+            phase: 'generating',
+            message: `Generating ${event.filePath}...`,
+            currentFile: event.filePath,
+            currentFileIndex: event.fileIndex,
+            totalFiles: event.totalFiles,
+          });
+          options.onFileStart?.(event.filePath, event.fileIndex, event.totalFiles);
+          break;
+
+        case 'file_progress':
+          updateProgress({
+            message: `Generating ${event.filePath}... (${Math.round(event.totalChars / 100) / 10}k chars)`,
+          });
+          break;
+
+        case 'file_complete':
+          setProgress((prev) => ({
+            ...prev,
+            filesCompleted: [...prev.filesCompleted, event.filePath],
+            message: `Completed ${event.filePath}`,
+            totalFiles: event.totalFiles,
+          }));
+          options.onFileComplete?.(event.filePath, event.fileIndex, event.totalFiles);
+          break;
+
+        case 'validation':
+          updateProgress({
+            phase: 'validating',
+            message: event.message,
+          });
+          break;
+
+        case 'complete':
+          updateProgress({
+            isStreaming: false,
+            phase: 'complete',
+            message: 'Generation complete!',
+            stats: {
+              inputTokens: event.stats.inputTokens,
+              outputTokens: event.stats.outputTokens,
+              cachedTokens: event.stats.cachedTokens,
+            },
+          });
+          options.onComplete?.(event.data, event.stats);
+          return event.data;
+
+        case 'error':
+          updateProgress({
+            isStreaming: false,
+            phase: 'error',
+            message: event.message,
+          });
+          options.onError?.(event.message, event.recoverable);
+          break;
       }
+      return null;
+    },
+    [updateProgress, options]
+  );
 
-      if (!response.body) {
-        throw new Error('No response body');
-      }
+  const generate = useCallback(
+    async (requestBody: Record<string, unknown>): Promise<CompleteEvent['data'] | null> => {
+      // Reset progress
+      setProgress(initialStreamingProgress);
+      startTimeRef.current = 0;
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let result: CompleteEvent['data'] | null = null;
+      // Create abort controller
+      abortControllerRef.current = new AbortController();
 
-      while (true) {
-        const { done, value } = await reader.read();
+      try {
+        const response = await fetch('/api/ai-builder/full-app-stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          signal: abortControllerRef.current.signal,
+        });
 
-        if (done) break;
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-        buffer += decoder.decode(value, { stream: true });
+        if (!response.body) {
+          throw new Error('No response body');
+        }
 
-        // Process complete SSE messages
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let result: CompleteEvent['data'] | null = null;
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            const event = parseStreamEvent(data);
-            if (event) {
-              const eventResult = handleEvent(event);
-              if (eventResult) {
-                result = eventResult;
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete SSE messages
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              const event = parseStreamEvent(data);
+              if (event) {
+                const eventResult = handleEvent(event);
+                if (eventResult) {
+                  result = eventResult;
+                }
               }
             }
           }
         }
-      }
 
-      // Process any remaining buffer
-      if (buffer.startsWith('data: ')) {
-        const data = buffer.slice(6);
-        const event = parseStreamEvent(data);
-        if (event) {
-          const eventResult = handleEvent(event);
-          if (eventResult) {
-            result = eventResult;
+        // Process any remaining buffer
+        if (buffer.startsWith('data: ')) {
+          const data = buffer.slice(6);
+          const event = parseStreamEvent(data);
+          if (event) {
+            const eventResult = handleEvent(event);
+            if (eventResult) {
+              result = eventResult;
+            }
           }
         }
-      }
 
-      return result;
+        return result;
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          updateProgress({
+            isStreaming: false,
+            phase: 'idle',
+            message: 'Generation cancelled',
+          });
+          return null;
+        }
 
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+        const message = error instanceof Error ? error.message : 'Generation failed';
         updateProgress({
           isStreaming: false,
-          phase: 'idle',
-          message: 'Generation cancelled',
+          phase: 'error',
+          message,
         });
+        options.onError?.(message, false);
         return null;
+      } finally {
+        abortControllerRef.current = null;
       }
-
-      const message = error instanceof Error ? error.message : 'Generation failed';
-      updateProgress({
-        isStreaming: false,
-        phase: 'error',
-        message,
-      });
-      options.onError?.(message, false);
-      return null;
-
-    } finally {
-      abortControllerRef.current = null;
-    }
-  }, [handleEvent, updateProgress, options]);
+    },
+    [handleEvent, updateProgress, options]
+  );
 
   const abort = useCallback(() => {
     if (abortControllerRef.current) {

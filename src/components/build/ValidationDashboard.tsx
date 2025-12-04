@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { BuildPhase, ValidationCheck, ValidationResult } from '../../types/buildPhases';
@@ -76,7 +76,9 @@ export function ValidationDashboard({
   };
 
   return (
-    <div className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-white/10 p-4 ${className}`}>
+    <div
+      className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl border border-white/10 p-4 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold flex items-center gap-2">
@@ -84,13 +86,15 @@ export function ValidationDashboard({
           <span>Validation</span>
         </h3>
         {validationResult && (
-          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-            allPassed 
-              ? 'bg-green-500/20 text-green-400'
-              : hasFailures
-                ? 'bg-red-500/20 text-red-400'
-                : 'bg-yellow-500/20 text-yellow-400'
-          }`}>
+          <div
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              allPassed
+                ? 'bg-green-500/20 text-green-400'
+                : hasFailures
+                  ? 'bg-red-500/20 text-red-400'
+                  : 'bg-yellow-500/20 text-yellow-400'
+            }`}
+          >
             {allPassed ? 'All Passed' : hasFailures ? 'Issues Found' : 'Warnings'}
           </div>
         )}
@@ -101,9 +105,7 @@ export function ValidationDashboard({
         <div className="text-sm font-medium text-white mb-1">
           Phase {phase.order}: {phase.name}
         </div>
-        <div className="text-xs text-slate-400">
-          {phase.description}
-        </div>
+        <div className="text-xs text-slate-400">{phase.description}</div>
       </div>
 
       {/* Validation Checks */}
@@ -119,9 +121,7 @@ export function ValidationDashboard({
                 <span className="text-sm font-medium">{check.name}</span>
                 <span className="text-xs opacity-70">{getTypeLabel(check.type)}</span>
               </div>
-              {check.message && (
-                <div className="text-xs opacity-80">{check.message}</div>
-              )}
+              {check.message && <div className="text-xs opacity-80">{check.message}</div>}
             </div>
           </div>
         ))}
@@ -135,11 +135,13 @@ export function ValidationDashboard({
             <div className="text-sm text-yellow-200">
               {canProceed ? (
                 <>
-                  <strong>Warnings detected</strong> - You can proceed, but consider addressing these issues for better quality.
+                  <strong>Warnings detected</strong> - You can proceed, but consider addressing
+                  these issues for better quality.
                 </>
               ) : (
                 <>
-                  <strong>Critical issues found</strong> - These must be fixed before proceeding to the next phase.
+                  <strong>Critical issues found</strong> - These must be fixed before proceeding to
+                  the next phase.
                 </>
               )}
             </div>

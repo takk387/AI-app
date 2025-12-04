@@ -56,7 +56,7 @@ export interface UIPreferences {
   }[];
 
   // Layout Builder integration fields
-  layoutDesignId?: string;  // Reference to full LayoutDesign
+  layoutDesignId?: string; // Reference to full LayoutDesign
   secondaryColor?: string;
   accentColor?: string;
   borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full';

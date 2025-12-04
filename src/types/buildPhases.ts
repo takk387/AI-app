@@ -207,29 +207,13 @@ export const PHASE_FOCUS_AREAS: Record<PhaseId, string[]> = {
  * Validation criteria for each phase
  */
 export const PHASE_VALIDATION_CRITERIA: Record<PhaseId, string[]> = {
-  foundation: [
-    'Layout renders correctly',
-    'Navigation works',
-    'No console errors',
-  ],
-  features: [
-    'All features are accessible',
-    'State updates correctly',
-    'Forms validate properly',
-  ],
-  integration: [
-    'Data flows correctly',
-    'Error states handled',
-    'Auth works (if applicable)',
-  ],
+  foundation: ['Layout renders correctly', 'Navigation works', 'No console errors'],
+  features: ['All features are accessible', 'State updates correctly', 'Forms validate properly'],
+  integration: ['Data flows correctly', 'Error states handled', 'Auth works (if applicable)'],
   optimization: [
     'Performance metrics acceptable',
     'Lighthouse accessibility score',
     'No layout shifts',
   ],
-  polish: [
-    'Animations smooth',
-    'All states have feedback',
-    'Documentation complete',
-  ],
+  polish: ['Animations smooth', 'All states have feedback', 'Documentation complete'],
 };

@@ -15,7 +15,7 @@ interface FileCardProps {
 
 /**
  * FileCard Component
- * 
+ *
  * Displays individual file information with preview, metadata, and actions.
  * Supports keyboard navigation and accessibility.
  */
@@ -36,12 +36,12 @@ export function FileCard({
     const units = ['B', 'KB', 'MB', 'GB'];
     let size = bytes;
     let unitIndex = 0;
-    
+
     while (size >= 1024 && unitIndex < units.length - 1) {
       size /= 1024;
       unitIndex++;
     }
-    
+
     return `${size.toFixed(1)} ${units[unitIndex]}`;
   };
 
@@ -55,7 +55,7 @@ export function FileCard({
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -76,9 +76,10 @@ export function FileCard({
     <div
       className={`
         relative group rounded-xl border transition-all duration-300
-        ${isSelected 
-          ? 'bg-blue-500/20 border-blue-500/60 shadow-lg shadow-blue-500/20' 
-          : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+        ${
+          isSelected
+            ? 'bg-blue-500/20 border-blue-500/60 shadow-lg shadow-blue-500/20'
+            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
         }
         ${isLoading ? 'opacity-50 pointer-events-none' : ''}
         ${onSelect ? 'cursor-pointer' : ''}
@@ -98,9 +99,18 @@ export function FileCard({
       {isLoading && (
         <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center z-10">
           <div className="flex gap-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            <div
+              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+              style={{ animationDelay: '0ms' }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+              style={{ animationDelay: '150ms' }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+              style={{ animationDelay: '300ms' }}
+            ></div>
           </div>
         </div>
       )}
@@ -115,16 +125,14 @@ export function FileCard({
             loading="lazy"
           />
         ) : (
-          <div className="text-6xl">
-            {getFileIcon()}
-          </div>
+          <div className="text-6xl">{getFileIcon()}</div>
         )}
       </div>
 
       {/* File Info */}
       <div className="p-4">
         {/* File Name */}
-        <h3 
+        <h3
           className="text-white font-medium text-sm truncate mb-1 group-hover:text-blue-400 transition-colors"
           title={file.name}
         >

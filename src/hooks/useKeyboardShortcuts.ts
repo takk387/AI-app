@@ -1,6 +1,6 @@
 /**
  * useKeyboardShortcuts Hook - Handles keyboard shortcuts for undo/redo and other actions
- * 
+ *
  * Extracted from AIBuilder.tsx for reusability and better separation of concerns.
  * Provides keyboard shortcut handling for common operations.
  */
@@ -23,9 +23,9 @@ export interface UseKeyboardShortcutsOptions {
 
 /**
  * Hook for handling keyboard shortcuts
- * 
+ *
  * @param options - Configuration options for keyboard shortcuts
- * 
+ *
  * @example
  * ```tsx
  * useKeyboardShortcuts({
@@ -39,31 +39,36 @@ export interface UseKeyboardShortcutsOptions {
 export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions): void {
   const { onUndo, onRedo, onSave, enabled = true } = options;
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!enabled) return;
-    
-    // Ctrl+Z or Cmd+Z for Undo
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-      e.preventDefault();
-      onUndo?.();
-      return;
-    }
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!enabled) return;
 
-    // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for Redo
-    if (((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) || 
-        ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
-      e.preventDefault();
-      onRedo?.();
-      return;
-    }
+      // Ctrl+Z or Cmd+Z for Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        onUndo?.();
+        return;
+      }
 
-    // Ctrl+S or Cmd+S for Save
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      onSave?.();
-      return;
-    }
-  }, [enabled, onUndo, onRedo, onSave]);
+      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for Redo
+      if (
+        ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) ||
+        ((e.ctrlKey || e.metaKey) && e.key === 'y')
+      ) {
+        e.preventDefault();
+        onRedo?.();
+        return;
+      }
+
+      // Ctrl+S or Cmd+S for Save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        onSave?.();
+        return;
+      }
+    },
+    [enabled, onUndo, onRedo, onSave]
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);

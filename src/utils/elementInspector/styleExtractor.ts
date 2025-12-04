@@ -88,7 +88,7 @@ function formatColor(color: string): string {
   const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
   if (rgbMatch) {
     const [, r, g, b] = rgbMatch;
-    return `#${[r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join('')}`;
+    return `#${[r, g, b].map((x) => parseInt(x).toString(16).padStart(2, '0')).join('')}`;
   }
 
   return color;

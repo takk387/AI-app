@@ -30,10 +30,9 @@ export function InspectorOverlay({
   onHover,
   onSelect,
 }: InspectorOverlayProps): React.ReactElement {
-
   /** Check if an element should be ignored */
   const shouldIgnoreElement = useCallback((element: HTMLElement): boolean => {
-    return IGNORED_SELECTORS.some(selector => {
+    return IGNORED_SELECTORS.some((selector) => {
       try {
         return element.matches(selector) || element.closest(selector) !== null;
       } catch {
@@ -43,33 +42,39 @@ export function InspectorOverlay({
   }, []);
 
   /** Handle mouse move to track hovered element */
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    // elementFromPoint automatically skips elements with pointer-events: none
-    const element = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      // elementFromPoint automatically skips elements with pointer-events: none
+      const element = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
 
-    if (element && !shouldIgnoreElement(element)) {
-      onHover(element);
-    } else {
-      onHover(null);
-    }
-  }, [onHover, shouldIgnoreElement]);
+      if (element && !shouldIgnoreElement(element)) {
+        onHover(element);
+      } else {
+        onHover(null);
+      }
+    },
+    [onHover, shouldIgnoreElement]
+  );
 
   /** Handle click to select element */
-  const handleClick = useCallback((e: MouseEvent) => {
-    // elementFromPoint automatically skips elements with pointer-events: none
-    const element = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+  const handleClick = useCallback(
+    (e: MouseEvent) => {
+      // elementFromPoint automatically skips elements with pointer-events: none
+      const element = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
 
-    // Check if the element should be ignored (inspector UI elements)
-    if (!element || shouldIgnoreElement(element)) {
-      return; // Let the click through to the UI
-    }
+      // Check if the element should be ignored (inspector UI elements)
+      if (!element || shouldIgnoreElement(element)) {
+        return; // Let the click through to the UI
+      }
 
-    // Block the click and select the element for inspection
-    e.preventDefault();
-    e.stopPropagation();
+      // Block the click and select the element for inspection
+      e.preventDefault();
+      e.stopPropagation();
 
-    onSelect(element);
-  }, [onSelect, shouldIgnoreElement]);
+      onSelect(element);
+    },
+    [onSelect, shouldIgnoreElement]
+  );
 
   // Set up event listeners
   useEffect(() => {
@@ -83,10 +88,7 @@ export function InspectorOverlay({
   }, [handleMouseMove, handleClick]);
 
   return (
-    <div
-      data-inspector-overlay
-      className="fixed inset-0 z-[9998] pointer-events-none"
-    >
+    <div data-inspector-overlay className="fixed inset-0 z-[9998] pointer-events-none">
       {/* Hover Highlight */}
       {hoveredElement && (
         <ElementHighlight

@@ -11,7 +11,10 @@ const MAX_CODE_CONTEXT_LENGTH = 2000;
 /**
  * Truncate code to a safe length for prompt context
  */
-function truncateCode(code: string | undefined, maxLength: number = MAX_CODE_CONTEXT_LENGTH): string {
+function truncateCode(
+  code: string | undefined,
+  maxLength: number = MAX_CODE_CONTEXT_LENGTH
+): string {
   if (!code) return '';
   if (code.length <= maxLength) return code;
   return `${code.substring(0, maxLength)}...`;
@@ -404,11 +407,7 @@ export function getPhaseSummary(phaseId: PhaseId): {
         'Type definitions',
         'Error boundaries',
       ],
-      validation: [
-        'Layout renders correctly',
-        'Navigation works',
-        'No console errors',
-      ],
+      validation: ['Layout renders correctly', 'Navigation works', 'No console errors'],
     },
     features: {
       title: 'Features',
@@ -421,11 +420,7 @@ export function getPhaseSummary(phaseId: PhaseId): {
         'Modals',
         'Loading states',
       ],
-      validation: [
-        'Features accessible',
-        'State updates correctly',
-        'Forms validate',
-      ],
+      validation: ['Features accessible', 'State updates correctly', 'Forms validate'],
     },
     integration: {
       title: 'Integration',
@@ -438,11 +433,7 @@ export function getPhaseSummary(phaseId: PhaseId): {
         'Authentication',
         'Database schema',
       ],
-      validation: [
-        'Data flows correctly',
-        'Errors handled',
-        'Auth works',
-      ],
+      validation: ['Data flows correctly', 'Errors handled', 'Auth works'],
     },
     optimization: {
       title: 'Optimization',
@@ -455,11 +446,7 @@ export function getPhaseSummary(phaseId: PhaseId): {
         'Accessibility',
         'SEO',
       ],
-      validation: [
-        'Performance metrics',
-        'Accessibility score',
-        'No layout shifts',
-      ],
+      validation: ['Performance metrics', 'Accessibility score', 'No layout shifts'],
     },
     polish: {
       title: 'Polish',
@@ -472,11 +459,7 @@ export function getPhaseSummary(phaseId: PhaseId): {
         'Documentation',
         'Final cleanup',
       ],
-      validation: [
-        'Animations smooth',
-        'States have feedback',
-        'Docs complete',
-      ],
+      validation: ['Animations smooth', 'States have feedback', 'Docs complete'],
     },
   };
 

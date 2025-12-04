@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
@@ -54,7 +54,10 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
     if (image) {
       setCaptureSuccess(true);
       onScreenshot?.(image);
-      showToast({ type: 'success', message: 'Screenshot captured! Will be sent with your next message.' });
+      showToast({
+        type: 'success',
+        message: 'Screenshot captured! Will be sent with your next message.',
+      });
       setTimeout(() => setCaptureSuccess(false), 2000);
     } else {
       showToast({ type: 'error', message: 'Failed to capture screenshot. Please try again.' });
@@ -73,7 +76,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
     } else {
       document.body.style.overflow = '';
     }
-    
+
     // Cleanup on unmount
     return () => {
       document.body.style.overflow = '';
@@ -106,7 +109,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
     );
   }
 
-  const currentFile = appData.files?.find(f => f.path === selectedFile);
+  const currentFile = appData.files?.find((f) => f.path === selectedFile);
 
   // Fullscreen content that will be rendered via portal
   const fullscreenContent = (
@@ -128,13 +131,13 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
               💻 Code
             </button>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
               <span>Fully Interactive</span>
             </div>
-            
+
             <button
               onClick={() => setIsFullscreen(false)}
               className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all flex items-center gap-2"
@@ -212,10 +215,10 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
                       {file.path.endsWith('.tsx') || file.path.endsWith('.ts')
                         ? '📘'
                         : file.path.endsWith('.css')
-                        ? '🎨'
-                        : file.path.endsWith('.json')
-                        ? '⚙️'
-                        : '📄'}
+                          ? '🎨'
+                          : file.path.endsWith('.json')
+                            ? '⚙️'
+                            : '📄'}
                     </span>
                     <span className="truncate">{file.path}</span>
                   </div>
@@ -296,8 +299,6 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
 
   // Render via portal when fullscreen, otherwise render normally
   return (
-    <>
-      {isFullscreen && isClient ? createPortal(fullscreenContent, document.body) : normalContent}
-    </>
+    <>{isFullscreen && isClient ? createPortal(fullscreenContent, document.body) : normalContent}</>
   );
 }

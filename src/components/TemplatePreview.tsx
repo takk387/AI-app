@@ -17,20 +17,29 @@ interface TemplatePreviewProps {
 export function TemplatePreview({ template, onClose, onSelect }: TemplatePreviewProps) {
   const getComplexityColor = (complexity: string) => {
     switch (complexity) {
-      case 'simple': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'moderate': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-      case 'complex': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      default: return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+      case 'simple':
+        return 'bg-green-500/20 text-green-300 border-green-500/30';
+      case 'moderate':
+        return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+      case 'complex':
+        return 'bg-red-500/20 text-red-300 border-red-500/30';
+      default:
+        return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     }
   };
 
   const getLayoutIcon = (type: string) => {
     switch (type) {
-      case 'sidebar': return '📊';
-      case 'topnav': return '📑';
-      case 'minimal': return '📄';
-      case 'split': return '📐';
-      default: return '📱';
+      case 'sidebar':
+        return '📊';
+      case 'topnav':
+        return '📑';
+      case 'minimal':
+        return '📄';
+      case 'split':
+        return '📐';
+      default:
+        return '📱';
     }
   };
 
@@ -51,7 +60,9 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                     {getCategoryDisplayName(template.category)}
                   </span>
                   <span className="text-slate-600">•</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${getComplexityColor(template.complexity)}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full border ${getComplexityColor(template.complexity)}`}
+                  >
                     {template.complexity}
                   </span>
                   <span className="text-slate-600">•</span>
@@ -61,10 +72,7 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                 </div>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -89,7 +97,9 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-400">Type:</span>
-                    <span className="text-sm text-white capitalize">{template.layoutStructure.type}</span>
+                    <span className="text-sm text-white capitalize">
+                      {template.layoutStructure.type}
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {template.layoutStructure.regions.map((region, index) => (
@@ -111,35 +121,75 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                   Technical Requirements
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsAuth ? 'bg-blue-500/10' : 'bg-slate-700/30'}`}>
-                    <span className={template.technicalRequirements.needsAuth ? 'text-blue-400' : 'text-slate-500'}>
+                  <div
+                    className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsAuth ? 'bg-blue-500/10' : 'bg-slate-700/30'}`}
+                  >
+                    <span
+                      className={
+                        template.technicalRequirements.needsAuth
+                          ? 'text-blue-400'
+                          : 'text-slate-500'
+                      }
+                    >
                       {template.technicalRequirements.needsAuth ? '✓' : '○'}
                     </span>
-                    <span className={`text-sm ${template.technicalRequirements.needsAuth ? 'text-blue-200' : 'text-slate-500'}`}>
+                    <span
+                      className={`text-sm ${template.technicalRequirements.needsAuth ? 'text-blue-200' : 'text-slate-500'}`}
+                    >
                       Authentication
                     </span>
                   </div>
-                  <div className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsDatabase ? 'bg-purple-500/10' : 'bg-slate-700/30'}`}>
-                    <span className={template.technicalRequirements.needsDatabase ? 'text-purple-400' : 'text-slate-500'}>
+                  <div
+                    className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsDatabase ? 'bg-purple-500/10' : 'bg-slate-700/30'}`}
+                  >
+                    <span
+                      className={
+                        template.technicalRequirements.needsDatabase
+                          ? 'text-purple-400'
+                          : 'text-slate-500'
+                      }
+                    >
                       {template.technicalRequirements.needsDatabase ? '✓' : '○'}
                     </span>
-                    <span className={`text-sm ${template.technicalRequirements.needsDatabase ? 'text-purple-200' : 'text-slate-500'}`}>
+                    <span
+                      className={`text-sm ${template.technicalRequirements.needsDatabase ? 'text-purple-200' : 'text-slate-500'}`}
+                    >
                       Database
                     </span>
                   </div>
-                  <div className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsAPI ? 'bg-green-500/10' : 'bg-slate-700/30'}`}>
-                    <span className={template.technicalRequirements.needsAPI ? 'text-green-400' : 'text-slate-500'}>
+                  <div
+                    className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsAPI ? 'bg-green-500/10' : 'bg-slate-700/30'}`}
+                  >
+                    <span
+                      className={
+                        template.technicalRequirements.needsAPI
+                          ? 'text-green-400'
+                          : 'text-slate-500'
+                      }
+                    >
                       {template.technicalRequirements.needsAPI ? '✓' : '○'}
                     </span>
-                    <span className={`text-sm ${template.technicalRequirements.needsAPI ? 'text-green-200' : 'text-slate-500'}`}>
+                    <span
+                      className={`text-sm ${template.technicalRequirements.needsAPI ? 'text-green-200' : 'text-slate-500'}`}
+                    >
                       API
                     </span>
                   </div>
-                  <div className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsFileUpload ? 'bg-orange-500/10' : 'bg-slate-700/30'}`}>
-                    <span className={template.technicalRequirements.needsFileUpload ? 'text-orange-400' : 'text-slate-500'}>
+                  <div
+                    className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsFileUpload ? 'bg-orange-500/10' : 'bg-slate-700/30'}`}
+                  >
+                    <span
+                      className={
+                        template.technicalRequirements.needsFileUpload
+                          ? 'text-orange-400'
+                          : 'text-slate-500'
+                      }
+                    >
                       {template.technicalRequirements.needsFileUpload ? '✓' : '○'}
                     </span>
-                    <span className={`text-sm ${template.technicalRequirements.needsFileUpload ? 'text-orange-200' : 'text-slate-500'}`}>
+                    <span
+                      className={`text-sm ${template.technicalRequirements.needsFileUpload ? 'text-orange-200' : 'text-slate-500'}`}
+                    >
                       File Upload
                     </span>
                   </div>
@@ -199,11 +249,13 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium text-white text-sm">{component.name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          component.priority === 'core' 
-                            ? 'bg-green-500/20 text-green-300' 
-                            : 'bg-slate-600/30 text-slate-400'
-                        }`}>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            component.priority === 'core'
+                              ? 'bg-green-500/20 text-green-300'
+                              : 'bg-slate-600/30 text-slate-400'
+                          }`}
+                        >
                           {component.priority}
                         </span>
                       </div>

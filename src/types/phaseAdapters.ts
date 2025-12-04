@@ -5,11 +5,7 @@
  * BuildPhase (used by UI components) for backwards compatibility.
  */
 
-import type {
-  DynamicPhase,
-  DynamicPhasePlan,
-  FeatureClassification,
-} from '@/types/dynamicPhases';
+import type { DynamicPhase, DynamicPhasePlan, FeatureClassification } from '@/types/dynamicPhases';
 import type {
   BuildPhase,
   BuildProgress,
@@ -29,9 +25,7 @@ import type { PhaseExecutionManager } from '@/services/PhaseExecutionManager';
 /**
  * Map DynamicPhase status to BuildPhase status
  */
-export function mapDynamicStatusToStatic(
-  status: DynamicPhase['status']
-): PhaseStatus {
+export function mapDynamicStatusToStatic(status: DynamicPhase['status']): PhaseStatus {
   switch (status) {
     case 'pending':
       return 'pending';
@@ -73,7 +67,13 @@ function getTaskStatus(phaseStatus: DynamicPhase['status']): TaskStatus {
  */
 export function generatePhaseId(phaseNumber: number): PhaseId {
   // Map first 5 phases to standard IDs for compatibility
-  const standardIds: PhaseId[] = ['foundation', 'features', 'integration', 'optimization', 'polish'];
+  const standardIds: PhaseId[] = [
+    'foundation',
+    'features',
+    'integration',
+    'optimization',
+    'polish',
+  ];
   if (phaseNumber <= 5) {
     return standardIds[phaseNumber - 1];
   }
@@ -135,14 +135,14 @@ export function adaptDynamicProgressToUI(
   plan: DynamicPhasePlan,
   manager?: PhaseExecutionManager
 ): BuildProgress {
-  const currentPhase = plan.phases.find(p => p.status === 'in-progress');
+  const currentPhase = plan.phases.find((p) => p.status === 'in-progress');
   const completedCount = plan.completedPhaseNumbers.length;
 
   return {
     currentPhaseId: currentPhase ? generatePhaseId(currentPhase.number) : null,
     currentPhaseIndex: currentPhase ? currentPhase.number - 1 : -1,
     totalPhases: plan.totalPhases,
-    completedPhases: plan.completedPhaseNumbers.map(n => generatePhaseId(n)),
+    completedPhases: plan.completedPhaseNumbers.map((n) => generatePhaseId(n)),
     percentComplete: Math.round((completedCount / plan.totalPhases) * 100),
     estimatedTimeRemaining: calculateRemainingTime(plan),
     startedAt: plan.createdAt,
@@ -153,9 +153,7 @@ export function adaptDynamicProgressToUI(
 /**
  * Create progress info from PhaseExecutionManager
  */
-export function getProgressFromManager(
-  manager: PhaseExecutionManager
-): {
+export function getProgressFromManager(manager: PhaseExecutionManager): {
   completed: number;
   total: number;
   percentage: number;
@@ -192,10 +190,18 @@ function inferValidationType(criterion: string): ValidationType {
   if (lowerCriterion.includes('render') || lowerCriterion.includes('display')) {
     return 'render';
   }
-  if (lowerCriterion.includes('console') || lowerCriterion.includes('error') || lowerCriterion.includes('log')) {
+  if (
+    lowerCriterion.includes('console') ||
+    lowerCriterion.includes('error') ||
+    lowerCriterion.includes('log')
+  ) {
     return 'console';
   }
-  if (lowerCriterion.includes('performance') || lowerCriterion.includes('speed') || lowerCriterion.includes('load')) {
+  if (
+    lowerCriterion.includes('performance') ||
+    lowerCriterion.includes('speed') ||
+    lowerCriterion.includes('load')
+  ) {
     return 'performance';
   }
   return 'functionality';
@@ -206,7 +212,7 @@ function inferValidationType(criterion: string): ValidationType {
  */
 function calculateRemainingTime(plan: DynamicPhasePlan): string {
   const remainingPhases = plan.phases.filter(
-    p => p.status === 'pending' || p.status === 'in-progress'
+    (p) => p.status === 'pending' || p.status === 'in-progress'
   );
 
   if (remainingPhases.length === 0) {
@@ -267,8 +273,8 @@ export function getExtendedPhaseInfo(
   plan: DynamicPhasePlan
 ): ExtendedPhaseInfo {
   // Get dependency info
-  const dependencies = phase.dependencies.map(depNum => {
-    const depPhase = plan.phases.find(p => p.number === depNum);
+  const dependencies = phase.dependencies.map((depNum) => {
+    const depPhase = plan.phases.find((p) => p.number === depNum);
     return {
       phaseNumber: depNum,
       phaseName: depPhase?.name || `Phase ${depNum}`,
@@ -277,13 +283,11 @@ export function getExtendedPhaseInfo(
   });
 
   // Check if can start (all dependencies completed)
-  const blockedBy = dependencies
-    .filter(d => !d.isCompleted)
-    .map(d => d.phaseName);
+  const blockedBy = dependencies.filter((d) => !d.isCompleted).map((d) => d.phaseName);
   const canStart = blockedBy.length === 0 && phase.status === 'pending';
 
   // Get feature breakdown
-  const featureBreakdown = phase.featureDetails.map(fd => ({
+  const featureBreakdown = phase.featureDetails.map((fd) => ({
     name: fd.originalFeature.name,
     complexity: fd.complexity,
     estimatedTokens: fd.estimatedTokens,
@@ -329,10 +333,10 @@ export interface PlanSummary {
  * Get a summary of the phase plan
  */
 export function getPlanSummary(plan: DynamicPhasePlan): PlanSummary {
-  const completedCount = plan.phases.filter(p => p.status === 'completed').length;
-  const inProgressCount = plan.phases.filter(p => p.status === 'in-progress').length;
-  const failedCount = plan.phases.filter(p => p.status === 'failed').length;
-  const pendingCount = plan.phases.filter(p => p.status === 'pending').length;
+  const completedCount = plan.phases.filter((p) => p.status === 'completed').length;
+  const inProgressCount = plan.phases.filter((p) => p.status === 'in-progress').length;
+  const failedCount = plan.phases.filter((p) => p.status === 'failed').length;
+  const pendingCount = plan.phases.filter((p) => p.status === 'pending').length;
 
   return {
     appName: plan.appName,
@@ -344,7 +348,7 @@ export function getPlanSummary(plan: DynamicPhasePlan): PlanSummary {
     pendingCount,
     failedCount,
     percentComplete: Math.round((completedCount / plan.totalPhases) * 100),
-    phases: plan.phases.map(p => ({
+    phases: plan.phases.map((p) => ({
       number: p.number,
       name: p.name,
       status: p.status,

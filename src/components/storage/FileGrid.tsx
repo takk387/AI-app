@@ -18,7 +18,7 @@ interface FileGridProps {
 
 /**
  * FileGrid Component
- * 
+ *
  * Displays files in a responsive grid layout.
  * Supports selection, actions, and loading states.
  */
@@ -62,12 +62,8 @@ export function FileGrid({
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
         <div className="text-6xl mb-4">📁</div>
-        <h3 className="text-xl font-semibold text-white mb-2">
-          No Files Found
-        </h3>
-        <p className="text-slate-400 text-center max-w-md">
-          {emptyMessage}
-        </p>
+        <h3 className="text-xl font-semibold text-white mb-2">No Files Found</h3>
+        <p className="text-slate-400 text-center max-w-md">{emptyMessage}</p>
       </div>
     );
   }

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import type { 
-  AppSettings, 
+import type {
+  AppSettings,
   SettingsSection,
   GeneralSettings,
   EditorSettings,
@@ -14,11 +14,11 @@ import type {
   AccountSettings,
 } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
-import { 
-  loadSettings, 
-  saveSettings, 
-  clearSettings, 
-  exportSettings, 
+import {
+  loadSettings,
+  saveSettings,
+  clearSettings,
+  exportSettings,
   importSettings,
   downloadSettings,
 } from '../utils/settingsStorage';
@@ -26,7 +26,7 @@ import {
 interface SettingsContextType {
   settings: AppSettings;
   isLoading: boolean;
-  
+
   // Update functions
   updateGeneralSettings: (updates: Partial<GeneralSettings>) => void;
   updateEditorSettings: (updates: Partial<EditorSettings>) => void;
@@ -36,7 +36,7 @@ interface SettingsContextType {
   updateAppearanceSettings: (updates: Partial<ThemeSettings>) => void;
   updateShortcut: (shortcutId: string, keys: string) => void;
   updateAccountSettings: (updates: Partial<AccountSettings>) => void;
-  
+
   // Bulk operations
   resetSettings: () => void;
   resetSection: (section: SettingsSection) => void;
@@ -68,7 +68,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update general settings
   const updateGeneralSettings = useCallback((updates: Partial<GeneralSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       general: { ...prev.general, ...updates },
     }));
@@ -76,7 +76,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update editor settings
   const updateEditorSettings = useCallback((updates: Partial<EditorSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       editor: { ...prev.editor, ...updates },
     }));
@@ -84,7 +84,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update AI settings
   const updateAISettings = useCallback((updates: Partial<AISettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       ai: { ...prev.ai, ...updates },
     }));
@@ -92,7 +92,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update preview settings
   const updatePreviewSettings = useCallback((updates: Partial<PreviewSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       preview: { ...prev.preview, ...updates },
     }));
@@ -100,7 +100,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update build settings
   const updateBuildSettings = useCallback((updates: Partial<BuildSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       build: { ...prev.build, ...updates },
     }));
@@ -108,7 +108,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update appearance settings
   const updateAppearanceSettings = useCallback((updates: Partial<ThemeSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       appearance: { ...prev.appearance, ...updates },
     }));
@@ -116,17 +116,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Update a specific keyboard shortcut
   const updateShortcut = useCallback((shortcutId: string, keys: string) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      shortcuts: prev.shortcuts.map(s => 
-        s.id === shortcutId ? { ...s, keys } : s
-      ),
+      shortcuts: prev.shortcuts.map((s) => (s.id === shortcutId ? { ...s, keys } : s)),
     }));
   }, []);
 
   // Update account settings
   const updateAccountSettings = useCallback((updates: Partial<AccountSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       account: { ...prev.account, ...updates },
     }));
@@ -140,7 +138,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Reset a specific section to defaults
   const resetSection = useCallback((section: SettingsSection) => {
-    setSettings(prev => {
+    setSettings((prev) => {
       switch (section) {
         case 'general':
           return { ...prev, general: DEFAULT_SETTINGS.general };
@@ -184,45 +182,44 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     downloadSettings(settings);
   }, [settings]);
 
-  const value = useMemo(() => ({
-    settings,
-    isLoading,
-    updateGeneralSettings,
-    updateEditorSettings,
-    updateAISettings,
-    updatePreviewSettings,
-    updateBuildSettings,
-    updateAppearanceSettings,
-    updateShortcut,
-    updateAccountSettings,
-    resetSettings,
-    resetSection,
-    exportSettingsToJson,
-    importSettingsFromJson,
-    downloadSettingsFile,
-  }), [
-    settings,
-    isLoading,
-    updateGeneralSettings,
-    updateEditorSettings,
-    updateAISettings,
-    updatePreviewSettings,
-    updateBuildSettings,
-    updateAppearanceSettings,
-    updateShortcut,
-    updateAccountSettings,
-    resetSettings,
-    resetSection,
-    exportSettingsToJson,
-    importSettingsFromJson,
-    downloadSettingsFile,
-  ]);
-
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
+  const value = useMemo(
+    () => ({
+      settings,
+      isLoading,
+      updateGeneralSettings,
+      updateEditorSettings,
+      updateAISettings,
+      updatePreviewSettings,
+      updateBuildSettings,
+      updateAppearanceSettings,
+      updateShortcut,
+      updateAccountSettings,
+      resetSettings,
+      resetSection,
+      exportSettingsToJson,
+      importSettingsFromJson,
+      downloadSettingsFile,
+    }),
+    [
+      settings,
+      isLoading,
+      updateGeneralSettings,
+      updateEditorSettings,
+      updateAISettings,
+      updatePreviewSettings,
+      updateBuildSettings,
+      updateAppearanceSettings,
+      updateShortcut,
+      updateAccountSettings,
+      resetSettings,
+      resetSection,
+      exportSettingsToJson,
+      importSettingsFromJson,
+      downloadSettingsFile,
+    ]
   );
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
 
 export function useSettingsContext() {

@@ -1,18 +1,14 @@
-"use client";
+'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
-import type {
-  EnhancedDiffViewerProps,
-  DiffHunk,
-  DiffLine,
-} from '@/types/review';
+import type { EnhancedDiffViewerProps, DiffHunk, DiffLine } from '@/types/review';
 import { getStatusBgColor } from '@/types/review';
 import HunkApprovalCard from './HunkApprovalCard';
 import CommentThread from './CommentThread';
 
 /**
  * EnhancedDiffViewer - Side-by-side diff comparison component
- * 
+ *
  * Features:
  * - Side-by-side view of original and modified code
  * - Syntax highlighting indication through line coloring
@@ -34,9 +30,7 @@ export default function EnhancedDiffViewer({
   showLineNumbers = true,
   contextLines = 3,
 }: EnhancedDiffViewerProps) {
-  const [expandedHunks, setExpandedHunks] = useState<Set<string>>(
-    new Set(hunks.map(h => h.id))
-  );
+  const [expandedHunks, setExpandedHunks] = useState<Set<string>>(new Set(hunks.map((h) => h.id)));
   const [commentingLine, setCommentingLine] = useState<{
     hunkId: string;
     lineNumber: number;
@@ -45,7 +39,7 @@ export default function EnhancedDiffViewer({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
   const toggleHunk = useCallback((hunkId: string) => {
-    setExpandedHunks(prev => {
+    setExpandedHunks((prev) => {
       const next = new Set(prev);
       if (next.has(hunkId)) {
         next.delete(hunkId);
@@ -127,9 +121,7 @@ export default function EnhancedDiffViewer({
             </span>
           </div>
         </div>
-        <div className="p-4 text-slate-400 text-sm">
-          No changes to display
-        </div>
+        <div className="p-4 text-slate-400 text-sm">No changes to display</div>
       </div>
     );
   }
@@ -149,11 +141,19 @@ export default function EnhancedDiffViewer({
           <div className="flex items-center gap-2 text-xs">
             <span className="flex items-center gap-1 text-green-400">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              {hunks.reduce((sum, h) => sum + h.lines.filter(l => l.type === 'added').length, 0)} added
+              {hunks.reduce(
+                (sum, h) => sum + h.lines.filter((l) => l.type === 'added').length,
+                0
+              )}{' '}
+              added
             </span>
             <span className="flex items-center gap-1 text-red-400">
               <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-              {hunks.reduce((sum, h) => sum + h.lines.filter(l => l.type === 'removed').length, 0)} removed
+              {hunks.reduce(
+                (sum, h) => sum + h.lines.filter((l) => l.type === 'removed').length,
+                0
+              )}{' '}
+              removed
             </span>
           </div>
         </div>
@@ -191,8 +191,8 @@ export default function EnhancedDiffViewer({
                             line.type === 'removed'
                               ? 'bg-red-500/20'
                               : line.type === 'added'
-                              ? 'opacity-0 h-0 overflow-hidden'
-                              : 'bg-transparent'
+                                ? 'opacity-0 h-0 overflow-hidden'
+                                : 'bg-transparent'
                           }`}
                         >
                           {showLineNumbers && line.type !== 'added' && (
@@ -234,8 +234,8 @@ export default function EnhancedDiffViewer({
                             line.type === 'added'
                               ? 'bg-green-500/20'
                               : line.type === 'removed'
-                              ? 'opacity-0 h-0 overflow-hidden'
-                              : 'bg-transparent'
+                                ? 'opacity-0 h-0 overflow-hidden'
+                                : 'bg-transparent'
                           }`}
                         >
                           {showLineNumbers && line.type !== 'removed' && (
@@ -328,11 +328,11 @@ export default function EnhancedDiffViewer({
                 )}
 
                 {/* Existing comments */}
-                {hunk.lines.some(l => l.comments.length > 0) && (
+                {hunk.lines.some((l) => l.comments.length > 0) && (
                   <div className="p-3 bg-slate-800/50 border-t border-white/5">
                     {hunk.lines
-                      .filter(l => l.comments.length > 0)
-                      .map(line => (
+                      .filter((l) => l.comments.length > 0)
+                      .map((line) => (
                         <div key={line.number} className="mb-2 last:mb-0">
                           <CommentThread
                             comments={line.comments}

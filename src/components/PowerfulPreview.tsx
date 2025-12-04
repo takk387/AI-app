@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useMemo, useEffect, useCallback } from 'react';
 import { SandpackProvider, SandpackPreview, SandpackLayout } from '@codesandbox/sandpack-react';
@@ -27,7 +27,7 @@ interface PowerfulPreviewProps {
 export default function PowerfulPreview({
   appDataJson,
   isFullscreen = false,
-  onCaptureReady
+  onCaptureReady,
 }: PowerfulPreviewProps) {
   // Parse JSON with error handling to prevent crashes
   const appData = useMemo((): FullAppData | null => {
@@ -52,7 +52,7 @@ export default function PowerfulPreview({
           name: appData.name,
           dependencies: appData.dependencies,
           width: 1280,
-          height: 720
+          height: 720,
         }),
       });
 
@@ -88,26 +88,30 @@ export default function PowerfulPreview({
 
   // Convert files to Sandpack format - React template needs / prefix
   const sandpackFiles: Record<string, { code: string }> = {};
-  
-  appData.files.forEach(file => {
+
+  appData.files.forEach((file) => {
     // Map file paths to Sandpack structure
     let sandpackPath = file.path;
-    
+
     // Handle different file structures - remove src/ prefix
     if (sandpackPath.startsWith('src/')) {
       sandpackPath = sandpackPath.substring(4); // Remove 'src/' (4 characters)
     }
-    
+
     // Keep as App.tsx for TypeScript support
-    if (sandpackPath === 'App.tsx' || sandpackPath === 'app/page.tsx' || sandpackPath === 'page.tsx') {
+    if (
+      sandpackPath === 'App.tsx' ||
+      sandpackPath === 'app/page.tsx' ||
+      sandpackPath === 'page.tsx'
+    ) {
       sandpackPath = 'App.tsx';
     }
-    
+
     // Add leading / for Sandpack react template
     if (!sandpackPath.startsWith('/') && !sandpackPath.startsWith('public/')) {
       sandpackPath = '/' + sandpackPath;
     }
-    
+
     // Sandpack file format uses objects with 'code' property
     sandpackFiles[sandpackPath] = { code: file.content };
   });
@@ -115,7 +119,10 @@ export default function PowerfulPreview({
   // Ensure we have /App.tsx
   if (!sandpackFiles['/App.tsx']) {
     console.error('No /App.tsx found in files:', Object.keys(sandpackFiles));
-    console.log('Original file paths:', appData.files.map(f => f.path));
+    console.log(
+      'Original file paths:',
+      appData.files.map((f) => f.path)
+    );
   }
 
   // Add index.tsx for TypeScript support
@@ -127,7 +134,7 @@ import "./styles.css";
 import App from "./App";
 
 const root = createRoot(document.getElementById("root")!);
-root.render(<App />);`
+root.render(<App />);`,
     };
   }
 
@@ -148,7 +155,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
-}`
+}`,
     };
   }
 
@@ -165,7 +172,7 @@ h1, h2, h3, h4, h5, h6 {
   <body>
     <div id="root"></div>
   </body>
-</html>`
+</html>`,
   };
 
   // Merge user dependencies with required ones
@@ -177,10 +184,13 @@ h1, h2, h3, h4, h5, h6 {
   };
 
   return (
-    <div className="w-full h-full flex flex-col" style={{ 
-      minHeight: isFullscreen ? '100vh' : '600px', 
-      height: isFullscreen ? '100vh' : '100%' 
-    }}>
+    <div
+      className="w-full h-full flex flex-col"
+      style={{
+        minHeight: isFullscreen ? '100vh' : '600px',
+        height: isFullscreen ? '100vh' : '100%',
+      }}
+    >
       <SandpackProvider
         template="react-ts"
         theme="dark"
@@ -192,28 +202,28 @@ h1, h2, h3, h4, h5, h6 {
           autorun: true,
           autoReload: true,
           recompileMode: 'immediate',
-          externalResources: [
-            'https://cdn.tailwindcss.com'
-          ],
+          externalResources: ['https://cdn.tailwindcss.com'],
         }}
       >
-        <SandpackLayout style={{ 
-          height: '100%', 
-          width: '100%', 
-          minHeight: isFullscreen ? '100vh' : '600px', 
-          flex: 1 
-        }}>
-          <SandpackPreview 
+        <SandpackLayout
+          style={{
+            height: '100%',
+            width: '100%',
+            minHeight: isFullscreen ? '100vh' : '600px',
+            flex: 1,
+          }}
+        >
+          <SandpackPreview
             showOpenInCodeSandbox={false}
             showRefreshButton={true}
-            style={{ 
-              height: '100%', 
-              width: '100%', 
-              minHeight: isFullscreen ? '100vh' : '600px' 
+            style={{
+              height: '100%',
+              width: '100%',
+              minHeight: isFullscreen ? '100vh' : '600px',
             }}
           />
         </SandpackLayout>
-        
+
         {appData.appType === 'FULL_STACK' && (
           <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
             ⚠️ Preview mode: Backend features disabled

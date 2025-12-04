@@ -1,6 +1,6 @@
 /**
  * useDatabaseSync Hook - Handles Supabase database operations for saving/loading components
- * 
+ *
  * Extracted from AIBuilder.tsx for reusability and better separation of concerns.
  * Provides functionality to save, delete, and load generated components from Supabase.
  */
@@ -8,7 +8,12 @@
 import { useState, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import type { Database } from '@/types/supabase';
-import type { GeneratedComponent, ChatMessage, AppVersion, StagePlan } from '@/types/aiBuilderTypes';
+import type {
+  GeneratedComponent,
+  ChatMessage,
+  AppVersion,
+  StagePlan,
+} from '@/types/aiBuilderTypes';
 
 type DbGeneratedApp = Database['public']['Tables']['generated_apps']['Row'];
 type DbGeneratedAppInsert = Database['public']['Tables']['generated_apps']['Insert'];
@@ -69,10 +74,10 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
       conversationHistory: component.conversationHistory,
       versions: component.versions || [],
       timestamp: component.timestamp,
-      stagePlan: component.stagePlan || null
+      stagePlan: component.stagePlan || null,
     } as unknown as Database['public']['Tables']['generated_apps']['Row']['metadata'],
     is_public: false,
-    version: (component.versions?.length || 0) + 1
+    version: (component.versions?.length || 0) + 1,
   };
 }
 
@@ -90,16 +95,16 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
     isFavorite: metadata.isFavorite || false,
     conversationHistory: metadata.conversationHistory || [],
     versions: metadata.versions || [],
-    stagePlan: metadata.stagePlan ?? null
+    stagePlan: metadata.stagePlan ?? null,
   };
 }
 
 /**
  * Hook for managing database synchronization of generated components
- * 
+ *
  * @param options - Configuration options
  * @returns Database sync methods and state
- * 
+ *
  * @example
  * ```tsx
  * const { saveComponent, deleteComponent, loadComponents, isLoading, error } = useDatabaseSync({
@@ -123,89 +128,93 @@ export function useDatabaseSync(options: UseDatabaseSyncOptions): UseDatabaseSyn
   /**
    * Save a component to the database
    */
-  const saveComponent = useCallback(async (component: GeneratedComponent): Promise<{ success: boolean; error?: unknown }> => {
-    if (!userId) {
-      // User not authenticated - skip database save
-      return { success: true };
-    }
+  const saveComponent = useCallback(
+    async (component: GeneratedComponent): Promise<{ success: boolean; error?: unknown }> => {
+      if (!userId) {
+        // User not authenticated - skip database save
+        return { success: true };
+      }
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const supabase = createClient();
-      const dbData = componentToDb(component, userId);
-      
-      // Upsert without onConflict parameter - let Supabase handle it automatically
-      const { error: dbError } = await supabase
-        .from('generated_apps')
-        .upsert(dbData);
-      
-      if (dbError) {
-        console.error('Error saving to database:', dbError);
-        const errorMessage = `Failed to save "${component.name}" to database`;
+      try {
+        const supabase = createClient();
+        const dbData = componentToDb(component, userId);
+
+        // Upsert without onConflict parameter - let Supabase handle it automatically
+        const { error: dbError } = await supabase.from('generated_apps').upsert(dbData);
+
+        if (dbError) {
+          console.error('Error saving to database:', dbError);
+          const errorMessage = `Failed to save "${component.name}" to database`;
+          setError(errorMessage);
+          onError?.(errorMessage);
+          return { success: false, error: dbError };
+        }
+
+        // Clear any previous errors
+        setError(null);
+        onSuccess?.();
+        return { success: true };
+      } catch (err) {
+        console.error('Error in saveComponent:', err);
+        const errorMessage = 'Failed to save to database';
         setError(errorMessage);
         onError?.(errorMessage);
-        return { success: false, error: dbError };
+        return { success: false, error: err };
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Clear any previous errors
-      setError(null);
-      onSuccess?.();
-      return { success: true };
-    } catch (err) {
-      console.error('Error in saveComponent:', err);
-      const errorMessage = 'Failed to save to database';
-      setError(errorMessage);
-      onError?.(errorMessage);
-      return { success: false, error: err };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, onError, onSuccess]);
+    },
+    [userId, onError, onSuccess]
+  );
 
   /**
    * Delete a component from the database
    */
-  const deleteComponent = useCallback(async (componentId: string): Promise<{ success: boolean; error?: unknown }> => {
-    if (!userId) {
-      // User not authenticated - skip database delete
-      return { success: true };
-    }
+  const deleteComponent = useCallback(
+    async (componentId: string): Promise<{ success: boolean; error?: unknown }> => {
+      if (!userId) {
+        // User not authenticated - skip database delete
+        return { success: true };
+      }
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const supabase = createClient();
-      const { error: dbError } = await supabase
-        .from('generated_apps')
-        .delete()
-        .eq('id', componentId)
-        .eq('user_id', userId); // Ensure user can only delete their own apps
-      
-      if (dbError) {
-        console.error('Error deleting from database:', dbError);
+      try {
+        const supabase = createClient();
+        const { error: dbError } = await supabase
+          .from('generated_apps')
+          .delete()
+          .eq('id', componentId)
+          .eq('user_id', userId); // Ensure user can only delete their own apps
+
+        if (dbError) {
+          console.error('Error deleting from database:', dbError);
+          const errorMessage = 'Failed to delete from database';
+          setError(errorMessage);
+          onError?.(errorMessage);
+          return { success: false, error: dbError };
+        }
+
+        // Clear any previous errors
+        setError(null);
+        onSuccess?.();
+        return { success: true };
+      } catch (err) {
+        console.error('Error in deleteComponent:', err);
         const errorMessage = 'Failed to delete from database';
         setError(errorMessage);
         onError?.(errorMessage);
-        return { success: false, error: dbError };
+        return { success: false, error: err };
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Clear any previous errors
-      setError(null);
-      onSuccess?.();
-      return { success: true };
-    } catch (err) {
-      console.error('Error in deleteComponent:', err);
-      const errorMessage = 'Failed to delete from database';
-      setError(errorMessage);
-      onError?.(errorMessage);
-      return { success: false, error: err };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, onError, onSuccess]);
+    },
+    [userId, onError, onSuccess]
+  );
 
   /**
    * Load all components from the database
@@ -225,7 +234,7 @@ export function useDatabaseSync(options: UseDatabaseSyncOptions): UseDatabaseSyn
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
+
       if (dbError) {
         console.error('Error loading apps from database:', dbError);
         const errorMessage = 'Failed to load apps from database';
@@ -233,7 +242,7 @@ export function useDatabaseSync(options: UseDatabaseSyncOptions): UseDatabaseSyn
         onError?.(errorMessage);
         return [];
       }
-      
+
       // Convert database apps to component format
       const components = (dbApps || []).map(dbToComponent);
       onSuccess?.();

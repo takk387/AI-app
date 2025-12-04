@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { PerformanceReport as PerformanceReportType, PerformanceMetrics, PerformanceIssue } from '@/types/aiBuilderTypes';
+import type {
+  PerformanceReport as PerformanceReportType,
+  PerformanceMetrics,
+  PerformanceIssue,
+} from '@/types/aiBuilderTypes';
 
 export interface PerformanceReportProps {
   isOpen: boolean;
@@ -29,7 +33,10 @@ const thresholds = {
 };
 
 // Get status based on thresholds
-const getMetricStatus = (metric: keyof typeof thresholds, value: number): 'good' | 'ok' | 'poor' => {
+const getMetricStatus = (
+  metric: keyof typeof thresholds,
+  value: number
+): 'good' | 'ok' | 'poor' => {
   const threshold = thresholds[metric];
   if (value <= threshold.good) return 'good';
   if (value <= threshold.ok) return 'ok';
@@ -38,27 +45,38 @@ const getMetricStatus = (metric: keyof typeof thresholds, value: number): 'good'
 
 const getStatusColor = (status: 'good' | 'ok' | 'poor'): string => {
   switch (status) {
-    case 'good': return 'text-green-400';
-    case 'ok': return 'text-yellow-400';
-    case 'poor': return 'text-red-400';
+    case 'good':
+      return 'text-green-400';
+    case 'ok':
+      return 'text-yellow-400';
+    case 'poor':
+      return 'text-red-400';
   }
 };
 
 const getStatusBgColor = (status: 'good' | 'ok' | 'poor'): string => {
   switch (status) {
-    case 'good': return 'bg-green-500/20 border-green-500/30';
-    case 'ok': return 'bg-yellow-500/20 border-yellow-500/30';
-    case 'poor': return 'bg-red-500/20 border-red-500/30';
+    case 'good':
+      return 'bg-green-500/20 border-green-500/30';
+    case 'ok':
+      return 'bg-yellow-500/20 border-yellow-500/30';
+    case 'poor':
+      return 'bg-red-500/20 border-red-500/30';
   }
 };
 
 const getImpactColor = (impact: string): string => {
   switch (impact) {
-    case 'critical': return 'bg-red-500/20 text-red-300 border-red-500/30';
-    case 'high': return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
-    case 'medium': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
-    case 'low': return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
-    default: return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+    case 'critical':
+      return 'bg-red-500/20 text-red-300 border-red-500/30';
+    case 'high':
+      return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+    case 'medium':
+      return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+    case 'low':
+      return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+    default:
+      return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
   }
 };
 
@@ -75,9 +93,11 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, unit, metricKey, 
   const threshold = thresholds[metricKey];
   const progressMax = threshold.ok * 1.5;
   const progressValue = Math.min((value / progressMax) * 100, 100);
-  
+
   return (
-    <div className={`p-4 rounded-xl border transition-all hover:scale-105 ${getStatusBgColor(status)}`}>
+    <div
+      className={`p-4 rounded-xl border transition-all hover:scale-105 ${getStatusBgColor(status)}`}
+    >
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xl">{icon}</span>
         <span className="text-sm text-slate-300 font-medium">{label}</span>
@@ -89,14 +109,15 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, unit, metricKey, 
       <div className="mt-2 w-full bg-slate-700/50 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all ${
-            status === 'good' ? 'bg-green-500' :
-            status === 'ok' ? 'bg-yellow-500' : 'bg-red-500'
+            status === 'good' ? 'bg-green-500' : status === 'ok' ? 'bg-yellow-500' : 'bg-red-500'
           }`}
           style={{ width: `${progressValue}%` }}
         />
       </div>
       <div className="mt-1 text-xs text-slate-500">
-        Good: &lt;{threshold.good}{unit === 'KB' ? 'KB' : 'ms'} | OK: &lt;{threshold.ok}{unit === 'KB' ? 'KB' : 'ms'}
+        Good: &lt;{threshold.good}
+        {unit === 'KB' ? 'KB' : 'ms'} | OK: &lt;{threshold.ok}
+        {unit === 'KB' ? 'KB' : 'ms'}
       </div>
     </div>
   );
@@ -110,9 +131,9 @@ const getOverallStatus = (metrics: PerformanceMetrics): 'good' | 'ok' | 'poor' =
     getMetricStatus('bundleSize', metrics.bundleSize),
     getMetricStatus('renderTime', metrics.renderTime),
   ];
-  
-  if (statuses.some(s => s === 'poor')) return 'poor';
-  if (statuses.some(s => s === 'ok')) return 'ok';
+
+  if (statuses.some((s) => s === 'poor')) return 'poor';
+  if (statuses.some((s) => s === 'ok')) return 'ok';
   return 'good';
 };
 
@@ -127,11 +148,15 @@ export function PerformanceReport({
 
   if (!isOpen) return null;
 
-  const groupedIssues = report?.issues.reduce((acc, issue) => {
-    if (!acc[issue.impact]) acc[issue.impact] = [];
-    acc[issue.impact].push(issue);
-    return acc;
-  }, {} as Record<string, PerformanceIssue[]>) || {};
+  const groupedIssues =
+    report?.issues.reduce(
+      (acc, issue) => {
+        if (!acc[issue.impact]) acc[issue.impact] = [];
+        acc[issue.impact].push(issue);
+        return acc;
+      },
+      {} as Record<string, PerformanceIssue[]>
+    ) || {};
 
   const impactOrder = ['critical', 'high', 'medium', 'low'];
 
@@ -159,7 +184,9 @@ export function PerformanceReport({
                 {statusLabels[status]}
               </div>
               <div className="text-sm text-slate-400">
-                {report.passed ? 'Performance within acceptable range' : 'Performance needs optimization'}
+                {report.passed
+                  ? 'Performance within acceptable range'
+                  : 'Performance needs optimization'}
               </div>
             </div>
           </div>
@@ -227,7 +254,9 @@ export function PerformanceReport({
                 <span className="text-3xl">⚡</span>
               </div>
               <div>
-                <h3 id="performance-report-title" className="text-xl font-bold text-white">Performance Report</h3>
+                <h3 id="performance-report-title" className="text-xl font-bold text-white">
+                  Performance Report
+                </h3>
                 {report && (
                   <p className="text-sm text-purple-200/80">
                     Benchmarked {new Date(report.timestamp).toLocaleString()}
@@ -280,34 +309,49 @@ export function PerformanceReport({
                     {impactOrder.map((impact) => {
                       const issues = groupedIssues[impact];
                       if (!issues || issues.length === 0) return null;
-                      
+
                       const isExpanded = expandedImpact === impact;
-                      
+
                       return (
-                        <div key={impact} className="rounded-xl border border-white/10 overflow-hidden">
+                        <div
+                          key={impact}
+                          className="rounded-xl border border-white/10 overflow-hidden"
+                        >
                           <button
                             onClick={() => setExpandedImpact(isExpanded ? null : impact)}
                             className="w-full px-4 py-3 flex items-center justify-between bg-slate-800/50 hover:bg-slate-800 transition-all"
                             aria-expanded={isExpanded}
                           >
                             <div className="flex items-center gap-3">
-                              <span className={getImpactBadgeClassName(impact)}>
-                                {impact}
+                              <span className={getImpactBadgeClassName(impact)}>{impact}</span>
+                              <span className="text-white">
+                                {issues.length} issue{issues.length !== 1 ? 's' : ''}
                               </span>
-                              <span className="text-white">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
                             </div>
                             <span className="text-slate-400">{isExpanded ? '▼' : '▶'}</span>
                           </button>
                           {isExpanded && (
                             <div className="p-4 space-y-3 bg-black/20">
                               {issues.map((issue) => (
-                                <div key={issue.id} className="p-3 rounded-lg bg-slate-800/50 border border-white/10">
+                                <div
+                                  key={issue.id}
+                                  className="p-3 rounded-lg bg-slate-800/50 border border-white/10"
+                                >
                                   <div className="flex items-start gap-2">
-                                    <span className={`text-xs ${
-                                      issue.type === 'error' ? 'text-red-400' :
-                                      issue.type === 'warning' ? 'text-yellow-400' : 'text-blue-400'
-                                    }`}>
-                                      {issue.type === 'error' ? '❌' : issue.type === 'warning' ? '⚠️' : 'ℹ️'}
+                                    <span
+                                      className={`text-xs ${
+                                        issue.type === 'error'
+                                          ? 'text-red-400'
+                                          : issue.type === 'warning'
+                                            ? 'text-yellow-400'
+                                            : 'text-blue-400'
+                                      }`}
+                                    >
+                                      {issue.type === 'error'
+                                        ? '❌'
+                                        : issue.type === 'warning'
+                                          ? '⚠️'
+                                          : 'ℹ️'}
                                     </span>
                                     <div className="flex-1">
                                       <p className="text-sm text-slate-300">{issue.message}</p>

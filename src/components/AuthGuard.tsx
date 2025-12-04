@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -12,7 +12,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Skip auth check for public pages
-    if (pathname === '/login' || pathname === '/signup' || pathname.startsWith('/api/auth/callback')) {
+    if (
+      pathname === '/login' ||
+      pathname === '/signup' ||
+      pathname.startsWith('/api/auth/callback')
+    ) {
       setIsChecking(false);
       return;
     }
@@ -39,7 +43,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Allow access to login/signup pages without auth
-  if (pathname === '/login' || pathname === '/signup' || pathname.startsWith('/api/auth/callback')) {
+  if (
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname.startsWith('/api/auth/callback')
+  ) {
     return <>{children}</>;
   }
 

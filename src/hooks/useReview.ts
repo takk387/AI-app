@@ -1,6 +1,6 @@
 /**
  * useReview Hook - State management for the Enhanced Review System
- * 
+ *
  * Provides:
  * - Review state management
  * - Hunk approval/rejection
@@ -74,14 +74,12 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       const { filePath, hunkId } = action.payload;
       return {
         ...state,
-        changes: state.changes.map(change =>
+        changes: state.changes.map((change) =>
           change.path === filePath
             ? {
                 ...change,
-                hunks: change.hunks.map(hunk =>
-                  hunk.id === hunkId
-                    ? { ...hunk, status: 'approved' as ApprovalStatus }
-                    : hunk
+                hunks: change.hunks.map((hunk) =>
+                  hunk.id === hunkId ? { ...hunk, status: 'approved' as ApprovalStatus } : hunk
                 ),
               }
             : change
@@ -93,14 +91,12 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       const { filePath, hunkId } = action.payload;
       return {
         ...state,
-        changes: state.changes.map(change =>
+        changes: state.changes.map((change) =>
           change.path === filePath
             ? {
                 ...change,
-                hunks: change.hunks.map(hunk =>
-                  hunk.id === hunkId
-                    ? { ...hunk, status: 'rejected' as ApprovalStatus }
-                    : hunk
+                hunks: change.hunks.map((hunk) =>
+                  hunk.id === hunkId ? { ...hunk, status: 'rejected' as ApprovalStatus } : hunk
                 ),
               }
             : change
@@ -112,14 +108,12 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       const { filePath, hunkId } = action.payload;
       return {
         ...state,
-        changes: state.changes.map(change =>
+        changes: state.changes.map((change) =>
           change.path === filePath
             ? {
                 ...change,
-                hunks: change.hunks.map(hunk =>
-                  hunk.id === hunkId
-                    ? { ...hunk, status: 'pending' as ApprovalStatus }
-                    : hunk
+                hunks: change.hunks.map((hunk) =>
+                  hunk.id === hunkId ? { ...hunk, status: 'pending' as ApprovalStatus } : hunk
                 ),
               }
             : change
@@ -130,9 +124,9 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
     case 'APPROVE_ALL':
       return {
         ...state,
-        changes: state.changes.map(change => ({
+        changes: state.changes.map((change) => ({
           ...change,
-          hunks: change.hunks.map(hunk => ({
+          hunks: change.hunks.map((hunk) => ({
             ...hunk,
             status: 'approved' as ApprovalStatus,
           })),
@@ -142,9 +136,9 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
     case 'REJECT_ALL':
       return {
         ...state,
-        changes: state.changes.map(change => ({
+        changes: state.changes.map((change) => ({
           ...change,
-          hunks: change.hunks.map(hunk => ({
+          hunks: change.hunks.map((hunk) => ({
             ...hunk,
             status: 'rejected' as ApprovalStatus,
           })),
@@ -155,15 +149,15 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       const { filePath, hunkId, lineNumber, comment } = action.payload;
       return {
         ...state,
-        changes: state.changes.map(change =>
+        changes: state.changes.map((change) =>
           change.path === filePath
             ? {
                 ...change,
-                hunks: change.hunks.map(hunk =>
+                hunks: change.hunks.map((hunk) =>
                   hunk.id === hunkId
                     ? {
                         ...hunk,
-                        lines: hunk.lines.map(line =>
+                        lines: hunk.lines.map((line) =>
                           line.number === lineNumber
                             ? { ...line, comments: [...line.comments, comment] }
                             : line
@@ -181,19 +175,19 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
       const { filePath, hunkId, lineNumber, commentId } = action.payload;
       return {
         ...state,
-        changes: state.changes.map(change =>
+        changes: state.changes.map((change) =>
           change.path === filePath
             ? {
                 ...change,
-                hunks: change.hunks.map(hunk =>
+                hunks: change.hunks.map((hunk) =>
                   hunk.id === hunkId
                     ? {
                         ...hunk,
-                        lines: hunk.lines.map(line =>
+                        lines: hunk.lines.map((line) =>
                           line.number === lineNumber
                             ? {
                                 ...line,
-                                comments: line.comments.map(c =>
+                                comments: line.comments.map((c) =>
                                   c.id === commentId ? { ...c, resolved: true } : c
                                 ),
                               }
@@ -217,7 +211,7 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
     case 'DELETE_RESTORE_POINT':
       return {
         ...state,
-        restorePoints: state.restorePoints.filter(p => p.id !== action.payload),
+        restorePoints: state.restorePoints.filter((p) => p.id !== action.payload),
       };
 
     case 'SET_IMPACT_ANALYSIS':
@@ -252,32 +246,32 @@ export interface UseReviewReturn {
   statistics: ReviewStatistics;
   filteredChanges: FileChange[];
   selectedChange: FileChange | null;
-  
+
   // Actions
   setChanges: (changes: FileChange[]) => void;
   selectFile: (path: string | null) => void;
   setCategoryFilter: (category: ChangeCategory | 'all') => void;
   setStatusFilter: (status: ApprovalStatus | 'all') => void;
-  
+
   // Hunk actions
   approveHunk: (filePath: string, hunkId: string) => void;
   rejectHunk: (filePath: string, hunkId: string) => void;
   resetHunk: (filePath: string, hunkId: string) => void;
   approveAll: () => void;
   rejectAll: () => void;
-  
+
   // Comment actions
   addComment: (filePath: string, hunkId: string, lineNumber: number, content: string) => void;
   resolveComment: (filePath: string, hunkId: string, lineNumber: number, commentId: string) => void;
-  
+
   // Restore point actions
   createRestorePoint: (label: string) => Promise<RestorePoint>;
   rollbackTo: (pointId: string) => Promise<{ path: string; content: string }[]>;
   deleteRestorePoint: (pointId: string) => void;
-  
+
   // Analysis
   analyzeImpact: () => Promise<void>;
-  
+
   // Apply changes
   getApprovedChanges: () => FileChange[];
   getApprovedHunks: () => { filePath: string; hunks: DiffHunk[] }[];
@@ -293,40 +287,35 @@ export function useReview(): UseReviewReturn {
   useEffect(() => {
     const rollbackService = getRollbackService();
     const points = rollbackService.getRestorePoints();
-    points.forEach(point => {
+    points.forEach((point) => {
       dispatch({ type: 'ADD_RESTORE_POINT', payload: point });
     });
   }, []);
 
   // Calculate statistics
-  const statistics = useMemo(
-    () => calculateReviewStatistics(state.changes),
-    [state.changes]
-  );
+  const statistics = useMemo(() => calculateReviewStatistics(state.changes), [state.changes]);
 
   // Filter changes based on current filters
   const filteredChanges = useMemo(() => {
-    return state.changes.filter(change => {
+    return state.changes.filter((change) => {
       // Category filter
       if (state.categoryFilter !== 'all' && change.category !== state.categoryFilter) {
         return false;
       }
-      
+
       // Status filter - check if any hunk matches
       if (state.statusFilter !== 'all') {
-        const hasMatchingHunk = change.hunks.some(
-          hunk => hunk.status === state.statusFilter
-        );
+        const hasMatchingHunk = change.hunks.some((hunk) => hunk.status === state.statusFilter);
         if (!hasMatchingHunk) return false;
       }
-      
+
       return true;
     });
   }, [state.changes, state.categoryFilter, state.statusFilter]);
 
   // Get selected change
   const selectedChange = useMemo(
-    () => state.changes.find(c => c.path === state.selectedFilePath) || null,
+    () => state.changes.find((c) => c.path === state.selectedFilePath) || null,
     [state.changes, state.selectedFilePath]
   );
 
@@ -400,21 +389,21 @@ export function useReview(): UseReviewReturn {
   const createRestorePoint = useCallback(
     async (label: string): Promise<RestorePoint> => {
       const rollbackService = getRollbackService();
-      
+
       // Collect current files from changes
       const files = state.changes
-        .filter(c => c.originalContent)
-        .map(c => ({
+        .filter((c) => c.originalContent)
+        .map((c) => ({
           path: c.path,
           content: c.originalContent!,
         }));
 
       const approvedCount = state.changes.reduce(
-        (sum, c) => sum + c.hunks.filter(h => h.status === 'approved').length,
+        (sum, c) => sum + c.hunks.filter((h) => h.status === 'approved').length,
         0
       );
       const rejectedCount = state.changes.reduce(
-        (sum, c) => sum + c.hunks.filter(h => h.status === 'rejected').length,
+        (sum, c) => sum + c.hunks.filter((h) => h.status === 'rejected').length,
         0
       );
 
@@ -463,20 +452,20 @@ export function useReview(): UseReviewReturn {
 
   const getApprovedChanges = useCallback((): FileChange[] => {
     return state.changes
-      .map(change => ({
+      .map((change) => ({
         ...change,
-        hunks: change.hunks.filter(h => h.status === 'approved'),
+        hunks: change.hunks.filter((h) => h.status === 'approved'),
       }))
-      .filter(change => change.hunks.length > 0);
+      .filter((change) => change.hunks.length > 0);
   }, [state.changes]);
 
   const getApprovedHunks = useCallback((): { filePath: string; hunks: DiffHunk[] }[] => {
     return state.changes
-      .map(change => ({
+      .map((change) => ({
         filePath: change.path,
-        hunks: change.hunks.filter(h => h.status === 'approved'),
+        hunks: change.hunks.filter((h) => h.status === 'approved'),
       }))
-      .filter(item => item.hunks.length > 0);
+      .filter((item) => item.hunks.length > 0);
   }, [state.changes]);
 
   return {

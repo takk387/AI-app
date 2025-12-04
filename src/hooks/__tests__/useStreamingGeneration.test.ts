@@ -54,11 +54,7 @@ class MockReadableStreamDefaultReader {
 }
 
 // Helper to create mock response
-function createMockResponse(
-  chunks: string[],
-  status: number = 200,
-  statusText: string = 'OK'
-) {
+function createMockResponse(chunks: string[], status: number = 200, statusText: string = 'OK') {
   const reader = new MockReadableStreamDefaultReader(chunks);
 
   return {
@@ -163,9 +159,7 @@ function createCompleteEvent(overrides?: Partial<CompleteEvent>): CompleteEvent 
       appType: 'web-app',
       changeType: 'NEW_APP',
       changeSummary: 'Created new app',
-      files: [
-        { path: 'app.tsx', content: '// App code', description: 'Main app' },
-      ],
+      files: [{ path: 'app.tsx', content: '// App code', description: 'Main app' }],
       dependencies: {},
       setupInstructions: 'npm install',
     },
@@ -180,10 +174,7 @@ function createCompleteEvent(overrides?: Partial<CompleteEvent>): CompleteEvent 
   };
 }
 
-function createErrorEvent(
-  message: string,
-  recoverable: boolean = false
-): ErrorEvent {
+function createErrorEvent(message: string, recoverable: boolean = false): ErrorEvent {
   return {
     type: 'error',
     timestamp: Date.now(),
@@ -252,9 +243,7 @@ describe('useStreamingGeneration', () => {
   describe('generate()', () => {
     it('should make fetch request to streaming endpoint', async () => {
       const completeEvent = createCompleteEvent();
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -274,9 +263,7 @@ describe('useStreamingGeneration', () => {
 
     it('should reset progress before starting', async () => {
       const completeEvent = createCompleteEvent();
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -291,9 +278,7 @@ describe('useStreamingGeneration', () => {
 
     it('should return generated data on success', async () => {
       const completeEvent = createCompleteEvent();
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -320,9 +305,7 @@ describe('useStreamingGeneration', () => {
     });
 
     it('should handle HTTP error responses', async () => {
-      mockFetch.mockResolvedValue(
-        createMockResponse([], 500, 'Internal Server Error')
-      );
+      mockFetch.mockResolvedValue(createMockResponse([], 500, 'Internal Server Error'));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -365,16 +348,11 @@ describe('useStreamingGeneration', () => {
       const completeEvent = createCompleteEvent();
 
       mockFetch.mockResolvedValue(
-        createMockResponse([
-          formatSSE(startEvent),
-          formatSSE(completeEvent),
-        ])
+        createMockResponse([formatSSE(startEvent), formatSSE(completeEvent)])
       );
 
       const mockOnStart = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onStart: mockOnStart })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onStart: mockOnStart }));
 
       await act(async () => {
         await result.current.generate({});
@@ -420,9 +398,7 @@ describe('useStreamingGeneration', () => {
       );
 
       const mockOnFileStart = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onFileStart: mockOnFileStart })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onFileStart: mockOnFileStart }));
 
       await act(async () => {
         await result.current.generate({});
@@ -508,36 +484,25 @@ describe('useStreamingGeneration', () => {
     it('should handle complete event with callback', async () => {
       const completeEvent = createCompleteEvent();
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const mockOnComplete = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onComplete: mockOnComplete })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onComplete: mockOnComplete }));
 
       await act(async () => {
         await result.current.generate({});
       });
 
-      expect(mockOnComplete).toHaveBeenCalledWith(
-        completeEvent.data,
-        completeEvent.stats
-      );
+      expect(mockOnComplete).toHaveBeenCalledWith(completeEvent.data, completeEvent.stats);
     });
 
     it('should handle error event', async () => {
       const errorEvent = createErrorEvent('Generation failed', false);
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(errorEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(errorEvent)]));
 
       const mockOnError = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onError: mockOnError })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onError: mockOnError }));
 
       await act(async () => {
         await result.current.generate({});
@@ -587,9 +552,7 @@ describe('useStreamingGeneration', () => {
         },
       });
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -672,9 +635,7 @@ describe('useStreamingGeneration', () => {
       );
 
       const mockOnProgress = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onProgress: mockOnProgress })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onProgress: mockOnProgress }));
 
       await act(async () => {
         await result.current.generate({});
@@ -691,11 +652,7 @@ describe('useStreamingGeneration', () => {
 
   describe('SSE Parsing', () => {
     it('should handle multiple events in single chunk', async () => {
-      const events = [
-        createStartEvent(),
-        createThinkingEvent(),
-        createCompleteEvent(),
-      ];
+      const events = [createStartEvent(), createThinkingEvent(), createCompleteEvent()];
 
       const combinedChunk = events.map(formatSSE).join('');
 
@@ -721,11 +678,7 @@ describe('useStreamingGeneration', () => {
       const secondHalf = completeStr.slice(halfLength);
 
       mockFetch.mockResolvedValue(
-        createMockResponse([
-          formatSSE(startEvent),
-          firstHalf,
-          secondHalf,
-        ])
+        createMockResponse([formatSSE(startEvent), firstHalf, secondHalf])
       );
 
       const { result } = renderHook(() => useStreamingGeneration());
@@ -803,9 +756,7 @@ describe('useStreamingGeneration', () => {
     it('should handle stream with only error event', async () => {
       const errorEvent = createErrorEvent('Failed immediately');
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(errorEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(errorEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -820,14 +771,10 @@ describe('useStreamingGeneration', () => {
     it('should handle recoverable error', async () => {
       const errorEvent = createErrorEvent('Temporary failure', true);
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(errorEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(errorEvent)]));
 
       const mockOnError = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onError: mockOnError })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onError: mockOnError }));
 
       await act(async () => {
         await result.current.generate({});
@@ -840,9 +787,7 @@ describe('useStreamingGeneration', () => {
       mockFetch.mockRejectedValue(new Error('Network timeout'));
 
       const mockOnError = jest.fn();
-      const { result } = renderHook(() =>
-        useStreamingGeneration({ onError: mockOnError })
-      );
+      const { result } = renderHook(() => useStreamingGeneration({ onError: mockOnError }));
 
       await act(async () => {
         await result.current.generate({});
@@ -855,9 +800,7 @@ describe('useStreamingGeneration', () => {
     it('should handle rapid sequential generations', async () => {
       const completeEvent = createCompleteEvent();
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -881,9 +824,7 @@ describe('useStreamingGeneration', () => {
     it('should clean up abort controller after completion', async () => {
       const completeEvent = createCompleteEvent();
 
-      mockFetch.mockResolvedValue(
-        createMockResponse([formatSSE(completeEvent)])
-      );
+      mockFetch.mockResolvedValue(createMockResponse([formatSSE(completeEvent)]));
 
       const { result } = renderHook(() => useStreamingGeneration());
 
@@ -904,10 +845,7 @@ describe('useStreamingGeneration', () => {
       const completeEvent = createCompleteEvent();
 
       mockFetch.mockResolvedValue(
-        createMockResponse([
-          formatSSE(startEvent),
-          formatSSE(completeEvent),
-        ])
+        createMockResponse([formatSSE(startEvent), formatSSE(completeEvent)])
       );
 
       const { result } = renderHook(() => useStreamingGeneration());
@@ -964,9 +902,7 @@ describe('useStreamingGeneration', () => {
         }),
       ];
 
-      mockFetch.mockResolvedValue(
-        createMockResponse(events.map(formatSSE))
-      );
+      mockFetch.mockResolvedValue(createMockResponse(events.map(formatSSE)));
 
       const mockOnStart = jest.fn();
       const mockOnFileStart = jest.fn();

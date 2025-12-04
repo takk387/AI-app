@@ -24,7 +24,8 @@ export function MockAIBanner(): React.ReactElement | null {
       <span>MOCK AI MODE - Responses are fake placeholders</span>
       <span className="mx-2">|</span>
       <span className="opacity-75">
-        Disable with: <code className="bg-yellow-500/30 px-1 rounded">NEXT_PUBLIC_MOCK_AI=false</code>
+        Disable with:{' '}
+        <code className="bg-yellow-500/30 px-1 rounded">NEXT_PUBLIC_MOCK_AI=false</code>
       </span>
     </div>
   );

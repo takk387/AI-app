@@ -28,21 +28,30 @@ export async function POST(request: Request) {
 
     // Validate concept
     if (!concept) {
-      return NextResponse.json({
-        error: 'App concept is required',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'App concept is required',
+        },
+        { status: 400 }
+      );
     }
 
     if (!concept.name) {
-      return NextResponse.json({
-        error: 'App concept must have a name',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'App concept must have a name',
+        },
+        { status: 400 }
+      );
     }
 
     if (!concept.coreFeatures || concept.coreFeatures.length === 0) {
-      return NextResponse.json({
-        error: 'App concept must have at least one feature',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'App concept must have at least one feature',
+        },
+        { status: 400 }
+      );
     }
 
     // Ensure required fields have defaults
@@ -77,11 +86,14 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       console.error(`Phase generation failed in ${duration}ms:`, result.error);
-      return NextResponse.json({
-        error: result.error,
-        warnings: result.warnings,
-        analysisDetails: result.analysisDetails,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: result.error,
+          warnings: result.warnings,
+          analysisDetails: result.analysisDetails,
+        },
+        { status: 400 }
+      );
     }
 
     console.log(`Generated ${result.plan!.totalPhases} phases in ${duration}ms`);
@@ -95,13 +107,15 @@ export async function POST(request: Request) {
       analysisDetails: result.analysisDetails,
       generationTime: duration,
     });
-
   } catch (error) {
     console.error('Phase generation error:', error);
 
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : 'Failed to generate phases',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Failed to generate phases',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -142,9 +156,24 @@ export async function GET() {
         name: 'Field Service App',
         description: 'Mobile app for fire alarm installation company oversight',
         coreFeatures: [
-          { id: '1', name: 'Work Orders', description: 'Create and manage work orders', priority: 'high' },
-          { id: '2', name: 'Task Assignment', description: 'Chat/voice task assignment', priority: 'high' },
-          { id: '3', name: 'Photo Submissions', description: 'Workers submit work photos', priority: 'high' },
+          {
+            id: '1',
+            name: 'Work Orders',
+            description: 'Create and manage work orders',
+            priority: 'high',
+          },
+          {
+            id: '2',
+            name: 'Task Assignment',
+            description: 'Chat/voice task assignment',
+            priority: 'high',
+          },
+          {
+            id: '3',
+            name: 'Photo Submissions',
+            description: 'Workers submit work photos',
+            priority: 'high',
+          },
         ],
         technical: {
           needsAuth: true,

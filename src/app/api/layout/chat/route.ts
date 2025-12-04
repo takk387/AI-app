@@ -88,12 +88,15 @@ If no specific changes were suggested, return:
       messages: [{ role: 'user', content: extractionPrompt }],
     });
 
-    const textBlock = extractResponse.content.find(block => block.type === 'text');
+    const textBlock = extractResponse.content.find((block) => block.type === 'text');
     if (textBlock && textBlock.type === 'text') {
       let jsonText = textBlock.text.trim();
       // Clean markdown code blocks if present
       if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/```json?\n?/g, '').replace(/```$/g, '').trim();
+        jsonText = jsonText
+          .replace(/```json?\n?/g, '')
+          .replace(/```$/g, '')
+          .trim();
       }
 
       const extracted = JSON.parse(jsonText);
@@ -253,9 +256,12 @@ export async function POST(request: Request) {
     } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({
-        error: 'Anthropic API key not configured'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Anthropic API key not configured',
+        },
+        { status: 500 }
+      );
     }
 
     // Build Claude messages from conversation history
@@ -338,7 +344,7 @@ export async function POST(request: Request) {
     });
 
     // Extract response text
-    const textBlock = response.content.find(block => block.type === 'text');
+    const textBlock = response.content.find((block) => block.type === 'text');
     const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
 
     // Extract design updates from the response
@@ -355,7 +361,7 @@ export async function POST(request: Request) {
       lastUpdated: new Date().toISOString(),
       keyDecisions: [
         ...(currentDesign.conversationContext?.keyDecisions || []),
-        ...changes.map(c => c.reason),
+        ...changes.map((c) => c.reason),
       ].slice(-10), // Keep last 10 decisions
       userPreferences: currentDesign.conversationContext?.userPreferences || [],
     };
@@ -378,16 +384,20 @@ export async function POST(request: Request) {
       },
     };
 
-    console.log(`Layout chat response in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`);
+    console.log(
+      `Layout chat response in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`
+    );
 
     return NextResponse.json(result);
-
   } catch (error) {
     console.error('Layout chat error:', error);
 
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : 'Failed to process layout message',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Failed to process layout message',
+      },
+      { status: 500 }
+    );
   }
 }
 

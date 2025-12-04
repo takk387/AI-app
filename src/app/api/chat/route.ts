@@ -23,12 +23,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { prompt, conversationHistory, includeCodeInResponse = false, mode = 'ACT', currentAppState, image, hasImage } = await request.json();
+    const {
+      prompt,
+      conversationHistory,
+      includeCodeInResponse = false,
+      mode = 'ACT',
+      currentAppState,
+      image,
+      hasImage,
+    } = await request.json();
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({
-        error: 'Anthropic API key not configured. Add ANTHROPIC_API_KEY to .env.local'
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Anthropic API key not configured. Add ANTHROPIC_API_KEY to .env.local',
+        },
+        { status: 500 }
+      );
     }
 
     // Build current app context section if we have an app loaded
@@ -45,11 +56,15 @@ Files in the app:
 ${currentAppState.files.map((f: any) => `- ${f.path}`).join('\n')}
 
 FILE CONTENTS:
-${currentAppState.files.map((f: any) => `
+${currentAppState.files
+  .map(
+    (f: any) => `
 --- ${f.path} ---
 ${f.content}
 --- END ${f.path} ---
-`).join('\n')}
+`
+  )
+  .join('\n')}
 ===END CURRENT APP CONTEXT===
 
 When discussing the app, reference the actual code above. You can see exactly what has been built.`;
@@ -57,7 +72,7 @@ When discussing the app, reference the actual code above. You can see exactly wh
 
     // Different system prompts based on mode
     let systemPrompt: string;
-    
+
     if (mode === 'PLAN') {
       // PLAN MODE: Focus on planning, requirements, and architecture
       systemPrompt = `You are an AI planning and requirements specialist. In PLAN MODE, you help users design and plan their applications.
@@ -95,7 +110,7 @@ What features are most important to you? Do you need:
 Remember: You're designing the blueprint, not building the house. No code in PLAN mode.${currentAppContext}`;
     } else {
       // ACT MODE: Can answer questions with or without code
-      systemPrompt = includeCodeInResponse 
+      systemPrompt = includeCodeInResponse
         ? `You are a helpful AI programming assistant. You can:
 1. Answer programming questions clearly and concisely
 2. Explain concepts, best practices, and provide code examples
@@ -149,39 +164,41 @@ You are NOT generating full apps in this mode - just having a helpful conversati
       if (imageMatch) {
         let mediaType = imageMatch[1];
         const base64Data = imageMatch[2];
-        
+
         const validMediaTypes: { [key: string]: string } = {
           'image/jpeg': 'image/jpeg',
           'image/jpg': 'image/jpeg',
           'image/png': 'image/png',
           'image/gif': 'image/gif',
-          'image/webp': 'image/webp'
+          'image/webp': 'image/webp',
         };
-        
+
         const normalizedType = validMediaTypes[mediaType.toLowerCase()];
         if (!normalizedType) {
           console.error('Unsupported image type:', mediaType);
-          throw new Error(`Unsupported image type: ${mediaType}. Please use JPEG, PNG, GIF, or WebP.`);
+          throw new Error(
+            `Unsupported image type: ${mediaType}. Please use JPEG, PNG, GIF, or WebP.`
+          );
         }
-        
+
         console.log('Image media type:', normalizedType, 'Original:', mediaType);
-        
-        messages.push({ 
-          role: 'user', 
+
+        messages.push({
+          role: 'user',
           content: [
             {
               type: 'image',
               source: {
                 type: 'base64',
                 media_type: normalizedType,
-                data: base64Data
-              }
+                data: base64Data,
+              },
             },
             {
               type: 'text',
-              text: prompt
-            }
-          ]
+              text: prompt,
+            },
+          ],
         });
       } else {
         console.error('Invalid image data URL format');
@@ -195,37 +212,34 @@ You are NOT generating full apps in this mode - just having a helpful conversati
 
     const completion = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 10000,  // Must be > budget_tokens (5000 thinking + 5000 response)
-      temperature: 1,  // Required for extended thinking
+      max_tokens: 10000, // Must be > budget_tokens (5000 thinking + 5000 response)
+      temperature: 1, // Required for extended thinking
       thinking: {
         type: 'enabled',
-        budget_tokens: 5000
+        budget_tokens: 5000,
       },
       system: [
         {
           type: 'text',
           text: systemPrompt,
-          cache_control: { type: 'ephemeral' }
-        }
+          cache_control: { type: 'ephemeral' },
+        },
       ],
-      messages: messages
+      messages: messages,
     });
 
     // Find the text response (skip thinking blocks)
-    const textBlock = completion.content.find(block => block.type === 'text');
-    const responseText = textBlock && textBlock.type === 'text' 
-      ? textBlock.text 
-      : '';
-      
+    const textBlock = completion.content.find((block) => block.type === 'text');
+    const responseText = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+
     if (!responseText) {
       throw new Error('No response from Claude');
     }
 
     return NextResponse.json({
       answer: responseText,
-      type: 'chat'
+      type: 'chat',
     });
-
   } catch (error) {
     console.error('Error in chat route:', error);
     return NextResponse.json(

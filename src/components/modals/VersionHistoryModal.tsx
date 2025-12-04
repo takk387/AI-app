@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { AppVersion, GeneratedComponent } from '@/types/aiBuilderTypes';
@@ -25,13 +25,13 @@ export function VersionHistoryModal({
   const changeTypeColors: Record<string, string> = {
     NEW_APP: 'bg-purple-500/20 border-purple-500/30 text-purple-200',
     MAJOR_CHANGE: 'bg-orange-500/20 border-orange-500/30 text-orange-200',
-    MINOR_CHANGE: 'bg-green-500/20 border-green-500/30 text-green-200'
+    MINOR_CHANGE: 'bg-green-500/20 border-green-500/30 text-green-200',
   };
 
   const changeTypeIcons: Record<string, string> = {
     NEW_APP: '🚀',
     MAJOR_CHANGE: '⚡',
-    MINOR_CHANGE: '✨'
+    MINOR_CHANGE: '✨',
   };
 
   return (
@@ -52,13 +52,12 @@ export function VersionHistoryModal({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Version History</h3>
-                <p className="text-sm text-blue-200/80">{currentComponent.name} - {currentComponent.versions.length} versions</p>
+                <p className="text-sm text-blue-200/80">
+                  {currentComponent.name} - {currentComponent.versions.length} versions
+                </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-all"
-            >
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all">
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
@@ -69,7 +68,7 @@ export function VersionHistoryModal({
           <div className="space-y-3">
             {[...currentComponent.versions].reverse().map((version, idx) => {
               const isCurrentVersion = idx === 0;
-              
+
               return (
                 <div
                   key={version.id}
@@ -81,9 +80,7 @@ export function VersionHistoryModal({
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">
-                        {isCurrentVersion ? '📍' : '📌'}
-                      </div>
+                      <div className="text-2xl">{isCurrentVersion ? '📍' : '📌'}</div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="text-white font-semibold">
@@ -94,8 +91,11 @@ export function VersionHistoryModal({
                               Current
                             </span>
                           )}
-                          <span className={`px-2 py-0.5 rounded-full border text-xs font-medium ${changeTypeColors[version.changeType]}`}>
-                            {changeTypeIcons[version.changeType]} {version.changeType.replace('_', ' ')}
+                          <span
+                            className={`px-2 py-0.5 rounded-full border text-xs font-medium ${changeTypeColors[version.changeType]}`}
+                          >
+                            {changeTypeIcons[version.changeType]}{' '}
+                            {version.changeType.replace('_', ' ')}
                           </span>
                         </div>
                         <p className="text-xs text-slate-400">
@@ -103,7 +103,7 @@ export function VersionHistoryModal({
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2">
                       {!isCurrentVersion && (
                         <>
@@ -116,7 +116,11 @@ export function VersionHistoryModal({
                           </button>
                           <button
                             onClick={() => {
-                              if (window.confirm(`Revert to Version ${version.versionNumber}? Your current version will be saved.`)) {
+                              if (
+                                window.confirm(
+                                  `Revert to Version ${version.versionNumber}? Your current version will be saved.`
+                                )
+                              ) {
                                 onRevertToVersion(version);
                               }
                             }}
@@ -128,27 +132,34 @@ export function VersionHistoryModal({
                       )}
                     </div>
                   </div>
-                  
+
                   <p className="text-sm text-slate-300 leading-relaxed mb-3">
                     {version.description}
                   </p>
-                  
+
                   {/* Compare button */}
-                  {!isCurrentVersion && currentComponent.versions && currentComponent.versions.length > 1 && (
-                    <button
-                      onClick={() => {
-                        const currentVer = currentComponent.versions?.find(v => 
-                          v.versionNumber === Math.max(...(currentComponent.versions?.map(ver => ver.versionNumber) || []))
-                        );
-                        if (currentVer) {
-                          onCompareVersions(version, currentVer);
-                        }
-                      }}
-                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                    >
-                      🔍 Compare with current
-                    </button>
-                  )}
+                  {!isCurrentVersion &&
+                    currentComponent.versions &&
+                    currentComponent.versions.length > 1 && (
+                      <button
+                        onClick={() => {
+                          const currentVer = currentComponent.versions?.find(
+                            (v) =>
+                              v.versionNumber ===
+                              Math.max(
+                                ...(currentComponent.versions?.map((ver) => ver.versionNumber) ||
+                                  [])
+                              )
+                          );
+                          if (currentVer) {
+                            onCompareVersions(version, currentVer);
+                          }
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                      >
+                        🔍 Compare with current
+                      </button>
+                    )}
                 </div>
               );
             })}
@@ -160,7 +171,8 @@ export function VersionHistoryModal({
           <div className="flex items-center gap-3 text-xs text-slate-400">
             <span>💡</span>
             <p>
-              Click &quot;Revert&quot; to restore a previous version. Your current version will be preserved in history.
+              Click &quot;Revert&quot; to restore a previous version. Your current version will be
+              preserved in history.
             </p>
           </div>
         </div>

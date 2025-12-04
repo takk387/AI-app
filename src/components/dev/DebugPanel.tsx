@@ -275,9 +275,7 @@ export function DebugPanel(): React.ReactElement | null {
                     />
                     <span className="text-gray-300">{req.route}</span>
                   </div>
-                  <div className="text-gray-500">
-                    {req.duration ? `${req.duration}ms` : '...'}
-                  </div>
+                  <div className="text-gray-500">{req.duration ? `${req.duration}ms` : '...'}</div>
                 </div>
               ))
             )}

@@ -8,14 +8,14 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
  * Subscribe to database table changes
- * 
+ *
  * NOTE: The `as any` type assertions below are necessary due to a limitation in
  * Supabase's TypeScript definitions for the realtime client. The .on() method's
  * type overloads don't correctly recognize 'postgres_changes' as a valid event type
  * when used with the channel configuration object pattern. This is a known issue
  * and the assertions provide the correct runtime behavior while bypassing the
  * incorrect TypeScript errors.
- * 
+ *
  * @example
  * const channel = subscribeToTable('generated_apps', '*', (payload) => {
  *   console.log('Change received!', payload);
@@ -28,20 +28,18 @@ export function subscribeToTable(
   filter?: string
 ) {
   const supabase = createBrowserClient();
-  
+
   // Type assertion required - see function JSDoc for explanation
-  let subscription = supabase
-    .channel(`table-${table}`)
-    .on(
-      'postgres_changes' as any,
-      {
-        event,
-        schema: 'public',
-        table,
-        filter,
-      } as any,
-      callback
-    );
+  let subscription = supabase.channel(`table-${table}`).on(
+    'postgres_changes' as any,
+    {
+      event,
+      schema: 'public',
+      table,
+      filter,
+    } as any,
+    callback
+  );
 
   subscription.subscribe();
 
@@ -51,11 +49,7 @@ export function subscribeToTable(
 /**
  * Subscribe to a specific row by ID
  */
-export function subscribeToRow(
-  table: string,
-  id: string,
-  callback: (payload: any) => void
-) {
+export function subscribeToRow(table: string, id: string, callback: (payload: any) => void) {
   return subscribeToTable(table, '*', callback, `id=eq.${id}`);
 }
 
@@ -75,7 +69,7 @@ export function trackPresence(
   onPresenceSync?: (state: any) => void
 ) {
   const supabase = createBrowserClient();
-  
+
   const channel = supabase.channel(channelName, {
     config: {
       presence: {
@@ -106,16 +100,13 @@ export function trackPresence(
  * const channel = createBroadcastChannel('game-room', (payload) => {
  *   console.log('Message received:', payload);
  * });
- * 
+ *
  * // Send a message
  * broadcastMessage(channel, { type: 'move', data: { x: 10, y: 20 } });
  */
-export function createBroadcastChannel(
-  channelName: string,
-  onReceive: (payload: any) => void
-) {
+export function createBroadcastChannel(channelName: string, onReceive: (payload: any) => void) {
   const supabase = createBrowserClient();
-  
+
   const channel = supabase
     .channel(channelName)
     .on('broadcast', { event: 'message' }, ({ payload }) => {
@@ -129,10 +120,7 @@ export function createBroadcastChannel(
 /**
  * Send a broadcast message
  */
-export async function broadcastMessage(
-  channel: RealtimeChannel,
-  message: any
-) {
+export async function broadcastMessage(channel: RealtimeChannel, message: any) {
   await channel.send({
     type: 'broadcast',
     event: 'message',
@@ -143,12 +131,9 @@ export async function broadcastMessage(
 /**
  * Subscribe to app generation status updates
  */
-export function subscribeToAppGeneration(
-  userId: string,
-  callback: (payload: any) => void
-) {
+export function subscribeToAppGeneration(userId: string, callback: (payload: any) => void) {
   const supabase = createBrowserClient();
-  
+
   const channel = supabase
     .channel(`app-generation-${userId}`)
     .on('broadcast', { event: 'status-update' }, ({ payload }) => {
@@ -171,15 +156,15 @@ export async function broadcastGenerationStatus(
   }
 ) {
   const supabase = createBrowserClient();
-  
+
   const channel = supabase.channel(`app-generation-${userId}`);
-  
+
   await channel.send({
     type: 'broadcast',
     event: 'status-update',
     payload: status,
   });
-  
+
   // Clean up
   await supabase.removeChannel(channel);
 }
@@ -202,25 +187,14 @@ export function getPresenceState(channel: RealtimeChannel) {
 /**
  * Subscribe to chat messages in real-time
  */
-export function subscribeToChatSession(
-  sessionId: string,
-  callback: (payload: any) => void
-) {
-  return subscribeToTable(
-    'chat_history',
-    'INSERT',
-    callback,
-    `session_id=eq.${sessionId}`
-  );
+export function subscribeToChatSession(sessionId: string, callback: (payload: any) => void) {
+  return subscribeToTable('chat_history', 'INSERT', callback, `session_id=eq.${sessionId}`);
 }
 
 /**
  * Subscribe to analytics events
  */
-export function subscribeToAnalytics(
-  callback: (payload: any) => void,
-  userId?: string
-) {
+export function subscribeToAnalytics(callback: (payload: any) => void, userId?: string) {
   const filter = userId ? `user_id=eq.${userId}` : undefined;
   return subscribeToTable('analytics_events', 'INSERT', callback, filter);
 }

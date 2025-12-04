@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { PendingChange } from '@/types/aiBuilderTypes';
@@ -30,7 +30,9 @@ export function ApprovalModal({ isOpen, pendingChange, onApprove, onReject }: Ap
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">Approve Changes?</h3>
-              <p className="text-sm text-yellow-200/80">Review the proposed modifications to your app</p>
+              <p className="text-sm text-yellow-200/80">
+                Review the proposed modifications to your app
+              </p>
             </div>
           </div>
         </div>
@@ -52,12 +54,11 @@ export function ApprovalModal({ isOpen, pendingChange, onApprove, onReject }: Ap
             <div className="flex items-start gap-3">
               <span className="text-2xl">💡</span>
               <div>
-                <p className="text-sm font-medium text-blue-200 mb-1">
-                  Why approval is needed
-                </p>
+                <p className="text-sm font-medium text-blue-200 mb-1">Why approval is needed</p>
                 <p className="text-xs text-blue-200/70 leading-relaxed">
-                  This change will modify your existing app. Approving ensures you won&apos;t accidentally lose features you like. 
-                  You can reject this change and request something different instead.
+                  This change will modify your existing app. Approving ensures you won&apos;t
+                  accidentally lose features you like. You can reject this change and request
+                  something different instead.
                 </p>
               </div>
             </div>
@@ -65,9 +66,7 @@ export function ApprovalModal({ isOpen, pendingChange, onApprove, onReject }: Ap
 
           {/* Preview of files being changed */}
           <div className="mb-6">
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
-              Files affected:
-            </label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Files affected:</label>
             <div className="bg-slate-800/50 rounded-lg p-3 border border-white/10 max-h-32 overflow-y-auto">
               {(() => {
                 try {

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { useAppStore } from '@/store/useAppStore';
@@ -233,9 +233,7 @@ class ErrorBoundary extends Component<Props, State> {
 
             {error && (
               <div className="mb-4 p-3 bg-black/30 rounded-lg border border-red-500/20">
-                <p className="text-sm font-mono text-red-300 break-words">
-                  {error.message}
-                </p>
+                <p className="text-sm font-mono text-red-300 break-words">{error.message}</p>
               </div>
             )}
 

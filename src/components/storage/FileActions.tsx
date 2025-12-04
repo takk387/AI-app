@@ -13,7 +13,7 @@ interface FileActionsProps {
 
 /**
  * FileActions Component
- * 
+ *
  * Provides bulk action controls for selected files.
  * Includes download, delete, and selection management.
  */
@@ -75,7 +75,11 @@ export function FileActions({
           {onBulkDelete && (
             <button
               onClick={() => {
-                if (window.confirm(`Delete ${selectedCount} ${selectedCount === 1 ? 'file' : 'files'}?`)) {
+                if (
+                  window.confirm(
+                    `Delete ${selectedCount} ${selectedCount === 1 ? 'file' : 'files'}?`
+                  )
+                ) {
                   onBulkDelete();
                 }
               }}

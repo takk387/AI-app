@@ -40,9 +40,7 @@ function MessageBubble({ message }: { message: LayoutMessage }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-          isUser
-            ? 'bg-blue-600 text-white'
-            : 'bg-slate-700 text-slate-100'
+          isUser ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-100'
         }`}
       >
         {/* Show selected element indicator if present */}
@@ -61,9 +59,7 @@ function MessageBubble({ message }: { message: LayoutMessage }) {
         )}
 
         {/* Message content */}
-        <div className="text-sm whitespace-pre-wrap leading-relaxed">
-          {message.content}
-        </div>
+        <div className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</div>
 
         {/* Timestamp */}
         <div className={`text-xs mt-2 ${isUser ? 'text-blue-200' : 'text-slate-400'}`}>
@@ -347,73 +343,89 @@ export function LayoutBuilderWizard({
   };
 
   // Handle suggested action clicks
-  const handleAction = useCallback((action: string) => {
-    switch (action) {
-      case 'capture_preview':
-        capturePreview();
-        break;
-      case 'upload_reference':
-        fileInputRef.current?.click();
-        break;
-      case 'toggle_theme':
-        updateDesign({
-          basePreferences: {
-            ...design.basePreferences,
-            colorScheme: design.basePreferences?.colorScheme === 'dark' ? 'light' : 'dark',
-          } as typeof design.basePreferences,
-        });
-        break;
-      case 'save_design':
-        saveDesign();
-        break;
-      case 'apply_to_concept':
-        applyToAppConcept();
-        onApplyToAppConcept?.();
-        break;
-    }
-  }, [capturePreview, updateDesign, design.basePreferences, saveDesign, applyToAppConcept, onApplyToAppConcept]);
+  const handleAction = useCallback(
+    (action: string) => {
+      switch (action) {
+        case 'capture_preview':
+          capturePreview();
+          break;
+        case 'upload_reference':
+          fileInputRef.current?.click();
+          break;
+        case 'toggle_theme':
+          updateDesign({
+            basePreferences: {
+              ...design.basePreferences,
+              colorScheme: design.basePreferences?.colorScheme === 'dark' ? 'light' : 'dark',
+            } as typeof design.basePreferences,
+          });
+          break;
+        case 'save_design':
+          saveDesign();
+          break;
+        case 'apply_to_concept':
+          applyToAppConcept();
+          onApplyToAppConcept?.();
+          break;
+      }
+    },
+    [
+      capturePreview,
+      updateDesign,
+      design.basePreferences,
+      saveDesign,
+      applyToAppConcept,
+      onApplyToAppConcept,
+    ]
+  );
 
   // Handle reference image upload
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      return;
-    }
+      if (!file.type.startsWith('image/')) {
+        return;
+      }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return;
-    }
+      if (file.size > 5 * 1024 * 1024) {
+        return;
+      }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      addReferenceImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        addReferenceImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
 
-    // Reset input
-    e.target.value = '';
-  }, [addReferenceImage]);
+      // Reset input
+      e.target.value = '';
+    },
+    [addReferenceImage]
+  );
 
   // Handle preference changes from preview
-  const handlePreferenceChange = useCallback((prefs: Partial<UIPreferences>) => {
-    updateDesign({
-      basePreferences: {
-        ...design.basePreferences,
-        style: prefs.style || design.basePreferences?.style,
-        colorScheme: prefs.colorScheme || design.basePreferences?.colorScheme,
-        layout: prefs.layout || design.basePreferences?.layout,
-      } as typeof design.basePreferences,
-      globalStyles: {
-        ...design.globalStyles,
-        colors: {
-          ...design.globalStyles?.colors,
-          primary: prefs.primaryColor || design.globalStyles?.colors?.primary,
-        },
-      } as typeof design.globalStyles,
-    });
-  }, [design, updateDesign]);
+  const handlePreferenceChange = useCallback(
+    (prefs: Partial<UIPreferences>) => {
+      updateDesign({
+        basePreferences: {
+          ...design.basePreferences,
+          style: prefs.style || design.basePreferences?.style,
+          colorScheme: prefs.colorScheme || design.basePreferences?.colorScheme,
+          layout: prefs.layout || design.basePreferences?.layout,
+        } as typeof design.basePreferences,
+        globalStyles: {
+          ...design.globalStyles,
+          colors: {
+            ...design.globalStyles?.colors,
+            primary: prefs.primaryColor || design.globalStyles?.colors?.primary,
+          },
+        } as typeof design.globalStyles,
+      });
+    },
+    [design, updateDesign]
+  );
 
   if (!isOpen) return null;
 
@@ -453,7 +465,12 @@ export function LayoutBuilderWizard({
               className="p-2 text-slate-400 hover:text-white transition-colors"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -473,8 +490,14 @@ export function LayoutBuilderWizard({
                   <div className="bg-slate-700 rounded-2xl px-4 py-3 text-slate-300">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                      <div
+                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.1s' }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.2s' }}
+                      />
                     </div>
                   </div>
                 </div>

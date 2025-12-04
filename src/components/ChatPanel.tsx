@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useRef, useEffect } from 'react';
 import type { ChatMessage, StagePlan, Phase } from '../types/aiBuilderTypes';
@@ -15,10 +15,10 @@ interface PhaseProgressCardProps {
   onBuildPhase?: (phase: Phase) => void;
 }
 
-const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({ 
-  phases, 
-  currentPhase, 
-  onBuildPhase 
+const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({
+  phases,
+  currentPhase,
+  onBuildPhase,
 }) => (
   <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 border border-purple-500/30 mb-4">
     <h3 className="text-white font-bold mb-3 flex items-center gap-2">
@@ -26,14 +26,14 @@ const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({
     </h3>
     <div className="space-y-2">
       {phases.map((phase, idx) => (
-        <div 
+        <div
           key={idx}
           className={`p-3 rounded-lg border transition-all ${
-            phase.status === 'complete' 
-              ? 'bg-green-500/20 border-green-500/30' 
+            phase.status === 'complete'
+              ? 'bg-green-500/20 border-green-500/30'
               : phase.status === 'building'
-              ? 'bg-blue-500/20 border-blue-500/30 animate-pulse'
-              : 'bg-white/5 border-white/10 hover:bg-white/10'
+                ? 'bg-blue-500/20 border-blue-500/30 animate-pulse'
+                : 'bg-white/5 border-white/10 hover:bg-white/10'
           }`}
         >
           <div className="flex items-center justify-between">
@@ -50,8 +50,12 @@ const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({
                 </button>
               )}
               {phase.status === 'complete' && <span className="text-green-400">✅</span>}
-              {phase.status === 'building' && <span className="text-blue-400 animate-spin">⏳</span>}
-              {phase.status === 'pending' && idx !== currentPhase && <span className="text-slate-500">⏸️</span>}
+              {phase.status === 'building' && (
+                <span className="text-blue-400 animate-spin">⏳</span>
+              )}
+              {phase.status === 'pending' && idx !== currentPhase && (
+                <span className="text-slate-500">⏸️</span>
+              )}
             </div>
           </div>
           <p className="text-xs text-slate-400 mt-1">{phase.description}</p>
@@ -80,32 +84,32 @@ const PhaseProgressCard: React.FC<PhaseProgressCardProps> = ({
 export interface ChatPanelProps {
   // Messages
   messages: ChatMessage[];
-  
+
   // Generation state
   isGenerating: boolean;
   generationProgress: string;
-  
+
   // Input state
   userInput: string;
   onUserInputChange: (value: string) => void;
   onSendMessage: () => void;
-  
+
   // Image upload
   uploadedImage: string | null;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: () => void;
-  
+
   // Mode toggle
   currentMode: 'PLAN' | 'ACT';
   onModeChange: (mode: 'PLAN' | 'ACT') => void;
-  
+
   // Phase progress (optional)
   stagePlan?: StagePlan | null;
   onBuildPhase?: (phase: Phase) => void;
-  
+
   // View component action
   onViewComponent?: () => void;
-  
+
   // Streaming progress (optional)
   streamingProgress?: StreamingProgressType;
   isStreamingActive?: boolean;
@@ -148,7 +152,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <span>💬</span>
             <span>Conversation</span>
           </h2>
-          
+
           {/* Plan/Act Mode Toggle */}
           <div className="flex gap-2 bg-slate-900/50 p-1 rounded-lg border border-white/10">
             <button
@@ -175,13 +179,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             </button>
           </div>
         </div>
-        
+
         {/* Mode Description */}
         <p className="text-sm text-slate-400">
-          {currentMode === 'PLAN' 
+          {currentMode === 'PLAN'
             ? '💭 Plan Mode: AI will discuss and explain (no code changes)'
-            : '⚡ Act Mode: AI can modify your app'
-          }
+            : '⚡ Act Mode: AI can modify your app'}
         </p>
       </div>
 
@@ -195,7 +198,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onBuildPhase={onBuildPhase}
           />
         )}
-        
+
         {messages.map((message) => (
           <div
             key={message.id}
@@ -206,8 +209,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 message.role === 'user'
                   ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-blue-500/30 hover:shadow-blue-500/50'
                   : message.role === 'system'
-                  ? 'glass-panel text-purple-200 border border-purple-500/40 shadow-purple-500/20 hover:shadow-purple-500/40 hover:border-purple-500/60'
-                  : 'glass-panel text-slate-200 border border-white/20 hover:border-white/30'
+                    ? 'glass-panel text-purple-200 border border-purple-500/40 shadow-purple-500/20 hover:shadow-purple-500/40 hover:border-purple-500/60'
+                    : 'glass-panel text-slate-200 border border-white/20 hover:border-white/30'
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -241,9 +244,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl px-4 py-3 border border-blue-500/30">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div
+                    className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                    style={{ animationDelay: '0ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                    style={{ animationDelay: '150ms' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                    style={{ animationDelay: '300ms' }}
+                  ></div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-white">Generating your app...</div>
@@ -262,9 +274,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         {/* Image Preview */}
         {uploadedImage && (
           <div className="mb-3 relative inline-block">
-            <img 
-              src={uploadedImage} 
-              alt="Uploaded inspiration" 
+            <img
+              src={uploadedImage}
+              alt="Uploaded inspiration"
               className="h-20 w-20 object-cover rounded-lg border-2 border-blue-500"
             />
             <button
@@ -278,7 +290,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             </div>
           </div>
         )}
-        
+
         <div className="flex gap-2">
           {/* Image Upload Button */}
           <label

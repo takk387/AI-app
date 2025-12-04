@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSettings } from '@/hooks/useSettings';
 import { useAuth } from '@/contexts/AuthContext';
-import type { 
-  SettingsSection, 
+import type {
+  SettingsSection,
   SettingsPageProps,
   EditorTheme,
   PreviewSize,
@@ -26,13 +26,13 @@ const SECTIONS: { id: SettingsSection; label: string; icon: string }[] = [
 ];
 
 // Toggle Switch Component
-function ToggleSwitch({ 
-  enabled, 
-  onChange, 
+function ToggleSwitch({
+  enabled,
+  onChange,
   label,
   description,
-}: { 
-  enabled: boolean; 
+}: {
+  enabled: boolean;
   onChange: (value: boolean) => void;
   label: string;
   description?: string;
@@ -41,9 +41,7 @@ function ToggleSwitch({
     <div className="flex items-center justify-between py-3">
       <div className="flex-1">
         <label className="text-white font-medium">{label}</label>
-        {description && (
-          <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-        )}
+        {description && <p className="text-sm text-slate-400 mt-0.5">{description}</p>}
       </div>
       <button
         type="button"
@@ -91,9 +89,7 @@ function Slider({
       <div className="flex items-center justify-between mb-2">
         <div>
           <label className="text-white font-medium">{label}</label>
-          {description && (
-            <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-          )}
+          {description && <p className="text-sm text-slate-400 mt-0.5">{description}</p>}
         </div>
         <span className="text-blue-400 font-mono text-sm">
           {formatValue ? formatValue(value) : value}
@@ -130,9 +126,7 @@ function Select<T extends string>({
     <div className="py-3">
       <div className="mb-2">
         <label className="text-white font-medium">{label}</label>
-        {description && (
-          <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-        )}
+        {description && <p className="text-sm text-slate-400 mt-0.5">{description}</p>}
       </div>
       <select
         value={value}
@@ -169,9 +163,7 @@ function TextInput({
     <div className="py-3">
       <div className="mb-2">
         <label className="text-white font-medium">{label}</label>
-        {description && (
-          <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-        )}
+        {description && <p className="text-sm text-slate-400 mt-0.5">{description}</p>}
       </div>
       <input
         type={type}
@@ -204,9 +196,7 @@ function TextArea({
     <div className="py-3">
       <div className="mb-2">
         <label className="text-white font-medium">{label}</label>
-        {description && (
-          <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-        )}
+        {description && <p className="text-sm text-slate-400 mt-0.5">{description}</p>}
       </div>
       <textarea
         value={value}
@@ -237,9 +227,7 @@ function ColorPicker({
     <div className="py-3">
       <div className="mb-2">
         <label className="text-white font-medium">{label}</label>
-        {description && (
-          <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-        )}
+        {description && <p className="text-sm text-slate-400 mt-0.5">{description}</p>}
       </div>
       <div className="flex items-center gap-3">
         <input
@@ -280,9 +268,7 @@ function SectionHeader({ title, description }: { title: string; description?: st
   return (
     <div className="mb-6 pb-4 border-b border-white/10">
       <h2 className="text-xl font-bold text-white">{title}</h2>
-      {description && (
-        <p className="text-sm text-slate-400 mt-1">{description}</p>
-      )}
+      {description && <p className="text-sm text-slate-400 mt-1">{description}</p>}
     </div>
   );
 }
@@ -311,7 +297,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  
+
   const router = useRouter();
   const { user, signOut } = useAuth();
 
@@ -334,36 +320,37 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
   }, [isOpen, onClose]);
 
   // Handle import file
-  const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImportFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      const success = importSettingsFromJson(content);
-      if (!success) {
-        setImportError('Failed to import settings. Invalid format.');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        const success = importSettingsFromJson(content);
+        if (!success) {
+          setImportError('Failed to import settings. Invalid format.');
+          setTimeout(() => setImportError(null), 3000);
+        }
+      };
+      reader.onerror = () => {
+        setImportError('Failed to read file.');
         setTimeout(() => setImportError(null), 3000);
-      }
-    };
-    reader.onerror = () => {
-      setImportError('Failed to read file.');
-      setTimeout(() => setImportError(null), 3000);
-    };
-    reader.readAsText(file);
+      };
+      reader.readAsText(file);
 
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [importSettingsFromJson]);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [importSettingsFromJson]
+  );
 
   // Filter sections based on search
   const filteredSections = searchQuery
-    ? SECTIONS.filter(s => 
-        s.label.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? SECTIONS.filter((s) => s.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : SECTIONS;
 
   if (!isOpen) return null;
@@ -374,10 +361,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'general':
         return (
           <div>
-            <SectionHeader 
-              title="General Settings" 
-              description="Configure basic app preferences" 
-            />
+            <SectionHeader title="General Settings" description="Configure basic app preferences" />
             <TextInput
               value={settings.general.appName}
               onChange={(value) => updateGeneralSettings({ appName: value })}
@@ -430,9 +414,9 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'editor':
         return (
           <div>
-            <SectionHeader 
-              title="Editor Settings" 
-              description="Customize your code editing experience" 
+            <SectionHeader
+              title="Editor Settings"
+              description="Customize your code editing experience"
             />
             <Select<EditorTheme>
               value={settings.editor.theme}
@@ -497,7 +481,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
               step={5}
               label="Auto-save Interval"
               description="Set to 0 to disable auto-save"
-              formatValue={(v) => v === 0 ? 'Disabled' : `${v}s`}
+              formatValue={(v) => (v === 0 ? 'Disabled' : `${v}s`)}
             />
           </div>
         );
@@ -505,10 +489,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'ai':
         return (
           <div>
-            <SectionHeader 
-              title="AI Settings" 
-              description="Configure AI model behavior" 
-            />
+            <SectionHeader title="AI Settings" description="Configure AI model behavior" />
             <Select
               value={settings.ai.defaultModel}
               onChange={(value) => updateAISettings({ defaultModel: value })}
@@ -566,9 +547,9 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'preview':
         return (
           <div>
-            <SectionHeader 
-              title="Preview Settings" 
-              description="Configure the live preview panel" 
+            <SectionHeader
+              title="Preview Settings"
+              description="Configure the live preview panel"
             />
             <Select<PreviewSize>
               value={settings.preview.defaultSize}
@@ -612,9 +593,9 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'build':
         return (
           <div>
-            <SectionHeader 
-              title="Build Settings" 
-              description="Configure build and compilation options" 
+            <SectionHeader
+              title="Build Settings"
+              description="Configure build and compilation options"
             />
             <ToggleSwitch
               enabled={settings.build.autoValidation}
@@ -651,10 +632,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'appearance':
         return (
           <div>
-            <SectionHeader 
-              title="Appearance Settings" 
-              description="Customize the look and feel" 
-            />
+            <SectionHeader title="Appearance Settings" description="Customize the look and feel" />
             <Select
               value={settings.appearance.theme}
               onChange={(value) => updateAppearanceSettings({ theme: value })}
@@ -690,13 +668,13 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'shortcuts':
         return (
           <div>
-            <SectionHeader 
-              title="Keyboard Shortcuts" 
-              description="View and customize key bindings" 
+            <SectionHeader
+              title="Keyboard Shortcuts"
+              description="View and customize key bindings"
             />
             <div className="space-y-3">
               {settings.shortcuts.map((shortcut) => (
-                <div 
+                <div
                   key={shortcut.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-white/5"
                 >
@@ -726,11 +704,11 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'storage':
         return (
           <div>
-            <SectionHeader 
-              title="Storage & Data" 
-              description="Manage local storage and settings data" 
+            <SectionHeader
+              title="Storage & Data"
+              description="Manage local storage and settings data"
             />
-            
+
             {/* Export/Import Section */}
             <div className="py-4">
               <h3 className="text-white font-medium mb-3">Export & Import Settings</h3>
@@ -753,16 +731,14 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
                   />
                 </label>
               </div>
-              {importError && (
-                <p className="mt-2 text-sm text-red-400">{importError}</p>
-              )}
+              {importError && <p className="mt-2 text-sm text-red-400">{importError}</p>}
             </div>
 
             {/* Reset Sections */}
             <div className="py-4 border-t border-white/10">
               <h3 className="text-white font-medium mb-3">Reset Individual Sections</h3>
               <div className="flex flex-wrap gap-2">
-                {SECTIONS.filter(s => s.id !== 'storage').map((section) => (
+                {SECTIONS.filter((s) => s.id !== 'storage').map((section) => (
                   <button
                     key={section.id}
                     type="button"
@@ -785,7 +761,11 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm('Are you sure you want to reset ALL settings to defaults? This cannot be undone.')) {
+                  if (
+                    window.confirm(
+                      'Are you sure you want to reset ALL settings to defaults? This cannot be undone.'
+                    )
+                  ) {
                     resetSettings();
                   }
                 }}
@@ -817,11 +797,11 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
       case 'account':
         return (
           <div>
-            <SectionHeader 
-              title="Account Settings" 
-              description="Manage your account and API configuration" 
+            <SectionHeader
+              title="Account Settings"
+              description="Manage your account and API configuration"
             />
-            
+
             {/* User Info & Logout */}
             <div className="py-4">
               <h3 className="text-white font-medium mb-3">User</h3>
@@ -851,11 +831,13 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
               <div className="p-4 rounded-lg bg-slate-800/50 border border-white/5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-slate-300">API Key Status</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    settings.account.apiKeyConfigured 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      settings.account.apiKeyConfigured
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
+                    }`}
+                  >
                     {settings.account.apiKeyConfigured ? 'Configured' : 'Not Configured'}
                   </span>
                 </div>
@@ -909,7 +891,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
               <span className="text-slate-400 text-xl">✕</span>
             </button>
           </div>
-          
+
           {/* Search */}
           <div className="mt-4">
             <input
@@ -934,9 +916,10 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
                   onClick={() => setActiveSection(section.id)}
                   className={`
                     w-full px-3 py-2.5 rounded-lg text-left flex items-center gap-3 transition-all
-                    ${activeSection === section.id
-                      ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ${
+                      activeSection === section.id
+                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }
                   `}
                 >
@@ -948,9 +931,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
           </nav>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {renderSectionContent()}
-          </div>
+          <div className="flex-1 overflow-y-auto p-6">{renderSectionContent()}</div>
         </div>
       </div>
     </div>

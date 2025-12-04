@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { ReviewSidebarProps, ChangeCategory, ApprovalStatus } from '@/types/review';
@@ -12,7 +12,7 @@ import {
 
 /**
  * ReviewSidebar - Change list sidebar with filters
- * 
+ *
  * Features:
  * - List of files with changes
  * - Category and status filters
@@ -56,15 +56,17 @@ export default function ReviewSidebar({
     return iconMap[ext] || '📄';
   };
 
-  const getApprovalProgress = (hunks: { status: ApprovalStatus }[]): {
+  const getApprovalProgress = (
+    hunks: { status: ApprovalStatus }[]
+  ): {
     approved: number;
     rejected: number;
     pending: number;
     total: number;
   } => {
-    const approved = hunks.filter(h => h.status === 'approved').length;
-    const rejected = hunks.filter(h => h.status === 'rejected').length;
-    const pending = hunks.filter(h => h.status === 'pending').length;
+    const approved = hunks.filter((h) => h.status === 'approved').length;
+    const rejected = hunks.filter((h) => h.status === 'rejected').length;
+    const pending = hunks.filter((h) => h.status === 'pending').length;
     return { approved, rejected, pending, total: hunks.length };
   };
 
@@ -93,7 +95,9 @@ export default function ReviewSidebar({
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>
-                {cat === 'all' ? '📁 All Categories' : `${getCategoryIcon(cat)} ${getCategoryDisplayName(cat)}`}
+                {cat === 'all'
+                  ? '📁 All Categories'
+                  : `${getCategoryIcon(cat)} ${getCategoryDisplayName(cat)}`}
               </option>
             ))}
           </select>
@@ -167,14 +171,13 @@ export default function ReviewSidebar({
                       </div>
 
                       {/* Path */}
-                      <p className="text-xs text-slate-500 truncate mt-0.5">
-                        {change.path}
-                      </p>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">{change.path}</p>
 
                       {/* Category & Action */}
                       <div className="flex items-center gap-2 mt-1 text-xs">
                         <span className="text-slate-400">
-                          {getCategoryIcon(change.category)} {getCategoryDisplayName(change.category)}
+                          {getCategoryIcon(change.category)}{' '}
+                          {getCategoryDisplayName(change.category)}
                         </span>
                         <span className="text-slate-600">•</span>
                         <span
@@ -182,8 +185,8 @@ export default function ReviewSidebar({
                             change.action === 'create'
                               ? 'text-green-400'
                               : change.action === 'delete'
-                              ? 'text-red-400'
-                              : 'text-yellow-400'
+                                ? 'text-red-400'
+                                : 'text-yellow-400'
                           }
                         >
                           {change.action}
@@ -233,12 +236,10 @@ export default function ReviewSidebar({
       {changes.length > 0 && (
         <div className="px-4 py-3 border-t border-white/10 bg-black/20">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>
-              {changes.reduce((sum, c) => sum + c.hunks.length, 0)} total hunks
-            </span>
+            <span>{changes.reduce((sum, c) => sum + c.hunks.length, 0)} total hunks</span>
             <span>
               {changes.reduce(
-                (sum, c) => sum + c.hunks.filter(h => h.status === 'pending').length,
+                (sum, c) => sum + c.hunks.filter((h) => h.status === 'pending').length,
                 0
               )}{' '}
               pending

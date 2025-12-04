@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
-import { analytics, generateRequestId, categorizeError, PerformanceTracker } from '@/utils/analytics';
+import {
+  analytics,
+  generateRequestId,
+  categorizeError,
+  PerformanceTracker,
+} from '@/utils/analytics';
 import { isMockAIEnabled, mockComponentResponse } from '@/utils/mockAI';
 import { logAPI, logTokens } from '@/utils/debug';
 
@@ -37,7 +42,7 @@ export async function POST(request: Request) {
   try {
     const { prompt, conversationHistory } = await request.json();
     perfTracker.checkpoint('request_parsed');
-    
+
     // Log request start after parsing body
     analytics.logRequestStart('ai-builder', requestId, {
       hasConversationHistory: !!conversationHistory,
@@ -45,15 +50,16 @@ export async function POST(request: Request) {
 
     console.log('Environment check:', {
       hasKey: !!process.env.ANTHROPIC_API_KEY,
-      keyLength: process.env.ANTHROPIC_API_KEY?.length
+      keyLength: process.env.ANTHROPIC_API_KEY?.length,
     });
 
     if (!process.env.ANTHROPIC_API_KEY) {
       console.warn('Anthropic API key not configured, using demo mode');
       return NextResponse.json({
         code: `import { useState } from 'react';\n\nexport default function GeneratedComponent() {\n  const [value, setValue] = useState('');\n  \n  return (\n    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-lg">\n      <h2 className="text-2xl font-bold mb-4 text-gray-800">Demo Component</h2>\n      <p className="text-sm text-gray-600 mb-4">Add your Anthropic API key to .env.local for full AI generation</p>\n      <input \n        value={value}\n        onChange={(e) => setValue(e.target.value)}\n        className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"\n        placeholder="Type something..."\n      />\n      <p className="mt-3 text-sm text-gray-500">You typed: {value}</p>\n    </div>\n  );\n}`,
-        explanation: "This is a demo component. Configure your Anthropic API key (ANTHROPIC_API_KEY) in .env.local to enable full AI generation with Claude.",
-        name: "Demo Component"
+        explanation:
+          'This is a demo component. Configure your Anthropic API key (ANTHROPIC_API_KEY) in .env.local to enable full AI generation with Claude.',
+        name: 'Demo Component',
       });
     }
 
@@ -153,26 +159,26 @@ CRITICAL RULES:
     perfTracker.checkpoint('prompt_built');
 
     const modelName = 'claude-sonnet-4-5-20250929';
-    
+
     // Use streaming for better responsiveness and timeout handling
     const stream = await anthropic.messages.stream({
       model: modelName,
-      max_tokens: 16000,  // Must be > budget_tokens (8000 thinking + 8000 response)
-      temperature: 1,  // Required for extended thinking
+      max_tokens: 16000, // Must be > budget_tokens (8000 thinking + 8000 response)
+      temperature: 1, // Required for extended thinking
       thinking: {
         type: 'enabled',
-        budget_tokens: 8000
+        budget_tokens: 8000,
       },
       system: [
         {
           type: 'text',
           text: systemPrompt,
-          cache_control: { type: 'ephemeral' }
-        }
+          cache_control: { type: 'ephemeral' },
+        },
       ],
       messages: messages,
     });
-    
+
     perfTracker.checkpoint('ai_request_sent');
 
     // Collect the full response with timeout
@@ -182,11 +188,13 @@ CRITICAL RULES:
     let cachedTokens = 0;
     const timeout = 60000; // 60 seconds (increased for extended thinking)
     const startTime = Date.now();
-    
+
     try {
       for await (const chunk of stream) {
         if (Date.now() - startTime > timeout) {
-          throw new Error('AI response timeout - the component generation was taking too long. Please try a simpler request or try again.');
+          throw new Error(
+            'AI response timeout - the component generation was taking too long. Please try a simpler request or try again.'
+          );
         }
         if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
           responseText += chunk.delta.text;
@@ -202,11 +210,13 @@ CRITICAL RULES:
     } catch (streamError) {
       console.error('Streaming error:', streamError);
       analytics.logRequestError(requestId, streamError as Error, 'ai_error');
-      throw new Error(streamError instanceof Error ? streamError.message : 'Failed to receive AI response');
+      throw new Error(
+        streamError instanceof Error ? streamError.message : 'Failed to receive AI response'
+      );
     }
-    
+
     perfTracker.checkpoint('ai_response_received');
-    
+
     // Log token usage
     if (inputTokens > 0 || outputTokens > 0) {
       analytics.logTokenUsage(requestId, inputTokens, outputTokens, cachedTokens);
@@ -225,27 +235,32 @@ CRITICAL RULES:
     if (!nameMatch || !explanationMatch || !codeMatch) {
       console.error('Failed to parse response');
       console.log('Response preview:', responseText.substring(0, 500));
-      
-      analytics.logRequestError(requestId, 'Failed to parse delimiter-based response', 'parsing_error', {
-        modelUsed: modelName,
-        responseLength: responseText.length,
-      });
-      
+
+      analytics.logRequestError(
+        requestId,
+        'Failed to parse delimiter-based response',
+        'parsing_error',
+        {
+          modelUsed: modelName,
+          responseLength: responseText.length,
+        }
+      );
+
       throw new Error('Invalid response format from AI. Please try again.');
     }
 
     const aiResponse = {
       name: nameMatch[1].trim(),
       explanation: explanationMatch[1].trim(),
-      code: codeMatch[1].trim()
+      code: codeMatch[1].trim(),
     };
-    
+
     console.log('Successfully parsed:', {
       name: aiResponse.name,
-      codeLength: aiResponse.code.length
+      codeLength: aiResponse.code.length,
     });
     perfTracker.checkpoint('response_parsed');
-    
+
     // Ensure code is a string
     if (aiResponse.code && typeof aiResponse.code === 'object') {
       aiResponse.code = JSON.stringify(aiResponse.code);
@@ -255,26 +270,26 @@ CRITICAL RULES:
     // VALIDATION LAYER - Validate generated component code
     // ============================================================================
     console.log('🔍 Validating generated component...');
-    
+
     // Assume TypeScript component (this route generates .tsx components)
     const validation = await validateGeneratedCode(aiResponse.code, 'Component.tsx');
-    
+
     let validationWarnings;
-    
+
     if (!validation.valid) {
       console.log(`⚠️ Found ${validation.errors.length} error(s) in generated component`);
-      
+
       // Log each error
-      validation.errors.forEach(err => {
+      validation.errors.forEach((err) => {
         console.log(`  - Line ${err.line}: ${err.message}`);
       });
-      
+
       // Attempt auto-fix
       const fixedCode = autoFixCode(aiResponse.code, validation.errors);
       if (fixedCode !== aiResponse.code) {
         console.log(`✅ Auto-fixed errors in component`);
         aiResponse.code = fixedCode;
-        
+
         // Re-validate after fix
         const revalidation = await validateGeneratedCode(fixedCode, 'Component.tsx');
         if (!revalidation.valid) {
@@ -282,7 +297,7 @@ CRITICAL RULES:
           validationWarnings = {
             hasWarnings: true,
             message: `Code validation detected ${revalidation.errors.length} potential issue(s). The component has been generated but may need manual review.`,
-            errors: revalidation.errors
+            errors: revalidation.errors,
           };
         } else {
           console.log(`✅ Component validated successfully after auto-fix`);
@@ -292,27 +307,27 @@ CRITICAL RULES:
         validationWarnings = {
           hasWarnings: true,
           message: `Code validation detected ${validation.errors.length} potential issue(s). The component has been generated but may need manual review.`,
-          errors: validation.errors
+          errors: validation.errors,
         };
       }
     } else {
       console.log(`✅ Component validated successfully - no errors found`);
     }
-    
+
     perfTracker.checkpoint('validation_complete');
-    
+
     // Log validation to analytics
     const totalErrors = validation.valid ? 0 : validation.errors.length;
-    const fixedErrors = validationWarnings ? 
-      totalErrors - (validationWarnings.errors?.length || 0) : 
-      totalErrors;
-    
+    const fixedErrors = validationWarnings
+      ? totalErrors - (validationWarnings.errors?.length || 0)
+      : totalErrors;
+
     if (totalErrors > 0) {
       analytics.logValidation(requestId, totalErrors, fixedErrors);
     }
-    
+
     perfTracker.checkpoint('response_prepared');
-    
+
     // Log successful completion
     analytics.logRequestComplete(requestId, {
       modelUsed: modelName,
@@ -326,39 +341,37 @@ CRITICAL RULES:
         codeLength: aiResponse.code.length,
       },
     });
-    
+
     if (process.env.NODE_ENV === 'development') {
       perfTracker.log('AI Builder Route');
     }
 
     return NextResponse.json({
       ...aiResponse,
-      ...(validationWarnings && { validationWarnings })
+      ...(validationWarnings && { validationWarnings }),
     });
   } catch (error) {
     console.error('Error in AI builder route:', error);
     console.error('Error details:', JSON.stringify(error, null, 2));
-    
+
     // Log error to analytics
-    analytics.logRequestError(
-      requestId,
-      error as Error,
-      categorizeError(error as Error)
-    );
-    
+    analytics.logRequestError(requestId, error as Error, categorizeError(error as Error));
+
     // If model not found, provide helpful error message
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
-      
+
       if (error.message.includes('model')) {
         return NextResponse.json(
-          { error: `Model not found: ${error.message}. Please check your Anthropic console at https://console.anthropic.com/ for available models.` },
+          {
+            error: `Model not found: ${error.message}. Please check your Anthropic console at https://console.anthropic.com/ for available models.`,
+          },
           { status: 500 }
         );
       }
     }
-    
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to process request' },
       { status: 500 }

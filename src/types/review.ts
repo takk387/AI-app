@@ -1,6 +1,6 @@
 /**
  * Type definitions for the Enhanced Review System
- * 
+ *
  * Provides comprehensive types for:
  * - Side-by-side diff comparison
  * - Inline commenting
@@ -19,12 +19,12 @@
  * Categories for code modifications
  */
 export type ChangeCategory =
-  | 'structure'       // File/folder changes
-  | 'styling'         // CSS/Tailwind changes
-  | 'logic'           // JavaScript/TypeScript logic
-  | 'content'         // Text/copy changes
-  | 'configuration'   // Config file changes
-  | 'dependencies';   // Package changes
+  | 'structure' // File/folder changes
+  | 'styling' // CSS/Tailwind changes
+  | 'logic' // JavaScript/TypeScript logic
+  | 'content' // Text/copy changes
+  | 'configuration' // Config file changes
+  | 'dependencies'; // Package changes
 
 /**
  * Risk level assessment for changes
@@ -267,8 +267,14 @@ export type ReviewAction =
   | { type: 'RESET_HUNK'; payload: { filePath: string; hunkId: string } }
   | { type: 'APPROVE_ALL' }
   | { type: 'REJECT_ALL' }
-  | { type: 'ADD_COMMENT'; payload: { filePath: string; hunkId: string; lineNumber: number; comment: LineComment } }
-  | { type: 'RESOLVE_COMMENT'; payload: { filePath: string; hunkId: string; lineNumber: number; commentId: string } }
+  | {
+      type: 'ADD_COMMENT';
+      payload: { filePath: string; hunkId: string; lineNumber: number; comment: LineComment };
+    }
+  | {
+      type: 'RESOLVE_COMMENT';
+      payload: { filePath: string; hunkId: string; lineNumber: number; commentId: string };
+    }
   | { type: 'ADD_RESTORE_POINT'; payload: RestorePoint }
   | { type: 'DELETE_RESTORE_POINT'; payload: string }
   | { type: 'SET_IMPACT_ANALYSIS'; payload: ImpactAnalysis | null }
@@ -283,10 +289,17 @@ export type ReviewAction =
  * Interface for the Rollback Service
  */
 export interface IRollbackService {
-  createRestorePoint(label: string, files: { path: string; content: string }[], metadata: RestorePoint['metadata']): Promise<RestorePoint>;
+  createRestorePoint(
+    label: string,
+    files: { path: string; content: string }[],
+    metadata: RestorePoint['metadata']
+  ): Promise<RestorePoint>;
   getRestorePoints(): RestorePoint[];
   rollbackTo(pointId: string): Promise<{ path: string; content: string }[]>;
-  rollbackFile(pointId: string, filePath: string): Promise<{ path: string; content: string } | null>;
+  rollbackFile(
+    pointId: string,
+    filePath: string
+  ): Promise<{ path: string; content: string } | null>;
   deleteRestorePoint(pointId: string): void;
   getMaxRestorePoints(): number;
   setMaxRestorePoints(max: number): void;
@@ -440,7 +453,7 @@ export function calculateReviewStatistics(changes: FileChange[]): ReviewStatisti
   let pendingHunks = 0;
   let totalComments = 0;
   let unresolvedComments = 0;
-  
+
   const byCategory: Record<ChangeCategory, number> = {
     structure: 0,
     styling: 0,
@@ -449,7 +462,7 @@ export function calculateReviewStatistics(changes: FileChange[]): ReviewStatisti
     configuration: 0,
     dependencies: 0,
   };
-  
+
   const byRiskLevel: Record<RiskLevel, number> = {
     low: 0,
     medium: 0,
@@ -459,16 +472,16 @@ export function calculateReviewStatistics(changes: FileChange[]): ReviewStatisti
   for (const change of changes) {
     byCategory[change.category]++;
     byRiskLevel[change.riskLevel]++;
-    
+
     for (const hunk of change.hunks) {
       totalHunks++;
       if (hunk.status === 'approved') approvedHunks++;
       else if (hunk.status === 'rejected') rejectedHunks++;
       else pendingHunks++;
-      
+
       for (const line of hunk.lines) {
         totalComments += line.comments.length;
-        unresolvedComments += line.comments.filter(c => !c.resolved).length;
+        unresolvedComments += line.comments.filter((c) => !c.resolved).length;
       }
     }
   }

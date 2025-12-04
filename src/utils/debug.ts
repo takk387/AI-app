@@ -31,8 +31,7 @@ export const isServer = typeof window === 'undefined';
  * Works in development OR when NEXT_PUBLIC_DEV_TOOLS=true (for Railway/production debugging)
  */
 export const SHOW_DEV_TOOLS =
-  process.env.NEXT_PUBLIC_DEV_TOOLS === 'true' ||
-  process.env.NODE_ENV === 'development';
+  process.env.NEXT_PUBLIC_DEV_TOOLS === 'true' || process.env.NODE_ENV === 'development';
 
 /**
  * Debug flags - all require development mode to be active
@@ -89,11 +88,7 @@ export const DEBUG = {
 /**
  * Log a debug message if the specified flag is enabled
  */
-export function debugLog(
-  flag: keyof typeof DEBUG,
-  message: string,
-  data?: unknown
-): void {
+export function debugLog(flag: keyof typeof DEBUG, message: string, data?: unknown): void {
   if (DEBUG[flag]) {
     const prefix = `[${flag}]`;
     if (data !== undefined) {
@@ -107,11 +102,7 @@ export function debugLog(
 /**
  * Log API request/response if LOG_API is enabled
  */
-export function logAPI(
-  method: string,
-  route: string,
-  data?: Record<string, unknown>
-): void {
+export function logAPI(method: string, route: string, data?: Record<string, unknown>): void {
   if (DEBUG.LOG_API) {
     const prefix = `[API] ${method} ${route}`;
     const duration = data?.duration;

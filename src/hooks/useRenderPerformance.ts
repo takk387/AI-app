@@ -78,7 +78,11 @@ export function clearPerformanceMetrics(): void {
 /**
  * Get a summary of slow renders across all components
  */
-export function getSlowRenderSummary(): Array<{ name: string; slowRenders: number; avgTime: number }> {
+export function getSlowRenderSummary(): Array<{
+  name: string;
+  slowRenders: number;
+  avgTime: number;
+}> {
   return Array.from(metricsStore.values())
     .filter((m) => m.slowRenders > 0)
     .map((m) => ({

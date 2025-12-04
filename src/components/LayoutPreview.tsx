@@ -47,36 +47,36 @@ const stylePresets = {
     cardShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-xl font-medium',
     fontWeight: 'font-medium',
-    spacing: 'gap-4'
+    spacing: 'gap-4',
   },
   minimalist: {
     borderRadius: '0.25rem',
     cardShadow: 'none',
     buttonStyle: 'rounded font-normal',
     fontWeight: 'font-normal',
-    spacing: 'gap-6'
+    spacing: 'gap-6',
   },
   playful: {
     borderRadius: '1.5rem',
     cardShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-full font-bold',
     fontWeight: 'font-bold',
-    spacing: 'gap-3'
+    spacing: 'gap-3',
   },
   professional: {
     borderRadius: '0.375rem',
     cardShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-md font-semibold',
     fontWeight: 'font-semibold',
-    spacing: 'gap-5'
+    spacing: 'gap-5',
   },
   custom: {
     borderRadius: '0.5rem',
     cardShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     buttonStyle: 'rounded-lg font-medium',
     fontWeight: 'font-medium',
-    spacing: 'gap-4'
-  }
+    spacing: 'gap-4',
+  },
 } as const;
 
 /** Type for style preset values */
@@ -93,7 +93,7 @@ const colorSchemes = {
     card: 'bg-white',
     border: 'border-gray-200',
     sidebar: 'bg-white',
-    header: 'bg-white'
+    header: 'bg-white',
   },
   dark: {
     bg: 'bg-slate-900',
@@ -102,7 +102,7 @@ const colorSchemes = {
     card: 'bg-slate-800',
     border: 'border-slate-700',
     sidebar: 'bg-slate-800',
-    header: 'bg-slate-800'
+    header: 'bg-slate-800',
   },
   auto: {
     // Auto mode: uses a balanced theme that works in both light/dark contexts
@@ -112,7 +112,7 @@ const colorSchemes = {
     card: 'bg-zinc-800',
     border: 'border-zinc-700',
     sidebar: 'bg-zinc-850',
-    header: 'bg-zinc-800'
+    header: 'bg-zinc-800',
   },
   custom: {
     // Custom mode: neutral base that works well with custom primary colors
@@ -122,8 +122,8 @@ const colorSchemes = {
     card: 'bg-neutral-800',
     border: 'border-neutral-700',
     sidebar: 'bg-neutral-800',
-    header: 'bg-neutral-800'
-  }
+    header: 'bg-neutral-800',
+  },
 } as const;
 
 /** Type for color scheme values */
@@ -191,7 +191,7 @@ function Header({
   style,
   primaryColor,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: HeaderProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -205,9 +205,7 @@ function Header({
       className={`${colors.header} border-b ${colors.border} px-4 py-3`}
     >
       <div className="flex items-center justify-between">
-        <div className={`${style.fontWeight} ${colors.text}`}>
-          {appName || 'App Name'}
-        </div>
+        <div className={`${style.fontWeight} ${colors.text}`}>{appName || 'App Name'}</div>
         <nav className="hidden sm:flex items-center gap-4">
           {navItems.slice(0, 4).map((item) => (
             <span
@@ -226,7 +224,12 @@ function Header({
             aria-label="Open menu"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           </button>
           <button
@@ -260,7 +263,7 @@ function Sidebar({
   style,
   primaryColor,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: SidebarProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -279,9 +282,7 @@ function Sidebar({
           <div
             key={`sidebar-${item}`}
             className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-all ${
-              index === 0
-                ? 'text-white'
-                : `${colors.textMuted} hover:opacity-80`
+              index === 0 ? 'text-white' : `${colors.textMuted} hover:opacity-80`
             }`}
             style={index === 0 ? { backgroundColor: primaryColor || DEFAULT_PRIMARY_COLOR } : {}}
           >
@@ -315,7 +316,7 @@ function Hero({
   style,
   primaryColor,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: HeroProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -328,12 +329,8 @@ function Hero({
       onClick={handleSelect}
       className="py-12 px-6 text-center"
     >
-      <h1 className={`text-2xl ${style.fontWeight} ${colors.text} mb-3`}>
-        {title}
-      </h1>
-      <p className={`${colors.textMuted} mb-6 max-w-md mx-auto text-sm`}>
-        {subtitle}
-      </p>
+      <h1 className={`text-2xl ${style.fontWeight} ${colors.text} mb-3`}>{title}</h1>
+      <p className={`${colors.textMuted} mb-6 max-w-md mx-auto text-sm`}>{subtitle}</p>
       <button
         type="button"
         className={`px-6 py-2.5 text-white ${style.buttonStyle}`}
@@ -356,13 +353,7 @@ interface StatsRowProps {
   selectedElement?: string | null;
 }
 
-function StatsRow({
-  stats,
-  colors,
-  style,
-  onElementSelect,
-  selectedElement
-}: StatsRowProps) {
+function StatsRow({ stats, colors, style, onElementSelect, selectedElement }: StatsRowProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
   };
@@ -381,12 +372,8 @@ function StatsRow({
             className={`${colors.card} border ${colors.border} p-4 text-center`}
             style={{ borderRadius: style.borderRadius, boxShadow: style.cardShadow }}
           >
-            <div className={`text-xl ${style.fontWeight} ${colors.text}`}>
-              {stat.value}
-            </div>
-            <div className={`text-xs ${colors.textMuted} mt-1`}>
-              {stat.label}
-            </div>
+            <div className={`text-xl ${style.fontWeight} ${colors.text}`}>{stat.value}</div>
+            <div className={`text-xs ${colors.textMuted} mt-1`}>{stat.label}</div>
           </div>
         ))}
       </div>
@@ -412,7 +399,7 @@ function CardGrid({
   style,
   primaryColor,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: CardGridProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -433,9 +420,7 @@ function CardGrid({
             style={{ borderRadius: style.borderRadius, boxShadow: style.cardShadow }}
           >
             <div className="flex items-start justify-between mb-2">
-              <h3 className={`${style.fontWeight} ${colors.text} text-sm`}>
-                {card.title}
-              </h3>
+              <h3 className={`${style.fontWeight} ${colors.text} text-sm`}>{card.title}</h3>
               <span
                 className="text-xs px-2 py-0.5 rounded-full text-white"
                 style={{ backgroundColor: primaryColor || DEFAULT_PRIMARY_COLOR }}
@@ -462,13 +447,7 @@ interface ListItemsProps {
   selectedElement?: string | null;
 }
 
-function ListItems({
-  items,
-  colors,
-  style,
-  onElementSelect,
-  selectedElement
-}: ListItemsProps) {
+function ListItems({ items, colors, style, onElementSelect, selectedElement }: ListItemsProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
   };
@@ -495,9 +474,7 @@ function ListItems({
               <div className={`text-sm ${colors.text}`}>{item.title}</div>
               <div className={`text-xs ${colors.textMuted}`}>{item.meta}</div>
             </div>
-            <span
-              className={`text-xs px-2 py-1 rounded-full ${colors.card} ${colors.textMuted}`}
-            >
+            <span className={`text-xs px-2 py-1 rounded-full ${colors.card} ${colors.textMuted}`}>
               {item.status}
             </span>
           </div>
@@ -517,12 +494,7 @@ interface FooterProps {
   selectedElement?: string | null;
 }
 
-function Footer({
-  appName,
-  colors,
-  onElementSelect,
-  selectedElement
-}: FooterProps) {
+function Footer({ appName, colors, onElementSelect, selectedElement }: FooterProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
   };
@@ -582,7 +554,7 @@ function DashboardLayout({
   primaryColor,
   appName,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: LayoutComponentProps) {
   return (
     <div className={`flex flex-col h-full ${colors.bg}`}>
@@ -649,7 +621,7 @@ function MultiPageLayout({
   primaryColor,
   appName,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: LayoutComponentProps) {
   return (
     <div className={`flex flex-col h-full ${colors.bg}`}>
@@ -709,7 +681,7 @@ function SinglePageLayout({
   primaryColor,
   appName,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: LayoutComponentProps) {
   return (
     <div className={`flex flex-col h-full ${colors.bg}`}>
@@ -768,7 +740,7 @@ export function LayoutPreview({
   className = '',
   onPreferenceChange,
   onElementSelect,
-  selectedElement
+  selectedElement,
 }: LayoutPreviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('desktop');
 
@@ -781,9 +753,8 @@ export function LayoutPreview({
   // Generate mock content based on concept
   const mockContent = useMemo(() => {
     // Safely handle coreFeatures - parse from key or use empty array
-    const features: Feature[] = concept?.coreFeatures && Array.isArray(concept.coreFeatures)
-      ? concept.coreFeatures
-      : [];
+    const features: Feature[] =
+      concept?.coreFeatures && Array.isArray(concept.coreFeatures) ? concept.coreFeatures : [];
 
     return generateMockContent(
       concept?.name || 'My App',
@@ -810,7 +781,7 @@ export function LayoutPreview({
       primaryColor,
       appName: concept?.name || 'My App',
       onElementSelect,
-      selectedElement
+      selectedElement,
     };
 
     switch (preferences.layout) {
@@ -835,9 +806,7 @@ export function LayoutPreview({
             type="button"
             onClick={() => setViewMode('mobile')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              viewMode === 'mobile'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              viewMode === 'mobile' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
             title="Mobile view (375x667)"
           >
@@ -847,9 +816,7 @@ export function LayoutPreview({
             type="button"
             onClick={() => setViewMode('tablet')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              viewMode === 'tablet'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              viewMode === 'tablet' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
             title="Tablet view (768x1024)"
           >
@@ -859,9 +826,7 @@ export function LayoutPreview({
             type="button"
             onClick={() => setViewMode('desktop')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              viewMode === 'desktop'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:text-white'
+              viewMode === 'desktop' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
             }`}
             title="Desktop view (full width)"
           >
@@ -877,7 +842,7 @@ export function LayoutPreview({
               type="button"
               onClick={() =>
                 onPreferenceChange({
-                  colorScheme: preferences.colorScheme === 'dark' ? 'light' : 'dark'
+                  colorScheme: preferences.colorScheme === 'dark' ? 'light' : 'dark',
                 })
               }
               className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white text-xs font-medium transition-all"
@@ -915,7 +880,7 @@ export function LayoutPreview({
             width: dimensions.width,
             height: dimensions.height,
             maxWidth: '100%',
-            maxHeight: '100%'
+            maxHeight: '100%',
           }}
         >
           {renderLayout()}

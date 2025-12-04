@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         supabaseRef.current = createClient();
       } catch (err) {
-        console.error("Supabase initialization failed:", err);
+        console.error('Supabase initialization failed:', err);
         throw err;
       }
     }
@@ -40,21 +40,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
-    
+
     const initAuth = async () => {
       try {
         const supabase = getSupabase();
-        
+
         // Get initial session with retry logic (iterative to avoid stack overflow)
         const MAX_RETRIES = 3;
         const RETRY_DELAY = 500;
 
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            const {
+              data: { session },
+              error,
+            } = await supabase.auth.getSession();
 
             if (error) {
-              console.error("Session error:", error);
+              console.error('Session error:', error);
               throw error;
             }
 
@@ -62,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // Set user first
               setUser(session?.user ?? null);
               // Small delay to ensure state is propagated before components react
-              await new Promise(resolve => setTimeout(resolve, 50));
+              await new Promise((resolve) => setTimeout(resolve, 50));
               // Mark session as definitively checked - this is the key flag
               // that tells consumers "we know the auth state now"
               setSessionReady(true);
@@ -75,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // If not the last attempt, wait and retry
             if (attempt < MAX_RETRIES) {
-              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
             } else {
               // After all retries, set loading to false and mark session as checked
               // (user remains null, but we've definitively tried)
@@ -95,11 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // This prevents unnecessary re-renders
           }
         });
-        
+
         subscription = data.subscription;
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Failed to initialize authentication';
-        console.error("Auth initialization error:", message);
+        console.error('Auth initialization error:', message);
         if (mounted) {
           setError(message);
           setSessionReady(true); // Even on error, we've checked
@@ -107,9 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     };
-    
+
     initAuth();
-    
+
     return () => {
       mounted = false;
       if (subscription) {
@@ -154,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const supabase = getSupabase();
       await supabase.auth.signOut();
     } catch (e) {
-      console.error("Error signing out:", e);
+      console.error('Error signing out:', e);
     }
   };
 
@@ -164,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data } = await supabase.auth.getSession();
       setUser(data.session?.user ?? null);
     } catch (e) {
-      console.error("Error refreshing session:", e);
+      console.error('Error refreshing session:', e);
     }
   };
 
@@ -173,13 +176,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-4">
         <div className="max-w-md w-full bg-red-500/10 border border-red-500/20 rounded-xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-xl">⚠️</div>
+            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-xl">
+              ⚠️
+            </div>
             <h2 className="text-xl font-bold text-red-400">Configuration Error</h2>
           </div>
           <p className="text-sm text-slate-300 whitespace-pre-wrap mb-4">{error}</p>
           <div className="text-xs text-slate-500 bg-black/20 p-3 rounded-lg">
             <p className="font-semibold mb-1">How to fix:</p>
-            <p>Add the required environment variables to your Vercel project settings or .env.local file.</p>
+            <p>
+              Add the required environment variables to your Vercel project settings or .env.local
+              file.
+            </p>
           </div>
         </div>
       </div>
@@ -187,7 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, sessionReady, signIn, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider
+      value={{ user, loading, sessionReady, signIn, signUp, signOut, refreshSession }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -7,7 +7,10 @@ export async function POST(request: Request) {
     // Verify SITE_PASSWORD is configured
     if (!SITE_PASSWORD) {
       return NextResponse.json(
-        { error: 'Server configuration error: SITE_PASSWORD not set. Add SITE_PASSWORD to .env.local' },
+        {
+          error:
+            'Server configuration error: SITE_PASSWORD not set. Add SITE_PASSWORD to .env.local',
+        },
         { status: 500 }
       );
     }
@@ -16,7 +19,7 @@ export async function POST(request: Request) {
 
     if (password === SITE_PASSWORD) {
       const response = NextResponse.json({ success: true });
-      
+
       // Set secure cookie that expires in 7 days
       response.cookies.set('site-auth', SITE_PASSWORD, {
         httpOnly: true,
@@ -29,14 +32,8 @@ export async function POST(request: Request) {
       return response;
     }
 
-    return NextResponse.json(
-      { error: 'Invalid password' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Invalid request' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

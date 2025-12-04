@@ -137,7 +137,7 @@ Users in roles: **${context.relevantRoles.join(', ')}**
 ${context.phaseDescription}
 
 ## Features to Implement in This Phase
-${context.features.map(f => `- ${f}`).join('\n')}
+${context.features.map((f) => `- ${f}`).join('\n')}
 
 `;
 
@@ -146,10 +146,10 @@ ${context.features.map(f => `- ${f}`).join('\n')}
     prompt += `## Existing Project Context
 
 ### Files Created So Far
-${context.cumulativeFiles.map(f => `- ${f}`).join('\n')}
+${context.cumulativeFiles.map((f) => `- ${f}`).join('\n')}
 
 ### Features Already Implemented
-${context.cumulativeFeatures.map(f => `- ${f}`).join('\n')}
+${context.cumulativeFeatures.map((f) => `- ${f}`).join('\n')}
 
 ### CRITICAL INSTRUCTIONS
 1. **DO NOT** recreate files that already exist unless you need to modify them
@@ -178,7 +178,7 @@ ${isFirstPhase ? getPhase1Instructions() : getSubsequentPhaseInstructions(contex
 
 ## Test Criteria
 After this phase, the following should work:
-${context.testCriteria.map(c => `- ${c}`).join('\n')}
+${context.testCriteria.map((c) => `- ${c}`).join('\n')}
 
 ## Output Format
 Generate the code using the standard delimiter format:
@@ -232,7 +232,7 @@ function getSubsequentPhaseInstructions(context: PhaseExecutionContext): string 
 
 ### Your Task
 Add the following features to the existing codebase:
-${context.features.map(f => `- **${f}**`).join('\n')}
+${context.features.map((f) => `- **${f}**`).join('\n')}
 
 ### Integration Guidelines
 1. **Import existing components** from previous phases
@@ -270,7 +270,7 @@ function truncateCodeForContext(code: string, maxLength: number = 8000): string 
 
       // First pass: priority files
       for (const file of parsed.files) {
-        const isPriority = priorityFiles.some(pf => file.path.includes(pf));
+        const isPriority = priorityFiles.some((pf) => file.path.includes(pf));
         if (isPriority && file.content.length < remainingLength) {
           result += `=== ${file.path} ===\n${file.content}\n\n`;
           remainingLength -= file.content.length + file.path.length + 10;
@@ -279,7 +279,7 @@ function truncateCodeForContext(code: string, maxLength: number = 8000): string 
 
       // Second pass: other files (truncated)
       for (const file of parsed.files) {
-        const isPriority = priorityFiles.some(pf => file.path.includes(pf));
+        const isPriority = priorityFiles.some((pf) => file.path.includes(pf));
         if (!isPriority && remainingLength > 500) {
           const truncatedContent = file.content.substring(0, Math.min(500, remainingLength));
           result += `=== ${file.path} ===\n${truncatedContent}\n[... truncated ...]\n\n`;
@@ -316,7 +316,7 @@ export class PhaseExecutionManager {
    * Now includes full concept context for rich detail preservation
    */
   getExecutionContext(phaseNumber: number): PhaseExecutionContext {
-    const phase = this.plan.phases.find(p => p.number === phaseNumber);
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (!phase) {
       throw new Error(`Phase ${phaseNumber} not found in plan`);
     }
@@ -369,7 +369,7 @@ export class PhaseExecutionManager {
       this.accumulatedFeatures = [...this.accumulatedFeatures, ...result.implementedFeatures];
 
       // Update plan state
-      const phase = this.plan.phases.find(p => p.number === result.phaseNumber);
+      const phase = this.plan.phases.find((p) => p.number === result.phaseNumber);
       if (phase) {
         phase.status = 'completed';
         phase.completedAt = new Date().toISOString();
@@ -382,7 +382,7 @@ export class PhaseExecutionManager {
       this.plan.currentPhaseNumber = result.phaseNumber + 1;
       this.plan.updatedAt = new Date().toISOString();
     } else {
-      const phase = this.plan.phases.find(p => p.number === result.phaseNumber);
+      const phase = this.plan.phases.find((p) => p.number === result.phaseNumber);
       if (phase) {
         phase.status = 'failed';
         phase.errors = result.errors;
@@ -395,14 +395,14 @@ export class PhaseExecutionManager {
    * Get the next phase to execute
    */
   getNextPhase(): DynamicPhase | null {
-    return this.plan.phases.find(p => p.status === 'pending') || null;
+    return this.plan.phases.find((p) => p.status === 'pending') || null;
   }
 
   /**
    * Check if all phases are complete
    */
   isComplete(): boolean {
-    return this.plan.phases.every(p => p.status === 'completed' || p.status === 'skipped');
+    return this.plan.phases.every((p) => p.status === 'completed' || p.status === 'skipped');
   }
 
   /**
@@ -416,7 +416,7 @@ export class PhaseExecutionManager {
   } {
     const completed = this.completedPhases.length;
     const total = this.plan.totalPhases;
-    const currentPhase = this.plan.phases.find(p => p.status === 'in-progress') || null;
+    const currentPhase = this.plan.phases.find((p) => p.status === 'in-progress') || null;
 
     return {
       completed,
@@ -437,7 +437,7 @@ export class PhaseExecutionManager {
    * Skip a phase
    */
   skipPhase(phaseNumber: number): void {
-    const phase = this.plan.phases.find(p => p.number === phaseNumber);
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (phase) {
       phase.status = 'skipped';
     }
@@ -447,13 +447,13 @@ export class PhaseExecutionManager {
    * Reset a failed phase for retry
    */
   resetPhase(phaseNumber: number): void {
-    const phase = this.plan.phases.find(p => p.number === phaseNumber);
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (phase) {
       phase.status = 'pending';
       phase.errors = undefined;
 
       // Remove from failed list
-      this.plan.failedPhaseNumbers = this.plan.failedPhaseNumbers.filter(n => n !== phaseNumber);
+      this.plan.failedPhaseNumbers = this.plan.failedPhaseNumbers.filter((n) => n !== phaseNumber);
     }
   }
 }
@@ -486,22 +486,17 @@ export function extractImplementedFeatures(
 ): string[] {
   const lowerCode = generatedCode.toLowerCase();
 
-  return expectedFeatures.filter(feature => {
+  return expectedFeatures.filter((feature) => {
     // Check if the feature name or key words appear in the code
     const keywords = feature.toLowerCase().split(/\s+/);
-    return keywords.some(keyword =>
-      keyword.length > 3 && lowerCode.includes(keyword)
-    );
+    return keywords.some((keyword) => keyword.length > 3 && lowerCode.includes(keyword));
   });
 }
 
 /**
  * Create an empty phase result for tracking
  */
-export function createPhaseResult(
-  phaseNumber: number,
-  phaseName: string
-): PhaseExecutionResult {
+export function createPhaseResult(phaseNumber: number, phaseName: string): PhaseExecutionResult {
   return {
     phaseNumber,
     phaseName,

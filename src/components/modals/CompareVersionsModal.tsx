@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import type { AppVersion, GeneratedComponent } from '@/types/aiBuilderTypes';
@@ -47,7 +47,12 @@ export function CompareVersionsModal({
               className="text-slate-400 hover:text-white transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -70,7 +75,7 @@ export function CompareVersionsModal({
                 </div>
                 <p className="text-sm text-slate-300">{version1.description}</p>
               </div>
-              
+
               <div className="bg-black/20 rounded-xl border border-white/10 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-white font-semibold text-sm">Code Preview</h4>
@@ -104,7 +109,7 @@ export function CompareVersionsModal({
                 </div>
                 <p className="text-sm text-slate-300">{version2.description}</p>
               </div>
-              
+
               <div className="bg-black/20 rounded-xl border border-white/10 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-white font-semibold text-sm">Code Preview</h4>

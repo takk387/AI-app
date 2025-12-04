@@ -2,13 +2,7 @@
 
 import React from 'react';
 import { HeaderDropdown, DropdownItem } from '../ui/HeaderDropdown';
-import {
-  LayersIcon,
-  RocketIcon,
-  HistoryIcon,
-  ToggleLeftIcon,
-  ToggleRightIcon,
-} from '../ui/Icons';
+import { LayersIcon, RocketIcon, HistoryIcon, ToggleLeftIcon, ToggleRightIcon } from '../ui/Icons';
 
 interface BuildDropdownProps {
   // Conditional visibility props

@@ -55,18 +55,21 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
   }, [isOpen]);
 
   // Keyboard navigation
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      setIsOpen(false);
-      setActiveSubmenu(null);
-      triggerRef.current?.focus();
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      if (!isOpen) {
-        event.preventDefault();
-        setIsOpen(true);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        setActiveSubmenu(null);
+        triggerRef.current?.focus();
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        if (!isOpen) {
+          event.preventDefault();
+          setIsOpen(true);
+        }
       }
-    }
-  }, [isOpen]);
+    },
+    [isOpen]
+  );
 
   const handleItemClick = (item: DropdownItem) => {
     if (item.disabled) return;
@@ -98,9 +101,10 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
           disabled={item.disabled}
           className={`
             w-full px-3 py-2 text-sm flex items-center gap-3 transition-colors
-            ${item.variant === 'danger'
-              ? 'text-red-400 hover:text-red-300 hover:bg-red-950/50'
-              : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
+            ${
+              item.variant === 'danger'
+                ? 'text-red-400 hover:text-red-300 hover:bg-red-950/50'
+                : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
             }
             ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             ${isSubmenuItem ? 'pl-4' : ''}
@@ -120,13 +124,9 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
             </span>
           )}
           {item.shortcut && (
-            <span className="ml-auto text-xs text-zinc-500 font-mono">
-              {item.shortcut}
-            </span>
+            <span className="ml-auto text-xs text-zinc-500 font-mono">{item.shortcut}</span>
           )}
-          {hasSubmenu && (
-            <ChevronRightIcon size={14} className="text-zinc-500" />
-          )}
+          {hasSubmenu && <ChevronRightIcon size={14} className="text-zinc-500" />}
         </button>
 
         {/* Submenu */}
@@ -135,7 +135,7 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
             className="absolute left-full top-0 ml-1 min-w-[180px] py-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg shadow-black/30 z-50"
             role="menu"
           >
-            {item.subItems!.map(subItem => renderItem(subItem, true))}
+            {item.subItems!.map((subItem) => renderItem(subItem, true))}
           </div>
         )}
 
@@ -145,7 +145,7 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
   };
 
   // Filter out items that have no visible content
-  const visibleItems = items.filter(item => !item.disabled || item.label);
+  const visibleItems = items.filter((item) => !item.disabled || item.label);
 
   if (visibleItems.length === 0) {
     return null;
@@ -185,7 +185,7 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
           role="menu"
           aria-label={label}
         >
-          {visibleItems.map(item => renderItem(item))}
+          {visibleItems.map((item) => renderItem(item))}
         </div>
       )}
     </div>
