@@ -436,3 +436,4 @@ For questions or issues:
 ---
 
 **Built with ❤️ using Next.js, React, and Claude AI**
+
