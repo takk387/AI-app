@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import PowerfulPreview from './PowerfulPreview';
+import { useToast } from './Toast';
 
 interface AppFile {
   path: string;
@@ -21,13 +22,44 @@ interface FullAppData {
 
 interface FullAppPreviewProps {
   appDataJson: string;
+  onScreenshot?: (image: string) => void;
 }
 
-export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
+export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPreviewProps) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [captureSuccess, setCaptureSuccess] = useState(false);
+  const captureFunc = useRef<(() => Promise<string | null>) | null>(null);
+  const { showToast } = useToast();
+
+  // Handle capture function from PowerfulPreview
+  const handleCaptureReady = useCallback((fn: () => Promise<string | null>) => {
+    captureFunc.current = fn;
+  }, []);
+
+  // Handle capture button click
+  const handleCapture = useCallback(async () => {
+    if (!captureFunc.current) {
+      showToast({ type: 'error', message: 'Capture not ready - please wait for preview to load' });
+      return;
+    }
+
+    setIsCapturing(true);
+    const image = await captureFunc.current();
+    setIsCapturing(false);
+
+    if (image) {
+      setCaptureSuccess(true);
+      onScreenshot?.(image);
+      showToast({ type: 'success', message: 'Screenshot captured! Will be sent with your next message.' });
+      setTimeout(() => setCaptureSuccess(false), 2000);
+    } else {
+      showToast({ type: 'error', message: 'Failed to capture screenshot. Please try again.' });
+    }
+  }, [onScreenshot, showToast]);
 
   // Detect client-side rendering for portal
   useEffect(() => {
@@ -115,25 +147,47 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
         </div>
       )}
 
-      {/* Floating exit button when in fullscreen preview mode */}
+      {/* Floating buttons when in fullscreen preview mode */}
       {activeTab === 'preview' && (
-        <button
-          onClick={() => setIsFullscreen(false)}
-          className="fixed top-4 right-4 z-[110] px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
-          title="Exit Fullscreen"
-        >
-          <span className="text-lg">⤓</span>
-          <span className="text-sm font-medium">Exit Fullscreen</span>
-        </button>
+        <div className="fixed top-4 right-4 z-[110] flex items-center gap-2">
+          {/* Capture for AI button */}
+          <button
+            onClick={handleCapture}
+            disabled={isCapturing}
+            className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20 disabled:opacity-50"
+            title="Capture for AI"
+          >
+            {isCapturing ? (
+              <span className="text-lg animate-spin">⟳</span>
+            ) : captureSuccess ? (
+              <span className="text-lg text-green-400">✓</span>
+            ) : (
+              <span className="text-lg">📷</span>
+            )}
+            <span className="text-sm font-medium">
+              {isCapturing ? 'Capturing...' : captureSuccess ? 'Captured!' : 'Capture'}
+            </span>
+          </button>
+          {/* Exit Fullscreen button */}
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
+            title="Exit Fullscreen"
+          >
+            <span className="text-lg">⤓</span>
+            <span className="text-sm font-medium">Exit Fullscreen</span>
+          </button>
+        </div>
       )}
 
       {/* Content area */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'preview' ? (
           <div className="h-full w-full">
-            <PowerfulPreview 
-              appDataJson={appDataJson} 
+            <PowerfulPreview
+              appDataJson={appDataJson}
               isFullscreen={true}
+              onCaptureReady={handleCaptureReady}
             />
           </div>
         ) : (
@@ -203,17 +257,39 @@ export default function FullAppPreview({ appDataJson }: FullAppPreviewProps) {
   // Normal (non-fullscreen) content - shows the preview with a fullscreen button
   const normalContent = (
     <div className="h-full w-full relative">
-      <button
-        onClick={() => setIsFullscreen(true)}
-        className="absolute top-4 right-4 z-[100] px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
-        title="Enter Fullscreen"
-      >
-        <span className="text-lg">⤢</span>
-        <span className="text-sm font-medium">Fullscreen</span>
-      </button>
-      <PowerfulPreview 
-        appDataJson={appDataJson} 
+      <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
+        {/* Capture for AI button */}
+        <button
+          onClick={handleCapture}
+          disabled={isCapturing}
+          className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20 disabled:opacity-50"
+          title="Capture for AI"
+        >
+          {isCapturing ? (
+            <span className="text-lg animate-spin">⟳</span>
+          ) : captureSuccess ? (
+            <span className="text-lg text-green-400">✓</span>
+          ) : (
+            <span className="text-lg">📷</span>
+          )}
+          <span className="text-sm font-medium">
+            {isCapturing ? 'Capturing...' : captureSuccess ? 'Captured!' : 'Capture'}
+          </span>
+        </button>
+        {/* Fullscreen button */}
+        <button
+          onClick={() => setIsFullscreen(true)}
+          className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
+          title="Enter Fullscreen"
+        >
+          <span className="text-lg">⤢</span>
+          <span className="text-sm font-medium">Fullscreen</span>
+        </button>
+      </div>
+      <PowerfulPreview
+        appDataJson={appDataJson}
         isFullscreen={false}
+        onCaptureReady={handleCaptureReady}
       />
     </div>
   );

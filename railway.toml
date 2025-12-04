@@ -1,0 +1,5 @@
+[build]
+nixPkgs = ["chromium"]
+
+[deploy]
+startCommand = "npm start"

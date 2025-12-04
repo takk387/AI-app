@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
 import { SandpackProvider, SandpackPreview, SandpackLayout } from '@codesandbox/sandpack-react';
 
 interface AppFile {
@@ -21,11 +21,13 @@ interface FullAppData {
 interface PowerfulPreviewProps {
   appDataJson: string;
   isFullscreen?: boolean;
+  onCaptureReady?: (captureFunc: () => Promise<string | null>) => void;
 }
 
 export default function PowerfulPreview({
   appDataJson,
-  isFullscreen = false
+  isFullscreen = false,
+  onCaptureReady
 }: PowerfulPreviewProps) {
   // Parse JSON with error handling to prevent crashes
   const appData = useMemo((): FullAppData | null => {
@@ -36,6 +38,41 @@ export default function PowerfulPreview({
       return null;
     }
   }, [appDataJson]);
+
+  // Capture function that sends files to the API for server-side screenshot
+  const capturePreview = useCallback(async (): Promise<string | null> => {
+    try {
+      if (!appData) return null;
+
+      const response = await fetch('/api/screenshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: appData.files,
+          name: appData.name,
+          dependencies: appData.dependencies,
+          width: 1280,
+          height: 720
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Screenshot failed');
+      }
+
+      const { image } = await response.json();
+      return image;
+    } catch (error) {
+      console.error('Capture failed:', error);
+      return null;
+    }
+  }, [appData]);
+
+  // Pass capture function to parent via callback
+  useEffect(() => {
+    onCaptureReady?.(capturePreview);
+  }, [capturePreview, onCaptureReady]);
 
   // Handle parse error
   if (!appData) {

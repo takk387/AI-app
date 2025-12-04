@@ -12,11 +12,11 @@ import type { GeneratedComponent, ActiveTab } from '../types/aiBuilderTypes';
 export interface PreviewPanelProps {
   // Current component
   currentComponent: GeneratedComponent | null;
-  
+
   // Tab state
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
-  
+
   // Undo/Redo
   canUndo: boolean;
   canRedo: boolean;
@@ -24,14 +24,17 @@ export interface PreviewPanelProps {
   onRedo: () => void;
   undoCount?: number;
   redoCount?: number;
-  
+
   // Actions
   onFork: (component: GeneratedComponent) => void;
   onExport: (component: GeneratedComponent) => void;
   onDownload: () => void;
-  
+
   // Loading states
   isExporting?: boolean;
+
+  // Screenshot capture
+  onScreenshot?: (image: string) => void;
 }
 
 // ============================================================================
@@ -52,6 +55,7 @@ export function PreviewPanel({
   onExport,
   onDownload,
   isExporting = false,
+  onScreenshot,
 }: PreviewPanelProps) {
   return (
     <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-black/40 h-full flex flex-col">
@@ -157,7 +161,7 @@ export function PreviewPanel({
           <>
             {activeTab === 'preview' && (
               <div className="h-full">
-                <FullAppPreview appDataJson={currentComponent.code} />
+                <FullAppPreview appDataJson={currentComponent.code} onScreenshot={onScreenshot} />
               </div>
             )}
 

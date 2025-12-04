@@ -1764,6 +1764,11 @@ const [wizardState, setWizardState] = useState<{
                 onExport={handleExportApp}
                 onDownload={downloadCode}
                 isExporting={!!exportingApp}
+                onScreenshot={(image) => {
+                  setUploadedImage(image);
+                  // Show a subtle indicator that capture is ready
+                  console.log('Preview captured - will be sent with next message');
+                }}
               />
             </ResizablePanel>
           </ResizablePanelGroup>

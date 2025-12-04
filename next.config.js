@@ -14,15 +14,18 @@ module.exports = {
   // but is not required for tree-sitter compatibility
 
   webpack: (config, { isServer }) => {
-    // Fix for tree-sitter native bindings
+    // Fix for tree-sitter native bindings and server-only packages
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push({
         'tree-sitter': 'commonjs tree-sitter',
         'tree-sitter-typescript': 'commonjs tree-sitter-typescript',
         'tree-sitter-javascript': 'commonjs tree-sitter-javascript',
+        // Puppeteer and esbuild are server-only - don't bundle
+        'puppeteer': 'commonjs puppeteer',
+        'esbuild': 'commonjs esbuild',
       });
-      
+
       // Ignore .node files
       config.module = config.module || {};
       config.module.rules = config.module.rules || [];
@@ -31,7 +34,7 @@ module.exports = {
         use: 'node-loader',
       });
     }
-    
+
     return config;
   },
 }
