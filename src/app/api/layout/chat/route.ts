@@ -20,6 +20,12 @@ import type {
   DesignChange,
   SuggestedAction,
 } from '@/types/layoutDesign';
+import {
+  matchDesignPattern,
+  applyPatternToDesign,
+  type DesignPattern,
+} from '@/utils/designPatterns';
+import { parseDesignDescription } from '@/utils/designLanguageParser';
 
 // Vercel serverless function config
 export const maxDuration = 60;
@@ -540,6 +546,105 @@ function mergeDesignUpdates(
 }
 
 /**
+ * Detect and apply design patterns from user message
+ * Returns pattern info and enhanced updates if a pattern was detected
+ */
+function detectAndApplyPattern(
+  userMessage: string,
+  currentDesign: Partial<LayoutDesign>,
+  extractedUpdates: Partial<LayoutDesign>
+): {
+  updates: Partial<LayoutDesign>;
+  detectedPattern: DesignPattern | null;
+  patternApplied: boolean;
+} {
+  // Try to match a design pattern from the user's message
+  const detectedPattern = matchDesignPattern(userMessage);
+
+  if (detectedPattern) {
+    // Pattern detected - apply it to the design and merge with extracted updates
+    const patternAppliedDesign = applyPatternToDesign(currentDesign, detectedPattern);
+
+    // Merge extracted updates on top of pattern (user explicit requests override pattern defaults)
+    const mergedUpdates: Partial<LayoutDesign> = {
+      ...patternAppliedDesign,
+      ...extractedUpdates,
+      globalStyles: {
+        ...patternAppliedDesign.globalStyles,
+        ...extractedUpdates.globalStyles,
+        colors: {
+          ...patternAppliedDesign.globalStyles?.colors,
+          ...extractedUpdates.globalStyles?.colors,
+        },
+        typography: {
+          ...patternAppliedDesign.globalStyles?.typography,
+          ...extractedUpdates.globalStyles?.typography,
+        },
+        spacing: {
+          ...patternAppliedDesign.globalStyles?.spacing,
+          ...extractedUpdates.globalStyles?.spacing,
+        },
+        effects: {
+          ...patternAppliedDesign.globalStyles?.effects,
+          ...extractedUpdates.globalStyles?.effects,
+        },
+      } as LayoutDesign['globalStyles'],
+    };
+
+    return {
+      updates: mergedUpdates,
+      detectedPattern,
+      patternApplied: true,
+    };
+  }
+
+  // No pattern matched - try parsing design vocabulary from message
+  const parsedDesign = parseDesignDescription(userMessage);
+
+  if (Object.keys(parsedDesign).length > 0) {
+    // Design vocabulary found - merge with extracted updates
+    // Use type assertion since DeepPartial types don't match Partial exactly
+    const mergedUpdates = {
+      ...parsedDesign,
+      ...extractedUpdates,
+      globalStyles: {
+        ...parsedDesign.globalStyles,
+        ...extractedUpdates.globalStyles,
+        colors: {
+          ...parsedDesign.globalStyles?.colors,
+          ...extractedUpdates.globalStyles?.colors,
+        },
+        typography: {
+          ...parsedDesign.globalStyles?.typography,
+          ...extractedUpdates.globalStyles?.typography,
+        },
+        spacing: {
+          ...parsedDesign.globalStyles?.spacing,
+          ...extractedUpdates.globalStyles?.spacing,
+        },
+        effects: {
+          ...parsedDesign.globalStyles?.effects,
+          ...extractedUpdates.globalStyles?.effects,
+        },
+      } as LayoutDesign['globalStyles'],
+    } as Partial<LayoutDesign>;
+
+    return {
+      updates: mergedUpdates,
+      detectedPattern: null,
+      patternApplied: false,
+    };
+  }
+
+  // No pattern or vocabulary detected
+  return {
+    updates: extractedUpdates,
+    detectedPattern: null,
+    patternApplied: false,
+  };
+}
+
+/**
  * Generate suggested actions based on conversation state
  */
 function generateSuggestedActions(
@@ -707,10 +812,28 @@ export async function POST(request: Request) {
     const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
 
     // Extract design updates from the response
-    const { updates, changes } = await extractDesignUpdates(assistantMessage, currentDesign);
+    const { updates: extractedUpdates, changes } = await extractDesignUpdates(assistantMessage, currentDesign);
+
+    // Detect and apply design patterns from user message
+    const { updates: enhancedUpdates, detectedPattern, patternApplied } = detectAndApplyPattern(
+      message,
+      currentDesign,
+      extractedUpdates
+    );
+
+    // Add pattern detection to changes if a pattern was applied
+    const allChanges = [...changes];
+    if (patternApplied && detectedPattern) {
+      allChanges.unshift({
+        property: 'designPattern',
+        oldValue: 'none',
+        newValue: detectedPattern.id,
+        reason: `Applied "${detectedPattern.name}" design pattern: ${detectedPattern.description}`,
+      });
+    }
 
     // Merge updates into current design
-    const updatedDesign = mergeDesignUpdates(currentDesign, updates);
+    const updatedDesign = mergeDesignUpdates(currentDesign, enhancedUpdates);
 
     // Update conversation context
     const newMessageCount = (currentDesign.conversationContext?.messageCount || 0) + 2;
@@ -736,7 +859,12 @@ export async function POST(request: Request) {
       message: assistantMessage,
       updatedDesign,
       suggestedActions,
-      designChanges: changes.length > 0 ? changes : undefined,
+      designChanges: allChanges.length > 0 ? allChanges : undefined,
+      detectedPattern: detectedPattern ? {
+        id: detectedPattern.id,
+        name: detectedPattern.name,
+        description: detectedPattern.description,
+      } : undefined,
       tokensUsed: {
         input: response.usage.input_tokens,
         output: response.usage.output_tokens,

@@ -565,6 +565,12 @@ export interface LayoutChatResponse {
   updatedDesign: Partial<LayoutDesign>;
   suggestedActions?: SuggestedAction[];
   designChanges?: DesignChange[];
+  /** Detected design pattern from user message (e.g., "glassmorphism", "minimal") */
+  detectedPattern?: {
+    id: string;
+    name: string;
+    description: string;
+  };
   tokensUsed: { input: number; output: number };
 }
 

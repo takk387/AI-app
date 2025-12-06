@@ -19,6 +19,24 @@ import {
   type SectionType,
   DEFAULT_SECTION_ORDER,
 } from './layout/DragDropCanvas';
+import { imageAssets, getFallbackImage } from '../utils/imageAssets';
+import { imageCache } from '../utils/imageCache';
+
+// ============================================================================
+// Image Generation Types
+// ============================================================================
+
+interface GeneratedImages {
+  hero?: string;
+  cards: string[];
+  background?: string;
+}
+
+interface ImageGenerationState {
+  isGenerating: boolean;
+  progress: number;
+  error?: string;
+}
 
 type ViewMode = 'mobile' | 'tablet' | 'desktop';
 
@@ -715,6 +733,7 @@ interface HeroProps {
   onElementSelect?: (id: string | null) => void;
   selectedElement?: string | null;
   effectsSettings?: Partial<EffectsSettings>;
+  backgroundImage?: string;
 }
 
 function Hero({
@@ -727,6 +746,7 @@ function Hero({
   onElementSelect,
   selectedElement,
   effectsSettings,
+  backgroundImage,
 }: HeroProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -736,10 +756,19 @@ function Hero({
   const animationHover = getAnimationClass(effectsSettings?.animations, 'hover');
   const radiusClass = getBorderRadiusClass(effectsSettings?.borderRadius);
 
-  // Generate gradient background style if gradients are enabled
+  // Generate background style with image or gradient fallback
   const getHeroBackgroundStyle = (): React.CSSProperties => {
+    const color = primaryColor || DEFAULT_PRIMARY_COLOR;
+
+    if (backgroundImage) {
+      return {
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), url('${backgroundImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      };
+    }
+
     if (effectsSettings?.gradients) {
-      const color = primaryColor || DEFAULT_PRIMARY_COLOR;
       return {
         background: `linear-gradient(135deg, ${color}10 0%, transparent 50%)`,
       };
@@ -747,18 +776,20 @@ function Hero({
     return {};
   };
 
+  const hasImage = !!backgroundImage;
+
   return (
     <Selectable
       id="hero"
       isSelected={selectedElement === 'hero'}
       onClick={handleSelect}
-      className="py-12 px-6 text-center"
+      className={`py-12 px-6 text-center relative ${hasImage ? 'min-h-[200px] flex flex-col justify-center' : ''}`}
       style={getHeroBackgroundStyle()}
     >
-      <h1 className={`text-2xl ${style.fontWeight} ${colors.text} mb-3 ${animationBase}`}>
+      <h1 className={`text-2xl ${style.fontWeight} ${hasImage ? 'text-white' : colors.text} mb-3 ${animationBase}`}>
         {title}
       </h1>
-      <p className={`${colors.textMuted} mb-6 max-w-md mx-auto text-sm ${animationBase}`}>
+      <p className={`${hasImage ? 'text-white/80' : colors.textMuted} mb-6 max-w-md mx-auto text-sm ${animationBase}`}>
         {subtitle}
       </p>
       <button
@@ -835,6 +866,7 @@ interface CardGridProps {
   selectedElement?: string | null;
   cardDesign?: Partial<CardDesign>;
   effectsSettings?: Partial<EffectsSettings>;
+  cardImages?: string[];
 }
 
 function CardGrid({
@@ -846,6 +878,7 @@ function CardGrid({
   selectedElement,
   cardDesign,
   effectsSettings,
+  cardImages = [],
 }: CardGridProps) {
   const handleSelect = (id: string) => {
     onElementSelect?.(selectedElement === id ? null : id);
@@ -879,6 +912,7 @@ function CardGrid({
   // Get border radius from effects settings
   const radiusClass = getBorderRadiusClass(effectsSettings?.borderRadius);
   const animationBase = getAnimationClass(effectsSettings?.animations, 'base');
+  const showImages = cardImages.length > 0 || cardDesign?.imagePosition !== 'none';
 
   return (
     <Selectable
@@ -888,32 +922,56 @@ function CardGrid({
       className="px-4 py-6"
     >
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${style.spacing}`}>
-        {cards.slice(0, 4).map((card) => (
-          <div
-            key={`card-${card.title}`}
-            className={`${getCardStyleClass()} p-4 ${getHoverEffect()} ${radiusClass} ${animationBase}`}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <h3 className={`${style.fontWeight} ${colors.text} text-sm`}>{card.title}</h3>
-              {cardDesign?.showBadge !== false && (
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: primaryColor || DEFAULT_PRIMARY_COLOR }}
-                >
-                  {card.tag}
-                </span>
+        {cards.slice(0, 4).map((card, index) => {
+          const cardImage = cardImages[index];
+          const hasImage = !!cardImage;
+
+          return (
+            <div
+              key={`card-${card.title}`}
+              className={`${getCardStyleClass()} overflow-hidden ${getHoverEffect()} ${radiusClass} ${animationBase}`}
+            >
+              {/* Card Image */}
+              {hasImage && (
+                <div className="relative h-32 overflow-hidden">
+                  <img
+                    src={cardImage}
+                    alt={card.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to placeholder on error
+                      e.currentTarget.src = imageAssets.getPlaceholder(400, 200, {
+                        text: card.title,
+                      });
+                    }}
+                  />
+                </div>
               )}
-            </div>
-            <p className={`text-xs ${colors.textMuted}`}>{card.subtitle}</p>
-            {cardDesign?.showFooter && (
-              <div className={`mt-3 pt-3 border-t ${colors.border} flex justify-end`}>
-                <button type="button" className={`text-xs ${colors.textMuted} hover:opacity-80`}>
-                  View Details
-                </button>
+              {/* Card Content */}
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className={`${style.fontWeight} ${colors.text} text-sm`}>{card.title}</h3>
+                  {cardDesign?.showBadge !== false && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full text-white"
+                      style={{ backgroundColor: primaryColor || DEFAULT_PRIMARY_COLOR }}
+                    >
+                      {card.tag}
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs ${colors.textMuted}`}>{card.subtitle}</p>
+                {cardDesign?.showFooter && (
+                  <div className={`mt-3 pt-3 border-t ${colors.border} flex justify-end`}>
+                    <button type="button" className={`text-xs ${colors.textMuted} hover:opacity-80`}>
+                      View Details
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </Selectable>
   );
@@ -1058,6 +1116,8 @@ interface LayoutComponentProps {
   colorSettings?: Partial<ColorSettings>;
   // Responsive
   viewMode?: ViewMode;
+  // Generated images
+  generatedImages?: GeneratedImages;
 }
 
 /**
@@ -1078,6 +1138,7 @@ function DashboardLayout({
   effectsSettings,
   colorSettings,
   viewMode = 'desktop',
+  generatedImages,
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
   const isTablet = viewMode === 'tablet';
@@ -1132,6 +1193,7 @@ function DashboardLayout({
             selectedElement={selectedElement}
             cardDesign={cardDesign}
             effectsSettings={effectsSettings}
+            cardImages={generatedImages?.cards}
           />
           <ListItems
             items={content.listItems}
@@ -1171,6 +1233,7 @@ function MultiPageLayout({
   effectsSettings,
   colorSettings: _colorSettings, // Not used in this layout but part of shared props
   viewMode = 'desktop',
+  generatedImages,
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
 
@@ -1200,6 +1263,7 @@ function MultiPageLayout({
           onElementSelect={onElementSelect}
           selectedElement={selectedElement}
           effectsSettings={effectsSettings}
+          backgroundImage={generatedImages?.hero}
         />
         <StatsRow
           stats={content.stats}
@@ -1218,6 +1282,7 @@ function MultiPageLayout({
           selectedElement={selectedElement}
           cardDesign={cardDesign}
           effectsSettings={effectsSettings}
+          cardImages={generatedImages?.cards}
         />
       </main>
       <Footer
@@ -1247,6 +1312,7 @@ function SinglePageLayout({
   effectsSettings,
   colorSettings,
   viewMode = 'desktop',
+  generatedImages,
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
 
@@ -1276,6 +1342,7 @@ function SinglePageLayout({
           onElementSelect={onElementSelect}
           selectedElement={selectedElement}
           effectsSettings={effectsSettings}
+          backgroundImage={generatedImages?.hero}
         />
         <CardGrid
           cards={content.cards}
@@ -1286,6 +1353,7 @@ function SinglePageLayout({
           selectedElement={selectedElement}
           cardDesign={cardDesign}
           effectsSettings={effectsSettings}
+          cardImages={generatedImages?.cards}
         />
         <ListItems
           items={content.listItems}
@@ -1326,6 +1394,18 @@ export function LayoutPreview({
   const [isAnimationDemo, setIsAnimationDemo] = useState(false);
   const [animationDemoIndex, setAnimationDemoIndex] = useState(0);
   const [showSectionPanel, setShowSectionPanel] = useState(false);
+
+  // Image generation state
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImages>({ cards: [] });
+  const [imageGenState, setImageGenState] = useState<ImageGenerationState>({
+    isGenerating: false,
+    progress: 0,
+  });
+
+  // Initialize image cache on mount
+  useEffect(() => {
+    imageCache.initialize();
+  }, []);
 
   // Internal section order state (used when not controlled externally)
   const layoutType = preferences.layout || 'single-page';
@@ -1412,6 +1492,118 @@ export function LayoutPreview({
   // Get device dimensions
   const dimensions = getDeviceDimensions(viewMode);
 
+  // Generate images handler - tries DALL-E first, falls back to free services
+  const handleGenerateImages = useCallback(async () => {
+    setImageGenState({ isGenerating: true, progress: 0, error: undefined });
+
+    const designContext = {
+      colorScheme: preferences.colorScheme || 'dark',
+      style: preferences.style || 'modern',
+      primaryColor: primaryColor,
+    };
+
+    try {
+      // Check if DALL-E is enabled
+      const isDalleEnabled = process.env.NEXT_PUBLIC_ENABLE_DALLE === 'true';
+
+      if (isDalleEnabled) {
+        // Try DALL-E API for hero image
+        setImageGenState((prev) => ({ ...prev, progress: 10 }));
+
+        try {
+          const heroResponse = await fetch('/api/images/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'hero',
+              designContext: {
+                ...designContext,
+                appDescription: concept?.description || mockContent.hero.subtitle,
+              },
+            }),
+          });
+
+          if (heroResponse.ok) {
+            const heroData = await heroResponse.json();
+            if (heroData.success && heroData.image?.url) {
+              setGeneratedImages((prev) => ({ ...prev, hero: heroData.image.url }));
+            }
+          }
+        } catch {
+          // Fall through to fallback
+        }
+
+        setImageGenState((prev) => ({ ...prev, progress: 40 }));
+
+        // Try DALL-E API for card images
+        try {
+          const cardResponse = await fetch('/api/images/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'batch-cards',
+              designContext,
+              cards: mockContent.cards.slice(0, 4).map((card) => ({
+                title: card.title,
+                context: card.subtitle,
+              })),
+            }),
+          });
+
+          if (cardResponse.ok) {
+            const cardData = await cardResponse.json();
+            if (cardData.success && cardData.images) {
+              setGeneratedImages((prev) => ({
+                ...prev,
+                cards: cardData.images.map((img: { url: string }) => img.url),
+              }));
+              setImageGenState({ isGenerating: false, progress: 100 });
+              return;
+            }
+          }
+        } catch {
+          // Fall through to fallback
+        }
+      }
+
+      // Fallback to free image services
+      setImageGenState((prev) => ({ ...prev, progress: 60 }));
+
+      const heroFallback = getFallbackImage('hero', {
+        width: 1200,
+        height: 600,
+        seed: concept?.name || 'app',
+      });
+
+      const cardFallbacks = mockContent.cards.slice(0, 4).map((card, index) =>
+        getFallbackImage('card', {
+          width: 400,
+          height: 300,
+          seed: `${card.title}-${index}`,
+        })
+      );
+
+      setGeneratedImages({
+        hero: heroFallback,
+        cards: cardFallbacks,
+      });
+
+      setImageGenState({ isGenerating: false, progress: 100 });
+    } catch (error) {
+      console.error('Image generation failed:', error);
+      setImageGenState({
+        isGenerating: false,
+        progress: 0,
+        error: 'Failed to generate images. Please try again.',
+      });
+    }
+  }, [preferences.colorScheme, preferences.style, primaryColor, concept?.description, concept?.name, mockContent]);
+
+  // Clear generated images
+  const handleClearImages = useCallback(() => {
+    setGeneratedImages({ cards: [] });
+  }, []);
+
   // Render the appropriate layout
   const renderLayout = () => {
     const layoutProps: LayoutComponentProps = {
@@ -1431,6 +1623,8 @@ export function LayoutPreview({
       colorSettings: componentDesign?.colorSettings,
       // Responsive
       viewMode,
+      // Generated images
+      generatedImages,
     };
 
     switch (preferences.layout) {
@@ -1559,6 +1753,67 @@ export function LayoutPreview({
                     />
                   </svg>
                   Demo
+                </>
+              )}
+            </button>
+
+            {/* Generate Images Button */}
+            <button
+              type="button"
+              onClick={generatedImages.hero ? handleClearImages : handleGenerateImages}
+              disabled={imageGenState.isGenerating}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                imageGenState.isGenerating
+                  ? 'bg-amber-600 text-white cursor-wait'
+                  : generatedImages.hero
+                    ? 'bg-green-600 text-white hover:bg-red-600'
+                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-purple-600'
+              }`}
+              title={
+                imageGenState.isGenerating
+                  ? 'Generating images...'
+                  : generatedImages.hero
+                    ? 'Clear generated images'
+                    : 'Generate AI images for preview'
+              }
+            >
+              {imageGenState.isGenerating ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  {imageGenState.progress}%
+                </>
+              ) : generatedImages.hero ? (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Images
                 </>
               )}
             </button>
