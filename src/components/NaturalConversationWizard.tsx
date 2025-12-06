@@ -337,7 +337,7 @@ What would you like to build?`,
 
       try {
         // Prepare conversation history for API with compression for large conversations
-        const MAX_CONTEXT_TOKENS = 6000;
+        const MAX_CONTEXT_TOKENS = 100000;
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
         let contextSummary: string | undefined;
 

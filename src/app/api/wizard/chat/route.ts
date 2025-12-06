@@ -267,46 +267,21 @@ ${contextSummary}
     }
 
     // Add current state context if we have gathered information
+    // We frame this as "background notes" so the AI doesn't feel compelled to repeat it
     if (currentState.name || currentState.features.length > 0 || currentState.roles) {
       const stateContext = `
 
-## CURRENT UNDERSTANDING
+## BACKGROUND CONTEXT (Auto-extracted state)
 
-${currentState.name ? `**App Name:** ${currentState.name}` : ''}
-${currentState.description ? `**Description:** ${currentState.description}` : ''}
-${currentState.targetUsers ? `**Target Users:** ${currentState.targetUsers}` : ''}
+These are notes on what has been identified so far. Use this for consistency, but do not recite it back to the user unless asked.
 
-${
-  currentState.roles && currentState.roles.length > 0
-    ? `
-**Roles Identified:**
-${currentState.roles.map((r) => `- ${r.name}: ${r.capabilities.join(', ')}`).join('\n')}
-`
-    : ''
-}
+${currentState.name ? `- Name: ${currentState.name}` : ''}
+${currentState.description ? `- Desc: ${currentState.description}` : ''}
+${currentState.targetUsers ? `- Users: ${currentState.targetUsers}` : ''}
+${currentState.features.length > 0 ? `- Features: ${currentState.features.length} identified` : ''}
+${Object.keys(currentState.technical).length > 0 ? `- Tech: ${Object.keys(currentState.technical).length} decisions made` : ''}
 
-${
-  currentState.features.length > 0
-    ? `
-**Features Discussed:**
-${currentState.features.map((f) => `- ${f.name}: ${f.description}`).join('\n')}
-`
-    : ''
-}
-
-${
-  Object.values(currentState.technical).some((v) => v !== undefined)
-    ? `
-**Technical Decisions:**
-${currentState.technical.needsAuth !== undefined ? `- Authentication: ${currentState.technical.needsAuth ? 'Yes' : 'No'}` : ''}
-${currentState.technical.needsDatabase !== undefined ? `- Database: ${currentState.technical.needsDatabase ? 'Yes' : 'No'}` : ''}
-${currentState.technical.needsRealtime !== undefined ? `- Real-time: ${currentState.technical.needsRealtime ? 'Yes' : 'No'}` : ''}
-${currentState.technical.needsFileUpload !== undefined ? `- File Upload: ${currentState.technical.needsFileUpload ? 'Yes' : 'No'}` : ''}
-`
-    : ''
-}
-
-Continue the conversation naturally based on this context.`;
+Continue the conversation naturally.`;
 
       systemPrompt += stateContext;
     }

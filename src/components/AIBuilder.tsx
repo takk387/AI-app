@@ -56,6 +56,13 @@ import {
 import { useDynamicBuildPhases } from '@/hooks/useDynamicBuildPhases';
 import { useStreamingGeneration } from '@/hooks/useStreamingGeneration';
 
+// Context Compression
+import {
+  compressConversation,
+  buildCompressedContext,
+  needsCompression,
+} from '@/utils/contextCompression';
+
 // Phase adapters
 import { adaptAllPhasesToUI, adaptDynamicProgressToUI } from '@/types/phaseAdapters';
 
@@ -1541,12 +1548,49 @@ export default function AIBuilder() {
       if (currentMode === 'PLAN') {
         // Smart Conversations: Use wizard API for intelligent planning
         endpoint = '/api/wizard/chat';
+
+        // Prepare conversation history with compression for large conversations
+        // Increased limit to 100k tokens for deep context memory
+        const MAX_CONTEXT_TOKENS = 100000;
+        let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+        let contextSummary: string | undefined;
+
+        // Filter out system messages for the API context
+        const filteredMessages = chatMessages
+          .filter((m) => m.role !== 'system')
+          .map((m) => ({
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.timestamp,
+          }));
+
+        // Check if compression is needed
+        if (needsCompression(filteredMessages, MAX_CONTEXT_TOKENS)) {
+          const compressed = compressConversation(filteredMessages, {
+            maxTokens: MAX_CONTEXT_TOKENS,
+            preserveLastN: 8,
+          });
+
+          conversationHistory = compressed.recentMessages.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          }));
+
+          if (compressed.summary.messageCount > 0) {
+            contextSummary = buildCompressedContext(compressed);
+          }
+        } else {
+          conversationHistory = filteredMessages.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          }));
+        }
+
         fetchBody = JSON.stringify({
           message: userInput,
-          conversationHistory: chatMessages.slice(-30).map((m) => ({
-            role: m.role === 'user' ? 'user' : 'assistant',
-            content: m.content,
-          })),
+          conversationHistory,
+          contextSummary,
           currentState: wizardState,
           // Include images for vision capabilities
           referenceImages: uploadedImage ? [uploadedImage] : undefined,

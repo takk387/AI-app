@@ -194,30 +194,14 @@ export function useMessageSender(_options: UseMessageSenderOptions): UseMessageS
   const getProgressMessages = useCallback(
     (isQuestionType: boolean, isModification: boolean): string[] => {
       if (isQuestionType) {
-        return [
-          '🤔 Thinking about your question...',
-          '📚 Gathering information...',
-          '✍️ Formulating answer...',
-        ];
+        return ['🤔 Thinking...'];
       }
 
       if (isModification) {
-        return [
-          '🔍 Analyzing your modification request...',
-          '📋 Planning targeted changes...',
-          '✨ Generating precise edits...',
-          '🎯 Creating surgical modifications...',
-        ];
+        return ['🔧 Updating app...'];
       }
 
-      return [
-        '🤔 Analyzing your request...',
-        '🏗️ Designing app structure...',
-        '⚡ Generating components...',
-        '🎨 Styling with Tailwind...',
-        '✨ Adding functionality...',
-        '🔧 Finalizing code...',
-      ];
+      return ['🔨 Building app...'];
     },
     []
   );
