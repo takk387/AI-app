@@ -21,6 +21,33 @@ import type {
 import type { TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
 import type { LayoutDesign } from '@/types/layoutDesign';
 import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
+import {
+  borderRadiusMap,
+  shadowMap,
+  blurMap,
+  spacingDensityMap,
+  sectionPaddingMap,
+  containerWidthMap,
+  componentGapMap,
+  fontWeightMap,
+  headingSizeMap,
+  bodySizeMap,
+  lineHeightMap,
+  letterSpacingMap,
+  animationMap,
+  headerHeightMap,
+  headerStyleMap,
+  heroHeightMap,
+  heroLayoutMap,
+  cardStyleMap,
+  cardHoverEffectMap,
+  sidebarWidthMap,
+  listStyleMap,
+  listDensityMap,
+  footerStyleMap,
+  footerColumnsMap,
+  generateGlobalsCSSContent,
+} from '@/utils/designTokenMappings';
 
 // ============================================================================
 // LAYOUT DESIGN FORMATTING
@@ -29,47 +56,80 @@ import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
 /**
  * Format a complete LayoutDesign into a detailed prompt section
  * This ensures ALL design specifications reach the code generation
+ * with concrete CSS/Tailwind mappings for exact implementation
  */
 export function formatLayoutDesignForPrompt(design: LayoutDesign): string {
   const { globalStyles, components, structure, responsive } = design;
 
-  let prompt = `## Complete Design System Specifications
+  // Get concrete CSS/Tailwind values
+  const borderRadius = borderRadiusMap[globalStyles.effects.borderRadius] || borderRadiusMap.lg;
+  const shadow = shadowMap[globalStyles.effects.shadows] || shadowMap.medium;
+  const blur = blurMap[globalStyles.effects.blur] || blurMap.none;
+  const density = spacingDensityMap[globalStyles.spacing.density] || spacingDensityMap.normal;
+  const sectionPad = sectionPaddingMap[globalStyles.spacing.sectionPadding] || sectionPaddingMap.lg;
+  const container = containerWidthMap[globalStyles.spacing.containerWidth] || containerWidthMap.standard;
+  const gap = componentGapMap[globalStyles.spacing.componentGap] || componentGapMap.md;
+  const headingWeight = fontWeightMap[globalStyles.typography.headingWeight] || fontWeightMap.semibold;
+  const bodyWeight = fontWeightMap[globalStyles.typography.bodyWeight] || fontWeightMap.normal;
+  const headingSize = headingSizeMap[globalStyles.typography.headingSize] || headingSizeMap.lg;
+  const bodySize = bodySizeMap[globalStyles.typography.bodySize] || bodySizeMap.base;
+  const lineHeight = lineHeightMap[globalStyles.typography.lineHeight] || lineHeightMap.normal;
+  const letterSpacing = letterSpacingMap[globalStyles.typography.letterSpacing] || letterSpacingMap.normal;
+  const animation = animationMap[globalStyles.effects.animations] || animationMap.smooth;
 
-### Typography
+  let prompt = `## CRITICAL: Design Fidelity Requirements
+
+You MUST implement the design specifications EXACTLY as specified below.
+Do NOT deviate from these values. Do NOT substitute colors, spacing, or effects.
+
+**MANDATORY RULES:**
+1. Use the EXACT hex colors provided - do not substitute or approximate
+2. Apply the EXACT border radius, shadow, and spacing values using the Tailwind classes listed
+3. Follow component visibility and configuration settings precisely
+4. Match typography weights, sizes, and spacing exactly
+5. Create CSS variables in globals.css for design tokens
+6. Use the provided Tailwind classes - do not use arbitrary values when mapped classes exist
+
+---
+
+## Complete Design System Specifications
+
+### Typography (USE EXACT VALUES)
 - Font Family: ${globalStyles.typography.fontFamily}
-- Heading Font: ${globalStyles.typography.headingFont || 'same as body'}
-- Font Weight: Headings ${globalStyles.typography.headingWeight}, Body ${globalStyles.typography.bodyWeight}
-- Heading Size Scale: ${globalStyles.typography.headingSize}
-- Body Size: ${globalStyles.typography.bodySize}
-- Line Height: ${globalStyles.typography.lineHeight}
-- Letter Spacing: ${globalStyles.typography.letterSpacing}
+- Heading Font: ${globalStyles.typography.headingFont || globalStyles.typography.fontFamily}
+- Heading Weight: ${globalStyles.typography.headingWeight} -> ${headingWeight.tailwind} (CSS: ${headingWeight.css})
+- Body Weight: ${globalStyles.typography.bodyWeight} -> ${bodyWeight.tailwind} (CSS: ${bodyWeight.css})
+- Heading Sizes: h1=${headingSize.h1}, h2=${headingSize.h2}, h3=${headingSize.h3}, h4=${headingSize.h4}
+- Body Size: ${globalStyles.typography.bodySize} -> ${bodySize.tailwind} (CSS: ${bodySize.css})
+- Line Height: ${globalStyles.typography.lineHeight} -> ${lineHeight.tailwind} (CSS: ${lineHeight.css})
+- Letter Spacing: ${globalStyles.typography.letterSpacing} -> ${letterSpacing.tailwind} (CSS: ${letterSpacing.css})
 
-### Color Palette
-- Primary: ${globalStyles.colors.primary}
-- Secondary: ${globalStyles.colors.secondary || 'not specified'}
-- Accent: ${globalStyles.colors.accent || 'not specified'}
-- Background: ${globalStyles.colors.background}
-- Surface: ${globalStyles.colors.surface}
-- Text: ${globalStyles.colors.text}
-- Text Muted: ${globalStyles.colors.textMuted}
-- Border: ${globalStyles.colors.border}
+### Color Palette (USE EXACT HEX VALUES)
+- Primary: ${globalStyles.colors.primary} -> Use as bg-[${globalStyles.colors.primary}] or var(--color-primary)
+- Secondary: ${globalStyles.colors.secondary || globalStyles.colors.primary} -> var(--color-secondary)
+- Accent: ${globalStyles.colors.accent || globalStyles.colors.primary} -> var(--color-accent)
+- Background: ${globalStyles.colors.background} -> bg-[${globalStyles.colors.background}] or var(--color-background)
+- Surface: ${globalStyles.colors.surface} -> bg-[${globalStyles.colors.surface}] or var(--color-surface)
+- Text: ${globalStyles.colors.text} -> text-[${globalStyles.colors.text}] or var(--color-text)
+- Text Muted: ${globalStyles.colors.textMuted} -> text-[${globalStyles.colors.textMuted}] or var(--color-text-muted)
+- Border: ${globalStyles.colors.border} -> border-[${globalStyles.colors.border}] or var(--color-border)
 - Success: ${globalStyles.colors.success || '#22C55E'}
 - Warning: ${globalStyles.colors.warning || '#F59E0B'}
 - Error: ${globalStyles.colors.error || '#EF4444'}
 - Info: ${globalStyles.colors.info || '#3B82F6'}
 
-### Spacing System
-- Density: ${globalStyles.spacing.density}
-- Container Width: ${globalStyles.spacing.containerWidth}
-- Section Padding: ${globalStyles.spacing.sectionPadding}
-- Component Gap: ${globalStyles.spacing.componentGap}
+### Spacing System (USE EXACT TAILWIND CLASSES)
+- Density: ${globalStyles.spacing.density} -> Gap: ${density.tailwindGap}, Padding: ${density.tailwindPadding}
+- Container Width: ${globalStyles.spacing.containerWidth} -> ${container.tailwind} (CSS: ${container.css})
+- Section Padding: ${globalStyles.spacing.sectionPadding} -> ${sectionPad.tailwind} (CSS: ${sectionPad.css})
+- Component Gap: ${globalStyles.spacing.componentGap} -> ${gap.tailwind} (CSS: ${gap.css})
 
-### Effects
-- Border Radius: ${globalStyles.effects.borderRadius}
-- Shadows: ${globalStyles.effects.shadows}
-- Animations: ${globalStyles.effects.animations}
-- Blur: ${globalStyles.effects.blur}
-- Gradients: ${globalStyles.effects.gradients ? 'enabled' : 'disabled'}
+### Effects (USE EXACT TAILWIND CLASSES)
+- Border Radius: ${globalStyles.effects.borderRadius} -> ${borderRadius.tailwind} (CSS: ${borderRadius.css})
+- Shadows: ${globalStyles.effects.shadows} -> ${shadow.tailwind}
+- Animations: ${globalStyles.effects.animations} -> duration: ${animation.duration}, easing: ${animation.easing}
+- Blur: ${globalStyles.effects.blur} -> ${blur.tailwind || 'none'}
+- Gradients: ${globalStyles.effects.gradients ? 'ENABLED - use gradient backgrounds where appropriate' : 'DISABLED - use solid colors only'}
 
 ### Layout Structure
 - Type: ${structure.type}
@@ -82,61 +142,99 @@ export function formatLayoutDesignForPrompt(design: LayoutDesign): string {
 - Main Content Width: ${structure.mainContentWidth}
 
 ### Responsive Settings
-- Mobile Breakpoint: ${responsive.mobileBreakpoint}px
-- Tablet Breakpoint: ${responsive.tabletBreakpoint}px
+- Mobile Breakpoint: ${responsive.mobileBreakpoint}px (sm:)
+- Tablet Breakpoint: ${responsive.tabletBreakpoint}px (lg:)
 - Mobile Layout: ${responsive.mobileLayout}
 - Mobile Header: ${responsive.mobileHeader}
 - Hide Sidebar on Mobile: ${responsive.hideSidebarOnMobile}
 - Stack Cards on Mobile: ${responsive.stackCardsOnMobile}
+
+---
+
+## CSS Variables Setup (CREATE THIS IN globals.css)
+
+\`\`\`css
+${generateGlobalsCSSContent({ globalStyles })}
+\`\`\`
+
+---
+
+## Component Implementation Guide
 `;
 
-  // Add component specifications
+  // Add component specifications with implementation hints
   if (components.header) {
+    const headerHeight = headerHeightMap[components.header.height] || headerHeightMap['standard'];
+    const headerStyle = headerStyleMap[components.header.style] || headerStyleMap['solid'];
+
     prompt += `
-### Header Component
-- Visible: ${components.header.visible}
-- Height: ${components.header.height}
+### Header Component (${components.header.visible ? 'VISIBLE' : 'HIDDEN'})
+**Configuration:**
+- Height: ${components.header.height} -> ${headerHeight.tailwind} (CSS: ${headerHeight.css})
 - Style: ${components.header.style}
 - Logo Position: ${components.header.logoPosition}
 - Navigation Position: ${components.header.navPosition}
 - Has Search: ${components.header.hasSearch}
-- Has CTA: ${components.header.hasCTA}
-- CTA Text: ${components.header.ctaText || 'Get Started'}
-- CTA Style: ${components.header.ctaStyle || 'filled'}
+- Has CTA: ${components.header.hasCTA}${components.header.hasCTA ? ` (Text: "${components.header.ctaText || 'Get Started'}", Style: ${components.header.ctaStyle || 'filled'})` : ''}
+
+**Implementation Classes:**
+\`\`\`
+Header: ${headerHeight.tailwind} ${headerStyle}
+Logo: ${components.header.logoPosition === 'left' ? 'mr-auto' : components.header.logoPosition === 'center' ? 'mx-auto' : 'ml-auto'}
+Nav: ${components.header.navPosition === 'right' ? 'ml-auto' : components.header.navPosition === 'center' ? 'mx-auto' : 'mr-auto'}
+CTA: bg-[var(--color-primary)] text-white px-4 py-2 ${borderRadius.tailwind}
+\`\`\`
 `;
   }
 
-  if (components.sidebar) {
+  if (components.sidebar && components.sidebar.visible) {
+    const sidebarWidth = sidebarWidthMap[components.sidebar.width] || sidebarWidthMap['standard'];
+
     prompt += `
-### Sidebar Component
-- Visible: ${components.sidebar.visible}
+### Sidebar Component (VISIBLE)
+**Configuration:**
 - Position: ${components.sidebar.position}
-- Width: ${components.sidebar.width}
+- Width: ${components.sidebar.width} -> ${sidebarWidth.tailwind} (CSS: ${sidebarWidth.css})
 - Collapsible: ${components.sidebar.collapsible}
 - Default Collapsed: ${components.sidebar.defaultCollapsed}
 - Style: ${components.sidebar.style}
 - Icon Only: ${components.sidebar.iconOnly}
-- Has Logo: ${components.sidebar.hasLogo}
+
+**Implementation Classes:**
+\`\`\`
+Sidebar: ${sidebarWidth.tailwind} ${components.sidebar.position === 'left' ? 'left-0' : 'right-0'} bg-[var(--color-surface)] border-${components.sidebar.position === 'left' ? 'r' : 'l'} border-[var(--color-border)]
+${components.sidebar.collapsible ? `Collapsed: w-16` : ''}
+\`\`\`
 `;
   }
 
-  if (components.hero) {
+  if (components.hero && components.hero.visible) {
+    const heroHeight = heroHeightMap[components.hero.height] || heroHeightMap['standard'];
+    const heroLayout = heroLayoutMap[components.hero.layout] || heroLayoutMap['centered'];
+
     prompt += `
-### Hero Component
-- Visible: ${components.hero.visible}
-- Height: ${components.hero.height}
+### Hero Component (VISIBLE)
+**Configuration:**
+- Height: ${components.hero.height} -> ${heroHeight.tailwind} (CSS: ${heroHeight.css})
 - Layout: ${components.hero.layout}
-- Has Image: ${components.hero.hasImage}
-- Image Position: ${components.hero.imagePosition || 'none'}
+- Has Image: ${components.hero.hasImage}${components.hero.hasImage ? ` (Position: ${components.hero.imagePosition || 'background'})` : ''}
 - Has Subtitle: ${components.hero.hasSubtitle}
-- Has CTA: ${components.hero.hasCTA}
-- CTA Count: ${components.hero.ctaCount}
+- Has CTA: ${components.hero.hasCTA}${components.hero.hasCTA ? ` (Count: ${components.hero.ctaCount})` : ''}
+
+**Implementation Classes:**
+\`\`\`
+Hero Section: ${heroHeight.tailwind} ${heroLayout} ${sectionPad.tailwind}
+Title: ${headingSize.h1} ${headingWeight.tailwind}
+Subtitle: ${bodySize.tailwind} text-[var(--color-text-muted)]
+CTA Button: bg-[var(--color-primary)] text-white px-6 py-3 ${borderRadius.tailwind} ${shadow.tailwind}
+\`\`\`
 `;
   }
 
   if (components.navigation) {
     prompt += `
 ### Navigation Component
+**Configuration:**
 - Style: ${components.navigation.style}
 - Position: ${components.navigation.position}
 - Item Style: ${components.navigation.itemStyle}
@@ -147,51 +245,113 @@ export function formatLayoutDesignForPrompt(design: LayoutDesign): string {
   }
 
   if (components.cards) {
+    const cardStyle = cardStyleMap[components.cards.style] || cardStyleMap['elevated'];
+    const cardHover = cardHoverEffectMap[components.cards.hoverEffect] || cardHoverEffectMap['lift'];
+
     prompt += `
 ### Cards Component
+**Configuration:**
 - Style: ${components.cards.style}
 - Image Position: ${components.cards.imagePosition}
 - Show Badge: ${components.cards.showBadge}
 - Show Footer: ${components.cards.showFooter}
 - Hover Effect: ${components.cards.hoverEffect}
 - Aspect Ratio: ${components.cards.aspectRatio}
+
+**Implementation Classes:**
+\`\`\`
+Card Container: ${cardStyle} ${borderRadius.tailwind} overflow-hidden ${cardHover}
+Card Image: ${components.cards.imagePosition === 'top' ? 'w-full aspect-video object-cover' : components.cards.imagePosition === 'left' ? 'w-1/3 object-cover' : ''}
+Card Content: ${density.tailwindPadding}
+Card Title: ${headingSize.h4} ${headingWeight.tailwind}
+Card Badge: bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-2 py-1 text-xs ${borderRadius.tailwind}
+\`\`\`
 `;
   }
 
   if (components.lists) {
+    const listStyle = listStyleMap[components.lists.style] || listStyleMap['bordered'];
+    const listDensity = listDensityMap[components.lists.density] || listDensityMap['normal'];
+
     prompt += `
 ### Lists Component
+**Configuration:**
 - Style: ${components.lists.style}
 - Show Dividers: ${components.lists.showDividers}
 - Show Avatar: ${components.lists.showAvatar}
 - Show Meta: ${components.lists.showMeta}
 - Show Actions: ${components.lists.showActions}
 - Density: ${components.lists.density}
+
+**Implementation Classes:**
+\`\`\`
+List Container: ${listStyle}
+List Item: ${listDensity.tailwind} px-4 ${components.lists.showDividers ? 'border-b border-[var(--color-border)]' : ''}
+Item Title: ${headingWeight.tailwind}
+Item Meta: text-sm text-[var(--color-text-muted)]
+\`\`\`
 `;
   }
 
-  if (components.stats) {
+  if (components.stats && components.stats.visible) {
     prompt += `
-### Stats Component
-- Visible: ${components.stats.visible}
+### Stats Component (VISIBLE)
+**Configuration:**
 - Layout: ${components.stats.layout}
 - Style: ${components.stats.style}
 - Show Icons: ${components.stats.showIcons}
 - Show Trend: ${components.stats.showTrend}
 - Columns: ${components.stats.columns}
+
+**Implementation Classes:**
+\`\`\`
+Stats Grid: grid grid-cols-2 md:grid-cols-${components.stats.columns} ${gap.tailwind}
+Stat Card: ${components.stats.style === 'cards' ? `bg-[var(--color-surface)] ${borderRadius.tailwind} ${density.tailwindPadding} ${shadow.tailwind}` : ''}
+Stat Value: ${headingSize.h2} ${headingWeight.tailwind}
+Stat Label: text-sm text-[var(--color-text-muted)]
+\`\`\`
 `;
   }
 
-  if (components.footer) {
+  if (components.footer && components.footer.visible) {
+    const footerStyle = footerStyleMap[components.footer.style] || footerStyleMap['minimal'];
+    const footerCols = footerColumnsMap[components.footer.columns] || footerColumnsMap[1];
+
     prompt += `
-### Footer Component
-- Visible: ${components.footer.visible}
+### Footer Component (VISIBLE)
+**Configuration:**
 - Style: ${components.footer.style}
 - Columns: ${components.footer.columns}
 - Show Social: ${components.footer.showSocial}
 - Show Newsletter: ${components.footer.showNewsletter}
 - Show Copyright: ${components.footer.showCopyright}
 - Position: ${components.footer.position}
+
+**Implementation Classes:**
+\`\`\`
+Footer: bg-[var(--color-surface)] border-t border-[var(--color-border)] ${footerStyle}
+Footer Grid: grid ${footerCols} ${gap.tailwind}
+Footer Link: text-[var(--color-text-muted)] hover:text-[var(--color-text)]
+Copyright: text-sm text-[var(--color-text-muted)]
+\`\`\`
+`;
+  }
+
+  // Add design pattern context if available
+  if (design.basePreferences) {
+    prompt += `
+---
+
+## Design Style Context
+- Overall Style: ${design.basePreferences.style}
+- Color Scheme: ${design.basePreferences.colorScheme}
+- Layout Type: ${design.basePreferences.layout}
+
+**Style Guidelines:**
+${design.basePreferences.style === 'minimalist' ? '- Keep designs clean with ample whitespace\n- Use subtle effects, avoid heavy shadows\n- Limit color usage to primary + neutrals' : ''}
+${design.basePreferences.style === 'modern' ? '- Use contemporary design patterns\n- Balance whitespace with content\n- Apply subtle animations for interactivity' : ''}
+${design.basePreferences.style === 'playful' ? '- Use vibrant colors and rounded corners\n- Add playful micro-interactions\n- Consider gradient backgrounds' : ''}
+${design.basePreferences.style === 'professional' ? '- Maintain formal, business-appropriate aesthetics\n- Use structured layouts with clear hierarchy\n- Prefer subtle over flashy effects' : ''}
 `;
   }
 
