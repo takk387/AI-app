@@ -32,6 +32,21 @@ import {
   getDraftMetadata,
   formatDraftAge,
 } from '@/utils/wizardAutoSave';
+import {
+  compressConversation,
+  buildCompressedContext,
+  needsCompression,
+} from '@/utils/contextCompression';
+import {
+  buildStructuredContext,
+  structuredContextToSummary,
+} from '@/utils/structuredExtraction';
+import {
+  segmentConversation,
+  getHighImportanceSegments,
+  buildContextFromSegments,
+  getSegmentationSummary,
+} from '@/utils/conversationSegmentation';
 
 // ============================================================================
 // TYPES
@@ -54,6 +69,12 @@ interface WizardState {
   technical: Partial<TechnicalRequirements>;
   uiPreferences: Partial<UIPreferences>;
   roles?: Array<{ name: string; capabilities: string[] }>;
+  workflows?: Array<{
+    name: string;
+    description?: string;
+    steps: string[];
+    involvedRoles: string[];
+  }>;
   isComplete: boolean;
   readyForPhases: boolean;
 }
@@ -99,6 +120,10 @@ export default function NaturalConversationWizard({
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
   const [draftAge, setDraftAge] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showAllMessages, setShowAllMessages] = useState(false);
+
+  // Message windowing - limit rendered messages for performance
+  const MAX_VISIBLE_MESSAGES = 100;
 
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -311,13 +336,47 @@ What would you like to build?`,
       setPendingImages([]);
 
       try {
-        // Prepare conversation history for API
-        const conversationHistory = messages
+        // Prepare conversation history for API with compression for large conversations
+        const MAX_CONTEXT_TOKENS = 6000;
+        let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+        let contextSummary: string | undefined;
+
+        // Filter out system messages and convert to ChatMessage format for compression
+        const filteredMessages = messages
           .filter((m) => m.role !== 'system')
           .map((m) => ({
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.timestamp.toISOString(),
+          }));
+
+        if (needsCompression(filteredMessages, MAX_CONTEXT_TOKENS)) {
+          // Compress older messages while preserving recent context
+          const compressed = compressConversation(filteredMessages, {
+            maxTokens: MAX_CONTEXT_TOKENS,
+            preserveLastN: 8,
+          });
+
+          conversationHistory = compressed.recentMessages.map((m) => ({
             role: m.role as 'user' | 'assistant',
             content: m.content,
           }));
+
+          // Build summary context if messages were compressed
+          if (compressed.summary.messageCount > 0) {
+            contextSummary = buildCompressedContext(compressed);
+            console.log(
+              `[Wizard] Compressed ${compressed.summary.messageCount} messages, ` +
+                `ratio: ${compressed.compressionRatio.toFixed(2)}x`
+            );
+          }
+        } else {
+          conversationHistory = filteredMessages.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          }));
+        }
 
         // Call the wizard chat API
         const response = await fetch('/api/wizard/chat', {
@@ -328,6 +387,7 @@ What would you like to build?`,
             conversationHistory,
             currentState: wizardState,
             referenceImages: images,
+            contextSummary, // Include compressed summary if conversation was large
           }),
         });
 
@@ -378,25 +438,65 @@ What would you like to build?`,
 
   /**
    * Build conversation context summary for phase generation
-   * Preserves the full details discussed in the conversation
+   * Uses structured extraction and segmentation for rich detail preservation
    */
   const buildConversationContext = useCallback((): string => {
     const relevantMessages = messages.filter((m) => m.role !== 'system');
     if (relevantMessages.length === 0) return '';
 
-    // Build a structured summary of the conversation
+    // Convert to ChatMessage format for extraction
+    const chatMessages = relevantMessages.map((m) => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: m.timestamp.toISOString(),
+    }));
+
     const contextParts: string[] = [];
 
-    // Add message history summary (condensed)
+    // For large conversations, use segmentation to preserve important context
+    if (chatMessages.length > 20) {
+      const segmentationResult = segmentConversation(chatMessages);
+      const highImportanceSegments = getHighImportanceSegments(segmentationResult);
+
+      if (highImportanceSegments.length > 0) {
+        const segmentContext = buildContextFromSegments(highImportanceSegments, 2000);
+        contextParts.push('=== KEY CONVERSATION SEGMENTS ===');
+        contextParts.push(segmentContext);
+        contextParts.push('');
+
+        console.log(`[Wizard] Segmentation: ${getSegmentationSummary(segmentationResult)}`);
+      }
+    }
+
+    // Build structured context with rich feature/role/workflow extraction
+    const structuredContext = buildStructuredContext(chatMessages);
+    const structuredSummary = structuredContextToSummary(structuredContext);
+
+    // Add structured extraction
+    if (structuredSummary) {
+      contextParts.push('=== STRUCTURED REQUIREMENTS ===');
+      contextParts.push(structuredSummary);
+      contextParts.push('');
+    }
+
+    // Also include condensed recent conversation for immediate context
     const conversationSummary = relevantMessages
+      .slice(-10) // Focus on most recent messages
       .map(
         (m) =>
-          `${m.role.toUpperCase()}: ${m.content.slice(0, 500)}${m.content.length > 500 ? '...' : ''}`
+          `${m.role.toUpperCase()}: ${m.content.slice(0, 250)}${m.content.length > 250 ? '...' : ''}`
       )
       .join('\n\n');
 
-    contextParts.push('=== CONVERSATION SUMMARY ===');
+    contextParts.push('=== RECENT CONVERSATION ===');
     contextParts.push(conversationSummary);
+
+    console.log(
+      `[Wizard] Built context: ${structuredContext.features.length} features, ` +
+        `${structuredContext.roles.length} roles, ${structuredContext.technicalSpecs.length} tech specs, ` +
+        `${relevantMessages.length} messages`
+    );
 
     return contextParts.join('\n');
   }, [messages]);
@@ -412,6 +512,32 @@ What would you like to build?`,
       capabilities: role.capabilities,
     }));
   }, [wizardState.roles]);
+
+  /**
+   * Extract workflows from conversation messages for AppConcept
+   */
+  const extractWorkflowsFromConversation = useCallback(() => {
+    const relevantMessages = messages.filter((m) => m.role !== 'system');
+    if (relevantMessages.length === 0) return undefined;
+
+    const chatMessages = relevantMessages.map((m) => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: m.timestamp.toISOString(),
+    }));
+
+    const structuredContext = buildStructuredContext(chatMessages);
+
+    if (structuredContext.workflows.length === 0) return undefined;
+
+    return structuredContext.workflows.map((w) => ({
+      name: w.name,
+      description: w.description || w.triggerCondition,
+      steps: w.steps.map((s) => s.action),
+      involvedRoles: w.involvedRoles,
+    }));
+  }, [messages]);
 
   const generatePhases = useCallback(async () => {
     if (!wizardState.name || wizardState.features.length === 0) {
@@ -448,6 +574,8 @@ What would you like to build?`,
         } as TechnicalRequirements,
         // NEW: Preserve roles from wizard conversation
         roles: convertRolesToUserRoles(),
+        // NEW: Preserve workflows extracted from conversation
+        workflows: extractWorkflowsFromConversation(),
         // NEW: Preserve full conversation context for detail retention
         conversationContext: buildConversationContext(),
         createdAt: new Date().toISOString(),
@@ -563,6 +691,8 @@ Does this look good? You can:
               technical: wizardState.technical as TechnicalRequirements,
               // Preserve roles from wizard conversation
               roles: convertRolesToUserRoles(),
+              // Preserve workflows extracted from conversation
+              workflows: extractWorkflowsFromConversation(),
               // Preserve full conversation context for detail retention
               conversationContext: buildConversationContext(),
               createdAt: new Date().toISOString(),
@@ -737,7 +867,20 @@ Does this look good? You can:
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            {messages.map((message) => (
+            {/* Load older messages button - shown when windowing is active */}
+            {!showAllMessages && messages.length > MAX_VISIBLE_MESSAGES && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowAllMessages(true)}
+                  className="px-4 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-600 transition-colors"
+                >
+                  Load {messages.length - MAX_VISIBLE_MESSAGES} older messages
+                </button>
+              </div>
+            )}
+
+            {/* Render messages with optional windowing */}
+            {(showAllMessages ? messages : messages.slice(-MAX_VISIBLE_MESSAGES)).map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}

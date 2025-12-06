@@ -12,6 +12,7 @@ import type {
   UIPreferences,
   UserRole,
 } from '@/types/appConcept';
+import type { LayoutDesign } from '@/types/layoutDesign';
 
 // ============================================================================
 // FEATURE CLASSIFICATION
@@ -71,6 +72,55 @@ export interface ComplexFeaturePattern {
 // ============================================================================
 
 /**
+ * Feature specification with rich details from conversation
+ */
+export interface FeatureSpecification {
+  name: string;
+  userStories: string[];
+  acceptanceCriteria: string[];
+  technicalNotes: string[];
+  priority: 'high' | 'medium' | 'low';
+}
+
+/**
+ * Workflow specification with steps and actors
+ */
+export interface WorkflowSpecification {
+  name: string;
+  trigger: string;
+  steps: Array<{ action: string; actor: string }>;
+  errorHandling?: string;
+}
+
+/**
+ * Validation rule for fields/forms
+ */
+export interface ValidationRule {
+  field: string;
+  rules: string[];
+  errorMessages: string[];
+}
+
+/**
+ * UI pattern/component specification
+ */
+export interface UIPattern {
+  component: string;
+  pattern: string;
+  requirements: string[];
+}
+
+/**
+ * Integration point with external service
+ */
+export interface IntegrationPoint {
+  service: string;
+  purpose: string;
+  endpoints: string[];
+  authRequired: boolean;
+}
+
+/**
  * Concept context preserved for each phase
  * Ensures phase execution has access to full app vision
  */
@@ -84,6 +134,19 @@ export interface PhaseConceptContext {
     name: string;
     fields: Array<{ name: string; type: string; required: boolean }>;
   }>;
+
+  // NEW: Structured context fields for rich detail preservation
+  featureSpecs?: FeatureSpecification[];
+  workflowSpecs?: WorkflowSpecification[];
+  technicalConstraints?: string[];
+  integrationPoints?: IntegrationPoint[];
+  validationRules?: ValidationRule[];
+  uiPatterns?: UIPattern[];
+
+  // CRITICAL: Full layout design specification for design-aware code generation
+  // This preserves ALL design details (typography, colors, spacing, components)
+  // that would otherwise be lost in the UIPreferences simplification
+  layoutDesign?: LayoutDesign;
 }
 
 /**
@@ -114,6 +177,41 @@ export interface DynamicPhase {
 }
 
 /**
+ * Rich file tracking with metadata
+ */
+export interface AccumulatedFile {
+  path: string;
+  type: 'component' | 'api' | 'type' | 'util' | 'style' | 'config' | 'other';
+  exports: string[];
+  dependencies: string[];
+  summary: string;
+}
+
+/**
+ * Rich feature tracking with implementation details
+ */
+export interface AccumulatedFeature {
+  name: string;
+  status: 'complete' | 'partial' | 'pending';
+  implementedIn: string[];
+  apiEndpoints: string[];
+  components: string[];
+  dataModels: string[];
+  testCoverage: boolean;
+}
+
+/**
+ * API contract for endpoint documentation
+ */
+export interface APIContract {
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  requestSchema?: string;
+  responseSchema?: string;
+  authentication: boolean;
+}
+
+/**
  * Complete phase plan for an application
  */
 export interface DynamicPhasePlan {
@@ -134,9 +232,16 @@ export interface DynamicPhasePlan {
   completedPhaseNumbers: number[];
   failedPhaseNumbers: number[];
 
-  // Context chain for phase execution
+  // Context chain for phase execution (legacy - simple arrays)
   accumulatedFiles: string[];
   accumulatedFeatures: string[];
+
+  // Enhanced tracking (new - rich metadata)
+  accumulatedFilesRich?: AccumulatedFile[];
+  accumulatedFeaturesRich?: AccumulatedFeature[];
+  establishedPatterns?: string[];
+  sharedState?: string[];
+  apiContracts?: APIContract[];
 }
 
 /**
@@ -263,6 +368,8 @@ export interface PhaseExecutionContext {
       name: string;
       fields: Array<{ name: string; type: string; required: boolean }>;
     }>;
+    // Full layout design for design-aware code generation
+    layoutDesign?: LayoutDesign;
   };
 
   // Phase-specific concept context

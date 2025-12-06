@@ -3,9 +3,12 @@
  *
  * Token-aware conversation compression for optimizing API calls.
  * Preserves recent messages while summarizing older context.
+ *
+ * Uses tiktoken (cl100k_base) for accurate token counting.
  */
 
 import type { ChatMessage } from '@/types/aiBuilderTypes';
+import { countTokens, countMessageTokens, countMessagesTokens } from './tokenizer';
 
 // ============================================================================
 // TYPES
@@ -35,9 +38,9 @@ export interface ConversationSummary {
  * Options for conversation compression
  */
 export interface CompressionOptions {
-  /** Maximum total tokens (default: 4000) */
+  /** Maximum total tokens (default: 6000) */
   maxTokens?: number;
-  /** Number of recent messages to preserve verbatim (default: 4) */
+  /** Number of recent messages to preserve verbatim (default: 8) */
   preserveLastN?: number;
   /** Whether to include timestamps in compressed context (default: false) */
   includeTimestamps?: boolean;
@@ -58,37 +61,34 @@ export interface CompressedContext {
 }
 
 // ============================================================================
-// TOKEN ESTIMATION
+// TOKEN COUNTING (using tiktoken)
 // ============================================================================
 
 /**
- * Estimate the number of tokens in text
- * Uses rough approximation: 1 token ≈ 4 characters
+ * Count the number of tokens in text using tiktoken
  *
- * @param text - Text to estimate tokens for
- * @returns Estimated token count
+ * Uses cl100k_base encoding which is compatible with modern LLMs.
+ * Falls back to estimation if tiktoken fails.
+ *
+ * @param text - Text to count tokens for
+ * @returns Token count
  */
 export function estimateTokens(text: string): number {
-  if (!text) return 0;
-  // Rough approximation: 1 token ≈ 4 characters
-  // This is a simplified estimation; actual tokenization varies by model
-  return Math.ceil(text.length / 4);
+  return countTokens(text);
 }
 
 /**
- * Estimate tokens for an array of messages
+ * Count tokens for an array of messages
  *
- * @param messages - Messages to estimate tokens for
- * @returns Total estimated tokens
+ * Uses tiktoken for accurate counting with proper message overhead.
+ *
+ * @param messages - Messages to count tokens for
+ * @returns Total token count
  */
 export function estimateMessagesTokens(messages: ChatMessage[]): number {
-  return messages.reduce((total, msg) => {
-    // Include role, content, and some overhead for message structure
-    const roleTokens = estimateTokens(msg.role);
-    const contentTokens = estimateTokens(msg.content);
-    const overheadTokens = 4; // Overhead for message structure
-    return total + roleTokens + contentTokens + overheadTokens;
-  }, 0);
+  return countMessagesTokens(
+    messages.map((msg) => ({ role: msg.role, content: msg.content }))
+  );
 }
 
 // ============================================================================
@@ -99,10 +99,10 @@ export function estimateMessagesTokens(messages: ChatMessage[]): number {
  * Check if conversation needs compression
  *
  * @param messages - Conversation messages
- * @param maxTokens - Maximum allowed tokens (default: 8000)
+ * @param maxTokens - Maximum allowed tokens (default: 6000)
  * @returns True if compression is needed
  */
-export function needsCompression(messages: ChatMessage[], maxTokens: number = 8000): boolean {
+export function needsCompression(messages: ChatMessage[], maxTokens: number = 6000): boolean {
   const estimatedTokens = estimateMessagesTokens(messages);
   return estimatedTokens > maxTokens;
 }
@@ -321,7 +321,7 @@ export function compressConversation(
   messages: ChatMessage[],
   options: CompressionOptions = {}
 ): CompressedContext {
-  const { maxTokens = 4000, preserveLastN = 4 } = options;
+  const { maxTokens = 6000, preserveLastN = 8 } = options;
 
   const originalTokens = estimateMessagesTokens(messages);
 

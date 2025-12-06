@@ -46,6 +46,7 @@ interface WizardRequest {
   conversationHistory: WizardMessage[];
   currentState: WizardState;
   referenceImages?: string[]; // Base64 encoded images
+  contextSummary?: string; // Compressed summary of older conversation messages
 }
 
 interface WizardResponse {
@@ -197,7 +198,7 @@ export async function POST(request: Request) {
 
   try {
     const body: WizardRequest = await request.json();
-    const { message, conversationHistory, currentState, referenceImages } = body;
+    const { message, conversationHistory, currentState, referenceImages, contextSummary } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -249,6 +250,21 @@ export async function POST(request: Request) {
 
     // Build system prompt with context
     let systemPrompt = WIZARD_SYSTEM_PROMPT;
+
+    // Add compressed conversation summary if provided (for large conversations)
+    if (contextSummary) {
+      systemPrompt += `
+
+## CONVERSATION HISTORY SUMMARY
+
+The following is a compressed summary of the earlier conversation. Use this context to maintain continuity:
+
+${contextSummary}
+
+---
+`;
+      console.log(`[Wizard] Using compressed context summary (${contextSummary.length} chars)`);
+    }
 
     // Add current state context if we have gathered information
     if (currentState.name || currentState.features.length > 0 || currentState.roles) {

@@ -8,6 +8,7 @@
  */
 
 import type { AppConcept, Feature, TechnicalRequirements, UserRole } from '@/types/appConcept';
+import type { LayoutDesign } from '@/types/layoutDesign';
 import type {
   FeatureDomain,
   FeatureClassification,
@@ -16,6 +17,9 @@ import type {
   PhasePlanGenerationResult,
   PhaseGeneratorConfig,
   FeaturesByDomain,
+  FeatureSpecification,
+  WorkflowSpecification,
+  PhaseConceptContext,
 } from '@/types/dynamicPhases';
 
 import {
@@ -23,6 +27,33 @@ import {
   MODERATE_FEATURE_PATTERNS as moderatePatterns,
   DEFAULT_PHASE_GENERATOR_CONFIG as defaultConfig,
 } from '@/types/dynamicPhases';
+
+// ============================================================================
+// PHASE CONTEXT KEYWORDS
+// ============================================================================
+
+/**
+ * Keywords for extracting phase-relevant context
+ */
+const PHASE_KEYWORDS: Record<FeatureDomain, string[]> = {
+  setup: ['setup', 'config', 'initialize', 'project', 'structure', 'dependencies', 'folder'],
+  database: ['database', 'schema', 'table', 'field', 'relationship', 'model', 'data', 'constraint', 'migration'],
+  auth: ['login', 'register', 'password', 'role', 'permission', 'session', 'auth', 'jwt', 'oauth', 'user'],
+  'core-entity': ['entity', 'model', 'object', 'core', 'main', 'primary', 'business'],
+  feature: ['feature', 'functionality', 'user story', 'acceptance', 'validation', 'requirement'],
+  'ui-component': ['button', 'form', 'modal', 'component', 'ui', 'design', 'layout', 'responsive'],
+  integration: ['api', 'integration', 'webhook', 'external', 'service', 'third-party', 'endpoint'],
+  'real-time': ['real-time', 'websocket', 'live', 'sync', 'push', 'instant', 'notification'],
+  storage: ['upload', 'file', 'image', 'storage', 'media', 'attachment', 'document'],
+  notification: ['notification', 'alert', 'email', 'push', 'message', 'notify'],
+  offline: ['offline', 'sync', 'local', 'cache', 'service worker', 'pwa'],
+  search: ['search', 'filter', 'query', 'find', 'autocomplete', 'index'],
+  analytics: ['analytics', 'dashboard', 'chart', 'metric', 'report', 'visualization'],
+  admin: ['admin', 'manage', 'moderate', 'settings', 'configuration', 'control'],
+  'ui-role': ['dashboard', 'view', 'role', 'access', 'permission', 'portal'],
+  testing: ['test', 'mock', 'fixture', 'assertion', 'coverage'],
+  polish: ['animation', 'transition', 'loading', 'error', 'empty state', 'ux', 'feedback'],
+};
 
 // ============================================================================
 // MAIN GENERATOR CLASS
@@ -354,7 +385,13 @@ export class DynamicPhaseGenerator {
     // Phase 1: ALWAYS start with Setup
     phases.push(this.createSetupPhase(phaseNumber++, concept));
 
-    // Phase 2: Database (if needed) - always comes early
+    // Phase 2: Design System (if layoutDesign exists) - creates design tokens and base components
+    // This ensures all subsequent phases have access to the complete design specification
+    if (concept.layoutDesign) {
+      phases.push(this.createDesignSystemPhase(phaseNumber++, concept, concept.layoutDesign));
+    }
+
+    // Phase 2/3: Database (if needed) - always comes early
     if (featuresByDomain.has('database')) {
       const dbFeatures = featuresByDomain.get('database')!;
       // Include data model details in database phase
@@ -615,6 +652,86 @@ export class DynamicPhaseGenerator {
         targetUsers: concept.targetUsers,
         uiPreferences: concept.uiPreferences,
         roles: concept.roles,
+      },
+    };
+  }
+
+  /**
+   * Create the Design System phase (when layoutDesign exists)
+   * This phase creates design tokens, component variants, and layout components
+   * ensuring all subsequent phases have access to the complete design specification
+   */
+  private createDesignSystemPhase(
+    phaseNumber: number,
+    concept: AppConcept,
+    layoutDesign: LayoutDesign
+  ): DynamicPhase {
+    const { globalStyles, components, structure, responsive } = layoutDesign;
+
+    // Build detailed design context for the phase description
+    const designDetails: string[] = [];
+    if (globalStyles.typography) {
+      designDetails.push(`Typography: ${globalStyles.typography.fontFamily}, ${globalStyles.typography.headingSize} headings`);
+    }
+    if (globalStyles.colors) {
+      designDetails.push(`Colors: primary ${globalStyles.colors.primary}, ${Object.keys(globalStyles.colors).length} color tokens`);
+    }
+    if (globalStyles.spacing) {
+      designDetails.push(`Spacing: ${globalStyles.spacing.density} density, ${globalStyles.spacing.containerWidth} container`);
+    }
+    if (globalStyles.effects) {
+      designDetails.push(`Effects: ${globalStyles.effects.borderRadius} radius, ${globalStyles.effects.shadows} shadows`);
+    }
+
+    // List components to be created
+    const componentsList: string[] = [];
+    if (components.header?.visible) componentsList.push('Header');
+    if (components.sidebar?.visible) componentsList.push('Sidebar');
+    if (components.hero?.visible) componentsList.push('Hero');
+    if (components.cards) componentsList.push('Cards');
+    if (components.lists) componentsList.push('Lists');
+    if (components.stats?.visible) componentsList.push('Stats');
+    if (components.footer?.visible) componentsList.push('Footer');
+    if (components.navigation) componentsList.push('Navigation');
+
+    return {
+      number: phaseNumber,
+      name: 'Design System Setup',
+      description: `Create complete design system based on layout specifications for "${concept.name}". ${designDetails.join('. ')}. Components: ${componentsList.join(', ')}.`,
+      domain: 'ui-component',
+      features: [
+        'Design tokens (CSS variables for colors, spacing, typography, effects)',
+        'Tailwind theme extension with custom design values',
+        `Typography system (${globalStyles.typography.fontFamily}, ${globalStyles.typography.headingWeight} headings)`,
+        `Color palette (${globalStyles.colors.primary} primary, ${globalStyles.colors.background} background)`,
+        `Spacing system (${globalStyles.spacing.density} density, ${globalStyles.spacing.componentGap} gap)`,
+        `Effects library (${globalStyles.effects.borderRadius} radius, ${globalStyles.effects.shadows} shadows, ${globalStyles.effects.animations} animations)`,
+        ...componentsList.map(c => `${c} component with design specs`),
+        `Responsive breakpoints (mobile: ${responsive.mobileBreakpoint}px, tablet: ${responsive.tabletBreakpoint}px)`,
+        'Base layout structure and containers',
+      ],
+      featureDetails: [],
+      estimatedTokens: 4500, // Design system is substantial
+      estimatedTime: '4-6 min',
+      dependencies: [1], // Depends on Project Setup
+      dependencyNames: ['Project Setup'],
+      testCriteria: [
+        'Design tokens are accessible via CSS variables',
+        'Tailwind classes match design specifications',
+        `Typography renders with ${globalStyles.typography.fontFamily} font`,
+        `Primary color ${globalStyles.colors.primary} is applied correctly`,
+        'All layout components render with correct styling',
+        `Responsive breakpoints work at ${responsive.mobileBreakpoint}px and ${responsive.tabletBreakpoint}px`,
+        'No style conflicts or overrides',
+      ],
+      status: 'pending',
+      // CRITICAL: Include full layoutDesign for code generation
+      conceptContext: {
+        purpose: concept.purpose,
+        targetUsers: concept.targetUsers,
+        uiPreferences: concept.uiPreferences,
+        roles: concept.roles,
+        layoutDesign: layoutDesign, // Full design specification
       },
     };
   }
@@ -974,19 +1091,22 @@ export class DynamicPhaseGenerator {
    * Create the final phase plan object
    */
   private createPhasePlan(phases: DynamicPhase[], concept: AppConcept): DynamicPhasePlan {
-    const totalTokens = phases.reduce((sum, p) => sum + p.estimatedTokens, 0);
-    const totalMinutes = phases.reduce((sum, p) => {
+    // Enhance all phases with rich context from the concept
+    const enhancedPhases = phases.map(phase => this.enhancePhaseWithContext(phase, concept));
+
+    const totalTokens = enhancedPhases.reduce((sum, p) => sum + p.estimatedTokens, 0);
+    const totalMinutes = enhancedPhases.reduce((sum, p) => {
       const match = p.estimatedTime.match(/(\d+)/);
       return sum + (match ? parseInt(match[1]) : 3);
     }, 0);
 
     // Determine overall complexity
     let complexity: DynamicPhasePlan['complexity'];
-    if (phases.length <= 3) {
+    if (enhancedPhases.length <= 3) {
       complexity = 'simple';
-    } else if (phases.length <= 6) {
+    } else if (enhancedPhases.length <= 6) {
       complexity = 'moderate';
-    } else if (phases.length <= 12) {
+    } else if (enhancedPhases.length <= 12) {
       complexity = 'complex';
     } else {
       complexity = 'enterprise';
@@ -996,9 +1116,9 @@ export class DynamicPhaseGenerator {
       id: `plan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       appName: concept.name,
       appDescription: concept.description,
-      totalPhases: phases.length,
-      phases,
-      estimatedTotalTime: `${totalMinutes}-${totalMinutes + phases.length * 2} min`,
+      totalPhases: enhancedPhases.length,
+      phases: enhancedPhases,
+      estimatedTotalTime: `${totalMinutes}-${totalMinutes + enhancedPhases.length * 2} min`,
       estimatedTotalTokens: totalTokens,
       complexity,
       createdAt: new Date().toISOString(),
@@ -1034,6 +1154,607 @@ export class DynamicPhaseGenerator {
       domainBreakdown: domainBreakdown as Record<FeatureDomain, number>,
       estimatedContextPerPhase: Math.round(avgTokensPerPhase),
     };
+  }
+
+  // ============================================================================
+  // CONTEXT EXTRACTION METHODS
+  // ============================================================================
+
+  /**
+   * Extract relevant context from conversationContext for a specific phase
+   */
+  private extractRelevantContext(context: string, domain: FeatureDomain): string {
+    if (!context) return '';
+
+    const keywords = PHASE_KEYWORDS[domain] || [];
+    if (keywords.length === 0) return '';
+
+    // Split context into paragraphs
+    const paragraphs = context.split(/\n\n+/).filter(p => p.trim().length > 20);
+
+    // Score paragraphs by keyword relevance
+    const scored = paragraphs.map(p => {
+      const lowerP = p.toLowerCase();
+      const score = keywords.filter(k => lowerP.includes(k.toLowerCase())).length;
+      return { text: p, score };
+    });
+
+    // Get top relevant paragraphs (max 2000 chars)
+    const relevant = scored
+      .filter(p => p.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map(p => p.text);
+
+    const result = relevant.join('\n\n');
+    return result.slice(0, 2000);
+  }
+
+  /**
+   * Extract feature specifications from concept for a phase
+   */
+  private extractFeatureSpecs(
+    concept: AppConcept,
+    domain: FeatureDomain,
+    featureNames: string[]
+  ): FeatureSpecification[] {
+    const specs: FeatureSpecification[] = [];
+    const context = concept.conversationContext || '';
+    const keywords = PHASE_KEYWORDS[domain] || [];
+
+    for (const featureName of featureNames) {
+      // Extract user stories related to this feature
+      const userStories = this.extractPatternMatches(
+        context,
+        new RegExp(`(?:as a|user (?:can|wants to|should))\\s+[^.]*${this.escapeRegex(featureName)}[^.]*`, 'gi')
+      );
+
+      // Extract acceptance criteria
+      const acceptanceCriteria = this.extractPatternMatches(
+        context,
+        new RegExp(`(?:should|must|needs to)\\s+[^.]*${this.escapeRegex(featureName)}[^.]*`, 'gi')
+      );
+
+      // Extract technical notes
+      const technicalNotes = this.extractPatternMatches(
+        context,
+        new RegExp(`(?:api|database|backend|endpoint)[^.]*${this.escapeRegex(featureName)}[^.]*`, 'gi')
+      );
+
+      // Determine priority from feature
+      const feature = concept.coreFeatures.find(f => f.name === featureName);
+      const priority = feature?.priority || 'medium';
+
+      specs.push({
+        name: featureName,
+        userStories: userStories.slice(0, 3),
+        acceptanceCriteria: acceptanceCriteria.slice(0, 3),
+        technicalNotes: technicalNotes.slice(0, 3),
+        priority,
+      });
+    }
+
+    return specs;
+  }
+
+  /**
+   * Extract workflow specifications from concept for a phase
+   */
+  private extractWorkflowSpecs(
+    concept: AppConcept,
+    domain: FeatureDomain
+  ): WorkflowSpecification[] {
+    const specs: WorkflowSpecification[] = [];
+    const keywords = PHASE_KEYWORDS[domain] || [];
+
+    // Use workflows from concept if available
+    if (concept.workflows) {
+      for (const workflow of concept.workflows) {
+        // Check if workflow is relevant to this phase
+        const workflowText = `${workflow.name} ${workflow.description || ''} ${workflow.steps.join(' ')}`.toLowerCase();
+        const isRelevant = keywords.some(k => workflowText.includes(k.toLowerCase()));
+
+        if (isRelevant) {
+          specs.push({
+            name: workflow.name,
+            trigger: workflow.steps[0] || 'User initiates',
+            steps: workflow.steps.map((step, i) => ({
+              action: step,
+              actor: workflow.involvedRoles[0] || 'User',
+            })),
+            errorHandling: undefined,
+          });
+        }
+      }
+    }
+
+    return specs.slice(0, 5);
+  }
+
+  /**
+   * Extract validation rules from conversation context
+   */
+  private extractValidationRules(context: string, domain: FeatureDomain): string[] {
+    if (!context) return [];
+
+    const patterns = [
+      /(?:must be|should be|has to be)\s+([^.]{10,80})/gi,
+      /(?:validate|validation|valid)\s+([^.]{10,80})/gi,
+      /(?:required|mandatory|minimum|maximum)\s+([^.]{10,80})/gi,
+      /(?:at least|at most|between)\s+([^.]{10,80})/gi,
+    ];
+
+    const rules: string[] = [];
+    const keywords = PHASE_KEYWORDS[domain] || [];
+
+    for (const pattern of patterns) {
+      const matches = this.extractPatternMatches(context, pattern);
+      // Filter by relevance to domain
+      for (const match of matches) {
+        if (keywords.some(k => match.toLowerCase().includes(k.toLowerCase()))) {
+          rules.push(match);
+        }
+      }
+    }
+
+    return Array.from(new Set(rules)).slice(0, 5);
+  }
+
+  /**
+   * Helper to extract pattern matches from text
+   */
+  private extractPatternMatches(text: string, pattern: RegExp): string[] {
+    const matches: string[] = [];
+    let match;
+    const regex = new RegExp(pattern.source, pattern.flags);
+
+    while ((match = regex.exec(text)) !== null) {
+      const value = (match[1] || match[0]).trim();
+      if (value.length > 5 && value.length < 150 && !matches.includes(value)) {
+        matches.push(value);
+      }
+    }
+
+    return matches;
+  }
+
+  /**
+   * Escape special regex characters
+   */
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Enhance a phase with rich context from the concept
+   */
+  private enhancePhaseWithContext(
+    phase: DynamicPhase,
+    concept: AppConcept
+  ): DynamicPhase {
+    const domain = phase.domain;
+    const conversationContext = concept.conversationContext || '';
+
+    // Extract relevant context for this phase
+    const relevantContext = this.extractRelevantContext(conversationContext, domain);
+
+    // Extract feature specifications
+    const featureSpecs = this.extractFeatureSpecs(concept, domain, phase.features);
+
+    // Extract workflow specifications
+    const workflowSpecs = this.extractWorkflowSpecs(concept, domain);
+
+    // Extract validation rules
+    const validationRules = this.extractValidationRules(conversationContext, domain);
+
+    // Build enhanced concept context
+    const enhancedConceptContext: PhaseConceptContext = {
+      ...phase.conceptContext,
+      conversationContext: relevantContext,
+      featureSpecs: featureSpecs.length > 0 ? featureSpecs : undefined,
+      workflowSpecs: workflowSpecs.length > 0 ? workflowSpecs : undefined,
+      technicalConstraints: validationRules.length > 0 ? validationRules : undefined,
+    };
+
+    // Build enhanced description with context
+    let enhancedDescription = phase.description;
+    if (relevantContext) {
+      enhancedDescription += '\n\nContext from requirements:\n' + relevantContext.slice(0, 500);
+    }
+
+    return {
+      ...phase,
+      description: enhancedDescription,
+      conceptContext: enhancedConceptContext,
+    };
+  }
+
+  // ============================================================================
+  // SMART CODE CONTEXT METHODS
+  // ============================================================================
+
+  /**
+   * Maximum code context size (increased from 8KB to 16KB)
+   */
+  private static readonly MAX_CODE_CONTEXT = 16384;
+
+  /**
+   * Build smart code context from previous phases with importance scoring
+   * Prioritizes type definitions, API contracts, and reusable utilities
+   */
+  buildSmartCodeContext(
+    generatedFiles: Array<{ path: string; content: string }>
+  ): string {
+    if (!generatedFiles || generatedFiles.length === 0) return '';
+
+    // Score and sort files by importance
+    const scoredFiles = generatedFiles.map(file => ({
+      ...file,
+      importance: this.calculateFileImportance(file),
+    })).sort((a, b) => b.importance - a.importance);
+
+    const includedBlocks: string[] = [];
+    let totalSize = 0;
+
+    for (const file of scoredFiles) {
+      const blockText = `// File: ${file.path}\n${file.content}\n\n`;
+
+      if (totalSize + blockText.length <= DynamicPhaseGenerator.MAX_CODE_CONTEXT) {
+        includedBlocks.push(blockText);
+        totalSize += blockText.length;
+      } else if (file.importance >= 0.8) {
+        // For high-importance files, truncate instead of skip
+        const remaining = DynamicPhaseGenerator.MAX_CODE_CONTEXT - totalSize - 500;
+        if (remaining > 1000) {
+          includedBlocks.push(
+            `// File: ${file.path} (truncated - high importance)\n${file.content.slice(0, remaining)}\n// ...[truncated]\n\n`
+          );
+          break;
+        }
+      }
+    }
+
+    return includedBlocks.join('');
+  }
+
+  /**
+   * Calculate importance score for a file (0-1)
+   * Higher scores for types, APIs, context providers, utilities
+   */
+  private calculateFileImportance(file: { path: string; content: string }): number {
+    let importance = 0.5;
+    const path = file.path.toLowerCase();
+    const content = file.content;
+
+    // Type definitions and interfaces are highly important (reused across phases)
+    if (path.includes('/types/') || path.includes('.d.ts')) {
+      importance += 0.35;
+    } else if (content.includes('export interface ') || content.includes('export type ')) {
+      importance += 0.25;
+    }
+
+    // API routes establish contracts that other phases must follow
+    if (path.includes('/api/')) {
+      importance += 0.25;
+    }
+
+    // Utility functions may be reused across phases
+    if (path.includes('/utils/') || path.includes('/lib/') || path.includes('/helpers/')) {
+      importance += 0.2;
+    }
+
+    // Context providers and state management are critical for consistency
+    if (content.includes('createContext') || content.includes('Provider')) {
+      importance += 0.25;
+    }
+
+    // Hooks are reusable
+    if (path.includes('/hooks/') || content.includes('export function use')) {
+      importance += 0.15;
+    }
+
+    // Database schema/models define data structure
+    if (path.includes('/schema') || path.includes('/models/') || content.includes('Prisma')) {
+      importance += 0.3;
+    }
+
+    // Config files establish patterns
+    if (path.includes('/config') || path.includes('.config.')) {
+      importance += 0.15;
+    }
+
+    // Reduce importance for test files and stories
+    if (path.includes('.test.') || path.includes('.spec.') || path.includes('.stories.')) {
+      importance -= 0.3;
+    }
+
+    return Math.max(0, Math.min(1, importance));
+  }
+
+  /**
+   * Analyze generated files to extract rich metadata
+   * Returns AccumulatedFile and APIContract data for tracking
+   */
+  analyzeGeneratedFiles(files: Array<{ path: string; content: string }>): {
+    accumulatedFiles: Array<{
+      path: string;
+      type: 'component' | 'api' | 'type' | 'util' | 'style' | 'config' | 'other';
+      exports: string[];
+      dependencies: string[];
+      summary: string;
+    }>;
+    apiContracts: Array<{
+      endpoint: string;
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+      requestSchema?: string;
+      responseSchema?: string;
+      authentication: boolean;
+    }>;
+    establishedPatterns: string[];
+  } {
+    const accumulatedFiles: Array<{
+      path: string;
+      type: 'component' | 'api' | 'type' | 'util' | 'style' | 'config' | 'other';
+      exports: string[];
+      dependencies: string[];
+      summary: string;
+    }> = [];
+    const apiContracts: Array<{
+      endpoint: string;
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+      requestSchema?: string;
+      responseSchema?: string;
+      authentication: boolean;
+    }> = [];
+    const patterns = new Set<string>();
+
+    for (const file of files) {
+      // Classify file type
+      const type = this.classifyFileType(file.path, file.content);
+
+      // Extract exports
+      const exports = this.extractExports(file.content);
+
+      // Extract imports/dependencies
+      const dependencies = this.extractImports(file.content);
+
+      // Generate summary
+      const summary = this.generateFileSummary(file);
+
+      accumulatedFiles.push({
+        path: file.path,
+        type,
+        exports,
+        dependencies,
+        summary,
+      });
+
+      // Extract API contracts if it's an API route
+      if (type === 'api') {
+        const contracts = this.extractAPIContracts(file);
+        apiContracts.push(...contracts);
+      }
+
+      // Detect patterns used
+      const detectedPatterns = this.detectPatterns(file.content);
+      detectedPatterns.forEach(p => patterns.add(p));
+    }
+
+    return {
+      accumulatedFiles,
+      apiContracts,
+      establishedPatterns: Array.from(patterns),
+    };
+  }
+
+  /**
+   * Classify file type based on path and content
+   */
+  private classifyFileType(
+    path: string,
+    content: string
+  ): 'component' | 'api' | 'type' | 'util' | 'style' | 'config' | 'other' {
+    const lowerPath = path.toLowerCase();
+
+    if (lowerPath.includes('/api/') || lowerPath.includes('route.ts')) {
+      return 'api';
+    }
+    if (lowerPath.includes('/types/') || lowerPath.endsWith('.d.ts')) {
+      return 'type';
+    }
+    if (lowerPath.includes('/utils/') || lowerPath.includes('/lib/') || lowerPath.includes('/helpers/')) {
+      return 'util';
+    }
+    if (lowerPath.includes('/components/') || content.includes('export default function') && content.includes('return (')) {
+      return 'component';
+    }
+    if (lowerPath.endsWith('.css') || lowerPath.endsWith('.scss') || lowerPath.includes('/styles/')) {
+      return 'style';
+    }
+    if (lowerPath.includes('.config.') || lowerPath.includes('/config/')) {
+      return 'config';
+    }
+
+    return 'other';
+  }
+
+  /**
+   * Extract exported items from file content
+   */
+  private extractExports(content: string): string[] {
+    const exports: string[] = [];
+
+    // Named exports: export const/function/class/interface/type
+    const namedExportRegex = /export\s+(?:const|let|function|class|interface|type)\s+(\w+)/g;
+    let match;
+    while ((match = namedExportRegex.exec(content)) !== null) {
+      exports.push(match[1]);
+    }
+
+    // Default export with name
+    const defaultExportRegex = /export\s+default\s+(?:function|class)\s+(\w+)/;
+    const defaultMatch = content.match(defaultExportRegex);
+    if (defaultMatch) {
+      exports.push(`default:${defaultMatch[1]}`);
+    }
+
+    // Export { ... }
+    const bracedExportRegex = /export\s*\{\s*([^}]+)\s*\}/g;
+    while ((match = bracedExportRegex.exec(content)) !== null) {
+      const items = match[1].split(',').map(s => s.trim().split(/\s+as\s+/)[0].trim());
+      exports.push(...items.filter(Boolean));
+    }
+
+    return [...new Set(exports)].slice(0, 20);
+  }
+
+  /**
+   * Extract imported dependencies from file content
+   */
+  private extractImports(content: string): string[] {
+    const dependencies: string[] = [];
+
+    // Import from statements
+    const importRegex = /import\s+(?:.*?\s+from\s+)?['"]([^'"]+)['"]/g;
+    let match;
+    while ((match = importRegex.exec(content)) !== null) {
+      const dep = match[1];
+      // Skip relative imports, focus on packages and aliases
+      if (!dep.startsWith('.')) {
+        dependencies.push(dep.split('/')[0]); // Get package name
+      }
+    }
+
+    return [...new Set(dependencies)].slice(0, 15);
+  }
+
+  /**
+   * Generate a brief summary of what a file does
+   */
+  private generateFileSummary(file: { path: string; content: string }): string {
+    const type = this.classifyFileType(file.path, file.content);
+    const exports = this.extractExports(file.content);
+    const fileName = file.path.split('/').pop() || file.path;
+
+    // Look for JSDoc comment at top
+    const jsdocMatch = file.content.match(/^\/\*\*[\s\S]*?\*\//);
+    if (jsdocMatch) {
+      const description = jsdocMatch[0]
+        .replace(/\/\*\*|\*\/|\*/g, '')
+        .trim()
+        .split('\n')[0]
+        .trim();
+      if (description.length > 10 && description.length < 150) {
+        return description;
+      }
+    }
+
+    // Generate based on type and exports
+    switch (type) {
+      case 'api':
+        return `API route handling ${exports.filter(e => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(e)).join(', ') || 'requests'}`;
+      case 'component':
+        return `React component: ${exports[0] || fileName.replace(/\.(tsx?|jsx?)$/, '')}`;
+      case 'type':
+        return `Type definitions: ${exports.slice(0, 3).join(', ')}${exports.length > 3 ? '...' : ''}`;
+      case 'util':
+        return `Utility functions: ${exports.slice(0, 3).join(', ')}${exports.length > 3 ? '...' : ''}`;
+      case 'config':
+        return `Configuration for ${fileName.replace(/\.(ts|js|json)$/, '')}`;
+      default:
+        return `${fileName} - ${exports.length} exports`;
+    }
+  }
+
+  /**
+   * Extract API contracts from a route file
+   */
+  private extractAPIContracts(file: { path: string; content: string }): Array<{
+    endpoint: string;
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+    requestSchema?: string;
+    responseSchema?: string;
+    authentication: boolean;
+  }> {
+    const contracts: Array<{
+      endpoint: string;
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+      requestSchema?: string;
+      responseSchema?: string;
+      authentication: boolean;
+    }> = [];
+
+    // Derive endpoint from path
+    const pathMatch = file.path.match(/\/api\/(.+?)(?:\/route)?\.ts/);
+    const endpoint = pathMatch ? `/api/${pathMatch[1]}` : file.path;
+
+    // Find exported HTTP methods
+    const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
+    for (const method of methods) {
+      if (file.content.includes(`export async function ${method}`) ||
+          file.content.includes(`export function ${method}`)) {
+
+        // Check for auth
+        const hasAuth = file.content.includes('getServerSession') ||
+                       file.content.includes('auth()') ||
+                       file.content.includes('requireAuth') ||
+                       file.content.includes('Authorization');
+
+        // Try to find request/response types
+        const requestMatch = file.content.match(new RegExp(`${method}[^{]*\\{[^}]*body[^:]*:\\s*(\\w+)`));
+        const responseMatch = file.content.match(/NextResponse\.json\s*\(\s*\{[^}]*\}\s*(?:as\s+(\w+))?/);
+
+        contracts.push({
+          endpoint,
+          method,
+          requestSchema: requestMatch?.[1],
+          responseSchema: responseMatch?.[1],
+          authentication: hasAuth,
+        });
+      }
+    }
+
+    return contracts;
+  }
+
+  /**
+   * Detect coding patterns used in file for consistency
+   */
+  private detectPatterns(content: string): string[] {
+    const patterns: string[] = [];
+
+    // State management
+    if (content.includes('useState')) patterns.push('react-useState');
+    if (content.includes('useReducer')) patterns.push('react-useReducer');
+    if (content.includes('createContext')) patterns.push('react-context');
+    if (content.includes('zustand')) patterns.push('zustand-store');
+    if (content.includes('redux')) patterns.push('redux');
+
+    // Data fetching
+    if (content.includes('useSWR')) patterns.push('swr');
+    if (content.includes('useQuery')) patterns.push('react-query');
+    if (content.includes('getServerSideProps')) patterns.push('next-ssr');
+    if (content.includes('getStaticProps')) patterns.push('next-ssg');
+
+    // Styling
+    if (content.includes('className=') && content.includes('`')) patterns.push('tailwind-dynamic');
+    if (content.includes('styled.')) patterns.push('styled-components');
+    if (content.includes('css`')) patterns.push('emotion');
+
+    // Form handling
+    if (content.includes('useForm')) patterns.push('react-hook-form');
+    if (content.includes('Formik')) patterns.push('formik');
+    if (content.includes('zod')) patterns.push('zod-validation');
+
+    // Auth patterns
+    if (content.includes('getServerSession')) patterns.push('next-auth');
+    if (content.includes('supabase.auth')) patterns.push('supabase-auth');
+
+    // Error handling
+    if (content.includes('try {') && content.includes('catch')) patterns.push('try-catch');
+    if (content.includes('ErrorBoundary')) patterns.push('error-boundary');
+
+    return patterns;
   }
 }
 

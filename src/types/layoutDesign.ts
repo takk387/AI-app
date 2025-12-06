@@ -260,6 +260,281 @@ export interface LayoutDesign {
 }
 
 // ============================================================================
+// LAYOUT NODE - Recursive Structure for Component Nesting
+// ============================================================================
+
+/**
+ * Component types that can be placed in a layout node
+ */
+export type LayoutComponentType =
+  | 'header'
+  | 'sidebar'
+  | 'hero'
+  | 'cards'
+  | 'list'
+  | 'stats'
+  | 'footer'
+  | 'navigation'
+  | 'form'
+  | 'table'
+  | 'tabs'
+  | 'modal'
+  | 'custom';
+
+/**
+ * Layout node types for building nested structures
+ */
+export type LayoutNodeType = 'container' | 'row' | 'column' | 'section' | 'component';
+
+/**
+ * Flexbox/grid alignment options
+ */
+export interface LayoutAlignment {
+  direction: 'row' | 'column';
+  gap: string;
+  align: 'start' | 'center' | 'end' | 'stretch';
+  justify: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
+  wrap?: boolean;
+}
+
+/**
+ * Recursive layout node for building nested component structures
+ * Supports up to N levels of nesting (recommended max: 3)
+ */
+export interface LayoutNode {
+  id: string;
+  type: LayoutNodeType;
+  componentType?: LayoutComponentType;
+  label?: string;
+  children: LayoutNode[];
+  props: Record<string, unknown>;
+  layout?: LayoutAlignment;
+  style?: {
+    width?: string;
+    minWidth?: string;
+    maxWidth?: string;
+    height?: string;
+    padding?: string;
+    margin?: string;
+    background?: string;
+    borderRadius?: string;
+    border?: string;
+    shadow?: string;
+  };
+  responsive?: {
+    hideOnMobile?: boolean;
+    hideOnTablet?: boolean;
+    mobileOrder?: number;
+    mobileSpan?: number;
+  };
+}
+
+// ============================================================================
+// GRID CONFIGURATION
+// ============================================================================
+
+/**
+ * Custom grid configuration for flexible layouts
+ */
+export interface GridConfig {
+  columns: number | 'auto-fit' | 'auto-fill';
+  columnWidths?: string[]; // ['1fr', '2fr', '1fr'] for custom column sizes
+  gap: string;
+  rowGap?: string;
+  minColumnWidth?: string; // For auto-fit/fill
+  alignItems?: 'start' | 'center' | 'end' | 'stretch';
+  justifyItems?: 'start' | 'center' | 'end' | 'stretch';
+}
+
+// ============================================================================
+// NEW COMPONENT TYPES
+// ============================================================================
+
+/**
+ * Form component design specification
+ */
+export interface FormDesign {
+  layout: 'vertical' | 'horizontal' | 'inline' | 'grid';
+  labelPosition: 'top' | 'left' | 'floating' | 'hidden';
+  inputStyle: 'outlined' | 'filled' | 'underlined' | 'minimal';
+  inputSize: 'xs' | 'sm' | 'md' | 'lg';
+  showLabels: boolean;
+  showHelperText: boolean;
+  showRequiredIndicator: boolean;
+  buttonPosition: 'left' | 'center' | 'right' | 'full' | 'inline';
+  spacing: 'compact' | 'normal' | 'relaxed';
+  gridColumns?: number;
+}
+
+/**
+ * Table component design specification
+ */
+export interface TableDesign {
+  style: 'minimal' | 'striped' | 'bordered' | 'elevated' | 'clean';
+  headerStyle: 'simple' | 'bold' | 'colored' | 'sticky';
+  rowHover: boolean;
+  stickyHeader: boolean;
+  density: 'compact' | 'normal' | 'relaxed';
+  showPagination: boolean;
+  showFilters: boolean;
+  showSorting: boolean;
+  showCheckboxes: boolean;
+  zebraStripes: boolean;
+  borderStyle: 'none' | 'horizontal' | 'vertical' | 'all';
+}
+
+/**
+ * Tabs component design specification
+ */
+export interface TabsDesign {
+  variant: 'line' | 'enclosed' | 'pills' | 'underlined' | 'buttons';
+  position: 'top' | 'left' | 'bottom' | 'right';
+  size: 'sm' | 'md' | 'lg';
+  fullWidth: boolean;
+  showIcons: boolean;
+  iconPosition: 'left' | 'top' | 'right';
+  animated: boolean;
+}
+
+/**
+ * Modal/Dialog component design specification
+ */
+export interface ModalDesign {
+  size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'auto';
+  position: 'center' | 'top' | 'right' | 'bottom' | 'left';
+  hasOverlay: boolean;
+  overlayBlur: boolean;
+  overlayOpacity: number;
+  animation: 'fade' | 'slide' | 'scale' | 'none';
+  closeOnOverlayClick: boolean;
+  closeOnEscape: boolean;
+  showCloseButton: boolean;
+  scrollBehavior: 'inside' | 'outside';
+}
+
+/**
+ * Alert/Notification component design specification
+ */
+export interface AlertDesign {
+  variant: 'subtle' | 'solid' | 'outline' | 'left-accent' | 'top-accent';
+  showIcon: boolean;
+  showCloseButton: boolean;
+  borderRadius: 'none' | 'sm' | 'md' | 'lg';
+  animation: 'fade' | 'slide' | 'none';
+}
+
+/**
+ * Accordion component design specification
+ */
+export interface AccordionDesign {
+  variant: 'simple' | 'bordered' | 'separated' | 'enclosed';
+  allowMultiple: boolean;
+  defaultExpanded: boolean;
+  showIcon: boolean;
+  iconPosition: 'left' | 'right';
+  animation: 'smooth' | 'instant';
+}
+
+// ============================================================================
+// CUSTOMIZABLE VALUE WRAPPER
+// ============================================================================
+
+/**
+ * Wrapper type for values that can be preset or custom
+ * Allows pixel-level control while maintaining preset options
+ */
+export interface CustomizableValue<T extends string> {
+  preset?: T;
+  custom?: string; // Allows '16px', '1rem', '2.5em', etc.
+}
+
+/**
+ * Helper to get the actual value from a CustomizableValue
+ */
+export function getCustomizableValue<T extends string>(
+  value: CustomizableValue<T> | T | undefined,
+  presetMap: Record<T, string>,
+  defaultValue: string
+): string {
+  if (!value) return defaultValue;
+  if (typeof value === 'string') return presetMap[value] || defaultValue;
+  if (value.custom) return value.custom;
+  if (value.preset) return presetMap[value.preset] || defaultValue;
+  return defaultValue;
+}
+
+// ============================================================================
+// EXTENDED RESPONSIVE SETTINGS
+// ============================================================================
+
+/**
+ * Custom breakpoint configuration
+ */
+export interface CustomBreakpoints {
+  mobile: number; // Default: 375
+  mobileLandscape?: number; // Optional: 480
+  tablet: number; // Default: 768
+  tabletLandscape?: number; // Optional: 1024
+  laptop?: number; // Optional: 1024
+  desktop: number; // Default: 1200
+  wide?: number; // Optional: 1440
+  ultrawide?: number; // Optional: 1920
+}
+
+/**
+ * Per-breakpoint visibility settings
+ */
+export interface BreakpointVisibility {
+  mobile: boolean;
+  tablet: boolean;
+  desktop: boolean;
+  wide?: boolean;
+}
+
+// ============================================================================
+// EXTENDED LAYOUT DESIGN
+// ============================================================================
+
+/**
+ * Extended components interface with new component types
+ */
+export interface ExtendedLayoutComponents {
+  header?: HeaderDesign;
+  sidebar?: SidebarDesign;
+  hero?: HeroDesign;
+  navigation?: NavigationDesign;
+  cards?: CardDesign & { gridConfig?: GridConfig };
+  lists?: ListDesign;
+  stats?: StatsDesign;
+  footer?: FooterDesign;
+  forms?: FormDesign;
+  tables?: TableDesign;
+  tabs?: TabsDesign;
+  modals?: ModalDesign;
+  alerts?: AlertDesign;
+  accordions?: AccordionDesign;
+}
+
+/**
+ * Extended responsive settings with custom breakpoints
+ */
+export interface ExtendedResponsiveSettings extends ResponsiveSettings {
+  customBreakpoints?: CustomBreakpoints;
+  containerQueries?: boolean;
+  fluidTypography?: boolean;
+}
+
+/**
+ * Extended LayoutDesign with new features
+ */
+export interface ExtendedLayoutDesign extends Omit<LayoutDesign, 'components' | 'responsive'> {
+  components: ExtendedLayoutComponents;
+  responsive: ExtendedResponsiveSettings;
+  layoutTree?: LayoutNode; // Recursive layout structure
+  customGrids?: Record<string, GridConfig>; // Named grid configurations
+}
+
+// ============================================================================
 // API Types
 // ============================================================================
 

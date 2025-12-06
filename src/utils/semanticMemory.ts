@@ -2,10 +2,18 @@
  * Semantic Memory Utility
  *
  * Cross-session semantic memory using Supabase for persistent storage.
- * Uses keyword-based search for simplicity (no embeddings required).
+ * Supports both keyword-based and embedding-based (vector) search.
+ *
+ * P3 Enhancement: Added embedding support for semantic similarity search
  */
 
 import type { ChatMessage } from '@/types/aiBuilderTypes';
+import {
+  generateEmbedding,
+  cosineSimilarity,
+  hasEmbeddingAPI,
+  getEmbeddingProvider,
+} from './embeddings';
 
 // ============================================================================
 // TYPES
@@ -23,6 +31,16 @@ export type MemoryType =
   | 'error_solution';
 
 /**
+ * Hierarchical memory category for organizing memories
+ */
+export type MemoryCategory = 'app' | 'feature' | 'ui' | 'technical' | 'workflow' | 'user';
+
+/**
+ * Specificity level of a memory
+ */
+export type MemorySpecificity = 'high' | 'medium' | 'low';
+
+/**
  * A semantic memory entry stored in Supabase
  */
 export interface SemanticMemory {
@@ -36,6 +54,15 @@ export interface SemanticMemory {
   created_at: Date;
   last_accessed_at: Date;
   access_count: number;
+  // Hierarchical fields
+  category?: MemoryCategory;
+  parent_id?: string; // Reference to parent memory (e.g., feature → app)
+  related_ids?: string[]; // Cross-references to related memories
+  specificity?: MemorySpecificity; // How detailed is this memory
+  project_id?: string; // Group memories by project/app
+  // Embedding fields (P3)
+  embedding?: number[]; // Vector embedding for semantic search
+  embedding_model?: string; // Model used to generate embedding
 }
 
 /**
@@ -58,6 +85,16 @@ export interface StoreMemoryOptions {
   keywords?: string[];
   importance?: number;
   context?: string;
+  // Hierarchical options
+  category?: MemoryCategory;
+  parentId?: string;
+  relatedIds?: string[];
+  specificity?: MemorySpecificity;
+  projectId?: string;
+  // Embedding options (P3)
+  generateEmbedding?: boolean; // Auto-generate embedding for this memory
+  embedding?: number[]; // Pre-computed embedding
+  embeddingModel?: string; // Model name for pre-computed embedding
 }
 
 // ============================================================================
@@ -395,69 +432,41 @@ export function extractMemoriesFromConversation(messages: ChatMessage[]): StoreM
 // ============================================================================
 
 /**
+ * Chainable query builder for Supabase select operations
+ */
+interface SelectQueryBuilder {
+  eq: (column: string, value: string) => SelectQueryBuilder & {
+    order: (column: string, options?: { ascending: boolean }) => {
+      limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
+    };
+    limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
+  };
+  order: (column: string, options?: { ascending: boolean }) => {
+    limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
+  };
+  gte: (column: string, value: string) => SelectQueryBuilder & {
+    delete: () => Promise<{ error: Error | null }>;
+  };
+  contains: (column: string, values: string[]) => SelectQueryBuilder;
+  overlaps: (column: string, values: string[]) => SelectQueryBuilder;
+  limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
+}
+
+/**
+ * Chainable query builder for Supabase update operations
+ */
+interface UpdateQueryBuilder {
+  eq: (column: string, value: string) => UpdateQueryBuilder & Promise<{ error: Error | null }>;
+}
+
+/**
  * Supabase client type (avoiding direct import for flexibility)
  */
 interface SupabaseClient {
   from: (table: string) => {
     insert: (data: Record<string, unknown>) => Promise<{ error: Error | null }>;
-    select: (columns?: string) => {
-      eq: (
-        column: string,
-        value: string
-      ) => {
-        order: (
-          column: string,
-          options?: { ascending: boolean }
-        ) => {
-          limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
-        };
-        gte: (
-          column: string,
-          value: string
-        ) => {
-          delete: () => Promise<{ error: Error | null }>;
-        };
-      };
-      contains: (
-        column: string,
-        values: string[]
-      ) => {
-        eq: (
-          column: string,
-          value: string
-        ) => {
-          order: (
-            column: string,
-            options?: { ascending: boolean }
-          ) => {
-            limit: (
-              count: number
-            ) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
-          };
-        };
-      };
-      overlaps: (
-        column: string,
-        values: string[]
-      ) => {
-        eq: (
-          column: string,
-          value: string
-        ) => {
-          order: (
-            column: string,
-            options?: { ascending: boolean }
-          ) => {
-            limit: (
-              count: number
-            ) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
-          };
-        };
-      };
-    };
-    update: (data: Record<string, unknown>) => {
-      eq: (column: string, value: string) => Promise<{ error: Error | null }>;
-    };
+    select: (columns?: string) => SelectQueryBuilder;
+    update: (data: Record<string, unknown>) => UpdateQueryBuilder;
     delete: () => {
       eq: (column: string, value: string) => Promise<{ error: Error | null }>;
       lt: (
@@ -528,6 +537,22 @@ export class SemanticMemoryManager {
       return;
     }
 
+    // Generate embedding if requested and not provided
+    let embedding = options.embedding;
+    let embeddingModel = options.embeddingModel;
+
+    if (options.generateEmbedding && !embedding) {
+      try {
+        const result = await generateEmbedding(options.content);
+        embedding = result.embedding;
+        embeddingModel = result.model;
+        console.log(`[SemanticMemory] Generated embedding with ${result.provider} (${result.dimensions} dims)`);
+      } catch (error) {
+        console.warn('[SemanticMemory] Failed to generate embedding:', error);
+        // Continue without embedding - keyword search still works
+      }
+    }
+
     const memory = {
       user_id: this.userId,
       type: options.type,
@@ -538,6 +563,15 @@ export class SemanticMemoryManager {
       created_at: new Date().toISOString(),
       last_accessed_at: new Date().toISOString(),
       access_count: 0,
+      // Hierarchical fields
+      category: options.category || this.inferCategory(options.type),
+      parent_id: options.parentId,
+      related_ids: options.relatedIds,
+      specificity: options.specificity || 'medium',
+      project_id: options.projectId,
+      // Embedding fields (P3)
+      embedding: embedding,
+      embedding_model: embeddingModel,
     };
 
     const { error } = await this.supabase.from('semantic_memories').insert(memory);
@@ -545,6 +579,21 @@ export class SemanticMemoryManager {
     if (error) {
       console.error('[SemanticMemory] Error storing memory:', error);
     }
+  }
+
+  /**
+   * Infer category from memory type
+   */
+  private inferCategory(type: MemoryType): MemoryCategory {
+    const typeToCategory: Record<MemoryType, MemoryCategory> = {
+      preference: 'user',
+      decision: 'app',
+      project: 'app',
+      feature: 'feature',
+      style: 'ui',
+      error_solution: 'technical',
+    };
+    return typeToCategory[type] || 'app';
   }
 
   /**
@@ -785,6 +834,457 @@ export class SemanticMemoryManager {
         oldestMemory: null,
         mostAccessedKeywords: [],
       };
+    }
+  }
+
+  // ============================================================================
+  // HIERARCHICAL MEMORY METHODS
+  // ============================================================================
+
+  /**
+   * Search memories by category
+   *
+   * @param category - Category to search
+   * @param limit - Maximum results
+   * @returns Memories in the category
+   */
+  async searchByCategory(category: MemoryCategory, limit: number = 20): Promise<SemanticMemory[]> {
+    if (!this.isReady()) return [];
+
+    try {
+      const { data, error } = await this.supabase
+        .from('semantic_memories')
+        .select('*')
+        .eq('user_id', this.userId!)
+        .eq('category', category)
+        .order('importance', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('[SemanticMemory] Error searching by category:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[SemanticMemory] Error searching by category:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Search memories by project
+   *
+   * @param projectId - Project ID to search
+   * @param limit - Maximum results
+   * @returns Memories for the project
+   */
+  async searchByProject(projectId: string, limit: number = 50): Promise<SemanticMemory[]> {
+    if (!this.isReady()) return [];
+
+    try {
+      const { data, error } = await this.supabase
+        .from('semantic_memories')
+        .select('*')
+        .eq('user_id', this.userId!)
+        .eq('project_id', projectId)
+        .order('importance', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('[SemanticMemory] Error searching by project:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[SemanticMemory] Error searching by project:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get child memories of a parent memory
+   *
+   * @param parentId - Parent memory ID
+   * @returns Child memories
+   */
+  async getChildMemories(parentId: string): Promise<SemanticMemory[]> {
+    if (!this.isReady()) return [];
+
+    try {
+      const { data, error } = await this.supabase
+        .from('semantic_memories')
+        .select('*')
+        .eq('user_id', this.userId!)
+        .eq('parent_id', parentId)
+        .order('importance', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('[SemanticMemory] Error getting child memories:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('[SemanticMemory] Error getting child memories:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Build hierarchical context for a project
+   * Returns memories organized by category with high-importance items first
+   *
+   * @param projectId - Optional project ID
+   * @param maxTokens - Maximum estimated tokens
+   * @returns Formatted context string
+   */
+  async getHierarchicalContext(projectId?: string, maxTokens: number = 3000): Promise<string> {
+    if (!this.isReady()) return '';
+
+    const categories: MemoryCategory[] = ['app', 'feature', 'technical', 'ui', 'workflow', 'user'];
+    const parts: string[] = [];
+    let tokenCount = 0;
+
+    for (const category of categories) {
+      // Get memories for this category
+      let memories: SemanticMemory[];
+      if (projectId) {
+        const allProjectMemories = await this.searchByProject(projectId, 100);
+        memories = allProjectMemories.filter((m) => m.category === category);
+      } else {
+        memories = await this.searchByCategory(category, 10);
+      }
+
+      if (memories.length === 0) continue;
+
+      // Sort by importance and specificity
+      memories.sort((a, b) => {
+        const importanceDiff = b.importance - a.importance;
+        if (importanceDiff !== 0) return importanceDiff;
+        const specificityOrder = { high: 0, medium: 1, low: 2 };
+        return (specificityOrder[a.specificity || 'medium'] || 1) - (specificityOrder[b.specificity || 'medium'] || 1);
+      });
+
+      // Add to context
+      const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+      const categoryContent: string[] = [`=== ${categoryLabel} ===`];
+
+      for (const memory of memories) {
+        const memoryText = `[${memory.type}] ${memory.content}`;
+        const memoryTokens = Math.ceil(memoryText.length / 4);
+
+        if (tokenCount + memoryTokens > maxTokens) break;
+
+        categoryContent.push(memoryText);
+        tokenCount += memoryTokens;
+      }
+
+      if (categoryContent.length > 1) {
+        parts.push(categoryContent.join('\n'));
+      }
+
+      if (tokenCount >= maxTokens) break;
+    }
+
+    return parts.join('\n\n');
+  }
+
+  /**
+   * Link a memory to a parent
+   *
+   * @param memoryId - Memory to update
+   * @param parentId - Parent memory ID
+   */
+  async linkToParent(memoryId: string, parentId: string): Promise<void> {
+    if (!this.isReady()) return;
+
+    const { error } = await this.supabase
+      .from('semantic_memories')
+      .update({ parent_id: parentId })
+      .eq('id', memoryId)
+      .eq('user_id', this.userId!);
+
+    if (error) {
+      console.error('[SemanticMemory] Error linking to parent:', error);
+    }
+  }
+
+  /**
+   * Add related memory links
+   *
+   * @param memoryId - Memory to update
+   * @param relatedIds - Related memory IDs to add
+   */
+  async addRelatedMemories(memoryId: string, relatedIds: string[]): Promise<void> {
+    if (!this.isReady()) return;
+
+    // Get current related IDs
+    const { data } = await this.supabase
+      .from('semantic_memories')
+      .select('related_ids')
+      .eq('id', memoryId)
+      .eq('user_id', this.userId!)
+      .limit(1);
+
+    const currentRelated = data?.[0]?.related_ids || [];
+    const newRelated = [...new Set([...currentRelated, ...relatedIds])];
+
+    const { error } = await this.supabase
+      .from('semantic_memories')
+      .update({ related_ids: newRelated })
+      .eq('id', memoryId)
+      .eq('user_id', this.userId!);
+
+    if (error) {
+      console.error('[SemanticMemory] Error adding related memories:', error);
+    }
+  }
+
+  // ============================================================================
+  // EMBEDDING-BASED SEARCH (P3)
+  // ============================================================================
+
+  /**
+   * Check if embedding-based search is available
+   *
+   * @returns True if embedding API is configured
+   */
+  hasEmbeddingSupport(): boolean {
+    return hasEmbeddingAPI();
+  }
+
+  /**
+   * Get current embedding provider
+   *
+   * @returns Provider name
+   */
+  getEmbeddingProvider(): string {
+    return getEmbeddingProvider();
+  }
+
+  /**
+   * Search memories using embedding similarity
+   *
+   * Falls back to keyword search if embeddings are not available.
+   *
+   * @param query - Search query
+   * @param limit - Maximum results (default: 10)
+   * @param minSimilarity - Minimum similarity score (default: 0.3)
+   * @returns Array of memories with similarity scores
+   */
+  async searchByEmbedding(
+    query: string,
+    limit: number = 10,
+    minSimilarity: number = 0.3
+  ): Promise<Array<SemanticMemory & { similarity: number }>> {
+    if (!this.isReady()) return [];
+
+    try {
+      // Generate embedding for query
+      const queryResult = await generateEmbedding(query);
+      const queryEmbedding = queryResult.embedding;
+
+      // Get all memories with embeddings for this user
+      const { data: memories, error } = await this.supabase
+        .from('semantic_memories')
+        .select('*')
+        .eq('user_id', this.userId!)
+        .order('importance', { ascending: false })
+        .limit(500); // Get more for embedding filtering
+
+      if (error || !memories) {
+        console.error('[SemanticMemory] Error fetching memories for embedding search:', error);
+        return [];
+      }
+
+      // Filter memories that have embeddings and calculate similarity
+      const memoriesWithSimilarity = memories
+        .filter((m: SemanticMemory) => m.embedding && m.embedding.length > 0)
+        .map((memory: SemanticMemory) => {
+          const similarity = cosineSimilarity(queryEmbedding, memory.embedding!);
+          return { ...memory, similarity };
+        })
+        .filter((m) => m.similarity >= minSimilarity)
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, limit);
+
+      // If we found good embedding matches, return them
+      if (memoriesWithSimilarity.length > 0) {
+        console.log(
+          `[SemanticMemory] Embedding search found ${memoriesWithSimilarity.length} matches ` +
+            `(best: ${memoriesWithSimilarity[0]?.similarity.toFixed(3)})`
+        );
+        return memoriesWithSimilarity;
+      }
+
+      // Fallback: use keyword search for memories without embeddings
+      console.log('[SemanticMemory] No embedding matches, falling back to keyword search');
+      const keywordResults = await this.search(query, limit);
+      return keywordResults.map((m) => ({ ...m, similarity: 0 }));
+    } catch (error) {
+      console.error('[SemanticMemory] Embedding search error:', error);
+      // Fallback to keyword search
+      const keywordResults = await this.search(query, limit);
+      return keywordResults.map((m) => ({ ...m, similarity: 0 }));
+    }
+  }
+
+  /**
+   * Hybrid search combining embedding similarity and keyword matching
+   *
+   * Uses a weighted combination of embedding similarity and keyword overlap.
+   *
+   * @param query - Search query
+   * @param limit - Maximum results (default: 10)
+   * @param embeddingWeight - Weight for embedding score (default: 0.7)
+   * @returns Array of memories with combined scores
+   */
+  async hybridSearch(
+    query: string,
+    limit: number = 10,
+    embeddingWeight: number = 0.7
+  ): Promise<Array<SemanticMemory & { score: number; embeddingScore: number; keywordScore: number }>> {
+    if (!this.isReady()) return [];
+
+    const keywordWeight = 1 - embeddingWeight;
+
+    try {
+      // Get keyword-based results
+      const keywordResults = await this.search(query, limit * 2);
+      const keywordScores = new Map<string, number>();
+
+      // Normalize keyword scores (higher rank = higher score)
+      keywordResults.forEach((memory, index) => {
+        const score = 1 - index / keywordResults.length;
+        keywordScores.set(memory.id, score);
+      });
+
+      // Get embedding-based results
+      const embeddingResults = await this.searchByEmbedding(query, limit * 2, 0.2);
+      const embeddingScores = new Map<string, number>();
+
+      embeddingResults.forEach((memory) => {
+        embeddingScores.set(memory.id, memory.similarity);
+      });
+
+      // Combine all unique memories
+      const allMemoryIds = new Set([
+        ...keywordResults.map((m) => m.id),
+        ...embeddingResults.map((m) => m.id),
+      ]);
+
+      // Create combined results
+      const combinedResults: Array<SemanticMemory & {
+        score: number;
+        embeddingScore: number;
+        keywordScore: number;
+      }> = [];
+
+      for (const id of allMemoryIds) {
+        const memory =
+          keywordResults.find((m) => m.id === id) ||
+          embeddingResults.find((m) => m.id === id);
+
+        if (!memory) continue;
+
+        const keywordScore = keywordScores.get(id) || 0;
+        const embeddingScore = embeddingScores.get(id) || 0;
+        const combinedScore =
+          keywordWeight * keywordScore + embeddingWeight * embeddingScore;
+
+        combinedResults.push({
+          ...memory,
+          score: combinedScore,
+          embeddingScore,
+          keywordScore,
+        });
+      }
+
+      // Sort by combined score and return top results
+      combinedResults.sort((a, b) => b.score - a.score);
+
+      console.log(
+        `[SemanticMemory] Hybrid search: ${combinedResults.length} total matches, ` +
+          `${embeddingScores.size} embedding, ${keywordScores.size} keyword`
+      );
+
+      return combinedResults.slice(0, limit);
+    } catch (error) {
+      console.error('[SemanticMemory] Hybrid search error:', error);
+      // Fallback to keyword search
+      const keywordResults = await this.search(query, limit);
+      return keywordResults.map((m) => ({
+        ...m,
+        score: 0,
+        embeddingScore: 0,
+        keywordScore: 0,
+      }));
+    }
+  }
+
+  /**
+   * Generate and store embeddings for all memories without embeddings
+   *
+   * Useful for batch processing existing memories.
+   *
+   * @param batchSize - Number of memories to process at once (default: 10)
+   * @returns Number of memories processed
+   */
+  async generateMissingEmbeddings(batchSize: number = 10): Promise<number> {
+    if (!this.isReady()) return 0;
+
+    try {
+      // Get memories without embeddings
+      const { data: memories, error } = await this.supabase
+        .from('semantic_memories')
+        .select('id, content')
+        .eq('user_id', this.userId!)
+        .order('created_at', { ascending: false })
+        .limit(batchSize * 10);
+
+      if (error || !memories) {
+        console.error('[SemanticMemory] Error fetching memories:', error);
+        return 0;
+      }
+
+      // Filter to only memories without embeddings
+      // Note: This is a simple check; actual filtering may need adjustment
+      // based on how nulls are handled in your Supabase setup
+      const memoriesNeedingEmbeddings = memories.filter(
+        (m: { id: string; content: string; embedding?: number[] }) => !m.embedding
+      );
+
+      let processed = 0;
+
+      for (const memory of memoriesNeedingEmbeddings.slice(0, batchSize)) {
+        try {
+          const result = await generateEmbedding(memory.content);
+
+          const { error: updateError } = await this.supabase
+            .from('semantic_memories')
+            .update({
+              embedding: result.embedding,
+              embedding_model: result.model,
+            })
+            .eq('id', memory.id)
+            .eq('user_id', this.userId!);
+
+          if (!updateError) {
+            processed++;
+          }
+        } catch (embedError) {
+          console.warn(`[SemanticMemory] Failed to generate embedding for ${memory.id}:`, embedError);
+        }
+      }
+
+      console.log(`[SemanticMemory] Generated embeddings for ${processed}/${batchSize} memories`);
+      return processed;
+    } catch (error) {
+      console.error('[SemanticMemory] Error generating missing embeddings:', error);
+      return 0;
     }
   }
 }

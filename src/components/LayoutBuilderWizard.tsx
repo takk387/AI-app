@@ -24,6 +24,14 @@ import type {
 import type { UIPreferences } from '@/types/appConcept';
 import { DESIGN_TEMPLATES, type DesignTemplate } from '@/data/designTemplates';
 import { VersionHistoryPanel } from '@/components/VersionHistoryPanel';
+import {
+  exportToCSSVariables,
+  exportToTailwindConfig,
+  exportToFigmaTokens,
+  exportToReactComponent,
+  downloadExport,
+  copyToClipboard,
+} from '@/utils/layoutExport';
 
 // ============================================================================
 // CONSTANTS
@@ -1038,6 +1046,9 @@ export function LayoutBuilderWizard({
   // Version history panel state
   const [showVersionHistory, setShowVersionHistory] = useState(false);
 
+  // Export menu state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   // Progress indicator state
   const [progressExpanded, setProgressExpanded] = useState(false);
 
@@ -1323,11 +1334,57 @@ export function LayoutBuilderWizard({
     [updateDesign, success]
   );
 
-  // Handle export
-  const handleExport = useCallback(() => {
+  // Handle export - JSON (original)
+  const handleExportJSON = useCallback(() => {
     exportDesign(false);
-    success('Design exported successfully');
+    success('Design exported as JSON');
+    setShowExportMenu(false);
   }, [exportDesign, success]);
+
+  // Handle export - CSS Variables
+  const handleExportCSS = useCallback(() => {
+    const css = exportToCSSVariables(design as LayoutDesign);
+    downloadExport(css, `${design.name || 'design'}-variables.css`, 'text/css');
+    success('CSS variables exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - Tailwind Config
+  const handleExportTailwind = useCallback(() => {
+    const config = exportToTailwindConfig(design as LayoutDesign);
+    downloadExport(config, 'tailwind.config.js', 'application/javascript');
+    success('Tailwind config exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - React Component
+  const handleExportReact = useCallback(() => {
+    const component = exportToReactComponent(design as LayoutDesign);
+    const filename = `${(design.name || 'Layout').replace(/[^a-zA-Z0-9]/g, '')}.tsx`;
+    downloadExport(component, filename, 'text/typescript');
+    success('React component exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - Design Tokens
+  const handleExportTokens = useCallback(() => {
+    const tokens = exportToFigmaTokens(design as LayoutDesign);
+    downloadExport(JSON.stringify(tokens, null, 2), 'design-tokens.json', 'application/json');
+    success('Design tokens exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle copy CSS to clipboard
+  const handleCopyCSS = useCallback(async () => {
+    const css = exportToCSSVariables(design as LayoutDesign);
+    const copied = await copyToClipboard(css);
+    if (copied) {
+      success('CSS variables copied to clipboard');
+    } else {
+      error('Failed to copy to clipboard');
+    }
+    setShowExportMenu(false);
+  }, [design, success, error]);
 
   // Handle import file selection
   const handleImportFile = useCallback(
@@ -1434,20 +1491,94 @@ export function LayoutBuilderWizard({
 
             {/* Export/Import/History buttons */}
             <div className="flex items-center gap-1">
-              <button
-                onClick={handleExport}
-                className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-                title="Export design to JSON file"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  />
-                </svg>
-              </button>
+              {/* Export dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className={`p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors ${showExportMenu ? 'bg-slate-700 text-white' : ''}`}
+                  title="Export design"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                    />
+                  </svg>
+                </button>
+                {showExportMenu && (
+                  <>
+                    {/* Backdrop to close menu */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowExportMenu(false)}
+                    />
+                    {/* Dropdown menu */}
+                    <div className="absolute right-0 top-full mt-1 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+                      <div className="px-3 py-2 border-b border-slate-700">
+                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Export Format</span>
+                      </div>
+                      <button
+                        onClick={handleExportJSON}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        JSON (Full Design)
+                      </button>
+                      <button
+                        onClick={handleExportCSS}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        CSS Variables
+                      </button>
+                      <button
+                        onClick={handleExportTailwind}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        Tailwind Config
+                      </button>
+                      <button
+                        onClick={handleExportReact}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        React Component
+                      </button>
+                      <button
+                        onClick={handleExportTokens}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Design Tokens (Figma)
+                      </button>
+                      <div className="border-t border-slate-700 mt-1 pt-1">
+                        <button
+                          onClick={handleCopyCSS}
+                          className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy CSS to Clipboard
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
               <button
                 onClick={() => importInputRef.current?.click()}
                 className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"

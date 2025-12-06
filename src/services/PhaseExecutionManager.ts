@@ -14,8 +14,202 @@ import type {
   PhaseExecutionContext,
   PhaseExecutionResult,
   PhaseConceptContext,
+  AccumulatedFile,
+  AccumulatedFeature,
+  APIContract,
 } from '@/types/dynamicPhases';
 import type { TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
+import type { LayoutDesign } from '@/types/layoutDesign';
+import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
+
+// ============================================================================
+// LAYOUT DESIGN FORMATTING
+// ============================================================================
+
+/**
+ * Format a complete LayoutDesign into a detailed prompt section
+ * This ensures ALL design specifications reach the code generation
+ */
+export function formatLayoutDesignForPrompt(design: LayoutDesign): string {
+  const { globalStyles, components, structure, responsive } = design;
+
+  let prompt = `## Complete Design System Specifications
+
+### Typography
+- Font Family: ${globalStyles.typography.fontFamily}
+- Heading Font: ${globalStyles.typography.headingFont || 'same as body'}
+- Font Weight: Headings ${globalStyles.typography.headingWeight}, Body ${globalStyles.typography.bodyWeight}
+- Heading Size Scale: ${globalStyles.typography.headingSize}
+- Body Size: ${globalStyles.typography.bodySize}
+- Line Height: ${globalStyles.typography.lineHeight}
+- Letter Spacing: ${globalStyles.typography.letterSpacing}
+
+### Color Palette
+- Primary: ${globalStyles.colors.primary}
+- Secondary: ${globalStyles.colors.secondary || 'not specified'}
+- Accent: ${globalStyles.colors.accent || 'not specified'}
+- Background: ${globalStyles.colors.background}
+- Surface: ${globalStyles.colors.surface}
+- Text: ${globalStyles.colors.text}
+- Text Muted: ${globalStyles.colors.textMuted}
+- Border: ${globalStyles.colors.border}
+- Success: ${globalStyles.colors.success || '#22C55E'}
+- Warning: ${globalStyles.colors.warning || '#F59E0B'}
+- Error: ${globalStyles.colors.error || '#EF4444'}
+- Info: ${globalStyles.colors.info || '#3B82F6'}
+
+### Spacing System
+- Density: ${globalStyles.spacing.density}
+- Container Width: ${globalStyles.spacing.containerWidth}
+- Section Padding: ${globalStyles.spacing.sectionPadding}
+- Component Gap: ${globalStyles.spacing.componentGap}
+
+### Effects
+- Border Radius: ${globalStyles.effects.borderRadius}
+- Shadows: ${globalStyles.effects.shadows}
+- Animations: ${globalStyles.effects.animations}
+- Blur: ${globalStyles.effects.blur}
+- Gradients: ${globalStyles.effects.gradients ? 'enabled' : 'disabled'}
+
+### Layout Structure
+- Type: ${structure.type}
+- Has Header: ${structure.hasHeader}
+- Has Sidebar: ${structure.hasSidebar}
+- Has Footer: ${structure.hasFooter}
+- Sidebar Position: ${structure.sidebarPosition}
+- Header Type: ${structure.headerType}
+- Content Layout: ${structure.contentLayout}
+- Main Content Width: ${structure.mainContentWidth}
+
+### Responsive Settings
+- Mobile Breakpoint: ${responsive.mobileBreakpoint}px
+- Tablet Breakpoint: ${responsive.tabletBreakpoint}px
+- Mobile Layout: ${responsive.mobileLayout}
+- Mobile Header: ${responsive.mobileHeader}
+- Hide Sidebar on Mobile: ${responsive.hideSidebarOnMobile}
+- Stack Cards on Mobile: ${responsive.stackCardsOnMobile}
+`;
+
+  // Add component specifications
+  if (components.header) {
+    prompt += `
+### Header Component
+- Visible: ${components.header.visible}
+- Height: ${components.header.height}
+- Style: ${components.header.style}
+- Logo Position: ${components.header.logoPosition}
+- Navigation Position: ${components.header.navPosition}
+- Has Search: ${components.header.hasSearch}
+- Has CTA: ${components.header.hasCTA}
+- CTA Text: ${components.header.ctaText || 'Get Started'}
+- CTA Style: ${components.header.ctaStyle || 'filled'}
+`;
+  }
+
+  if (components.sidebar) {
+    prompt += `
+### Sidebar Component
+- Visible: ${components.sidebar.visible}
+- Position: ${components.sidebar.position}
+- Width: ${components.sidebar.width}
+- Collapsible: ${components.sidebar.collapsible}
+- Default Collapsed: ${components.sidebar.defaultCollapsed}
+- Style: ${components.sidebar.style}
+- Icon Only: ${components.sidebar.iconOnly}
+- Has Logo: ${components.sidebar.hasLogo}
+`;
+  }
+
+  if (components.hero) {
+    prompt += `
+### Hero Component
+- Visible: ${components.hero.visible}
+- Height: ${components.hero.height}
+- Layout: ${components.hero.layout}
+- Has Image: ${components.hero.hasImage}
+- Image Position: ${components.hero.imagePosition || 'none'}
+- Has Subtitle: ${components.hero.hasSubtitle}
+- Has CTA: ${components.hero.hasCTA}
+- CTA Count: ${components.hero.ctaCount}
+`;
+  }
+
+  if (components.navigation) {
+    prompt += `
+### Navigation Component
+- Style: ${components.navigation.style}
+- Position: ${components.navigation.position}
+- Item Style: ${components.navigation.itemStyle}
+- Show Icons: ${components.navigation.showIcons}
+- Show Labels: ${components.navigation.showLabels}
+- Max Visible Items: ${components.navigation.maxVisibleItems}
+`;
+  }
+
+  if (components.cards) {
+    prompt += `
+### Cards Component
+- Style: ${components.cards.style}
+- Image Position: ${components.cards.imagePosition}
+- Show Badge: ${components.cards.showBadge}
+- Show Footer: ${components.cards.showFooter}
+- Hover Effect: ${components.cards.hoverEffect}
+- Aspect Ratio: ${components.cards.aspectRatio}
+`;
+  }
+
+  if (components.lists) {
+    prompt += `
+### Lists Component
+- Style: ${components.lists.style}
+- Show Dividers: ${components.lists.showDividers}
+- Show Avatar: ${components.lists.showAvatar}
+- Show Meta: ${components.lists.showMeta}
+- Show Actions: ${components.lists.showActions}
+- Density: ${components.lists.density}
+`;
+  }
+
+  if (components.stats) {
+    prompt += `
+### Stats Component
+- Visible: ${components.stats.visible}
+- Layout: ${components.stats.layout}
+- Style: ${components.stats.style}
+- Show Icons: ${components.stats.showIcons}
+- Show Trend: ${components.stats.showTrend}
+- Columns: ${components.stats.columns}
+`;
+  }
+
+  if (components.footer) {
+    prompt += `
+### Footer Component
+- Visible: ${components.footer.visible}
+- Style: ${components.footer.style}
+- Columns: ${components.footer.columns}
+- Show Social: ${components.footer.showSocial}
+- Show Newsletter: ${components.footer.showNewsletter}
+- Show Copyright: ${components.footer.showCopyright}
+- Position: ${components.footer.position}
+`;
+  }
+
+  return prompt;
+}
+
+// ============================================================================
+// EXTENDED CONTEXT TYPE
+// ============================================================================
+
+/**
+ * Extended PhaseExecutionContext with enhanced tracking fields
+ */
+interface PhaseExecutionContextWithEnhancedTracking extends PhaseExecutionContext {
+  apiContracts?: APIContract[];
+  establishedPatterns?: string[];
+  accumulatedFilesRich?: AccumulatedFile[];
+}
 
 // ============================================================================
 // PHASE PROMPT BUILDER
@@ -77,8 +271,20 @@ Users in roles: **${context.relevantRoles.join(', ')}**
 `;
   }
 
-  // Design preferences context
-  if (context.fullConcept?.uiPreferences) {
+  // Design preferences context - use full LayoutDesign if available
+  // This is CRITICAL for ensuring design specifications reach code generation
+  if (context.phaseConceptContext?.layoutDesign) {
+    // Full layout design available - use complete specifications
+    prompt += formatLayoutDesignForPrompt(context.phaseConceptContext.layoutDesign);
+    prompt += `
+`;
+  } else if (context.fullConcept?.layoutDesign) {
+    // Layout design in full concept - use complete specifications
+    prompt += formatLayoutDesignForPrompt(context.fullConcept.layoutDesign);
+    prompt += `
+`;
+  } else if (context.fullConcept?.uiPreferences) {
+    // Fallback to simplified UIPreferences (legacy support)
     const ui = context.fullConcept.uiPreferences;
     prompt += `## Design Requirements
 - Style: ${ui.style || 'modern'}
@@ -87,6 +293,30 @@ Users in roles: **${context.relevantRoles.join(', ')}**
 `;
     if (ui.primaryColor) {
       prompt += `- Primary Color: ${ui.primaryColor}
+`;
+    }
+    if (ui.secondaryColor) {
+      prompt += `- Secondary Color: ${ui.secondaryColor}
+`;
+    }
+    if (ui.accentColor) {
+      prompt += `- Accent Color: ${ui.accentColor}
+`;
+    }
+    if (ui.fontFamily) {
+      prompt += `- Font Family: ${ui.fontFamily}
+`;
+    }
+    if (ui.borderRadius) {
+      prompt += `- Border Radius: ${ui.borderRadius}
+`;
+    }
+    if (ui.shadowIntensity) {
+      prompt += `- Shadow Intensity: ${ui.shadowIntensity}
+`;
+    }
+    if (ui.spacing) {
+      prompt += `- Spacing: ${ui.spacing}
 `;
     }
     if (ui.inspiration) {
@@ -158,6 +388,26 @@ ${context.cumulativeFeatures.map((f) => `- ${f}`).join('\n')}
 4. **EXTEND** rather than replace - add new features incrementally
 
 `;
+
+    // Include API contracts if available (from enhanced tracking)
+    const apiContracts = (context as PhaseExecutionContextWithEnhancedTracking).apiContracts;
+    if (apiContracts && apiContracts.length > 0) {
+      prompt += `### Existing API Contracts
+These endpoints are already implemented. Use them, don't recreate:
+${apiContracts.map(c => `- ${c.method} ${c.endpoint}${c.authentication ? ' (requires auth)' : ''}`).join('\n')}
+
+`;
+    }
+
+    // Include established patterns if available
+    const patterns = (context as PhaseExecutionContextWithEnhancedTracking).establishedPatterns;
+    if (patterns && patterns.length > 0) {
+      prompt += `### Established Patterns
+Follow these patterns for consistency:
+${patterns.map(p => `- ${p}`).join('\n')}
+
+`;
+    }
   }
 
   // Include relevant existing code for context
@@ -307,8 +557,33 @@ export class PhaseExecutionManager {
   private accumulatedFeatures: string[] = [];
   private completedPhases: number[] = [];
 
+  // Enhanced tracking
+  private accumulatedFilesRich: AccumulatedFile[] = [];
+  private accumulatedFeaturesRich: AccumulatedFeature[] = [];
+  private establishedPatterns: string[] = [];
+  private apiContracts: APIContract[] = [];
+  private phaseGenerator: DynamicPhaseGenerator;
+
+  // Store raw file contents for smart context building
+  private rawGeneratedFiles: Array<{ path: string; content: string }> = [];
+
   constructor(plan: DynamicPhasePlan) {
     this.plan = plan;
+    this.phaseGenerator = new DynamicPhaseGenerator();
+
+    // Initialize from plan if available
+    if (plan.accumulatedFilesRich) {
+      this.accumulatedFilesRich = [...plan.accumulatedFilesRich];
+    }
+    if (plan.accumulatedFeaturesRich) {
+      this.accumulatedFeaturesRich = [...plan.accumulatedFeaturesRich];
+    }
+    if (plan.establishedPatterns) {
+      this.establishedPatterns = [...plan.establishedPatterns];
+    }
+    if (plan.apiContracts) {
+      this.apiContracts = [...plan.apiContracts];
+    }
   }
 
   /**
@@ -323,6 +598,9 @@ export class PhaseExecutionManager {
 
     const concept = this.plan.concept;
 
+    // Use smart code context instead of raw accumulated code
+    const smartCodeContext = this.getSmartCodeContext();
+
     return {
       phaseNumber,
       totalPhases: this.plan.totalPhases,
@@ -330,7 +608,7 @@ export class PhaseExecutionManager {
       phaseDescription: phase.description,
       features: phase.features,
       testCriteria: phase.testCriteria,
-      previousPhaseCode: this.accumulatedCode || null,
+      previousPhaseCode: smartCodeContext || this.accumulatedCode || null,
       allPhases: this.plan.phases,
       completedPhases: [...this.completedPhases],
       cumulativeFeatures: [...this.accumulatedFeatures],
@@ -355,11 +633,17 @@ export class PhaseExecutionManager {
 
       // Which user roles this phase serves
       relevantRoles: phase.relevantRoles,
-    };
+
+      // Enhanced tracking for prompt builder
+      apiContracts: [...this.apiContracts],
+      establishedPatterns: [...this.establishedPatterns],
+      accumulatedFilesRich: [...this.accumulatedFilesRich],
+    } as PhaseExecutionContextWithEnhancedTracking;
   }
 
   /**
    * Record the result of executing a phase
+   * Enhanced to extract rich metadata from generated code
    */
   recordPhaseResult(result: PhaseExecutionResult): void {
     if (result.success) {
@@ -367,6 +651,46 @@ export class PhaseExecutionManager {
       this.accumulatedCode = result.generatedCode;
       this.accumulatedFiles = [...this.accumulatedFiles, ...result.generatedFiles];
       this.accumulatedFeatures = [...this.accumulatedFeatures, ...result.implementedFeatures];
+
+      // Extract raw file contents and analyze
+      const rawFiles = this.extractRawFiles(result.generatedCode);
+      this.rawGeneratedFiles = [...this.rawGeneratedFiles, ...rawFiles];
+
+      // Use DynamicPhaseGenerator to analyze files for rich metadata
+      if (rawFiles.length > 0) {
+        const analysis = this.phaseGenerator.analyzeGeneratedFiles(rawFiles);
+
+        // Merge with existing rich tracking
+        this.accumulatedFilesRich = [...this.accumulatedFilesRich, ...analysis.accumulatedFiles];
+        this.apiContracts = [...this.apiContracts, ...analysis.apiContracts];
+
+        // Merge patterns (deduplicate)
+        const patternSet = new Set([...this.establishedPatterns, ...analysis.establishedPatterns]);
+        this.establishedPatterns = Array.from(patternSet);
+      }
+
+      // Update rich feature tracking
+      for (const feature of result.implementedFeatures) {
+        const existingFeature = this.accumulatedFeaturesRich.find(f => f.name === feature);
+        if (existingFeature) {
+          existingFeature.status = 'complete';
+          existingFeature.implementedIn = [...existingFeature.implementedIn, ...result.generatedFiles];
+        } else {
+          this.accumulatedFeaturesRich.push({
+            name: feature,
+            status: 'complete',
+            implementedIn: result.generatedFiles,
+            apiEndpoints: this.apiContracts
+              .filter(c => feature.toLowerCase().includes(c.endpoint.split('/').pop()?.toLowerCase() || ''))
+              .map(c => c.endpoint),
+            components: rawFiles
+              .filter(f => f.path.includes('/components/'))
+              .map(f => f.path),
+            dataModels: [], // Would need deeper analysis
+            testCoverage: false,
+          });
+        }
+      }
 
       // Update plan state
       const phase = this.plan.phases.find((p) => p.number === result.phaseNumber);
@@ -376,9 +700,14 @@ export class PhaseExecutionManager {
         phase.generatedCode = result.generatedCode;
       }
 
+      // Update both legacy and enhanced tracking in plan
       this.plan.completedPhaseNumbers = [...this.completedPhases];
       this.plan.accumulatedFiles = [...this.accumulatedFiles];
       this.plan.accumulatedFeatures = [...this.accumulatedFeatures];
+      this.plan.accumulatedFilesRich = [...this.accumulatedFilesRich];
+      this.plan.accumulatedFeaturesRich = [...this.accumulatedFeaturesRich];
+      this.plan.establishedPatterns = [...this.establishedPatterns];
+      this.plan.apiContracts = [...this.apiContracts];
       this.plan.currentPhaseNumber = result.phaseNumber + 1;
       this.plan.updatedAt = new Date().toISOString();
     } else {
@@ -389,6 +718,53 @@ export class PhaseExecutionManager {
       }
       this.plan.failedPhaseNumbers.push(result.phaseNumber);
     }
+  }
+
+  /**
+   * Extract raw file contents from generated code string
+   */
+  private extractRawFiles(generatedCode: string): Array<{ path: string; content: string }> {
+    const files: Array<{ path: string; content: string }> = [];
+    const filePattern = /===FILE:([^=]+)===\n([\s\S]*?)(?=\n===(?:FILE|DEPENDENCIES|END)===|$)/g;
+    let match;
+
+    while ((match = filePattern.exec(generatedCode)) !== null) {
+      files.push({
+        path: match[1].trim(),
+        content: match[2].trim(),
+      });
+    }
+
+    return files;
+  }
+
+  /**
+   * Get smart code context using importance scoring
+   * Returns prioritized code from previous phases
+   */
+  getSmartCodeContext(): string {
+    return this.phaseGenerator.buildSmartCodeContext(this.rawGeneratedFiles);
+  }
+
+  /**
+   * Get API contracts established so far
+   */
+  getAPIContracts(): APIContract[] {
+    return [...this.apiContracts];
+  }
+
+  /**
+   * Get established coding patterns
+   */
+  getEstablishedPatterns(): string[] {
+    return [...this.establishedPatterns];
+  }
+
+  /**
+   * Get rich file tracking
+   */
+  getAccumulatedFilesRich(): AccumulatedFile[] {
+    return [...this.accumulatedFilesRich];
   }
 
   /**
