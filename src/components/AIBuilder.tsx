@@ -913,9 +913,6 @@ export default function AIBuilder() {
       dynamicBuildPhases.startPhase(phaseNumber);
       setCurrentMode('ACT');
 
-      // Show the phased build panel so user can see progress
-      setShowAdvancedPhasedBuild(true);
-
       // Update the stage plan to show this phase as in-progress
       setNewAppStagePlan((prev) =>
         prev
@@ -936,7 +933,6 @@ export default function AIBuilder() {
       setUserInput,
       setCurrentMode,
       setNewAppStagePlan,
-      setShowAdvancedPhasedBuild,
     ]
   );
 
@@ -1600,134 +1596,8 @@ export default function AIBuilder() {
 
       // Builder Expert: Check if we should trigger build/modify (ACT mode)
       if (currentMode === 'ACT' && data?.shouldTriggerBuild) {
-        // The builder expert decided this needs a full build - trigger streaming generation
-        const buildRequestBody: Record<string, unknown> = {
-          prompt: userInput,
-          conversationHistory: chatMessages.slice(-30),
-          isModification: false,
-          image: uploadedImage || undefined,
-          hasImage: !!uploadedImage,
-        };
-
-        // Show a message that building is starting
-        const buildingMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content:
-            "🔨 **Building your app...**\n\nI'm generating the code for your application. This may take a moment.",
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, buildingMessage]);
-
-        // Call the streaming generation
-        const streamResult = await streaming.generate(buildRequestBody);
-
-        if (streamResult) {
-          // Handle the generated app
-          const aiAppMessage: ChatMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content: `🚀 App created!\n\n${streamResult.description || `I've created your ${streamResult.name} app!`}`,
-            timestamp: new Date().toISOString(),
-            componentCode: JSON.stringify(streamResult),
-            componentPreview: !!(streamResult.files as unknown[])?.length,
-          };
-          setChatMessages((prev) => [...prev, aiAppMessage]);
-
-          const files = streamResult.files as Array<{ path: string; content: string }>;
-          if (files && files.length > 0) {
-            let newComponent: GeneratedComponent = {
-              id: generateId(),
-              name: (streamResult.name as string) || extractComponentName(userInput),
-              code: JSON.stringify(streamResult, null, 2),
-              description: userInput,
-              timestamp: new Date().toISOString(),
-              isFavorite: false,
-              conversationHistory: [...chatMessages, userMessage, aiAppMessage],
-              versions: [],
-            };
-
-            newComponent = saveVersion(
-              newComponent,
-              'NEW_APP',
-              (streamResult.description as string) || userInput
-            );
-
-            setCurrentComponent(newComponent);
-            setComponents((prev) => [newComponent, ...prev].slice(0, 50));
-            saveComponentToDb(newComponent);
-            setActiveTab('preview');
-          }
-        }
-        return; // Exit early since we handled the build
-      }
-
-      // Builder Expert: Check if we should trigger modify (ACT mode with existing app)
-      if (currentMode === 'ACT' && data?.shouldTriggerModify && currentComponent) {
-        // The builder expert decided this needs a modification - trigger streaming generation
-        const modifyRequestBody: Record<string, unknown> = {
-          prompt: userInput,
-          conversationHistory: chatMessages.slice(-30),
-          isModification: true,
-          currentAppName: currentComponent.name,
-          currentAppState: JSON.parse(currentComponent.code),
-          image: uploadedImage || undefined,
-          hasImage: !!uploadedImage,
-        };
-
-        // Show a message that modification is starting
-        const modifyingMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content:
-            "🔧 **Modifying your app...**\n\nI'm updating the code for your application. This may take a moment.",
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, modifyingMessage]);
-
-        // Call the streaming generation
-        const streamResult = await streaming.generate(modifyRequestBody);
-
-        if (streamResult) {
-          // Handle the modified app
-          const aiAppMessage: ChatMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content: `✅ App updated!\n\n${streamResult.description || "I've updated your app with the requested changes."}`,
-            timestamp: new Date().toISOString(),
-            componentCode: JSON.stringify(streamResult),
-            componentPreview: !!(streamResult.files as unknown[])?.length,
-          };
-          setChatMessages((prev) => [...prev, aiAppMessage]);
-
-          const files = streamResult.files as Array<{ path: string; content: string }>;
-          if (files && files.length > 0) {
-            let updatedComponent: GeneratedComponent = {
-              id: currentComponent.id,
-              name: (streamResult.name as string) || currentComponent.name,
-              code: JSON.stringify(streamResult, null, 2),
-              description: userInput,
-              timestamp: new Date().toISOString(),
-              isFavorite: currentComponent.isFavorite,
-              conversationHistory: [...chatMessages, userMessage, aiAppMessage],
-              versions: currentComponent.versions || [],
-            };
-
-            updatedComponent = saveVersion(
-              updatedComponent,
-              'MAJOR_CHANGE',
-              (streamResult.description as string) || userInput
-            );
-
-            setCurrentComponent(updatedComponent);
-            setComponents((prev) =>
-              prev.map((comp) => (comp.id === currentComponent.id ? updatedComponent : comp))
-            );
-            saveComponentToDb(updatedComponent);
-            setActiveTab('preview');
-          }
-        }
-        return; // Exit early since we handled the modification
+        // The builder expert decided this needs a full build - redirect to streaming
+        // For now, just show the response - user can confirm to build
       }
 
       // Handle diff response
