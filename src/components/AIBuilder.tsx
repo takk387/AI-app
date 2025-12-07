@@ -1929,63 +1929,63 @@ export default function AIBuilder() {
 
         {/* Main Content - Builder View */}
         {activeView === 'main' && (
-        <div className="max-w-[1800px] mx-auto px-4 py-4 h-[calc(100vh-120px)]">
-          <ResizablePanelGroup
-            direction="horizontal"
-            persistenceKey="ai-builder-layout"
-            className="h-full"
-          >
-            {/* Chat Panel */}
-            <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
-              <div className="h-full flex flex-col relative">
-                <ChatPanel
-                  messages={chatMessages}
-                  isGenerating={isGenerating}
-                  generationProgress={generationProgress}
-                  userInput={userInput}
-                  onUserInputChange={setUserInput}
-                  onSendMessage={sendMessage}
-                  uploadedImage={uploadedImage}
-                  onImageUpload={handleImageUpload}
-                  onRemoveImage={removeImage}
-                  currentMode={currentMode}
-                  onModeChange={setCurrentMode}
-                  stagePlan={newAppStagePlan}
-                  onBuildPhase={handleBuildPhase}
-                  onViewComponent={() => setActiveTab('preview')}
-                  streamingProgress={streaming.progress}
-                  isStreamingActive={streaming.isStreaming}
+          <div className="max-w-[1800px] mx-auto px-4 py-4 h-[calc(100vh-120px)]">
+            <ResizablePanelGroup
+              direction="horizontal"
+              persistenceKey="ai-builder-layout"
+              className="h-full"
+            >
+              {/* Chat Panel */}
+              <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
+                <div className="h-full flex flex-col relative">
+                  <ChatPanel
+                    messages={chatMessages}
+                    isGenerating={isGenerating}
+                    generationProgress={generationProgress}
+                    userInput={userInput}
+                    onUserInputChange={setUserInput}
+                    onSendMessage={sendMessage}
+                    uploadedImage={uploadedImage}
+                    onImageUpload={handleImageUpload}
+                    onRemoveImage={removeImage}
+                    currentMode={currentMode}
+                    onModeChange={setCurrentMode}
+                    stagePlan={newAppStagePlan}
+                    onBuildPhase={handleBuildPhase}
+                    onViewComponent={() => setActiveTab('preview')}
+                    streamingProgress={streaming.progress}
+                    isStreamingActive={streaming.isStreaming}
+                  />
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle />
+
+              {/* Preview Panel */}
+              <ResizablePanel defaultSize={65} minSize={30} maxSize={80}>
+                <PreviewPanel
+                  currentComponent={currentComponent}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  canUndo={versionControl.canUndo}
+                  canRedo={versionControl.canRedo}
+                  onUndo={versionControl.undo}
+                  onRedo={versionControl.redo}
+                  undoCount={versionControl.undoStack.length}
+                  redoCount={versionControl.redoStack.length}
+                  onFork={handleForkApp}
+                  onExport={handleExportApp}
+                  onDownload={downloadCode}
+                  isExporting={!!exportingApp}
+                  onScreenshot={(image) => {
+                    setUploadedImage(image);
+                    // Show a subtle indicator that capture is ready
+                    console.log('Preview captured - will be sent with next message');
+                  }}
                 />
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle />
-
-            {/* Preview Panel */}
-            <ResizablePanel defaultSize={65} minSize={30} maxSize={80}>
-              <PreviewPanel
-                currentComponent={currentComponent}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                canUndo={versionControl.canUndo}
-                canRedo={versionControl.canRedo}
-                onUndo={versionControl.undo}
-                onRedo={versionControl.redo}
-                undoCount={versionControl.undoStack.length}
-                redoCount={versionControl.redoStack.length}
-                onFork={handleForkApp}
-                onExport={handleExportApp}
-                onDownload={downloadCode}
-                isExporting={!!exportingApp}
-                onScreenshot={(image) => {
-                  setUploadedImage(image);
-                  // Show a subtle indicator that capture is ready
-                  console.log('Preview captured - will be sent with next message');
-                }}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
         )}
 
         {/* Wizard View */}

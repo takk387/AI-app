@@ -1456,490 +1456,492 @@ export function LayoutBuilderWizard({
   if (!isOpen) return null;
 
   const content = (
-    <div className={`${isFullPage ? 'w-full h-full' : 'w-[95vw] h-[90vh] max-w-[1600px]'} bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700`}>
-        {/* Draft recovery banner */}
-        {hasDraftToRecover && (
-          <DraftRecoveryBanner onRecover={recoverDraft} onDiscard={discardDraft} />
-        )}
+    <div
+      className={`${isFullPage ? 'w-full h-full' : 'w-[95vw] h-[90vh] max-w-[1600px]'} bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-700`}
+    >
+      {/* Draft recovery banner */}
+      {hasDraftToRecover && (
+        <DraftRecoveryBanner onRecover={recoverDraft} onDiscard={discardDraft} />
+      )}
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-white">Layout Builder</h2>
-            {hasUnsavedChanges && (
-              <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">
-                Unsaved changes
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Templates button */}
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-white">Layout Builder</h2>
+          {hasUnsavedChanges && (
+            <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">
+              Unsaved changes
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Templates button */}
+          <button
+            onClick={() => setShowTemplatePicker(true)}
+            className="px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2"
+            title="Choose a design template"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+              />
+            </svg>
+            Templates
+          </button>
+
+          {/* Export/Import/History buttons */}
+          <div className="flex items-center gap-1">
+            {/* Export dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className={`p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors ${showExportMenu ? 'bg-slate-700 text-white' : ''}`}
+                title="Export design"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+              </button>
+              {showExportMenu && (
+                <>
+                  {/* Backdrop to close menu */}
+                  <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+                  {/* Dropdown menu */}
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-slate-700">
+                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Export Format
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleExportJSON}
+                      className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-blue-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      JSON (Full Design)
+                    </button>
+                    <button
+                      onClick={handleExportCSS}
+                      className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-purple-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                      CSS Variables
+                    </button>
+                    <button
+                      onClick={handleExportTailwind}
+                      className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-cyan-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                        />
+                      </svg>
+                      Tailwind Config
+                    </button>
+                    <button
+                      onClick={handleExportReact}
+                      className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-green-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      React Component
+                    </button>
+                    <button
+                      onClick={handleExportTokens}
+                      className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-yellow-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                        />
+                      </svg>
+                      Design Tokens (Figma)
+                    </button>
+                    <div className="border-t border-slate-700 mt-1 pt-1">
+                      <button
+                        onClick={handleCopyCSS}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <svg
+                          className="w-4 h-4 text-slate-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                          />
+                        </svg>
+                        Copy CSS to Clipboard
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <button
-              onClick={() => setShowTemplatePicker(true)}
-              className="px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2"
-              title="Choose a design template"
+              onClick={() => importInputRef.current?.click()}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Import design from JSON file"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                 />
               </svg>
-              Templates
             </button>
+            <button
+              onClick={() => setShowVersionHistory(true)}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors relative"
+              title="View version history"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              {versionHistory.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-blue-600 text-white rounded-full flex items-center justify-center">
+                  {versionHistory.length > 9 ? '9+' : versionHistory.length}
+                </span>
+              )}
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+          </div>
 
-            {/* Export/Import/History buttons */}
-            <div className="flex items-center gap-1">
-              {/* Export dropdown */}
-              <div className="relative">
+          {/* Undo/Redo buttons */}
+          <div className="flex items-center gap-1 mr-2">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className="p-2 text-slate-400 hover:text-white disabled:text-slate-600 disabled:cursor-not-allowed transition-colors"
+              title="Undo (Ctrl+Z)"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className="p-2 text-slate-400 hover:text-white disabled:text-slate-600 disabled:cursor-not-allowed transition-colors"
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              'Save Design'
+            )}
+          </button>
+          <button
+            onClick={handleApplyClick}
+            disabled={isApplying}
+            className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-green-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            {isApplying ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Applying...
+              </>
+            ) : (
+              'Apply to App Concept'
+            )}
+          </button>
+          <button
+            onClick={handleClose}
+            className="p-2 text-slate-400 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Chat panel (left) */}
+        <div className="w-1/2 flex flex-col border-r border-slate-700 relative">
+          {/* Template Picker Overlay */}
+          <TemplatePicker
+            isOpen={showTemplatePicker}
+            onSelect={handleTemplateSelect}
+            onClose={() => setShowTemplatePicker(false)}
+          />
+
+          {/* Messages */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+            {/* Load more button for older messages */}
+            {hasMoreMessages && (
+              <div className="flex justify-center mb-2">
                 <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  className={`p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors ${showExportMenu ? 'bg-slate-700 text-white' : ''}`}
-                  title="Export design"
+                  type="button"
+                  onClick={loadMoreMessages}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                      d="M5 15l7-7 7 7"
                     />
                   </svg>
-                </button>
-                {showExportMenu && (
-                  <>
-                    {/* Backdrop to close menu */}
-                    <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
-                    {/* Dropdown menu */}
-                    <div className="absolute right-0 top-full mt-1 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 overflow-hidden">
-                      <div className="px-3 py-2 border-b border-slate-700">
-                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Export Format
-                        </span>
-                      </div>
-                      <button
-                        onClick={handleExportJSON}
-                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4 text-blue-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        JSON (Full Design)
-                      </button>
-                      <button
-                        onClick={handleExportCSS}
-                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4 text-purple-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          />
-                        </svg>
-                        CSS Variables
-                      </button>
-                      <button
-                        onClick={handleExportTailwind}
-                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4 text-cyan-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                          />
-                        </svg>
-                        Tailwind Config
-                      </button>
-                      <button
-                        onClick={handleExportReact}
-                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4 text-green-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        React Component
-                      </button>
-                      <button
-                        onClick={handleExportTokens}
-                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                      >
-                        <svg
-                          className="w-4 h-4 text-yellow-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                          />
-                        </svg>
-                        Design Tokens (Figma)
-                      </button>
-                      <div className="border-t border-slate-700 mt-1 pt-1">
-                        <button
-                          onClick={handleCopyCSS}
-                          className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-4 h-4 text-slate-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                            />
-                          </svg>
-                          Copy CSS to Clipboard
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              <button
-                onClick={() => importInputRef.current?.click()}
-                className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-                title="Import design from JSON file"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={() => setShowVersionHistory(true)}
-                className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors relative"
-                title="View version history"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {versionHistory.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] bg-blue-600 text-white rounded-full flex items-center justify-center">
-                    {versionHistory.length > 9 ? '9+' : versionHistory.length}
+                  Load {Math.min(MESSAGES_PAGE_SIZE, totalMessages - visibleMessages.length)} older
+                  messages
+                  <span className="text-slate-500">
+                    ({visibleMessages.length} of {totalMessages})
                   </span>
-                )}
-              </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImportFile}
-                className="hidden"
-              />
-            </div>
-
-            {/* Undo/Redo buttons */}
-            <div className="flex items-center gap-1 mr-2">
-              <button
-                onClick={undo}
-                disabled={!canUndo}
-                className="p-2 text-slate-400 hover:text-white disabled:text-slate-600 disabled:cursor-not-allowed transition-colors"
-                title="Undo (Ctrl+Z)"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo}
-                className="p-2 text-slate-400 hover:text-white disabled:text-slate-600 disabled:cursor-not-allowed transition-colors"
-                title="Redo (Ctrl+Shift+Z)"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                'Save Design'
-              )}
-            </button>
-            <button
-              onClick={handleApplyClick}
-              disabled={isApplying}
-              className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-green-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              {isApplying ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Applying...
-                </>
-              ) : (
-                'Apply to App Concept'
-              )}
-            </button>
-            <button
-              onClick={handleClose}
-              className="p-2 text-slate-400 hover:text-white transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Main content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Chat panel (left) */}
-          <div className="w-1/2 flex flex-col border-r border-slate-700 relative">
-            {/* Template Picker Overlay */}
-            <TemplatePicker
-              isOpen={showTemplatePicker}
-              onSelect={handleTemplateSelect}
-              onClose={() => setShowTemplatePicker(false)}
-            />
-
-            {/* Messages */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-              {/* Load more button for older messages */}
-              {hasMoreMessages && (
-                <div className="flex justify-center mb-2">
-                  <button
-                    type="button"
-                    onClick={loadMoreMessages}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 15l7-7 7 7"
-                      />
-                    </svg>
-                    Load {Math.min(MESSAGES_PAGE_SIZE, totalMessages - visibleMessages.length)}{' '}
-                    older messages
-                    <span className="text-slate-500">
-                      ({visibleMessages.length} of {totalMessages})
-                    </span>
-                  </button>
-                </div>
-              )}
-              {visibleMessages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} onRetry={retryMessage} />
-              ))}
-              {isLoading && (
-                <div className="flex justify-start mb-4">
-                  <div className="bg-slate-700 rounded-2xl px-4 py-3 text-slate-300">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
-                      <div
-                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '0.1s' }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '0.2s' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Recent changes */}
-            <RecentChangesIndicator changes={recentChanges} />
-
-            {/* Design progress indicator */}
-            <div className="px-4 py-2 border-t border-slate-700">
-              <DesignProgressIndicator
-                design={design}
-                isExpanded={progressExpanded}
-                onToggle={() => setProgressExpanded(!progressExpanded)}
-              />
-            </div>
-
-            {/* Suggested actions */}
-            <SuggestedActionsBar actions={suggestedActions} onAction={handleAction} />
-
-            {/* Reference images */}
-            <div className="px-4 py-3 border-t border-slate-700">
-              <ReferenceImagesPanel
-                images={referenceImages}
-                onRemove={removeReferenceImage}
-                onAdd={() => fileInputRef.current?.click()}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </div>
-
-            {/* Input */}
-            <ChatInput
-              onSend={sendMessage}
-              onCapture={handleCapture}
-              isLoading={isLoading}
-              isCapturing={isCapturing}
-              hasSelection={!!selectedElement}
-            />
-          </div>
-
-          {/* Preview panel (right) */}
-          <div className="w-1/2 flex flex-col bg-slate-950">
-            {/* Selected element indicator */}
-            {selectedElement && (
-              <div className="px-4 py-2 bg-blue-500/20 border-b border-blue-500/30 flex items-center justify-between">
-                <span className="text-sm text-blue-300">
-                  Selected: <strong>{selectedElement}</strong>
-                </span>
-                <button
-                  onClick={() => setSelectedElement(null)}
-                  className="text-xs text-blue-400 hover:text-blue-300"
-                >
-                  Clear selection
                 </button>
               </div>
             )}
-
-            {/* Design Control Panel */}
-            <div className="px-4 pt-4">
-              <DesignControlPanel
-                effectsSettings={design.globalStyles?.effects}
-                colorSettings={design.globalStyles?.colors}
-                onEffectsChange={handleEffectsChange}
-                onColorChange={handleColorSettingsChange}
-                primaryColor={design.globalStyles?.colors?.primary}
-                onPrimaryColorChange={handlePrimaryColorChange}
-              />
-            </div>
-
-            {/* Layout Preview */}
-            <div className="flex-1 p-4" id="layout-preview-container">
-              <div id="layout-preview-frame" className="h-full">
-                <LayoutPreview
-                  preferences={previewPreferences}
-                  className="h-full"
-                  onPreferenceChange={handlePreferenceChange}
-                  onElementSelect={setSelectedElement}
-                  selectedElement={selectedElement}
-                  componentDesign={{
-                    effectsSettings: design.globalStyles?.effects,
-                    colorSettings: design.globalStyles?.colors,
-                    headerDesign: design.components?.header,
-                    sidebarDesign: design.components?.sidebar,
-                    cardDesign: design.components?.cards,
-                    navDesign: design.components?.navigation,
-                  }}
-                />
+            {visibleMessages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} onRetry={retryMessage} />
+            ))}
+            {isLoading && (
+              <div className="flex justify-start mb-4">
+                <div className="bg-slate-700 rounded-2xl px-4 py-3 text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                    <div
+                      className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.1s' }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.2s' }}
+                    />
+                  </div>
+                </div>
               </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Recent changes */}
+          <RecentChangesIndicator changes={recentChanges} />
+
+          {/* Design progress indicator */}
+          <div className="px-4 py-2 border-t border-slate-700">
+            <DesignProgressIndicator
+              design={design}
+              isExpanded={progressExpanded}
+              onToggle={() => setProgressExpanded(!progressExpanded)}
+            />
+          </div>
+
+          {/* Suggested actions */}
+          <SuggestedActionsBar actions={suggestedActions} onAction={handleAction} />
+
+          {/* Reference images */}
+          <div className="px-4 py-3 border-t border-slate-700">
+            <ReferenceImagesPanel
+              images={referenceImages}
+              onRemove={removeReferenceImage}
+              onAdd={() => fileInputRef.current?.click()}
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </div>
+
+          {/* Input */}
+          <ChatInput
+            onSend={sendMessage}
+            onCapture={handleCapture}
+            isLoading={isLoading}
+            isCapturing={isCapturing}
+            hasSelection={!!selectedElement}
+          />
+        </div>
+
+        {/* Preview panel (right) */}
+        <div className="w-1/2 flex flex-col bg-slate-950">
+          {/* Selected element indicator */}
+          {selectedElement && (
+            <div className="px-4 py-2 bg-blue-500/20 border-b border-blue-500/30 flex items-center justify-between">
+              <span className="text-sm text-blue-300">
+                Selected: <strong>{selectedElement}</strong>
+              </span>
+              <button
+                onClick={() => setSelectedElement(null)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+
+          {/* Design Control Panel */}
+          <div className="px-4 pt-4">
+            <DesignControlPanel
+              effectsSettings={design.globalStyles?.effects}
+              colorSettings={design.globalStyles?.colors}
+              onEffectsChange={handleEffectsChange}
+              onColorChange={handleColorSettingsChange}
+              primaryColor={design.globalStyles?.colors?.primary}
+              onPrimaryColorChange={handlePrimaryColorChange}
+            />
+          </div>
+
+          {/* Layout Preview */}
+          <div className="flex-1 p-4" id="layout-preview-container">
+            <div id="layout-preview-frame" className="h-full">
+              <LayoutPreview
+                preferences={previewPreferences}
+                className="h-full"
+                onPreferenceChange={handlePreferenceChange}
+                onElementSelect={setSelectedElement}
+                selectedElement={selectedElement}
+                componentDesign={{
+                  effectsSettings: design.globalStyles?.effects,
+                  colorSettings: design.globalStyles?.colors,
+                  headerDesign: design.components?.header,
+                  sidebarDesign: design.components?.sidebar,
+                  cardDesign: design.components?.cards,
+                  navDesign: design.components?.navigation,
+                }}
+              />
             </div>
           </div>
         </div>
       </div>
+    </div>
   );
 
   const dialogs = (
