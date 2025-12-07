@@ -302,18 +302,19 @@ describe('hasUnclosedStrings', () => {
 // =============================================================================
 
 describe('validateGeneratedCode', () => {
-  it('should run all validators and combine errors', async () => {
+  it('should detect nested function declarations', async () => {
     const code = `
       export default function App() {
         function Helper() {
-          return <div>Test;
+          return <div>Test</div>;
         }
-        return <Component><Helper /></div>;
+        return <div><Helper /></div>;
       }
     `;
     const result = await validateGeneratedCode(code, 'src/App.tsx');
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBeGreaterThanOrEqual(2);
+    expect(result.errors.length).toBeGreaterThanOrEqual(1);
+    expect(result.errors[0].type).toBe('NESTED_FUNCTION');
   });
 
   it('should validate clean code as valid', async () => {

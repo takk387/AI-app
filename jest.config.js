@@ -17,6 +17,8 @@ const config = {
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^js-tiktoken$': '<rootDir>/tests/__mocks__/js-tiktoken.ts',
+        '^tree-sitter$': '<rootDir>/tests/__mocks__/tree-sitter.ts',
+        '^tree-sitter-typescript$': '<rootDir>/tests/__mocks__/tree-sitter-typescript.ts',
       },
       transform: {
         '^.+\\.tsx?$': ['ts-jest', {
@@ -41,6 +43,8 @@ const config = {
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^js-tiktoken$': '<rootDir>/tests/__mocks__/js-tiktoken.ts',
+        '^tree-sitter$': '<rootDir>/tests/__mocks__/tree-sitter.ts',
+        '^tree-sitter-typescript$': '<rootDir>/tests/__mocks__/tree-sitter-typescript.ts',
       },
       transform: {
         '^.+\\.tsx?$': ['ts-jest', {
