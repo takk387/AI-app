@@ -812,14 +812,17 @@ export async function POST(request: Request) {
     const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
 
     // Extract design updates from the response
-    const { updates: extractedUpdates, changes } = await extractDesignUpdates(assistantMessage, currentDesign);
+    const { updates: extractedUpdates, changes } = await extractDesignUpdates(
+      assistantMessage,
+      currentDesign
+    );
 
     // Detect and apply design patterns from user message
-    const { updates: enhancedUpdates, detectedPattern, patternApplied } = detectAndApplyPattern(
-      message,
-      currentDesign,
-      extractedUpdates
-    );
+    const {
+      updates: enhancedUpdates,
+      detectedPattern,
+      patternApplied,
+    } = detectAndApplyPattern(message, currentDesign, extractedUpdates);
 
     // Add pattern detection to changes if a pattern was applied
     const allChanges = [...changes];
@@ -860,11 +863,13 @@ export async function POST(request: Request) {
       updatedDesign,
       suggestedActions,
       designChanges: allChanges.length > 0 ? allChanges : undefined,
-      detectedPattern: detectedPattern ? {
-        id: detectedPattern.id,
-        name: detectedPattern.name,
-        description: detectedPattern.description,
-      } : undefined,
+      detectedPattern: detectedPattern
+        ? {
+            id: detectedPattern.id,
+            name: detectedPattern.name,
+            description: detectedPattern.description,
+          }
+        : undefined,
       tokensUsed: {
         input: response.usage.input_tokens,
         output: response.usage.output_tokens,

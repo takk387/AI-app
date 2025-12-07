@@ -257,7 +257,16 @@ export function extractRoles(messages: ChatMessage[]): ExtractedRole[] {
   }
 
   // Look for common role keywords
-  const commonRoles = ['admin', 'user', 'guest', 'moderator', 'editor', 'viewer', 'manager', 'owner'];
+  const commonRoles = [
+    'admin',
+    'user',
+    'guest',
+    'moderator',
+    'editor',
+    'viewer',
+    'manager',
+    'owner',
+  ];
   for (const role of commonRoles) {
     const roleRegex = new RegExp(`\\b${role}s?\\b`, 'gi');
     if (roleRegex.test(content) && !roles.has(role)) {
@@ -414,7 +423,8 @@ export function buildStructuredContext(messages: ChatMessage[]): StructuredAppCo
   const openQuestions = extractOpenQuestions(messages);
 
   // Determine confidence based on extraction quality
-  const totalExtractions = features.length + roles.length + workflows.length + technicalSpecs.length;
+  const totalExtractions =
+    features.length + roles.length + workflows.length + technicalSpecs.length;
   const confidence: 'high' | 'medium' | 'low' =
     totalExtractions > 10 ? 'high' : totalExtractions > 5 ? 'medium' : 'low';
 
@@ -535,7 +545,10 @@ function extractUserStories(content: string, featureName: string): string[] {
 
 function extractAcceptanceCriteria(content: string, featureName: string): string[] {
   const criteria: string[] = [];
-  const pattern = new RegExp(`(?:should|must|needs to)\\s+[^.]*${escapeRegex(featureName)}[^.]*`, 'gi');
+  const pattern = new RegExp(
+    `(?:should|must|needs to)\\s+[^.]*${escapeRegex(featureName)}[^.]*`,
+    'gi'
+  );
   let match;
   while ((match = pattern.exec(content)) !== null) {
     criteria.push(match[0].trim());
@@ -587,8 +600,14 @@ function detectPriority(content: string, featureName: string): 'high' | 'medium'
   const featureLower = featureName.toLowerCase();
 
   // Check for priority indicators near the feature name
-  const highPattern = new RegExp(`(must.?have|essential|critical|important|priority)[^.]*${escapeRegex(featureLower)}`, 'i');
-  const lowPattern = new RegExp(`(nice.?to.?have|optional|later|future|maybe)[^.]*${escapeRegex(featureLower)}`, 'i');
+  const highPattern = new RegExp(
+    `(must.?have|essential|critical|important|priority)[^.]*${escapeRegex(featureLower)}`,
+    'i'
+  );
+  const lowPattern = new RegExp(
+    `(nice.?to.?have|optional|later|future|maybe)[^.]*${escapeRegex(featureLower)}`,
+    'i'
+  );
 
   if (highPattern.test(featureContext)) return 'high';
   if (lowPattern.test(featureContext)) return 'low';
@@ -599,8 +618,14 @@ function detectComplexity(content: string, featureName: string): 'simple' | 'mod
   const featureContext = content.toLowerCase();
   const featureLower = featureName.toLowerCase();
 
-  const complexPattern = new RegExp(`(complex|advanced|sophisticated|integration|api|real.?time)[^.]*${escapeRegex(featureLower)}`, 'i');
-  const simplePattern = new RegExp(`(simple|basic|straightforward|easy)[^.]*${escapeRegex(featureLower)}`, 'i');
+  const complexPattern = new RegExp(
+    `(complex|advanced|sophisticated|integration|api|real.?time)[^.]*${escapeRegex(featureLower)}`,
+    'i'
+  );
+  const simplePattern = new RegExp(
+    `(simple|basic|straightforward|easy)[^.]*${escapeRegex(featureLower)}`,
+    'i'
+  );
 
   if (complexPattern.test(featureContext)) return 'complex';
   if (simplePattern.test(featureContext)) return 'simple';
@@ -609,7 +634,10 @@ function detectComplexity(content: string, featureName: string): 'simple' | 'mod
 
 function extractDependencies(content: string, featureName: string): string[] {
   const dependencies: string[] = [];
-  const pattern = new RegExp(`${escapeRegex(featureName)}[^.]*(?:requires|needs|depends on|after)\\s+([^.]+)`, 'gi');
+  const pattern = new RegExp(
+    `${escapeRegex(featureName)}[^.]*(?:requires|needs|depends on|after)\\s+([^.]+)`,
+    'gi'
+  );
   let match;
   while ((match = pattern.exec(content)) !== null) {
     dependencies.push(match[1].trim());
@@ -619,7 +647,10 @@ function extractDependencies(content: string, featureName: string): string[] {
 
 function extractRoleCapabilities(content: string, roleName: string): string[] {
   const capabilities: string[] = [];
-  const pattern = new RegExp(`${escapeRegex(roleName)}s?\\s+(?:can|able to|allowed to)\\s+([^.]+)`, 'gi');
+  const pattern = new RegExp(
+    `${escapeRegex(roleName)}s?\\s+(?:can|able to|allowed to)\\s+([^.]+)`,
+    'gi'
+  );
   let match;
   while ((match = pattern.exec(content)) !== null) {
     capabilities.push(match[1].trim());
@@ -629,7 +660,10 @@ function extractRoleCapabilities(content: string, roleName: string): string[] {
 
 function extractRolePermissions(content: string, roleName: string): string[] {
   const permissions: string[] = [];
-  const pattern = new RegExp(`${escapeRegex(roleName)}s?\\s+(?:has|have)\\s+(?:access to|permission to)\\s+([^.]+)`, 'gi');
+  const pattern = new RegExp(
+    `${escapeRegex(roleName)}s?\\s+(?:has|have)\\s+(?:access to|permission to)\\s+([^.]+)`,
+    'gi'
+  );
   let match;
   while ((match = pattern.exec(content)) !== null) {
     permissions.push(match[1].trim());
@@ -639,7 +673,10 @@ function extractRolePermissions(content: string, roleName: string): string[] {
 
 function extractRoleRestrictions(content: string, roleName: string): string[] {
   const restrictions: string[] = [];
-  const pattern = new RegExp(`${escapeRegex(roleName)}s?\\s+(?:cannot|can't|not allowed to)\\s+([^.]+)`, 'gi');
+  const pattern = new RegExp(
+    `${escapeRegex(roleName)}s?\\s+(?:cannot|can't|not allowed to)\\s+([^.]+)`,
+    'gi'
+  );
   let match;
   while ((match = pattern.exec(content)) !== null) {
     restrictions.push(match[1].trim());
@@ -649,7 +686,10 @@ function extractRoleRestrictions(content: string, roleName: string): string[] {
 
 function extractRoleWorkflows(content: string, roleName: string): string[] {
   const workflows: string[] = [];
-  const pattern = new RegExp(`${escapeRegex(roleName)}s?\\s+(?:will|should|needs to)\\s+([^.]+)`, 'gi');
+  const pattern = new RegExp(
+    `${escapeRegex(roleName)}s?\\s+(?:will|should|needs to)\\s+([^.]+)`,
+    'gi'
+  );
   let match;
   while ((match = pattern.exec(content)) !== null) {
     workflows.push(match[1].trim());
@@ -659,7 +699,16 @@ function extractRoleWorkflows(content: string, roleName: string): string[] {
 
 function extractInvolvedRoles(content: string, contextText: string): string[] {
   const roles: string[] = [];
-  const commonRoles = ['admin', 'user', 'guest', 'moderator', 'editor', 'viewer', 'manager', 'owner'];
+  const commonRoles = [
+    'admin',
+    'user',
+    'guest',
+    'moderator',
+    'editor',
+    'viewer',
+    'manager',
+    'owner',
+  ];
 
   for (const role of commonRoles) {
     if (new RegExp(`\\b${role}s?\\b`, 'i').test(contextText)) {

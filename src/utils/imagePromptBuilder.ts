@@ -98,7 +98,15 @@ export function buildImagePrompts(context: ImagePromptContext): GeneratedPrompts
   const primaryColor = colors?.primary || '#3B82F6';
 
   return {
-    hero: buildHeroPrompt(appName, appDescription, theme, aesthetic, colorMode, primaryColor, style),
+    hero: buildHeroPrompt(
+      appName,
+      appDescription,
+      theme,
+      aesthetic,
+      colorMode,
+      primaryColor,
+      style
+    ),
     cards: buildCardPrompts(theme, aesthetic, colorMode, appType),
     background: buildBackgroundPrompt(style, colorScheme, colors?.background),
   };
@@ -117,7 +125,9 @@ function buildHeroPrompt(
   style: string
 ): string {
   const emotionalTone =
-    style === 'playful' ? 'energy, creativity, and excitement' : 'trust, innovation, and professionalism';
+    style === 'playful'
+      ? 'energy, creativity, and excitement'
+      : 'trust, innovation, and professionalism';
 
   return `Create a stunning hero image for "${appName}" - ${appDescription}.
 
@@ -376,13 +386,28 @@ export function detectAppType(description: string, purpose?: string): AppType {
   if (text.includes('dashboard') || text.includes('admin') || text.includes('management')) {
     return 'dashboard';
   }
-  if (text.includes('shop') || text.includes('store') || text.includes('product') || text.includes('cart')) {
+  if (
+    text.includes('shop') ||
+    text.includes('store') ||
+    text.includes('product') ||
+    text.includes('cart')
+  ) {
     return 'ecommerce';
   }
-  if (text.includes('social') || text.includes('community') || text.includes('friend') || text.includes('post')) {
+  if (
+    text.includes('social') ||
+    text.includes('community') ||
+    text.includes('friend') ||
+    text.includes('post')
+  ) {
     return 'social';
   }
-  if (text.includes('task') || text.includes('todo') || text.includes('project') || text.includes('work')) {
+  if (
+    text.includes('task') ||
+    text.includes('todo') ||
+    text.includes('project') ||
+    text.includes('work')
+  ) {
     return 'productivity';
   }
   if (text.includes('portfolio') || text.includes('showcase')) {
@@ -401,10 +426,7 @@ export function detectAppType(description: string, purpose?: string): AppType {
 /**
  * Enhance prompt with design system context
  */
-export function enhancePromptWithDesign(
-  basePrompt: string,
-  design: Partial<LayoutDesign>
-): string {
+export function enhancePromptWithDesign(basePrompt: string, design: Partial<LayoutDesign>): string {
   const colors = design.globalStyles?.colors;
   const effects = design.globalStyles?.effects;
   const style = design.basePreferences?.style || 'modern';

@@ -37,8 +37,29 @@ import {
  */
 const PHASE_KEYWORDS: Record<FeatureDomain, string[]> = {
   setup: ['setup', 'config', 'initialize', 'project', 'structure', 'dependencies', 'folder'],
-  database: ['database', 'schema', 'table', 'field', 'relationship', 'model', 'data', 'constraint', 'migration'],
-  auth: ['login', 'register', 'password', 'role', 'permission', 'session', 'auth', 'jwt', 'oauth', 'user'],
+  database: [
+    'database',
+    'schema',
+    'table',
+    'field',
+    'relationship',
+    'model',
+    'data',
+    'constraint',
+    'migration',
+  ],
+  auth: [
+    'login',
+    'register',
+    'password',
+    'role',
+    'permission',
+    'session',
+    'auth',
+    'jwt',
+    'oauth',
+    'user',
+  ],
   'core-entity': ['entity', 'model', 'object', 'core', 'main', 'primary', 'business'],
   feature: ['feature', 'functionality', 'user story', 'acceptance', 'validation', 'requirement'],
   'ui-component': ['button', 'form', 'modal', 'component', 'ui', 'design', 'layout', 'responsive'],
@@ -671,16 +692,24 @@ export class DynamicPhaseGenerator {
     // Build detailed design context for the phase description
     const designDetails: string[] = [];
     if (globalStyles.typography) {
-      designDetails.push(`Typography: ${globalStyles.typography.fontFamily}, ${globalStyles.typography.headingSize} headings`);
+      designDetails.push(
+        `Typography: ${globalStyles.typography.fontFamily}, ${globalStyles.typography.headingSize} headings`
+      );
     }
     if (globalStyles.colors) {
-      designDetails.push(`Colors: primary ${globalStyles.colors.primary}, ${Object.keys(globalStyles.colors).length} color tokens`);
+      designDetails.push(
+        `Colors: primary ${globalStyles.colors.primary}, ${Object.keys(globalStyles.colors).length} color tokens`
+      );
     }
     if (globalStyles.spacing) {
-      designDetails.push(`Spacing: ${globalStyles.spacing.density} density, ${globalStyles.spacing.containerWidth} container`);
+      designDetails.push(
+        `Spacing: ${globalStyles.spacing.density} density, ${globalStyles.spacing.containerWidth} container`
+      );
     }
     if (globalStyles.effects) {
-      designDetails.push(`Effects: ${globalStyles.effects.borderRadius} radius, ${globalStyles.effects.shadows} shadows`);
+      designDetails.push(
+        `Effects: ${globalStyles.effects.borderRadius} radius, ${globalStyles.effects.shadows} shadows`
+      );
     }
 
     // List components to be created
@@ -706,7 +735,7 @@ export class DynamicPhaseGenerator {
         `Color palette: primary ${globalStyles.colors.primary}, secondary ${globalStyles.colors.secondary || globalStyles.colors.primary}, accent ${globalStyles.colors.accent || globalStyles.colors.primary}`,
         `Spacing: ${globalStyles.spacing.density} density, ${globalStyles.spacing.containerWidth} container (${globalStyles.spacing.containerWidth === 'narrow' ? 'max-w-3xl' : globalStyles.spacing.containerWidth === 'standard' ? 'max-w-5xl' : globalStyles.spacing.containerWidth === 'wide' ? 'max-w-7xl' : 'max-w-full'})`,
         `Effects: ${globalStyles.effects.borderRadius} radius (${globalStyles.effects.borderRadius === 'none' ? 'rounded-none' : globalStyles.effects.borderRadius === 'sm' ? 'rounded-sm' : globalStyles.effects.borderRadius === 'md' ? 'rounded-md' : globalStyles.effects.borderRadius === 'lg' ? 'rounded-lg' : globalStyles.effects.borderRadius === 'xl' ? 'rounded-xl' : 'rounded-full'}), ${globalStyles.effects.shadows} shadows`,
-        ...componentsList.map(c => `${c} component matching exact design specs`),
+        ...componentsList.map((c) => `${c} component matching exact design specs`),
         `Responsive: mobile ${responsive.mobileBreakpoint}px (sm:), tablet ${responsive.tabletBreakpoint}px (lg:)`,
         'Layout structure with design-specified header, content, and footer arrangement',
       ],
@@ -1092,7 +1121,7 @@ export class DynamicPhaseGenerator {
    */
   private createPhasePlan(phases: DynamicPhase[], concept: AppConcept): DynamicPhasePlan {
     // Enhance all phases with rich context from the concept
-    const enhancedPhases = phases.map(phase => this.enhancePhaseWithContext(phase, concept));
+    const enhancedPhases = phases.map((phase) => this.enhancePhaseWithContext(phase, concept));
 
     const totalTokens = enhancedPhases.reduce((sum, p) => sum + p.estimatedTokens, 0);
     const totalMinutes = enhancedPhases.reduce((sum, p) => {
@@ -1170,21 +1199,21 @@ export class DynamicPhaseGenerator {
     if (keywords.length === 0) return '';
 
     // Split context into paragraphs
-    const paragraphs = context.split(/\n\n+/).filter(p => p.trim().length > 20);
+    const paragraphs = context.split(/\n\n+/).filter((p) => p.trim().length > 20);
 
     // Score paragraphs by keyword relevance
-    const scored = paragraphs.map(p => {
+    const scored = paragraphs.map((p) => {
       const lowerP = p.toLowerCase();
-      const score = keywords.filter(k => lowerP.includes(k.toLowerCase())).length;
+      const score = keywords.filter((k) => lowerP.includes(k.toLowerCase())).length;
       return { text: p, score };
     });
 
     // Get top relevant paragraphs (max 2000 chars)
     const relevant = scored
-      .filter(p => p.score > 0)
+      .filter((p) => p.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
-      .map(p => p.text);
+      .map((p) => p.text);
 
     const result = relevant.join('\n\n');
     return result.slice(0, 2000);
@@ -1206,7 +1235,10 @@ export class DynamicPhaseGenerator {
       // Extract user stories related to this feature
       const userStories = this.extractPatternMatches(
         context,
-        new RegExp(`(?:as a|user (?:can|wants to|should))\\s+[^.]*${this.escapeRegex(featureName)}[^.]*`, 'gi')
+        new RegExp(
+          `(?:as a|user (?:can|wants to|should))\\s+[^.]*${this.escapeRegex(featureName)}[^.]*`,
+          'gi'
+        )
       );
 
       // Extract acceptance criteria
@@ -1218,11 +1250,14 @@ export class DynamicPhaseGenerator {
       // Extract technical notes
       const technicalNotes = this.extractPatternMatches(
         context,
-        new RegExp(`(?:api|database|backend|endpoint)[^.]*${this.escapeRegex(featureName)}[^.]*`, 'gi')
+        new RegExp(
+          `(?:api|database|backend|endpoint)[^.]*${this.escapeRegex(featureName)}[^.]*`,
+          'gi'
+        )
       );
 
       // Determine priority from feature
-      const feature = concept.coreFeatures.find(f => f.name === featureName);
+      const feature = concept.coreFeatures.find((f) => f.name === featureName);
       const priority = feature?.priority || 'medium';
 
       specs.push({
@@ -1251,8 +1286,9 @@ export class DynamicPhaseGenerator {
     if (concept.workflows) {
       for (const workflow of concept.workflows) {
         // Check if workflow is relevant to this phase
-        const workflowText = `${workflow.name} ${workflow.description || ''} ${workflow.steps.join(' ')}`.toLowerCase();
-        const isRelevant = keywords.some(k => workflowText.includes(k.toLowerCase()));
+        const workflowText =
+          `${workflow.name} ${workflow.description || ''} ${workflow.steps.join(' ')}`.toLowerCase();
+        const isRelevant = keywords.some((k) => workflowText.includes(k.toLowerCase()));
 
         if (isRelevant) {
           specs.push({
@@ -1291,7 +1327,7 @@ export class DynamicPhaseGenerator {
       const matches = this.extractPatternMatches(context, pattern);
       // Filter by relevance to domain
       for (const match of matches) {
-        if (keywords.some(k => match.toLowerCase().includes(k.toLowerCase()))) {
+        if (keywords.some((k) => match.toLowerCase().includes(k.toLowerCase()))) {
           rules.push(match);
         }
       }
@@ -1328,10 +1364,7 @@ export class DynamicPhaseGenerator {
   /**
    * Enhance a phase with rich context from the concept
    */
-  private enhancePhaseWithContext(
-    phase: DynamicPhase,
-    concept: AppConcept
-  ): DynamicPhase {
+  private enhancePhaseWithContext(phase: DynamicPhase, concept: AppConcept): DynamicPhase {
     const domain = phase.domain;
     const conversationContext = concept.conversationContext || '';
 
@@ -1382,16 +1415,16 @@ export class DynamicPhaseGenerator {
    * Build smart code context from previous phases with importance scoring
    * Prioritizes type definitions, API contracts, and reusable utilities
    */
-  buildSmartCodeContext(
-    generatedFiles: Array<{ path: string; content: string }>
-  ): string {
+  buildSmartCodeContext(generatedFiles: Array<{ path: string; content: string }>): string {
     if (!generatedFiles || generatedFiles.length === 0) return '';
 
     // Score and sort files by importance
-    const scoredFiles = generatedFiles.map(file => ({
-      ...file,
-      importance: this.calculateFileImportance(file),
-    })).sort((a, b) => b.importance - a.importance);
+    const scoredFiles = generatedFiles
+      .map((file) => ({
+        ...file,
+        importance: this.calculateFileImportance(file),
+      }))
+      .sort((a, b) => b.importance - a.importance);
 
     const includedBlocks: string[] = [];
     let totalSize = 0;
@@ -1537,7 +1570,7 @@ export class DynamicPhaseGenerator {
 
       // Detect patterns used
       const detectedPatterns = this.detectPatterns(file.content);
-      detectedPatterns.forEach(p => patterns.add(p));
+      detectedPatterns.forEach((p) => patterns.add(p));
     }
 
     return {
@@ -1562,13 +1595,24 @@ export class DynamicPhaseGenerator {
     if (lowerPath.includes('/types/') || lowerPath.endsWith('.d.ts')) {
       return 'type';
     }
-    if (lowerPath.includes('/utils/') || lowerPath.includes('/lib/') || lowerPath.includes('/helpers/')) {
+    if (
+      lowerPath.includes('/utils/') ||
+      lowerPath.includes('/lib/') ||
+      lowerPath.includes('/helpers/')
+    ) {
       return 'util';
     }
-    if (lowerPath.includes('/components/') || content.includes('export default function') && content.includes('return (')) {
+    if (
+      lowerPath.includes('/components/') ||
+      (content.includes('export default function') && content.includes('return ('))
+    ) {
       return 'component';
     }
-    if (lowerPath.endsWith('.css') || lowerPath.endsWith('.scss') || lowerPath.includes('/styles/')) {
+    if (
+      lowerPath.endsWith('.css') ||
+      lowerPath.endsWith('.scss') ||
+      lowerPath.includes('/styles/')
+    ) {
       return 'style';
     }
     if (lowerPath.includes('.config.') || lowerPath.includes('/config/')) {
@@ -1601,7 +1645,12 @@ export class DynamicPhaseGenerator {
     // Export { ... }
     const bracedExportRegex = /export\s*\{\s*([^}]+)\s*\}/g;
     while ((match = bracedExportRegex.exec(content)) !== null) {
-      const items = match[1].split(',').map(s => s.trim().split(/\s+as\s+/)[0].trim());
+      const items = match[1].split(',').map((s) =>
+        s
+          .trim()
+          .split(/\s+as\s+/)[0]
+          .trim()
+      );
       exports.push(...items.filter(Boolean));
     }
 
@@ -1652,7 +1701,7 @@ export class DynamicPhaseGenerator {
     // Generate based on type and exports
     switch (type) {
       case 'api':
-        return `API route handling ${exports.filter(e => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(e)).join(', ') || 'requests'}`;
+        return `API route handling ${exports.filter((e) => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(e)).join(', ') || 'requests'}`;
       case 'component':
         return `React component: ${exports[0] || fileName.replace(/\.(tsx?|jsx?)$/, '')}`;
       case 'type':
@@ -1691,18 +1740,24 @@ export class DynamicPhaseGenerator {
     // Find exported HTTP methods
     const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
     for (const method of methods) {
-      if (file.content.includes(`export async function ${method}`) ||
-          file.content.includes(`export function ${method}`)) {
-
+      if (
+        file.content.includes(`export async function ${method}`) ||
+        file.content.includes(`export function ${method}`)
+      ) {
         // Check for auth
-        const hasAuth = file.content.includes('getServerSession') ||
-                       file.content.includes('auth()') ||
-                       file.content.includes('requireAuth') ||
-                       file.content.includes('Authorization');
+        const hasAuth =
+          file.content.includes('getServerSession') ||
+          file.content.includes('auth()') ||
+          file.content.includes('requireAuth') ||
+          file.content.includes('Authorization');
 
         // Try to find request/response types
-        const requestMatch = file.content.match(new RegExp(`${method}[^{]*\\{[^}]*body[^:]*:\\s*(\\w+)`));
-        const responseMatch = file.content.match(/NextResponse\.json\s*\(\s*\{[^}]*\}\s*(?:as\s+(\w+))?/);
+        const requestMatch = file.content.match(
+          new RegExp(`${method}[^{]*\\{[^}]*body[^:]*:\\s*(\\w+)`)
+        );
+        const responseMatch = file.content.match(
+          /NextResponse\.json\s*\(\s*\{[^}]*\}\s*(?:as\s+(\w+))?/
+        );
 
         contracts.push({
           endpoint,

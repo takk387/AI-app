@@ -135,7 +135,9 @@ function validateDesignContext(context: unknown): context is DesignContext {
   return true;
 }
 
-function validateRequest(body: unknown): { valid: true; request: ImageRequest } | { valid: false; error: string } {
+function validateRequest(
+  body: unknown
+): { valid: true; request: ImageRequest } | { valid: false; error: string } {
   if (!body || typeof body !== 'object') {
     return { valid: false, error: 'Request body must be a JSON object' };
   }
@@ -195,7 +197,9 @@ function validateRequest(body: unknown): { valid: true; request: ImageRequest } 
 // POST Handler
 // ============================================================================
 
-export async function POST(request: NextRequest): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
   try {
     // Check if DALL-E is available
     const dalleService = getDalleService();
@@ -203,7 +207,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<SuccessRe
       return NextResponse.json(
         {
           success: false,
-          error: 'DALL-E 3 service is not configured. Please set OPENAI_API_KEY environment variable.',
+          error:
+            'DALL-E 3 service is not configured. Please set OPENAI_API_KEY environment variable.',
           code: 'SERVICE_UNAVAILABLE',
         },
         { status: 503 }
@@ -311,10 +316,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<SuccessRe
           imageRequest.maxConcurrent
         );
 
-        const totalCost = results.reduce(
-          (sum, r) => sum + getImageCost(r.quality, r.size),
-          0
-        );
+        const totalCost = results.reduce((sum, r) => sum + getImageCost(r.quality, r.size), 0);
 
         return NextResponse.json({
           success: true,
@@ -378,7 +380,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<SuccessRe
         return NextResponse.json(
           {
             success: false,
-            error: 'The image request was rejected due to content policy. Please modify your request.',
+            error:
+              'The image request was rejected due to content policy. Please modify your request.',
             code: 'CONTENT_POLICY',
           },
           { status: 400 }

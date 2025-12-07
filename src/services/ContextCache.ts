@@ -4,11 +4,7 @@
  */
 
 import { hashSync } from '../utils/hashUtils';
-import {
-  FileAnalysis,
-  CodeContextSnapshot,
-  ContextSelectionRequest,
-} from '../types/codeContext';
+import { FileAnalysis, CodeContextSnapshot, ContextSelectionRequest } from '../types/codeContext';
 
 // ============================================================================
 // CACHE ENTRY TYPES

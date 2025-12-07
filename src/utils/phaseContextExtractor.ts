@@ -108,9 +108,7 @@ export async function extractPhaseContext(
 
   // Step 2: Get topic-relevant segments
   const relevantTopics = PHASE_TOPICS[phaseType] || ['general'];
-  const topicSegments = segmentResult.segments.filter((s) =>
-    relevantTopics.includes(s.topic)
-  );
+  const topicSegments = segmentResult.segments.filter((s) => relevantTopics.includes(s.topic));
 
   // Step 3: If embedding API available, also do semantic search
   let semanticSegments: ConversationSegment[] = [];
@@ -249,7 +247,8 @@ function filterFeaturesForPhase(
   const phaseKeywords = getPhaseKeywords(phaseType);
 
   return features.filter((feature) => {
-    const featureText = `${feature.name} ${feature.description} ${feature.technicalNotes.join(' ')}`.toLowerCase();
+    const featureText =
+      `${feature.name} ${feature.description} ${feature.technicalNotes.join(' ')}`.toLowerCase();
     return phaseKeywords.some((keyword) => featureText.includes(keyword.toLowerCase()));
   });
 }
@@ -264,7 +263,8 @@ function filterWorkflowsForPhase(
   const phaseKeywords = getPhaseKeywords(phaseType);
 
   return workflows.filter((workflow) => {
-    const workflowText = `${workflow.name} ${workflow.description} ${workflow.triggerCondition}`.toLowerCase();
+    const workflowText =
+      `${workflow.name} ${workflow.description} ${workflow.triggerCondition}`.toLowerCase();
     return phaseKeywords.some((keyword) => workflowText.includes(keyword.toLowerCase()));
   });
 }
@@ -443,10 +443,7 @@ function extractValidationRules(
 /**
  * Extract UI patterns from segments
  */
-function extractUIPatterns(
-  segments: ConversationSegment[],
-  phaseType: FeatureDomain
-): string[] {
+function extractUIPatterns(segments: ConversationSegment[], phaseType: FeatureDomain): string[] {
   const patterns: string[] = [];
 
   for (const segment of segments) {
@@ -540,10 +537,7 @@ function buildPhaseContextSummary(
 /**
  * Estimate token count for context
  */
-function estimateContextTokens(
-  segments: ConversationSegment[],
-  contextSummary: string
-): number {
+function estimateContextTokens(segments: ConversationSegment[], contextSummary: string): number {
   const segmentTokens = segments.reduce((sum, s) => sum + s.tokenEstimate, 0);
   const summaryTokens = Math.ceil(contextSummary.length / 4);
   return segmentTokens + summaryTokens;
@@ -580,14 +574,14 @@ export async function extractContextForAllPhases(
 /**
  * Get a compact summary of all phase contexts
  */
-export function summarizePhaseContexts(
-  contextMap: Map<FeatureDomain, PhaseContext>
-): string {
+export function summarizePhaseContexts(contextMap: Map<FeatureDomain, PhaseContext>): string {
   const parts: string[] = [];
 
   for (const [phaseType, context] of contextMap) {
     if (context.relevantSegments.length > 0 || context.featureSpecs.length > 0) {
-      parts.push(`${phaseType}: ${context.relevantSegments.length} segments, ${context.featureSpecs.length} features, ${context.tokenEstimate} tokens`);
+      parts.push(
+        `${phaseType}: ${context.relevantSegments.length} segments, ${context.featureSpecs.length} features, ${context.tokenEstimate} tokens`
+      );
     }
   }
 

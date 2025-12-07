@@ -6,7 +6,12 @@
  * the app's design system and purpose.
  */
 
-import { getDalleService, type DesignContext, type GeneratedImage, getImageCost } from './dalleService';
+import {
+  getDalleService,
+  type DesignContext,
+  type GeneratedImage,
+  getImageCost,
+} from './dalleService';
 import { getDalleRateLimiter } from '@/utils/dalleRateLimiter';
 import { detectAppType, type AppType } from '@/utils/imagePromptBuilder';
 import { generateLayoutFallbackImages } from '@/utils/imageAssets';
@@ -70,10 +75,14 @@ function buildDesignContext(design?: LayoutDesign): DesignContext {
     colorScheme: design.basePreferences?.colorScheme === 'light' ? 'light' : 'dark',
     style: design.basePreferences?.style || 'modern',
     primaryColor: design.globalStyles?.colors?.primary,
-    mood: design.basePreferences?.style === 'playful' ? 'fun and energetic' :
-          design.basePreferences?.style === 'minimalist' ? 'calm and focused' :
-          design.basePreferences?.style === 'professional' ? 'trustworthy and reliable' :
-          'modern and innovative',
+    mood:
+      design.basePreferences?.style === 'playful'
+        ? 'fun and energetic'
+        : design.basePreferences?.style === 'minimalist'
+          ? 'calm and focused'
+          : design.basePreferences?.style === 'professional'
+            ? 'trustworthy and reliable'
+            : 'modern and innovative',
   };
 }
 

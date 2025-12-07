@@ -435,16 +435,28 @@ export function extractMemoriesFromConversation(messages: ChatMessage[]): StoreM
  * Chainable query builder for Supabase select operations
  */
 interface SelectQueryBuilder {
-  eq: (column: string, value: string) => SelectQueryBuilder & {
-    order: (column: string, options?: { ascending: boolean }) => {
+  eq: (
+    column: string,
+    value: string
+  ) => SelectQueryBuilder & {
+    order: (
+      column: string,
+      options?: { ascending: boolean }
+    ) => {
       limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
     };
     limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
   };
-  order: (column: string, options?: { ascending: boolean }) => {
+  order: (
+    column: string,
+    options?: { ascending: boolean }
+  ) => {
     limit: (count: number) => Promise<{ data: SemanticMemory[] | null; error: Error | null }>;
   };
-  gte: (column: string, value: string) => SelectQueryBuilder & {
+  gte: (
+    column: string,
+    value: string
+  ) => SelectQueryBuilder & {
     delete: () => Promise<{ error: Error | null }>;
   };
   contains: (column: string, values: string[]) => SelectQueryBuilder;
@@ -546,7 +558,9 @@ export class SemanticMemoryManager {
         const result = await generateEmbedding(options.content);
         embedding = result.embedding;
         embeddingModel = result.model;
-        console.log(`[SemanticMemory] Generated embedding with ${result.provider} (${result.dimensions} dims)`);
+        console.log(
+          `[SemanticMemory] Generated embedding with ${result.provider} (${result.dimensions} dims)`
+        );
       } catch (error) {
         console.warn('[SemanticMemory] Failed to generate embedding:', error);
         // Continue without embedding - keyword search still works
@@ -965,7 +979,10 @@ export class SemanticMemoryManager {
         const importanceDiff = b.importance - a.importance;
         if (importanceDiff !== 0) return importanceDiff;
         const specificityOrder = { high: 0, medium: 1, low: 2 };
-        return (specificityOrder[a.specificity || 'medium'] || 1) - (specificityOrder[b.specificity || 'medium'] || 1);
+        return (
+          (specificityOrder[a.specificity || 'medium'] || 1) -
+          (specificityOrder[b.specificity || 'medium'] || 1)
+        );
       });
 
       // Add to context
@@ -1146,7 +1163,9 @@ export class SemanticMemoryManager {
     query: string,
     limit: number = 10,
     embeddingWeight: number = 0.7
-  ): Promise<Array<SemanticMemory & { score: number; embeddingScore: number; keywordScore: number }>> {
+  ): Promise<
+    Array<SemanticMemory & { score: number; embeddingScore: number; keywordScore: number }>
+  > {
     if (!this.isReady()) return [];
 
     const keywordWeight = 1 - embeddingWeight;
@@ -1177,23 +1196,23 @@ export class SemanticMemoryManager {
       ]);
 
       // Create combined results
-      const combinedResults: Array<SemanticMemory & {
-        score: number;
-        embeddingScore: number;
-        keywordScore: number;
-      }> = [];
+      const combinedResults: Array<
+        SemanticMemory & {
+          score: number;
+          embeddingScore: number;
+          keywordScore: number;
+        }
+      > = [];
 
       for (const id of allMemoryIds) {
         const memory =
-          keywordResults.find((m) => m.id === id) ||
-          embeddingResults.find((m) => m.id === id);
+          keywordResults.find((m) => m.id === id) || embeddingResults.find((m) => m.id === id);
 
         if (!memory) continue;
 
         const keywordScore = keywordScores.get(id) || 0;
         const embeddingScore = embeddingScores.get(id) || 0;
-        const combinedScore =
-          keywordWeight * keywordScore + embeddingWeight * embeddingScore;
+        const combinedScore = keywordWeight * keywordScore + embeddingWeight * embeddingScore;
 
         combinedResults.push({
           ...memory,
@@ -1276,7 +1295,10 @@ export class SemanticMemoryManager {
             processed++;
           }
         } catch (embedError) {
-          console.warn(`[SemanticMemory] Failed to generate embedding for ${memory.id}:`, embedError);
+          console.warn(
+            `[SemanticMemory] Failed to generate embedding for ${memory.id}:`,
+            embedError
+          );
         }
       }
 

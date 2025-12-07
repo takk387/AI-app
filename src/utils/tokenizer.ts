@@ -81,9 +81,7 @@ export function countMessageTokens(role: string, content: string): number {
  * @param messages - Array of {role, content} objects
  * @returns Total token count
  */
-export function countMessagesTokens(
-  messages: Array<{ role: string; content: string }>
-): number {
+export function countMessagesTokens(messages: Array<{ role: string; content: string }>): number {
   // Base overhead for conversation structure
   const CONVERSATION_OVERHEAD = 3;
 

@@ -760,24 +760,28 @@ export async function generateFullApp(
         }
       );
 
-      console.log(`✅ Image generation complete. Cost: $${images.totalCost.toFixed(2)}, Time: ${images.generationTime}ms`);
+      console.log(
+        `✅ Image generation complete. Cost: $${images.totalCost.toFixed(2)}, Time: ${images.generationTime}ms`
+      );
 
       // Inject image URLs into generated code
       if (!images.fallbackUsed || images.hero || images.cards.length > 0) {
         console.log('🔧 Injecting image URLs into generated code...');
 
         const injectionResult = injectImageUrls(
-          files.map(f => ({ path: f.path, content: f.content })),
+          files.map((f) => ({ path: f.path, content: f.content })),
           images
         );
 
         // Update files with injected image URLs
         files.length = 0;
-        files.push(...injectionResult.files.map(f => ({
-          path: f.path,
-          content: f.content,
-          description: `${f.path.split('/').pop()} file`,
-        })));
+        files.push(
+          ...injectionResult.files.map((f) => ({
+            path: f.path,
+            content: f.content,
+            description: `${f.path.split('/').pop()} file`,
+          }))
+        );
 
         // Add the image constants file
         files.push({
@@ -792,7 +796,7 @@ export async function generateFullApp(
       // Build image result metadata
       imageResult = {
         hero: images.hero?.url,
-        cards: images.cards.map(c => c.url),
+        cards: images.cards.map((c) => c.url),
         background: images.background?.url,
         fallbackUsed: images.fallbackUsed,
         cost: images.totalCost,
@@ -833,8 +837,14 @@ function extractFeaturesFromFiles(files: Array<{ path: string; content: string }
 
   // Look for component files and extract names
   for (const file of files) {
-    if (file.path.includes('/components/') && (file.path.endsWith('.tsx') || file.path.endsWith('.jsx'))) {
-      const componentName = file.path.split('/').pop()?.replace(/\.(tsx|jsx)$/, '');
+    if (
+      file.path.includes('/components/') &&
+      (file.path.endsWith('.tsx') || file.path.endsWith('.jsx'))
+    ) {
+      const componentName = file.path
+        .split('/')
+        .pop()
+        ?.replace(/\.(tsx|jsx)$/, '');
       if (componentName && !['index', 'layout', 'page'].includes(componentName.toLowerCase())) {
         features.push(componentName.replace(/([A-Z])/g, ' $1').trim());
       }

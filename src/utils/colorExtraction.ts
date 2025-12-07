@@ -149,9 +149,7 @@ function getSaturation(r: number, g: number, b: number): number {
  * Calculate Euclidean distance between two RGB colors
  */
 function colorDistance(c1: RGB, c2: RGB): number {
-  return Math.sqrt(
-    Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2)
-  );
+  return Math.sqrt(Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2));
 }
 
 /**
@@ -274,11 +272,7 @@ function categorizeColors(colors: ExtractedColor[], isDark: boolean): ColorPalet
   // Find secondary - different hue from primary if possible
   let secondary = accent;
   for (const color of bySaturation) {
-    const primaryHsl = rgbToHsl(
-      hexToRgb(primary).r,
-      hexToRgb(primary).g,
-      hexToRgb(primary).b
-    );
+    const primaryHsl = rgbToHsl(hexToRgb(primary).r, hexToRgb(primary).g, hexToRgb(primary).b);
     const hueDiff = Math.abs(color.hsl.h - primaryHsl.h);
     if (hueDiff > 30 && hueDiff < 180) {
       secondary = color.hex;

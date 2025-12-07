@@ -25,8 +25,14 @@ export const borderRadiusMap: Record<string, { tailwind: string; css: string }> 
 export const shadowMap: Record<string, { tailwind: string; css: string }> = {
   none: { tailwind: 'shadow-none', css: 'none' },
   subtle: { tailwind: 'shadow-sm', css: '0 1px 2px 0 rgb(0 0 0 / 0.05)' },
-  medium: { tailwind: 'shadow-md', css: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' },
-  strong: { tailwind: 'shadow-lg', css: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' },
+  medium: {
+    tailwind: 'shadow-md',
+    css: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  },
+  strong: {
+    tailwind: 'shadow-lg',
+    css: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+  },
 };
 
 // ============================================================================
@@ -44,7 +50,10 @@ export const blurMap: Record<string, { tailwind: string; css: string }> = {
 // SPACING DENSITY MAPPINGS
 // ============================================================================
 
-export const spacingDensityMap: Record<string, { gap: string; padding: string; tailwindGap: string; tailwindPadding: string }> = {
+export const spacingDensityMap: Record<
+  string,
+  { gap: string; padding: string; tailwindGap: string; tailwindPadding: string }
+> = {
   compact: { gap: '0.5rem', padding: '0.5rem', tailwindGap: 'gap-2', tailwindPadding: 'p-2' },
   normal: { gap: '1rem', padding: '1rem', tailwindGap: 'gap-4', tailwindPadding: 'p-4' },
   relaxed: { gap: '1.5rem', padding: '1.5rem', tailwindGap: 'gap-6', tailwindPadding: 'p-6' },
@@ -126,11 +135,18 @@ export const letterSpacingMap: Record<string, { tailwind: string; css: string }>
 // ANIMATION MAPPINGS
 // ============================================================================
 
-export const animationMap: Record<string, { duration: string; easing: string; description: string }> = {
+export const animationMap: Record<
+  string,
+  { duration: string; easing: string; description: string }
+> = {
   none: { duration: '0ms', easing: 'linear', description: 'No animations' },
   subtle: { duration: '150ms', easing: 'ease-out', description: 'Quick, subtle transitions' },
   smooth: { duration: '300ms', easing: 'ease-in-out', description: 'Smooth, natural transitions' },
-  playful: { duration: '500ms', easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', description: 'Bouncy, playful animations' },
+  playful: {
+    duration: '500ms',
+    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    description: 'Bouncy, playful animations',
+  },
 };
 
 // ============================================================================
@@ -184,7 +200,8 @@ export const cardHoverEffectMap: Record<string, string> = {
   lift: 'hover:-translate-y-1 hover:shadow-lg transition-all duration-[var(--transition-duration)]',
   glow: 'hover:shadow-[0_0_20px_var(--color-primary)] transition-shadow duration-[var(--transition-duration)]',
   scale: 'hover:scale-105 transition-transform duration-[var(--transition-duration)]',
-  border: 'hover:border-[var(--color-primary)] transition-colors duration-[var(--transition-duration)]',
+  border:
+    'hover:border-[var(--color-primary)] transition-colors duration-[var(--transition-duration)]',
 };
 
 // ============================================================================

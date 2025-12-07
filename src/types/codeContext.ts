@@ -12,18 +12,18 @@
  * Classification of file types for importance scoring and context selection
  */
 export type FileType =
-  | 'component'        // React component
-  | 'page'             // Next.js page or app route page
-  | 'api-route'        // Next.js API route handler
-  | 'hook'             // Custom React hook
+  | 'component' // React component
+  | 'page' // Next.js page or app route page
+  | 'api-route' // Next.js API route handler
+  | 'hook' // Custom React hook
   | 'context-provider' // React context provider
-  | 'type-definition'  // TypeScript types/interfaces file
-  | 'utility'          // Utility functions
-  | 'style'            // CSS/SCSS/styled-components
-  | 'config'           // Configuration files
-  | 'test'             // Test files
-  | 'layout'           // Layout components
-  | 'other';           // Uncategorized
+  | 'type-definition' // TypeScript types/interfaces file
+  | 'utility' // Utility functions
+  | 'style' // CSS/SCSS/styled-components
+  | 'config' // Configuration files
+  | 'test' // Test files
+  | 'layout' // Layout components
+  | 'other'; // Uncategorized
 
 // ============================================================================
 // EXPORT/IMPORT ANALYSIS
@@ -37,19 +37,19 @@ export interface ExportInfo {
   kind: 'function' | 'class' | 'const' | 'let' | 'type' | 'interface' | 'enum' | 'default';
   isDefault: boolean;
   isAsync: boolean;
-  signature?: string;      // For functions: (params) => returnType
-  typeSignature?: string;  // For types/interfaces: full definition
-  line?: number;           // Line number in source
+  signature?: string; // For functions: (params) => returnType
+  typeSignature?: string; // For types/interfaces: full definition
+  line?: number; // Line number in source
 }
 
 /**
  * Information about a single import in a file
  */
 export interface ImportInfo {
-  source: string;          // The import path as written
-  resolvedPath?: string;   // Resolved to actual file path (if local)
-  isExternal: boolean;     // npm package vs local file
-  isTypeOnly: boolean;     // import type { ... }
+  source: string; // The import path as written
+  resolvedPath?: string; // Resolved to actual file path (if local)
+  isExternal: boolean; // npm package vs local file
+  isTypeOnly: boolean; // import type { ... }
   imports: ImportedSymbol[];
 }
 
@@ -58,9 +58,9 @@ export interface ImportInfo {
  */
 export interface ImportedSymbol {
   name: string;
-  alias?: string;          // import { name as alias }
-  isDefault: boolean;      // import Default from ...
-  isNamespace: boolean;    // import * as Namespace from ...
+  alias?: string; // import { name as alias }
+  isDefault: boolean; // import Default from ...
+  isNamespace: boolean; // import * as Namespace from ...
 }
 
 // ============================================================================
@@ -76,7 +76,7 @@ export interface ComponentInfo {
   isFunctionComponent: boolean;
   isClassComponent: boolean;
   props: PropInfo[];
-  hooks: string[];           // Hook names used (useState, useEffect, etc.)
+  hooks: string[]; // Hook names used (useState, useEffect, etc.)
   childComponents: string[]; // Components rendered in JSX
   hasForwardRef: boolean;
   hasMemo: boolean;
@@ -98,10 +98,10 @@ export interface PropInfo {
  */
 export interface HookInfo {
   name: string;
-  isCustom: boolean;        // Custom hook (use*) vs built-in
-  parameters: string[];     // Parameter types
+  isCustom: boolean; // Custom hook (use*) vs built-in
+  parameters: string[]; // Parameter types
   returnType?: string;
-  dependencies: string[];   // Dependency array items for effects
+  dependencies: string[]; // Dependency array items for effects
   line?: number;
 }
 
@@ -112,9 +112,9 @@ export interface TypeInfo {
   name: string;
   kind: 'interface' | 'type' | 'enum';
   exported: boolean;
-  definition: string;       // Full type definition
-  tokenCount: number;       // Token count for budget calculation
-  extends?: string[];       // Extended types/interfaces
+  definition: string; // Full type definition
+  tokenCount: number; // Token count for budget calculation
+  extends?: string[]; // Extended types/interfaces
   line?: number;
 }
 
@@ -123,11 +123,11 @@ export interface TypeInfo {
  */
 export interface APIEndpointInfo {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
-  path: string;             // API route path
-  hasAuth: boolean;         // Requires authentication
-  requestType?: string;     // Request body type
-  responseType?: string;    // Response type
-  description?: string;     // JSDoc description
+  path: string; // API route path
+  hasAuth: boolean; // Requires authentication
+  requestType?: string; // Request body type
+  responseType?: string; // Response type
+  description?: string; // JSDoc description
   line?: number;
 }
 
@@ -140,14 +140,14 @@ export interface APIEndpointInfo {
  */
 export interface FileAnalysis {
   path: string;
-  hash: string;              // Content hash for change detection
+  hash: string; // Content hash for change detection
   type: FileType;
 
   // Semantic information
   exports: ExportInfo[];
   imports: ImportInfo[];
-  dependencies: string[];    // Resolved paths of local imports
-  dependents: string[];      // Paths of files that import this
+  dependencies: string[]; // Resolved paths of local imports
+  dependents: string[]; // Paths of files that import this
 
   // AST-derived metadata
   components: ComponentInfo[];
@@ -157,11 +157,11 @@ export interface FileAnalysis {
 
   // Context metrics
   tokenCount: number;
-  importanceScore: number;   // 0-1 priority score
-  lastModified: number;      // Timestamp
+  importanceScore: number; // 0-1 priority score
+  lastModified: number; // Timestamp
 
   // Quick reference
-  summary: string;           // Human-readable summary
+  summary: string; // Human-readable summary
 }
 
 /**
@@ -185,9 +185,9 @@ export interface FileContent {
 export interface DependencyGraph {
   files: Map<string, FileNode>;
   edges: DependencyEdge[];
-  roots: string[];           // Entry points (pages, app.tsx, etc.)
-  leaves: string[];          // Files with no dependents
-  cycles: string[][];        // Detected circular dependencies
+  roots: string[]; // Entry points (pages, app.tsx, etc.)
+  leaves: string[]; // Files with no dependents
+  cycles: string[][]; // Detected circular dependencies
   stats: GraphStats;
 }
 
@@ -197,19 +197,19 @@ export interface DependencyGraph {
 export interface FileNode {
   path: string;
   analysis: FileAnalysis;
-  depth: number;             // Distance from nearest root
-  inDegree: number;          // Number of files importing this
-  outDegree: number;         // Number of files this imports
+  depth: number; // Distance from nearest root
+  inDegree: number; // Number of files importing this
+  outDegree: number; // Number of files this imports
 }
 
 /**
  * An edge in the dependency graph
  */
 export interface DependencyEdge {
-  from: string;              // Importing file path
-  to: string;                // Imported file path
+  from: string; // Importing file path
+  to: string; // Imported file path
   importType: 'direct' | 'type-only' | 'dynamic';
-  symbols: string[];         // What's being imported
+  symbols: string[]; // What's being imported
 }
 
 /**
@@ -246,7 +246,7 @@ export interface CodeContextState {
   // Cache metadata
   version: number;
   lastFullAnalysis: number;
-  dirtyFiles: Set<string>;   // Files needing re-analysis
+  dirtyFiles: Set<string>; // Files needing re-analysis
 
   // Phase tracking
   phasesSeen: number[];
@@ -273,9 +273,9 @@ export type ContextIntent =
 export interface ContextSelectionRequest {
   intent: ContextIntent;
   maxTokens: number;
-  reservedTokens?: number;   // For system prompts
-  focusFiles?: string[];     // Files definitely relevant
-  excludeFiles?: string[];   // Files to skip
+  reservedTokens?: number; // For system prompts
+  focusFiles?: string[]; // Files definitely relevant
+  excludeFiles?: string[]; // Files to skip
   modificationTarget?: string;
   phaseNumber?: number;
   previousPhaseFiles?: string[];
@@ -301,8 +301,8 @@ export interface SelectedFile {
   content: string;
   representation: FileRepresentation;
   tokenCount: number;
-  priority: number;          // 0-1 how important
-  reason: string;            // Why it was included
+  priority: number; // 0-1 how important
+  reason: string; // Why it was included
 }
 
 /**
@@ -317,10 +317,10 @@ export interface ExcludedFile {
  * How a file is represented in context
  */
 export type FileRepresentation =
-  | 'full'           // Complete file content
-  | 'summary'        // File description + export list
-  | 'signature'      // Function/component signatures only
-  | 'types-only';    // Just type definitions
+  | 'full' // Complete file content
+  | 'summary' // File description + export list
+  | 'signature' // Function/component signatures only
+  | 'types-only'; // Just type definitions
 
 // ============================================================================
 // CONTEXT SNAPSHOT (API PAYLOAD)
@@ -372,7 +372,7 @@ export interface DependencyHint {
 export interface CodeParserConfig {
   includeTestFiles: boolean;
   includeNodeModules: boolean;
-  maxFileSize: number;       // Skip files larger than this (bytes)
+  maxFileSize: number; // Skip files larger than this (bytes)
   supportedExtensions: string[];
 }
 
@@ -382,7 +382,7 @@ export interface CodeParserConfig {
 export const DEFAULT_CODE_PARSER_CONFIG: CodeParserConfig = {
   includeTestFiles: false,
   includeNodeModules: false,
-  maxFileSize: 500000,       // 500KB
+  maxFileSize: 500000, // 500KB
   supportedExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'],
 };
 
@@ -395,10 +395,10 @@ export const DEFAULT_CODE_PARSER_CONFIG: CodeParserConfig = {
  */
 export interface ContextSelectorConfig {
   defaultMaxTokens: number;
-  typePriorityBoost: number;     // Extra priority for type files
+  typePriorityBoost: number; // Extra priority for type files
   apiRoutePriorityBoost: number; // Extra priority for API routes
-  hookPriorityBoost: number;     // Extra priority for hooks
-  contextProviderBoost: number;  // Extra priority for context providers
+  hookPriorityBoost: number; // Extra priority for hooks
+  contextProviderBoost: number; // Extra priority for context providers
   modificationDepthLimit: number; // How deep to follow dependencies
 }
 
@@ -423,15 +423,15 @@ export const DEFAULT_CONTEXT_SELECTOR_CONFIG: ContextSelectorConfig = {
  */
 export const FILE_TYPE_IMPORTANCE: Record<FileType, number> = {
   'type-definition': 0.85,
-  'context-provider': 0.80,
+  'context-provider': 0.8,
   'api-route': 0.75,
-  'hook': 0.70,
-  'layout': 0.65,
-  'page': 0.60,
-  'component': 0.55,
-  'utility': 0.50,
-  'config': 0.45,
-  'style': 0.30,
-  'test': 0.20,
-  'other': 0.40,
+  hook: 0.7,
+  layout: 0.65,
+  page: 0.6,
+  component: 0.55,
+  utility: 0.5,
+  config: 0.45,
+  style: 0.3,
+  test: 0.2,
+  other: 0.4,
 };

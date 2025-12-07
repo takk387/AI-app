@@ -86,9 +86,7 @@ export function estimateTokens(text: string): number {
  * @returns Total token count
  */
 export function estimateMessagesTokens(messages: ChatMessage[]): number {
-  return countMessagesTokens(
-    messages.map((msg) => ({ role: msg.role, content: msg.content }))
-  );
+  return countMessagesTokens(messages.map((msg) => ({ role: msg.role, content: msg.content })));
 }
 
 // ============================================================================

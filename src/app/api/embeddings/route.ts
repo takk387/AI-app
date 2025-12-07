@@ -47,10 +47,7 @@ export async function POST(request: Request) {
     const { text, texts, provider } = body as EmbeddingRequest;
 
     if (!text && !texts) {
-      return NextResponse.json(
-        { error: 'Either "text" or "texts" is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Either "text" or "texts" is required' }, { status: 400 });
     }
 
     // Single text embedding
@@ -68,16 +65,13 @@ export async function POST(request: Request) {
     // Multiple text embeddings
     if (texts && Array.isArray(texts)) {
       if (texts.length > 100) {
-        return NextResponse.json(
-          { error: 'Maximum 100 texts per request' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Maximum 100 texts per request' }, { status: 400 });
       }
 
       const results = await generateEmbeddings(texts, { provider });
       return NextResponse.json({
         success: true,
-        embeddings: results.map(r => ({
+        embeddings: results.map((r) => ({
           embedding: r.embedding,
           model: r.model,
           provider: r.provider,
@@ -86,10 +80,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json(
-      { error: 'Invalid request format' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid request format' }, { status: 400 });
   } catch (error) {
     console.error('[Embeddings API] Error:', error);
     return NextResponse.json(
@@ -107,24 +98,16 @@ async function handleSimilarityRequest(body: SimilarityRequest) {
   const { query, documents, topK = 5 } = body;
 
   if (!query || !documents || !Array.isArray(documents)) {
-    return NextResponse.json(
-      { error: 'Query and documents array are required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Query and documents array are required' }, { status: 400 });
   }
 
   if (documents.length > 100) {
-    return NextResponse.json(
-      { error: 'Maximum 100 documents per request' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Maximum 100 documents per request' }, { status: 400 });
   }
 
   try {
     // Generate embeddings for query and all documents
-    const [queryResult, ...documentResults] = await generateEmbeddings(
-      [query, ...documents]
-    );
+    const [queryResult, ...documentResults] = await generateEmbeddings([query, ...documents]);
 
     // Calculate similarities
     const similarities = documentResults.map((docResult, index) => ({

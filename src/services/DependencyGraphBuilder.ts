@@ -109,10 +109,7 @@ export class DependencyGraphBuilder {
   /**
    * Update graph incrementally when files change
    */
-  updateGraph(
-    graph: DependencyGraph,
-    changedAnalyses: FileAnalysis[]
-  ): DependencyGraph {
+  updateGraph(graph: DependencyGraph, changedAnalyses: FileAnalysis[]): DependencyGraph {
     this.files = new Map(graph.files);
     this.edges = [...graph.edges];
 
@@ -262,9 +259,7 @@ export class DependencyGraphBuilder {
     if (fromPath === toPath) return [fromPath];
 
     const visited = new Set<string>();
-    const queue: Array<{ path: string; route: string[] }> = [
-      { path: fromPath, route: [fromPath] },
-    ];
+    const queue: Array<{ path: string; route: string[] }> = [{ path: fromPath, route: [fromPath] }];
 
     while (queue.length > 0) {
       const { path, route } = queue.shift()!;
@@ -512,8 +507,11 @@ export class DependencyGraphBuilder {
 
     // Try partial matches (for paths like 'components/Button')
     for (const filePath of this.files.keys()) {
-      if (filePath.includes(basePath) || filePath.endsWith(basePath + '.ts') ||
-          filePath.endsWith(basePath + '.tsx')) {
+      if (
+        filePath.includes(basePath) ||
+        filePath.endsWith(basePath + '.ts') ||
+        filePath.endsWith(basePath + '.tsx')
+      ) {
         return filePath;
       }
     }

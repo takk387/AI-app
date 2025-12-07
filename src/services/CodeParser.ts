@@ -239,10 +239,7 @@ export class CodeParser {
     };
   }
 
-  private extractExportedDeclaration(
-    node: ts.Node,
-    sourceFile: ts.SourceFile
-  ): ExportInfo | null {
+  private extractExportedDeclaration(node: ts.Node, sourceFile: ts.SourceFile): ExportInfo | null {
     if (ts.isFunctionDeclaration(node) && node.name) {
       return {
         name: node.name.text,
@@ -341,8 +338,7 @@ export class CodeParser {
         if (ts.isIdentifier(decl.name) && this.isComponentName(decl.name.text)) {
           if (
             decl.initializer &&
-            (ts.isArrowFunction(decl.initializer) ||
-              ts.isFunctionExpression(decl.initializer))
+            (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))
           ) {
             if (this.returnsJSX(decl.initializer, sourceFile)) {
               return true;
@@ -479,8 +475,7 @@ export class CodeParser {
           if (name.startsWith('use') && name.length > 3) {
             if (
               decl.initializer &&
-              (ts.isArrowFunction(decl.initializer) ||
-                ts.isFunctionExpression(decl.initializer))
+              (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))
             ) {
               return true;
             }
@@ -527,10 +522,7 @@ export class CodeParser {
     };
   }
 
-  private findHooksUsed(
-    func: ts.FunctionLikeDeclaration,
-    sourceFile: ts.SourceFile
-  ): string[] {
+  private findHooksUsed(func: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string[] {
     const hooks: Set<string> = new Set();
 
     const visit = (node: ts.Node) => {
@@ -775,7 +767,7 @@ export class CodeParser {
     // Pages
     if (
       normalizedPath.includes('/pages/') ||
-      normalizedPath.includes('/app/') && normalizedPath.includes('page.')
+      (normalizedPath.includes('/app/') && normalizedPath.includes('page.'))
     ) {
       return 'page';
     }
@@ -1000,10 +992,7 @@ export class CodeParser {
     return Array.from(children);
   }
 
-  private getFunctionSignature(
-    node: ts.FunctionDeclaration,
-    sourceFile: ts.SourceFile
-  ): string {
+  private getFunctionSignature(node: ts.FunctionDeclaration, sourceFile: ts.SourceFile): string {
     const params = node.parameters.map((p) => p.getText(sourceFile)).join(', ');
     const returnType = node.type?.getText(sourceFile) ?? 'void';
     return `(${params}) => ${returnType}`;

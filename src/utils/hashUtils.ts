@@ -33,9 +33,9 @@ export function contentHash(content: string): string {
  * Check if running in Node.js environment
  */
 export function isNodeEnvironment(): boolean {
-  return typeof process !== 'undefined' &&
-         process.versions != null &&
-         process.versions.node != null;
+  return (
+    typeof process !== 'undefined' && process.versions != null && process.versions.node != null
+  );
 }
 
 /**
@@ -60,7 +60,10 @@ export async function secureHash(content: string): Promise<string> {
       const data = encoder.encode(content);
       const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+      return hashArray
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .substring(0, 16);
     } catch {
       // Fallback if Web Crypto fails
     }

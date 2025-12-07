@@ -338,7 +338,8 @@ function generateSegmentSummary(messages: ChatMessage[], topic: SegmentTopic): s
 
   // Take key parts from first and last messages
   const firstUser = userMessages[0]?.content.slice(0, 150) || '';
-  const lastAssistant = assistantMessages[assistantMessages.length - 1]?.content.slice(0, 150) || '';
+  const lastAssistant =
+    assistantMessages[assistantMessages.length - 1]?.content.slice(0, 150) || '';
 
   return `${getTopicLabel(topic)}: ${firstUser}${lastAssistant ? ` → ${lastAssistant}` : ''}`.slice(
     0,
@@ -371,7 +372,10 @@ function determineImportance(
   }
 
   // Check for decisions/confirmations
-  const content = messages.map((m) => m.content).join(' ').toLowerCase();
+  const content = messages
+    .map((m) => m.content)
+    .join(' ')
+    .toLowerCase();
   if (/(?:decided|confirmed|agreed|approved|let's do)/.test(content)) {
     return 'high';
   }

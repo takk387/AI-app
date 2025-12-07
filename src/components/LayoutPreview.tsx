@@ -786,10 +786,14 @@ function Hero({
       className={`py-12 px-6 text-center relative ${hasImage ? 'min-h-[200px] flex flex-col justify-center' : ''}`}
       style={getHeroBackgroundStyle()}
     >
-      <h1 className={`text-2xl ${style.fontWeight} ${hasImage ? 'text-white' : colors.text} mb-3 ${animationBase}`}>
+      <h1
+        className={`text-2xl ${style.fontWeight} ${hasImage ? 'text-white' : colors.text} mb-3 ${animationBase}`}
+      >
         {title}
       </h1>
-      <p className={`${hasImage ? 'text-white/80' : colors.textMuted} mb-6 max-w-md mx-auto text-sm ${animationBase}`}>
+      <p
+        className={`${hasImage ? 'text-white/80' : colors.textMuted} mb-6 max-w-md mx-auto text-sm ${animationBase}`}
+      >
         {subtitle}
       </p>
       <button
@@ -963,7 +967,10 @@ function CardGrid({
                 <p className={`text-xs ${colors.textMuted}`}>{card.subtitle}</p>
                 {cardDesign?.showFooter && (
                   <div className={`mt-3 pt-3 border-t ${colors.border} flex justify-end`}>
-                    <button type="button" className={`text-xs ${colors.textMuted} hover:opacity-80`}>
+                    <button
+                      type="button"
+                      className={`text-xs ${colors.textMuted} hover:opacity-80`}
+                    >
                       View Details
                     </button>
                   </div>
@@ -1597,7 +1604,14 @@ export function LayoutPreview({
         error: 'Failed to generate images. Please try again.',
       });
     }
-  }, [preferences.colorScheme, preferences.style, primaryColor, concept?.description, concept?.name, mockContent]);
+  }, [
+    preferences.colorScheme,
+    preferences.style,
+    primaryColor,
+    concept?.description,
+    concept?.name,
+    mockContent,
+  ]);
 
   // Clear generated images
   const handleClearImages = useCallback(() => {
@@ -1798,14 +1812,29 @@ export function LayoutPreview({
                 </>
               ) : generatedImages.hero ? (
                 <>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                   Clear
                 </>
               ) : (
                 <>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1830,12 +1859,7 @@ export function LayoutPreview({
                 }`}
                 title={showSectionPanel ? 'Hide section panel' : 'Reorder sections'}
               >
-                <svg
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1941,7 +1965,12 @@ export function LayoutPreview({
                       title={section.visible ? 'Hide section' : 'Show section'}
                     >
                       {section.visible ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1956,7 +1985,12 @@ export function LayoutPreview({
                           />
                         </svg>
                       ) : (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"

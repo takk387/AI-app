@@ -258,15 +258,18 @@ MODIFICATION MODE for "${currentAppName}":
           correctionPrompt: undefined, // Will be set below if retry
           phaseContext, // Pass phase context for multi-phase builds
           // Image generation options
-          imageOptions: generateImages !== false ? {
-            generateImages: generateImages ?? (!!layoutDesign), // Default: true if layoutDesign exists
-            imageQuality: imageQuality || 'standard',
-            maxImages: maxImages || 4,
-            appName: currentAppName,
-            appDescription: prompt,
-            layoutDesign: layoutDesign,
-            features: appFeatures,
-          } : undefined,
+          imageOptions:
+            generateImages !== false
+              ? {
+                  generateImages: generateImages ?? !!layoutDesign, // Default: true if layoutDesign exists
+                  imageQuality: imageQuality || 'standard',
+                  maxImages: maxImages || 4,
+                  appName: currentAppName,
+                  appDescription: prompt,
+                  layoutDesign: layoutDesign,
+                  features: appFeatures,
+                }
+              : undefined,
         };
 
         // If this is a retry, add correction prompt

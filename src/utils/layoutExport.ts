@@ -172,9 +172,9 @@ export function exportToTailwindConfig(design: LayoutDesign): string {
           info: colors.info || '#3B82F6',
         },
         spacing: {
-          'density': spacingPresetToValue(spacing.density),
-          'section': spacingPresetToValue(spacing.sectionPadding),
-          'gap': spacingPresetToValue(spacing.componentGap),
+          density: spacingPresetToValue(spacing.density),
+          section: spacingPresetToValue(spacing.sectionPadding),
+          gap: spacingPresetToValue(spacing.componentGap),
         },
         maxWidth: {
           container: spacingPresetToValue(spacing.containerWidth),
@@ -221,42 +221,102 @@ export function exportToFigmaTokens(design: LayoutDesign): object {
   const tokens: DesignTokenGroup = {
     color: {
       primary: { value: colors.primary, type: 'color', description: 'Primary brand color' },
-      secondary: { value: colors.secondary || colors.primary, type: 'color', description: 'Secondary brand color' },
-      accent: { value: colors.accent || colors.primary, type: 'color', description: 'Accent color for highlights' },
+      secondary: {
+        value: colors.secondary || colors.primary,
+        type: 'color',
+        description: 'Secondary brand color',
+      },
+      accent: {
+        value: colors.accent || colors.primary,
+        type: 'color',
+        description: 'Accent color for highlights',
+      },
       background: { value: colors.background, type: 'color', description: 'Page background color' },
-      surface: { value: colors.surface, type: 'color', description: 'Card/surface background color' },
+      surface: {
+        value: colors.surface,
+        type: 'color',
+        description: 'Card/surface background color',
+      },
       text: { value: colors.text, type: 'color', description: 'Primary text color' },
-      textMuted: { value: colors.textMuted, type: 'color', description: 'Secondary/muted text color' },
+      textMuted: {
+        value: colors.textMuted,
+        type: 'color',
+        description: 'Secondary/muted text color',
+      },
       border: { value: colors.border, type: 'color', description: 'Border color' },
-      success: { value: colors.success || '#22C55E', type: 'color', description: 'Success state color' },
-      warning: { value: colors.warning || '#F59E0B', type: 'color', description: 'Warning state color' },
+      success: {
+        value: colors.success || '#22C55E',
+        type: 'color',
+        description: 'Success state color',
+      },
+      warning: {
+        value: colors.warning || '#F59E0B',
+        type: 'color',
+        description: 'Warning state color',
+      },
       error: { value: colors.error || '#EF4444', type: 'color', description: 'Error state color' },
       info: { value: colors.info || '#3B82F6', type: 'color', description: 'Info state color' },
     },
     typography: {
       fontFamily: {
         body: { value: typography.fontFamily, type: 'fontFamily', description: 'Body text font' },
-        heading: { value: typography.headingFont || typography.fontFamily, type: 'fontFamily', description: 'Heading font' },
+        heading: {
+          value: typography.headingFont || typography.fontFamily,
+          type: 'fontFamily',
+          description: 'Heading font',
+        },
       },
       fontWeight: {
         body: { value: typography.bodyWeight, type: 'fontWeight', description: 'Body text weight' },
-        heading: { value: typography.headingWeight, type: 'fontWeight', description: 'Heading weight' },
+        heading: {
+          value: typography.headingWeight,
+          type: 'fontWeight',
+          description: 'Heading weight',
+        },
       },
       fontSize: {
         body: { value: typography.bodySize, type: 'fontSize', description: 'Base body text size' },
-        heading: { value: typography.headingSize, type: 'fontSize', description: 'Base heading size' },
+        heading: {
+          value: typography.headingSize,
+          type: 'fontSize',
+          description: 'Base heading size',
+        },
       },
-      lineHeight: { value: typography.lineHeight, type: 'lineHeight', description: 'Line height preset' },
-      letterSpacing: { value: typography.letterSpacing, type: 'letterSpacing', description: 'Letter spacing preset' },
+      lineHeight: {
+        value: typography.lineHeight,
+        type: 'lineHeight',
+        description: 'Line height preset',
+      },
+      letterSpacing: {
+        value: typography.letterSpacing,
+        type: 'letterSpacing',
+        description: 'Letter spacing preset',
+      },
     },
     spacing: {
       density: { value: spacing.density, type: 'spacing', description: 'Overall spacing density' },
-      containerWidth: { value: spacing.containerWidth, type: 'dimension', description: 'Max container width' },
-      sectionPadding: { value: spacing.sectionPadding, type: 'spacing', description: 'Section vertical padding' },
-      componentGap: { value: spacing.componentGap, type: 'spacing', description: 'Gap between components' },
+      containerWidth: {
+        value: spacing.containerWidth,
+        type: 'dimension',
+        description: 'Max container width',
+      },
+      sectionPadding: {
+        value: spacing.sectionPadding,
+        type: 'spacing',
+        description: 'Section vertical padding',
+      },
+      componentGap: {
+        value: spacing.componentGap,
+        type: 'spacing',
+        description: 'Gap between components',
+      },
     },
     effects: {
-      borderRadius: { value: effects.borderRadius, type: 'borderRadius', description: 'Default border radius' },
+      borderRadius: {
+        value: effects.borderRadius,
+        type: 'borderRadius',
+        description: 'Default border radius',
+      },
       shadows: { value: effects.shadows, type: 'shadow', description: 'Shadow intensity' },
       blur: { value: effects.blur, type: 'blur', description: 'Blur intensity' },
       animations: { value: effects.animations, type: 'animation', description: 'Animation style' },
@@ -272,8 +332,16 @@ export function exportToFigmaTokens(design: LayoutDesign): object {
       mainContentWidth: { value: structure.mainContentWidth, type: 'string' },
     },
     responsive: {
-      mobileBreakpoint: { value: responsive.mobileBreakpoint, type: 'dimension', description: 'Mobile breakpoint (px)' },
-      tabletBreakpoint: { value: responsive.tabletBreakpoint, type: 'dimension', description: 'Tablet breakpoint (px)' },
+      mobileBreakpoint: {
+        value: responsive.mobileBreakpoint,
+        type: 'dimension',
+        description: 'Mobile breakpoint (px)',
+      },
+      tabletBreakpoint: {
+        value: responsive.tabletBreakpoint,
+        type: 'dimension',
+        description: 'Tablet breakpoint (px)',
+      },
       mobileLayout: { value: responsive.mobileLayout, type: 'string' },
       mobileHeader: { value: responsive.mobileHeader, type: 'string' },
     },
@@ -361,7 +429,9 @@ export function ${componentName}({ children, className = '' }: ${componentName}P
         color: 'var(--color-text)',
       }}
     >
-      ${structure.hasHeader ? `{/* Header */}
+      ${
+        structure.hasHeader
+          ? `{/* Header */}
       <header
         className="sticky top-0 z-50 border-b"
         style={{
@@ -374,7 +444,9 @@ export function ${componentName}({ children, className = '' }: ${componentName}P
           <nav className="flex items-center gap-4">
             {/* Navigation items */}
           </nav>
-          ${components.header?.hasCTA ? `<button
+          ${
+            components.header?.hasCTA
+              ? `<button
             className="px-4 py-2 rounded-lg text-white"
             style={{
               backgroundColor: 'var(--color-primary)',
@@ -382,11 +454,17 @@ export function ${componentName}({ children, className = '' }: ${componentName}P
             }}
           >
             ${components.header.ctaText || 'Get Started'}
-          </button>` : ''}
+          </button>`
+              : ''
+          }
         </div>
-      </header>` : ''}
+      </header>`
+          : ''
+      }
 
-      ${structure.hasSidebar ? `{/* Sidebar */}
+      ${
+        structure.hasSidebar
+          ? `{/* Sidebar */}
       <aside
         className="fixed ${structure.sidebarPosition === 'left' ? 'left-0' : 'right-0'} top-0 h-screen w-64 border-r pt-16"
         style={{
@@ -397,7 +475,9 @@ export function ${componentName}({ children, className = '' }: ${componentName}P
         <nav className="p-4">
           {/* Sidebar navigation */}
         </nav>
-      </aside>` : ''}
+      </aside>`
+          : ''
+      }
 
       {/* Main Content */}
       <main className="${structure.hasSidebar ? (structure.sidebarPosition === 'left' ? 'ml-64' : 'mr-64') : ''} ${structure.hasHeader ? 'pt-16' : ''}">
@@ -406,7 +486,9 @@ export function ${componentName}({ children, className = '' }: ${componentName}P
         </div>
       </main>
 
-      ${structure.hasFooter ? `{/* Footer */}
+      ${
+        structure.hasFooter
+          ? `{/* Footer */}
       <footer
         className="border-t py-8"
         style={{
@@ -417,7 +499,9 @@ export function ${componentName}({ children, className = '' }: ${componentName}P
         <div className="container mx-auto px-4 text-center" style={{ color: 'var(--color-text-muted)' }}>
           <p>&copy; {new Date().getFullYear()} ${design.name}. All rights reserved.</p>
         </div>
-      </footer>` : ''}
+      </footer>`
+          : ''
+      }
     </div>
   );
 }
@@ -444,7 +528,9 @@ export function exportGridConfigToCSS(config: GridConfig): string {
   } else if (config.columnWidths) {
     lines.push(`grid-template-columns: ${config.columnWidths.join(' ')};`);
   } else {
-    lines.push(`grid-template-columns: repeat(${config.columns}, minmax(${config.minColumnWidth || '250px'}, 1fr));`);
+    lines.push(
+      `grid-template-columns: repeat(${config.columns}, minmax(${config.minColumnWidth || '250px'}, 1fr));`
+    );
   }
 
   // Gap
@@ -508,7 +594,11 @@ export function exportLayout(design: LayoutDesign, options: ExportOptions): Expo
 /**
  * Download exported content as a file
  */
-export function downloadExport(content: string, filename: string, mimeType: string = 'text/plain'): void {
+export function downloadExport(
+  content: string,
+  filename: string,
+  mimeType: string = 'text/plain'
+): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

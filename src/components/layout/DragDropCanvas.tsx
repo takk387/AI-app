@@ -76,7 +76,12 @@ interface SortableSectionProps {
 /**
  * Sortable wrapper for layout sections
  */
-export function SortableSection({ id, children, isLocked = false, isDragging }: SortableSectionProps) {
+export function SortableSection({
+  id,
+  children,
+  isLocked = false,
+  isDragging,
+}: SortableSectionProps) {
   const {
     attributes,
     listeners,

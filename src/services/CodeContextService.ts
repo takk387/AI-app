@@ -176,9 +176,7 @@ export class CodeContextService {
   /**
    * Get optimized context for any request
    */
-  async getContextForRequest(
-    request: ContextSelectionRequest
-  ): Promise<CodeContextSnapshot> {
+  async getContextForRequest(request: ContextSelectionRequest): Promise<CodeContextSnapshot> {
     // Check cache
     const cacheKey = this.cache.getSnapshotCacheKey(request, this.state.version);
     const cached = this.cache.getSnapshot(cacheKey);
@@ -436,8 +434,8 @@ export class CodeContextService {
 
     // Infer based on feature keywords
     if (featureText.includes('auth') || featureText.includes('login')) {
-      const authFiles = this.getFilesByType(['context-provider']).filter(
-        (f) => f.toLowerCase().includes('auth')
+      const authFiles = this.getFilesByType(['context-provider']).filter((f) =>
+        f.toLowerCase().includes('auth')
       );
       dependencies.push(...authFiles);
     }

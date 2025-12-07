@@ -34,10 +34,7 @@ export class ContextSelector {
   /**
    * Select files for context based on request intent and budget
    */
-  select(
-    state: CodeContextState,
-    request: ContextSelectionRequest
-  ): ContextSelectionResult {
+  select(state: CodeContextState, request: ContextSelectionRequest): ContextSelectionResult {
     const budget = request.maxTokens - (request.reservedTokens ?? 0);
     const selected: SelectedFile[] = [];
     const excluded: ExcludedFile[] = [];
@@ -680,9 +677,7 @@ export class ContextSelector {
 
 let selectorInstance: ContextSelector | null = null;
 
-export function getContextSelector(
-  config?: Partial<ContextSelectorConfig>
-): ContextSelector {
+export function getContextSelector(config?: Partial<ContextSelectorConfig>): ContextSelector {
   if (!selectorInstance || config) {
     selectorInstance = new ContextSelector(config);
   }

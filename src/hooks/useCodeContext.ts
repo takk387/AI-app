@@ -255,13 +255,10 @@ export function useCodeContext(
     []
   );
 
-  const getMinimalContext = useCallback(
-    (maxTokens: number = 8000): CodeContextSnapshot | null => {
-      if (!serviceRef.current) return null;
-      return serviceRef.current.getMinimalContext(maxTokens);
-    },
-    []
-  );
+  const getMinimalContext = useCallback((maxTokens: number = 8000): CodeContextSnapshot | null => {
+    if (!serviceRef.current) return null;
+    return serviceRef.current.getMinimalContext(maxTokens);
+  }, []);
 
   // ==========================================================================
   // GRAPH QUERIES
@@ -381,10 +378,7 @@ export function useFileDependencies(
 /**
  * Hook for getting file analysis
  */
-export function useFileAnalysis(
-  appId: string,
-  filePath: string | null
-): FileAnalysis | null {
+export function useFileAnalysis(appId: string, filePath: string | null): FileAnalysis | null {
   const { getFileAnalysis, isInitialized } = useCodeContext(appId);
   const [analysis, setAnalysis] = useState<FileAnalysis | null>(null);
 

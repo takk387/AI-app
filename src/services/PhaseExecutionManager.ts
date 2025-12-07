@@ -69,14 +69,17 @@ export function formatLayoutDesignForPrompt(design: LayoutDesign): string {
   const blur = blurMap[globalStyles.effects.blur] || blurMap.none;
   const density = spacingDensityMap[globalStyles.spacing.density] || spacingDensityMap.normal;
   const sectionPad = sectionPaddingMap[globalStyles.spacing.sectionPadding] || sectionPaddingMap.lg;
-  const container = containerWidthMap[globalStyles.spacing.containerWidth] || containerWidthMap.standard;
+  const container =
+    containerWidthMap[globalStyles.spacing.containerWidth] || containerWidthMap.standard;
   const gap = componentGapMap[globalStyles.spacing.componentGap] || componentGapMap.md;
-  const headingWeight = fontWeightMap[globalStyles.typography.headingWeight] || fontWeightMap.semibold;
+  const headingWeight =
+    fontWeightMap[globalStyles.typography.headingWeight] || fontWeightMap.semibold;
   const bodyWeight = fontWeightMap[globalStyles.typography.bodyWeight] || fontWeightMap.normal;
   const headingSize = headingSizeMap[globalStyles.typography.headingSize] || headingSizeMap.lg;
   const bodySize = bodySizeMap[globalStyles.typography.bodySize] || bodySizeMap.base;
   const lineHeight = lineHeightMap[globalStyles.typography.lineHeight] || lineHeightMap.normal;
-  const letterSpacing = letterSpacingMap[globalStyles.typography.letterSpacing] || letterSpacingMap.normal;
+  const letterSpacing =
+    letterSpacingMap[globalStyles.typography.letterSpacing] || letterSpacingMap.normal;
   const animation = animationMap[globalStyles.effects.animations] || animationMap.smooth;
 
   let prompt = `## CRITICAL: Design Fidelity Requirements
@@ -248,7 +251,8 @@ CTA Button: bg-[var(--color-primary)] text-white px-6 py-3 ${borderRadius.tailwi
 
   if (components.cards) {
     const cardStyle = cardStyleMap[components.cards.style] || cardStyleMap['elevated'];
-    const cardHover = cardHoverEffectMap[components.cards.hoverEffect] || cardHoverEffectMap['lift'];
+    const cardHover =
+      cardHoverEffectMap[components.cards.hoverEffect] || cardHoverEffectMap['lift'];
 
     prompt += `
 ### Cards Component
@@ -433,7 +437,10 @@ function formatCodeContextSnapshot(snapshot: CodeContextSnapshot): string {
     result += `\n### Import/Export Relationships\n`;
     for (const hint of snapshot.dependencyHints) {
       const imports = hint.imports.map((i) => `imports {${i.symbols.join(', ')}} from "${i.from}"`);
-      const usedBy = hint.usedBy.length > 0 ? `Used by: ${hint.usedBy.slice(0, 3).join(', ')}${hint.usedBy.length > 3 ? '...' : ''}` : '';
+      const usedBy =
+        hint.usedBy.length > 0
+          ? `Used by: ${hint.usedBy.slice(0, 3).join(', ')}${hint.usedBy.length > 3 ? '...' : ''}`
+          : '';
       result += `- **${hint.file}**: ${imports.join('; ')}${usedBy ? ` | ${usedBy}` : ''}\n`;
     }
   }
@@ -636,7 +643,7 @@ ${context.cumulativeFeatures.map((f) => `- ${f}`).join('\n')}
     if (apiContracts && apiContracts.length > 0) {
       prompt += `### Existing API Contracts
 These endpoints are already implemented. Use them, don't recreate:
-${apiContracts.map(c => `- ${c.method} ${c.endpoint}${c.authentication ? ' (requires auth)' : ''}`).join('\n')}
+${apiContracts.map((c) => `- ${c.method} ${c.endpoint}${c.authentication ? ' (requires auth)' : ''}`).join('\n')}
 
 `;
     }
@@ -646,7 +653,7 @@ ${apiContracts.map(c => `- ${c.method} ${c.endpoint}${c.authentication ? ' (requ
     if (patterns && patterns.length > 0) {
       prompt += `### Established Patterns
 Follow these patterns for consistency:
-${patterns.map(p => `- ${p}`).join('\n')}
+${patterns.map((p) => `- ${p}`).join('\n')}
 
 `;
     }
@@ -911,21 +918,24 @@ export class PhaseExecutionManager {
 
       // Update rich feature tracking
       for (const feature of result.implementedFeatures) {
-        const existingFeature = this.accumulatedFeaturesRich.find(f => f.name === feature);
+        const existingFeature = this.accumulatedFeaturesRich.find((f) => f.name === feature);
         if (existingFeature) {
           existingFeature.status = 'complete';
-          existingFeature.implementedIn = [...existingFeature.implementedIn, ...result.generatedFiles];
+          existingFeature.implementedIn = [
+            ...existingFeature.implementedIn,
+            ...result.generatedFiles,
+          ];
         } else {
           this.accumulatedFeaturesRich.push({
             name: feature,
             status: 'complete',
             implementedIn: result.generatedFiles,
             apiEndpoints: this.apiContracts
-              .filter(c => feature.toLowerCase().includes(c.endpoint.split('/').pop()?.toLowerCase() || ''))
-              .map(c => c.endpoint),
-            components: rawFiles
-              .filter(f => f.path.includes('/components/'))
-              .map(f => f.path),
+              .filter((c) =>
+                feature.toLowerCase().includes(c.endpoint.split('/').pop()?.toLowerCase() || '')
+              )
+              .map((c) => c.endpoint),
+            components: rawFiles.filter((f) => f.path.includes('/components/')).map((f) => f.path),
             dataModels: [], // Would need deeper analysis
             testCoverage: false,
           });
@@ -1158,11 +1168,7 @@ export class PhaseExecutionManager {
       return null;
     }
 
-    return this.codeContextService.getModificationContext(
-      targetFile,
-      changeDescription,
-      maxTokens
-    );
+    return this.codeContextService.getModificationContext(targetFile, changeDescription, maxTokens);
   }
 
   /**

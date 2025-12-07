@@ -37,10 +37,7 @@ import {
   buildCompressedContext,
   needsCompression,
 } from '@/utils/contextCompression';
-import {
-  buildStructuredContext,
-  structuredContextToSummary,
-} from '@/utils/structuredExtraction';
+import { buildStructuredContext, structuredContextToSummary } from '@/utils/structuredExtraction';
 import {
   segmentConversation,
   getHighImportanceSegments,

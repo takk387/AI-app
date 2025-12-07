@@ -196,11 +196,14 @@ export const imageAssets = {
 
     return {
       hero: `${SERVICES.loremflickr}/1200/600/${categories.slice(0, 2).join(',')}?random=hero`,
-      cards: Array.from({ length: count }, (_, i) =>
-        `${SERVICES.loremflickr}/400/300/${categories[i % categories.length]}?random=card${i}`
+      cards: Array.from(
+        { length: count },
+        (_, i) =>
+          `${SERVICES.loremflickr}/400/300/${categories[i % categories.length]}?random=card${i}`
       ),
-      avatars: Array.from({ length: 5 }, (_, i) =>
-        `${SERVICES.dicebear}/avataaars/svg?seed=user${i}`
+      avatars: Array.from(
+        { length: 5 },
+        (_, i) => `${SERVICES.dicebear}/avataaars/svg?seed=user${i}`
       ),
     };
   },
