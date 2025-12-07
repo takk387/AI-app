@@ -16,6 +16,7 @@ const config = {
       ],
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
+        '^js-tiktoken$': '<rootDir>/tests/__mocks__/js-tiktoken.ts',
       },
       transform: {
         '^.+\\.tsx?$': ['ts-jest', {
@@ -39,6 +40,7 @@ const config = {
       ],
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
+        '^js-tiktoken$': '<rootDir>/tests/__mocks__/js-tiktoken.ts',
       },
       transform: {
         '^.+\\.tsx?$': ['ts-jest', {
