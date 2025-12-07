@@ -92,8 +92,11 @@ function analyzeResponseType(
 
   // Check for explicit build indicators in user message
   const buildPatterns = [
-    /^(build|create|make|generate)\s+(me\s+)?(a|an|the)?\s*/i,
+    /^(build|create|make|generate)\s+(it|this|that)$/i, // "build it", "create this"
+    /^(build|create|make|generate)\s+(me\s+)?(a|an|the)?\s*/i, // "build me a todo app"
     /^(give me|show me)\s+(a|an)?\s*(new\s+)?(app|component|page)/i,
+    /^(implement|start)\s+(it|this|that|the\s+plan|building)$/i, // "implement the plan"
+    /^(go|do\s+it|let'?s\s+go|let'?s\s+build|yes|yep|yeah|sure|ok|okay)$/i, // confirmations
   ];
   const isExplicitBuild = buildPatterns.some((p) => p.test(userMessage.trim()));
 
