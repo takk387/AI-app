@@ -2520,23 +2520,32 @@ export function LayoutBuilderWizard({
 
       {/* Code Preview Panel (slide-over) */}
       {showCodePreview && (
-        <div className="fixed inset-y-0 right-0 w-[600px] max-w-full bg-slate-900 border-l border-slate-700 shadow-2xl z-50 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-white">Code Preview</h2>
-            <button
-              type="button"
-              onClick={() => setShowCodePreview(false)}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowCodePreview(false)}
+          />
+          {/* Panel */}
+          <div className="fixed inset-y-0 right-0 w-[600px] max-w-full bg-slate-900 border-l border-slate-700 shadow-2xl z-50 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h2 className="text-lg font-semibold text-white">Code Preview</h2>
+              <button
+                type="button"
+                onClick={() => setShowCodePreview(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Close code preview"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <CodePreviewPanel design={design as LayoutDesign} />
+            </div>
           </div>
-          <div className="flex-1 overflow-auto p-4">
-            <CodePreviewPanel design={design as LayoutDesign} />
-          </div>
-        </div>
+        </>
       )}
 
       {/* Toast notifications */}
