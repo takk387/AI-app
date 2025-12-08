@@ -241,10 +241,7 @@ export class DesignReplicator {
    * Perform quick analysis (2-3 seconds)
    * Extracts essential design elements for immediate preview
    */
-  async quickAnalysis(
-    imageBase64: string,
-    callbacks?: AnalysisCallbacks
-  ): Promise<QuickAnalysis> {
+  async quickAnalysis(imageBase64: string, callbacks?: AnalysisCallbacks): Promise<QuickAnalysis> {
     callbacks?.onPhaseStart?.('quick');
     callbacks?.onPhaseProgress?.('quick', 10, 'Starting quick analysis');
 
@@ -410,7 +407,8 @@ Use this as a starting point and expand with full details.`;
         typography: {
           headingFont: {
             family: 'Inter',
-            googleFontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+            googleFontUrl:
+              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
             fallbacks: ['system-ui', 'sans-serif'],
             weights: [400, 500, 600, 700],
             confidence: 0.8,
@@ -418,7 +416,8 @@ Use this as a starting point and expand with full details.`;
           },
           bodyFont: {
             family: 'Inter',
-            googleFontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+            googleFontUrl:
+              'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
             fallbacks: ['system-ui', 'sans-serif'],
             weights: [400, 500, 600, 700],
             confidence: 0.8,
@@ -618,7 +617,9 @@ Use this as a starting point and expand with full details.`;
   /**
    * Convert analysis to LayoutDesign format
    */
-  analysisToLayoutDesign(analysis: CompleteDesignAnalysis): Partial<import('@/types/layoutDesign').LayoutDesign> {
+  analysisToLayoutDesign(
+    analysis: CompleteDesignAnalysis
+  ): Partial<import('@/types/layoutDesign').LayoutDesign> {
     return {
       globalStyles: {
         typography: {
@@ -728,9 +729,7 @@ export function extractBase64FromDataUrl(dataUrl: string): {
 /**
  * Validate image for analysis
  */
-export function validateImageForAnalysis(
-  dataUrl: string
-): { valid: boolean; error?: string } {
+export function validateImageForAnalysis(dataUrl: string): { valid: boolean; error?: string } {
   const extracted = extractBase64FromDataUrl(dataUrl);
   if (!extracted) {
     return { valid: false, error: 'Invalid image data URL format' };

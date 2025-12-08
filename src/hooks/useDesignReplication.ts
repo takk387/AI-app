@@ -356,7 +356,9 @@ export function useDesignReplication(
         onProgress: (progress) => {
           // Update progress based on video processing stage
           if (progress < 30) {
-            analysisProgress.updateSubPhase('upload', 'compress', { progress: progress / 30 * 100 });
+            analysisProgress.updateSubPhase('upload', 'compress', {
+              progress: (progress / 30) * 100,
+            });
           }
         },
       });
@@ -509,16 +511,12 @@ export function useDesignReplication(
   // COMPUTED VALUES
   // -------------------------------------------------------------------------
 
-  const canStartAnalysis =
-    state.referenceImages.length > 0 || state.referenceVideo !== null;
+  const canStartAnalysis = state.referenceImages.length > 0 || state.referenceVideo !== null;
 
   const hasAnalysisResults =
-    state.quickAnalysis !== null ||
-    state.deepAnalysis !== null ||
-    state.videoAnalysis !== null;
+    state.quickAnalysis !== null || state.deepAnalysis !== null || state.videoAnalysis !== null;
 
-  const detectedAnimations: DetectedAnimation[] =
-    state.videoAnalysis?.animations || [];
+  const detectedAnimations: DetectedAnimation[] = state.videoAnalysis?.animations || [];
 
   // -------------------------------------------------------------------------
   // RETURN

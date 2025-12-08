@@ -38,10 +38,30 @@ const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkS
     spec: {
       variant: 'default',
       states: {
-        default: { color: '#3B82F6', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        hover: { color: '#60A5FA', textDecoration: 'underline', opacity: '1', background: 'transparent' },
-        focus: { color: '#3B82F6', textDecoration: 'underline', opacity: '1', background: 'rgba(59, 130, 246, 0.1)' },
-        active: { color: '#2563EB', textDecoration: 'underline', opacity: '1', background: 'transparent' },
+        default: {
+          color: '#3B82F6',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        hover: {
+          color: '#60A5FA',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
+        focus: {
+          color: '#3B82F6',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'rgba(59, 130, 246, 0.1)',
+        },
+        active: {
+          color: '#2563EB',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
       },
       fontSize: '14px',
       fontWeight: 500,
@@ -56,10 +76,30 @@ const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkS
     spec: {
       variant: 'underlined',
       states: {
-        default: { color: '#3B82F6', textDecoration: 'underline', opacity: '1', background: 'transparent' },
-        hover: { color: '#60A5FA', textDecoration: 'underline', opacity: '1', background: 'transparent' },
-        focus: { color: '#3B82F6', textDecoration: 'underline', opacity: '1', background: 'rgba(59, 130, 246, 0.1)' },
-        active: { color: '#2563EB', textDecoration: 'underline', opacity: '1', background: 'transparent' },
+        default: {
+          color: '#3B82F6',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
+        hover: {
+          color: '#60A5FA',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
+        focus: {
+          color: '#3B82F6',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'rgba(59, 130, 246, 0.1)',
+        },
+        active: {
+          color: '#2563EB',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
       },
       fontSize: '14px',
       fontWeight: 500,
@@ -74,10 +114,30 @@ const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkS
     spec: {
       variant: 'subtle',
       states: {
-        default: { color: '#94A3B8', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        hover: { color: '#F8FAFC', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        focus: { color: '#F8FAFC', textDecoration: 'none', opacity: '1', background: 'rgba(148, 163, 184, 0.1)' },
-        active: { color: '#CBD5E1', textDecoration: 'none', opacity: '1', background: 'transparent' },
+        default: {
+          color: '#94A3B8',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        hover: {
+          color: '#F8FAFC',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        focus: {
+          color: '#F8FAFC',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'rgba(148, 163, 184, 0.1)',
+        },
+        active: {
+          color: '#CBD5E1',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
       },
       fontSize: '14px',
       fontWeight: 400,
@@ -92,10 +152,30 @@ const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkS
     spec: {
       variant: 'nav',
       states: {
-        default: { color: '#94A3B8', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        hover: { color: '#F8FAFC', textDecoration: 'none', opacity: '1', background: 'rgba(255, 255, 255, 0.1)' },
-        focus: { color: '#F8FAFC', textDecoration: 'none', opacity: '1', background: 'rgba(255, 255, 255, 0.1)' },
-        active: { color: '#3B82F6', textDecoration: 'none', opacity: '1', background: 'rgba(59, 130, 246, 0.1)' },
+        default: {
+          color: '#94A3B8',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        hover: {
+          color: '#F8FAFC',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'rgba(255, 255, 255, 0.1)',
+        },
+        focus: {
+          color: '#F8FAFC',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'rgba(255, 255, 255, 0.1)',
+        },
+        active: {
+          color: '#3B82F6',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'rgba(59, 130, 246, 0.1)',
+        },
       },
       fontSize: '14px',
       fontWeight: 500,
@@ -110,10 +190,30 @@ const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkS
     spec: {
       variant: 'gradient',
       states: {
-        default: { color: '#8B5CF6', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        hover: { color: '#A78BFA', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        focus: { color: '#8B5CF6', textDecoration: 'none', opacity: '1', background: 'rgba(139, 92, 246, 0.1)' },
-        active: { color: '#7C3AED', textDecoration: 'none', opacity: '1', background: 'transparent' },
+        default: {
+          color: '#8B5CF6',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        hover: {
+          color: '#A78BFA',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        focus: {
+          color: '#8B5CF6',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'rgba(139, 92, 246, 0.1)',
+        },
+        active: {
+          color: '#7C3AED',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
       },
       fontSize: '14px',
       fontWeight: 600,
@@ -128,10 +228,30 @@ const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkS
     spec: {
       variant: 'danger',
       states: {
-        default: { color: '#EF4444', textDecoration: 'none', opacity: '1', background: 'transparent' },
-        hover: { color: '#F87171', textDecoration: 'underline', opacity: '1', background: 'transparent' },
-        focus: { color: '#EF4444', textDecoration: 'underline', opacity: '1', background: 'rgba(239, 68, 68, 0.1)' },
-        active: { color: '#DC2626', textDecoration: 'underline', opacity: '1', background: 'transparent' },
+        default: {
+          color: '#EF4444',
+          textDecoration: 'none',
+          opacity: '1',
+          background: 'transparent',
+        },
+        hover: {
+          color: '#F87171',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
+        focus: {
+          color: '#EF4444',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'rgba(239, 68, 68, 0.1)',
+        },
+        active: {
+          color: '#DC2626',
+          textDecoration: 'underline',
+          opacity: '1',
+          background: 'transparent',
+        },
       },
       fontSize: '14px',
       fontWeight: 500,
@@ -150,7 +270,7 @@ function PresetCard({
   isSelected,
   onSelect,
 }: {
-  preset: typeof LINK_PRESETS[0];
+  preset: (typeof LINK_PRESETS)[0];
   isSelected: boolean;
   onSelect: () => void;
 }) {
@@ -159,9 +279,10 @@ function PresetCard({
       onClick={onSelect}
       className={`
         p-3 rounded-lg border transition-all text-left
-        ${isSelected
-          ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
-          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+        ${
+          isSelected
+            ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
+            : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
         }
       `}
     >
@@ -255,9 +376,10 @@ function VariantManager({
             key={variant.id}
             className={`
               group relative flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-all cursor-pointer
-              ${selectedIndex === index
-                ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+              ${
+                selectedIndex === index
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
               }
             `}
             onClick={() => onSelect(index)}
@@ -308,11 +430,7 @@ function VariantManager({
 // MAIN COMPONENT
 // ============================================================================
 
-export function LinkDesigner({
-  links: initialLinks,
-  onChange,
-  className = '',
-}: LinkDesignerProps) {
+export function LinkDesigner({ links: initialLinks, onChange, className = '' }: LinkDesignerProps) {
   // State
   const [variants, setVariants] = useState<LinkVariant[]>(() => {
     if (initialLinks && initialLinks.length > 0) {
@@ -342,7 +460,7 @@ export function LinkDesigner({
 
   // Handlers
   const handlePresetSelect = useCallback(
-    (preset: typeof LINK_PRESETS[0]) => {
+    (preset: (typeof LINK_PRESETS)[0]) => {
       const newVariants = [...variants];
       newVariants[selectedIndex] = {
         ...newVariants[selectedIndex],
@@ -470,7 +588,9 @@ export function LinkDesigner({
               <ColorPicker
                 label="Color"
                 value={currentSpec?.states[state as keyof LinkSpec['states']]?.color || '#3B82F6'}
-                onChange={(value) => handleColorChange(state as keyof LinkSpec['states'], 'color', value)}
+                onChange={(value) =>
+                  handleColorChange(state as keyof LinkSpec['states'], 'color', value)
+                }
               />
             </div>
           ))}

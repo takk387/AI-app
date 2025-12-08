@@ -95,7 +95,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
     popularFor: ['UI/UX', 'web apps', 'dashboards', 'tech', 'SaaS'],
     similarTo: ['Roboto', 'SF Pro', 'Helvetica Neue'],
@@ -109,7 +110,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'rounded',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['startups', 'modern websites', 'apps', 'marketing'],
     similarTo: ['Montserrat', 'Nunito', 'Quicksand'],
@@ -123,7 +125,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'medium',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['headings', 'fashion', 'luxury', 'portfolios'],
     similarTo: ['Gotham', 'Proxima Nova', 'Poppins'],
@@ -137,7 +140,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'rounded',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['children', 'friendly apps', 'education', 'healthcare'],
     similarTo: ['Poppins', 'Quicksand', 'Varela Round'],
@@ -151,7 +155,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'rounded',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['creative', 'lifestyle', 'blogs', 'portfolios'],
     similarTo: ['Nunito', 'Comfortaa', 'Varela Round'],
@@ -179,7 +184,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['tech', 'crypto', 'gaming', 'developer tools'],
     similarTo: ['Space Mono', 'IBM Plex Sans', 'Archivo'],
@@ -193,7 +199,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['SaaS', 'fintech', 'enterprise', 'dashboards'],
     similarTo: ['Inter', 'DM Sans', 'Plus Jakarta Sans'],
@@ -207,7 +214,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['modern websites', 'apps', 'startups'],
     similarTo: ['Inter', 'Manrope', 'DM Sans'],
@@ -225,7 +233,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'medium',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['body text', 'general purpose', 'corporate', 'documentation'],
     similarTo: ['Source Sans Pro', 'Lato', 'Roboto'],
@@ -239,7 +248,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'medium',
     contrast: 'medium',
     terminals: 'rounded',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['body text', 'corporate', 'business', 'portfolios'],
     similarTo: ['Open Sans', 'Source Sans Pro', 'Noto Sans'],
@@ -253,7 +263,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'medium',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;300;400;600;700;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;300;400;600;700;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['documentation', 'UI', 'body text', 'technical'],
     similarTo: ['Open Sans', 'Lato', 'Noto Sans'],
@@ -267,7 +278,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'medium',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['multilingual', 'global apps', 'documentation'],
     similarTo: ['Open Sans', 'Source Sans Pro', 'Roboto'],
@@ -281,7 +293,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Mulish:wght@200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Mulish:wght@200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['apps', 'websites', 'UI design'],
     similarTo: ['Nunito Sans', 'Open Sans', 'Work Sans'],
@@ -295,7 +308,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['professional', 'business', 'corporate', 'apps'],
     similarTo: ['Mulish', 'Rubik', 'IBM Plex Sans'],
@@ -309,7 +323,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'rounded',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['apps', 'modern websites', 'UI design'],
     similarTo: ['Work Sans', 'Nunito', 'Karla'],
@@ -327,7 +342,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['Android', 'Material Design', 'tech', 'apps'],
     similarTo: ['Inter', 'Open Sans', 'SF Pro'],
@@ -341,7 +357,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['modern websites', 'tech', 'startups'],
     similarTo: ['Inter', 'Roboto', 'Manrope'],
@@ -355,7 +372,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Sora:wght@100;200;300;400;500;600;700;800&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Sora:wght@100;200;300;400;500;600;700;800&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['tech', 'modern apps', 'dashboards'],
     similarTo: ['Inter', 'Outfit', 'Space Grotesk'],
@@ -373,7 +391,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'medium',
     contrast: 'medium',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['headings', 'sports', 'news', 'impactful text'],
     similarTo: ['Bebas Neue', 'Anton', 'Barlow Condensed'],
@@ -387,7 +406,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['headings', 'navigation', 'sports', 'automotive'],
     similarTo: ['Oswald', 'Roboto Condensed', 'Anton'],
@@ -401,7 +421,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['system-ui', 'sans-serif'],
     popularFor: ['tech', 'documentation', 'apps'],
     similarTo: ['Space Grotesk', 'IBM Plex Sans', 'Roboto'],
@@ -419,7 +440,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'low',
     contrast: 'high',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['luxury', 'fashion', 'editorial', 'headings'],
     similarTo: ['Bodoni Moda', 'Cormorant', 'Libre Baskerville'],
@@ -433,7 +455,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'medium',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['body text', 'blogs', 'articles', 'editorial'],
     similarTo: ['Source Serif Pro', 'Lora', 'Libre Baskerville'],
@@ -447,7 +470,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'medium',
     contrast: 'medium',
     terminals: 'rounded',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['blogs', 'editorial', 'body text', 'literary'],
     similarTo: ['Merriweather', 'Source Serif Pro', 'Crimson Pro'],
@@ -461,7 +485,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'medium',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@200;300;400;600;700;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@200;300;400;600;700;900&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['documentation', 'body text', 'editorial', 'professional'],
     similarTo: ['Merriweather', 'Lora', 'Libre Baskerville'],
@@ -475,7 +500,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'low',
     contrast: 'high',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500;600;700&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['luxury', 'fashion', 'editorial', 'headings'],
     similarTo: ['Playfair Display', 'Bodoni Moda', 'EB Garamond'],
@@ -489,7 +515,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'medium',
     contrast: 'high',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap',
     fallbacks: ['Georgia', 'Baskerville', 'serif'],
     popularFor: ['editorial', 'body text', 'books', 'articles'],
     similarTo: ['Merriweather', 'Source Serif Pro', 'EB Garamond'],
@@ -503,7 +530,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'low',
     contrast: 'high',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap',
     fallbacks: ['Garamond', 'Georgia', 'serif'],
     popularFor: ['books', 'literary', 'academic', 'traditional'],
     similarTo: ['Cormorant', 'Libre Baskerville', 'Crimson Pro'],
@@ -517,7 +545,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'medium',
     contrast: 'medium',
     terminals: 'sharp',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['body text', 'editorial', 'literary', 'blogs'],
     similarTo: ['Lora', 'EB Garamond', 'Libre Baskerville'],
@@ -549,7 +578,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['headings', 'tech', 'apps', 'documentation'],
     similarTo: ['Bitter', 'Zilla Slab', 'Crete Round'],
@@ -563,7 +593,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Bitter:wght@100;200;300;400;500;600;700;800;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Bitter:wght@100;200;300;400;500;600;700;800;900&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['body text', 'editorial', 'blogs', 'reading'],
     similarTo: ['Roboto Slab', 'Zilla Slab', 'Arvo'],
@@ -577,7 +608,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@300;400;500;600;700&display=swap',
     fallbacks: ['Georgia', 'serif'],
     popularFor: ['tech', 'documentation', 'Mozilla', 'developer'],
     similarTo: ['Roboto Slab', 'Bitter', 'IBM Plex Serif'],
@@ -595,7 +627,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap',
     fallbacks: ['Consolas', 'Monaco', 'monospace'],
     popularFor: ['code', 'developer tools', 'terminals', 'IDE'],
     similarTo: ['Fira Code', 'Source Code Pro', 'IBM Plex Mono'],
@@ -609,7 +642,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap',
     fallbacks: ['Consolas', 'Monaco', 'monospace'],
     popularFor: ['code', 'developer tools', 'programming', 'ligatures'],
     similarTo: ['JetBrains Mono', 'Source Code Pro', 'Cascadia Code'],
@@ -623,7 +657,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap',
     fallbacks: ['Consolas', 'Monaco', 'monospace'],
     popularFor: ['code', 'documentation', 'technical', 'Adobe'],
     similarTo: ['JetBrains Mono', 'Fira Code', 'IBM Plex Mono'],
@@ -637,7 +672,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@100;200;300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@100;200;300;400;500;600;700&display=swap',
     fallbacks: ['Consolas', 'Monaco', 'monospace'],
     popularFor: ['code', 'enterprise', 'IBM', 'corporate'],
     similarTo: ['JetBrains Mono', 'Source Code Pro', 'Roboto Mono'],
@@ -665,7 +701,8 @@ export const FONT_DATABASE: FontEntry[] = [
     xHeight: 'high',
     contrast: 'low',
     terminals: 'squared',
-    googleFontUrl: 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100;200;300;400;500;600;700&display=swap',
+    googleFontUrl:
+      'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100;200;300;400;500;600;700&display=swap',
     fallbacks: ['Consolas', 'Monaco', 'monospace'],
     popularFor: ['code', 'Android', 'Material Design', 'tech'],
     similarTo: ['Source Code Pro', 'IBM Plex Mono', 'JetBrains Mono'],
@@ -820,9 +857,7 @@ export function matchFontFromDescription(
  * Get font by exact family name
  */
 export function getFontByFamily(family: string): FontEntry | undefined {
-  return FONT_DATABASE.find(
-    (f) => f.family.toLowerCase() === family.toLowerCase()
-  );
+  return FONT_DATABASE.find((f) => f.family.toLowerCase() === family.toLowerCase());
 }
 
 /**
@@ -842,9 +877,7 @@ export function getFontsByStyle(style: FontStyle): FontEntry[] {
 /**
  * Get fonts with specific characteristic
  */
-export function getFontsWithCharacteristic(
-  characteristic: FontCharacteristic
-): FontEntry[] {
+export function getFontsWithCharacteristic(characteristic: FontCharacteristic): FontEntry[] {
   return FONT_DATABASE.filter((f) => f.characteristics.includes(characteristic));
 }
 

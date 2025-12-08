@@ -97,11 +97,12 @@ export function AnalysisModeSelector({
                 title={isDisabled ? 'Upload a reference image to enable' : info.tip}
                 className={`
                   flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all
-                  ${isActive
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : isDisabled
-                      ? 'text-slate-600 cursor-not-allowed'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                  ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : isDisabled
+                        ? 'text-slate-600 cursor-not-allowed'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-700'
                   }
                 `}
               >
@@ -113,9 +114,7 @@ export function AnalysisModeSelector({
             );
           })}
         </div>
-        <p className="text-xs text-slate-500 mt-1">
-          {MODE_INFO[mode].description}
-        </p>
+        <p className="text-xs text-slate-500 mt-1">{MODE_INFO[mode].description}</p>
       </div>
 
       {/* Depth Selector (only for pixel-perfect mode) */}
@@ -135,9 +134,10 @@ export function AnalysisModeSelector({
                   disabled={disabled}
                   className={`
                     px-2 py-2 rounded-lg text-center transition-all border
-                    ${isActive
-                      ? 'bg-purple-600/20 border-purple-500 text-purple-300'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                    ${
+                      isActive
+                        ? 'bg-purple-600/20 border-purple-500 text-purple-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
                     }
                   `}
                 >
@@ -147,20 +147,29 @@ export function AnalysisModeSelector({
               );
             })}
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            {DEPTH_INFO[analysisDepth].description}
-          </p>
+          <p className="text-xs text-slate-500 mt-1">{DEPTH_INFO[analysisDepth].description}</p>
         </div>
       )}
 
       {/* Reference image warning */}
       {!hasReferenceImage && (
         <div className="flex items-start gap-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <div className="text-xs text-amber-300/80">
-            <span className="font-medium">Tip:</span> Upload a reference image to enable pixel-perfect mode for design replication.
+            <span className="font-medium">Tip:</span> Upload a reference image to enable
+            pixel-perfect mode for design replication.
           </div>
         </div>
       )}
@@ -188,9 +197,10 @@ export function AnalysisModeBadge({
       <span
         className={`
           px-2 py-0.5 text-xs font-medium rounded-full
-          ${mode === 'pixel-perfect'
-            ? 'bg-purple-500/20 text-purple-300'
-            : 'bg-slate-700 text-slate-300'
+          ${
+            mode === 'pixel-perfect'
+              ? 'bg-purple-500/20 text-purple-300'
+              : 'bg-slate-700 text-slate-300'
           }
         `}
       >

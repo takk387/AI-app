@@ -89,9 +89,7 @@ function CopyButton({ text }: { text: string }) {
       type="button"
       onClick={handleCopy}
       className={`absolute top-2 right-2 px-2 py-1 rounded text-xs transition-all ${
-        copied
-          ? 'bg-green-600 text-white'
-          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+        copied ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
       }`}
     >
       {copied ? (
@@ -141,47 +139,51 @@ function SyntaxHighlighter({ code, language }: { code: string; language: 'css' |
  * Basic CSS syntax highlighting
  */
 function highlightCSS(code: string): string {
-  return code
-    // Comments
-    .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="text-slate-500">$1</span>')
-    // CSS variables
-    .replace(/(--[\w-]+)/g, '<span class="text-purple-400">$1</span>')
-    // Properties
-    .replace(/(\s)([\w-]+)(\s*:)/g, '$1<span class="text-cyan-400">$2</span>$3')
-    // Values with units
-    .replace(/:\s*([^;{]+)(;|$)/g, ': <span class="text-green-400">$1</span>$2')
-    // Selectors
-    .replace(/^([.#]?[\w-]+)(\s*\{)/gm, '<span class="text-yellow-400">$1</span>$2')
-    // @import and @tailwind
-    .replace(/(@[\w-]+)/g, '<span class="text-pink-400">$1</span>')
-    // :root selector
-    .replace(/(:root)/g, '<span class="text-yellow-400">$1</span>');
+  return (
+    code
+      // Comments
+      .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="text-slate-500">$1</span>')
+      // CSS variables
+      .replace(/(--[\w-]+)/g, '<span class="text-purple-400">$1</span>')
+      // Properties
+      .replace(/(\s)([\w-]+)(\s*:)/g, '$1<span class="text-cyan-400">$2</span>$3')
+      // Values with units
+      .replace(/:\s*([^;{]+)(;|$)/g, ': <span class="text-green-400">$1</span>$2')
+      // Selectors
+      .replace(/^([.#]?[\w-]+)(\s*\{)/gm, '<span class="text-yellow-400">$1</span>$2')
+      // @import and @tailwind
+      .replace(/(@[\w-]+)/g, '<span class="text-pink-400">$1</span>')
+      // :root selector
+      .replace(/(:root)/g, '<span class="text-yellow-400">$1</span>')
+  );
 }
 
 /**
  * Basic TypeScript syntax highlighting
  */
 function highlightTypeScript(code: string): string {
-  return code
-    // Comments
-    .replace(/(\/\/.*$)/gm, '<span class="text-slate-500">$1</span>')
-    .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="text-slate-500">$1</span>')
-    // Keywords
-    .replace(
-      /\b(import|export|const|let|var|function|return|type|interface|as|from|default)\b/g,
-      '<span class="text-purple-400">$1</span>'
-    )
-    // Strings
-    .replace(/(["'`])([^"'`]*)\1/g, '<span class="text-green-400">$1$2$1</span>')
-    // Numbers
-    .replace(/\b(\d+\.?\d*)\b/g, '<span class="text-orange-400">$1</span>')
-    // Object keys
-    .replace(/(\w+)(\s*:)/g, '<span class="text-cyan-400">$1</span>$2')
-    // Types
-    .replace(
-      /:\s*(string|number|boolean|Config|DesignTokens)\b/g,
-      ': <span class="text-yellow-400">$1</span>'
-    );
+  return (
+    code
+      // Comments
+      .replace(/(\/\/.*$)/gm, '<span class="text-slate-500">$1</span>')
+      .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="text-slate-500">$1</span>')
+      // Keywords
+      .replace(
+        /\b(import|export|const|let|var|function|return|type|interface|as|from|default)\b/g,
+        '<span class="text-purple-400">$1</span>'
+      )
+      // Strings
+      .replace(/(["'`])([^"'`]*)\1/g, '<span class="text-green-400">$1$2$1</span>')
+      // Numbers
+      .replace(/\b(\d+\.?\d*)\b/g, '<span class="text-orange-400">$1</span>')
+      // Object keys
+      .replace(/(\w+)(\s*:)/g, '<span class="text-cyan-400">$1</span>$2')
+      // Types
+      .replace(
+        /:\s*(string|number|boolean|Config|DesignTokens)\b/g,
+        ': <span class="text-yellow-400">$1</span>'
+      )
+  );
 }
 
 /**
@@ -310,14 +312,10 @@ export function CodePreviewPanel({
       {/* Footer with export options */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-800/50 border-t border-slate-700">
         <div className="text-xs text-slate-500">
-          Generated from{' '}
-          <span className="text-slate-400">{design.name || 'Design'}</span>
+          Generated from <span className="text-slate-400">{design.name || 'Design'}</span>
         </div>
         <div className="flex gap-2">
-          <DownloadButton
-            filename={currentFilename}
-            content={currentCode}
-          />
+          <DownloadButton filename={currentFilename} content={currentCode} />
           <DownloadAllButton generatedCode={generatedCode} designName={design.name} />
         </div>
       </div>

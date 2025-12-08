@@ -65,10 +65,7 @@ function LayerGroupHeader({
       >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
-      <span
-        className="w-2 h-2 rounded-full"
-        style={{ backgroundColor: info.color }}
-      />
+      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: info.color }} />
       <span className="text-xs font-medium text-slate-300">{info.name}</span>
       <span className="text-[10px] text-slate-500 ml-auto">
         z: {info.zRange[0]}-{info.zRange[1]}
@@ -152,13 +149,12 @@ function LayerItem({
       </button>
 
       {/* Layer color indicator */}
-      <span
-        className="w-1.5 h-4 rounded-sm"
-        style={{ backgroundColor: groupInfo.color }}
-      />
+      <span className="w-1.5 h-4 rounded-sm" style={{ backgroundColor: groupInfo.color }} />
 
       {/* Layer name */}
-      <span className={`flex-1 text-xs truncate ${layer.visible ? 'text-slate-300' : 'text-slate-500'}`}>
+      <span
+        className={`flex-1 text-xs truncate ${layer.visible ? 'text-slate-300' : 'text-slate-500'}`}
+      >
         {layer.name}
       </span>
 
@@ -210,7 +206,12 @@ function LayerItem({
           title="Remove layer"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       )}
@@ -237,7 +238,10 @@ function AddLayerForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 space-y-3">
+    <form
+      onSubmit={handleSubmit}
+      className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 space-y-3"
+    >
       <div>
         <label className="block text-xs text-slate-400 mb-1">Layer Name</label>
         <input
@@ -262,7 +266,9 @@ function AddLayerForm({
             className="w-full px-2 py-1.5 text-sm bg-slate-800 border border-slate-600 rounded text-slate-200"
           >
             {Object.entries(LAYER_GROUP_INFO).map(([key, info]) => (
-              <option key={key} value={key}>{info.name}</option>
+              <option key={key} value={key}>
+                {info.name}
+              </option>
             ))}
           </select>
         </div>
@@ -306,9 +312,7 @@ export function LayerPanel({
   onChange,
   className = '',
 }: LayerPanelProps) {
-  const [layers, setLayers] = useState<LayerDefinition[]>(
-    initialLayers || DEFAULT_LAYERS
-  );
+  const [layers, setLayers] = useState<LayerDefinition[]>(initialLayers || DEFAULT_LAYERS);
   const [expandedGroups, setExpandedGroups] = useState<Set<LayerGroup>>(
     new Set(['content', 'overlay', 'modal'])
   );
@@ -453,10 +457,7 @@ export function LayerPanel({
       {/* Add layer form */}
       {showAddForm && (
         <div className="p-2 border-b border-slate-700">
-          <AddLayerForm
-            onAdd={handleAddLayer}
-            onCancel={() => setShowAddForm(false)}
-          />
+          <AddLayerForm onAdd={handleAddLayer} onCancel={() => setShowAddForm(false)} />
         </div>
       )}
 

@@ -78,11 +78,7 @@ function PhaseIcon({ phaseId, status }: { phaseId: string; status: string }) {
   const icon = status === 'completed' ? '✓' : PHASE_ICONS[phaseId] || '○';
   const isAnimated = status === 'in_progress';
 
-  return (
-    <span className={`text-lg ${isAnimated ? 'animate-pulse' : ''}`}>
-      {icon}
-    </span>
-  );
+  return <span className={`text-lg ${isAnimated ? 'animate-pulse' : ''}`}>{icon}</span>;
 }
 
 function SubPhaseList({ subPhases }: { subPhases: AnalysisPhaseState['subPhases'] }) {
@@ -93,23 +89,23 @@ function SubPhaseList({ subPhases }: { subPhases: AnalysisPhaseState['subPhases'
       {subPhases.map((sub) => {
         const colors = PHASE_COLORS[sub.status];
         return (
-          <div
-            key={sub.id}
-            className={`flex items-center gap-2 text-xs ${colors.text}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              sub.status === 'completed' ? 'bg-green-400' :
-              sub.status === 'in_progress' ? 'bg-blue-400 animate-pulse' :
-              sub.status === 'error' ? 'bg-red-400' :
-              'bg-slate-500'
-            }`} />
+          <div key={sub.id} className={`flex items-center gap-2 text-xs ${colors.text}`}>
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                sub.status === 'completed'
+                  ? 'bg-green-400'
+                  : sub.status === 'in_progress'
+                    ? 'bg-blue-400 animate-pulse'
+                    : sub.status === 'error'
+                      ? 'bg-red-400'
+                      : 'bg-slate-500'
+              }`}
+            />
             <span className="flex-1">{sub.label}</span>
             {sub.status === 'in_progress' && sub.progress > 0 && (
               <span className="text-slate-500">{sub.progress}%</span>
             )}
-            {sub.status === 'completed' && (
-              <span className="text-green-400">✓</span>
-            )}
+            {sub.status === 'completed' && <span className="text-green-400">✓</span>}
           </div>
         );
       })}
@@ -140,17 +136,13 @@ function PhaseCard({
       <div className="flex items-center gap-2">
         <PhaseIcon phaseId={phase.id} status={phase.status} />
         <div className="flex-1">
-          <div className={`font-medium ${colors.text}`}>
-            {phase.label}
-          </div>
+          <div className={`font-medium ${colors.text}`}>{phase.label}</div>
           {phase.duration && phase.status === 'pending' && (
             <div className="text-xs text-slate-500">~{phase.duration}</div>
           )}
         </div>
         {phase.status === 'in_progress' && (
-          <div className="text-sm font-mono text-blue-400">
-            {phase.progress}%
-          </div>
+          <div className="text-sm font-mono text-blue-400">{phase.progress}%</div>
         )}
       </div>
 
@@ -170,11 +162,7 @@ function PhaseCard({
       )}
 
       {/* Error message */}
-      {phase.error && (
-        <div className="mt-2 text-xs text-red-400">
-          {phase.error}
-        </div>
-      )}
+      {phase.error && <div className="mt-2 text-xs text-red-400">{phase.error}</div>}
     </div>
   );
 }
@@ -191,14 +179,14 @@ export function AnalysisProgressIndicator({
   className = '',
 }: AnalysisProgressIndicatorProps) {
   // Filter out the 'complete' phase for display
-  const displayPhases = useMemo(() =>
-    state.phases.filter((p) => p.id !== 'complete'),
+  const displayPhases = useMemo(
+    () => state.phases.filter((p) => p.id !== 'complete'),
     [state.phases]
   );
 
   // Get current active phase
-  const activePhase = useMemo(() =>
-    displayPhases.find((p) => p.status === 'in_progress'),
+  const activePhase = useMemo(
+    () => displayPhases.find((p) => p.status === 'in_progress'),
     [displayPhases]
   );
 
@@ -214,9 +202,7 @@ export function AnalysisProgressIndicator({
           {activePhase && (
             <>
               <PhaseIcon phaseId={activePhase.id} status="in_progress" />
-              <span className="text-blue-400 text-sm">
-                {activePhase.label}
-              </span>
+              <span className="text-blue-400 text-sm">{activePhase.label}</span>
             </>
           )}
           {!activePhase && state.overallProgress === 100 && (
@@ -232,15 +218,15 @@ export function AnalysisProgressIndicator({
             style={{ width: `${state.overallProgress}%` }}
           />
         </div>
-        <span className="text-xs text-slate-400 font-mono">
-          {state.overallProgress}%
-        </span>
+        <span className="text-xs text-slate-400 font-mono">{state.overallProgress}%</span>
       </div>
     );
   }
 
   return (
-    <div className={`bg-slate-800/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 shadow-xl ${className}`}>
+    <div
+      className={`bg-slate-800/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 shadow-xl ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -255,8 +241,7 @@ export function AnalysisProgressIndicator({
               <p className="text-sm text-slate-400">
                 {activePhase.label}
                 {activePhase.subPhases.find((s) => s.status === 'in_progress')?.label &&
-                  ` - ${activePhase.subPhases.find((s) => s.status === 'in_progress')?.label}`
-                }
+                  ` - ${activePhase.subPhases.find((s) => s.status === 'in_progress')?.label}`}
               </p>
             )}
           </div>
@@ -266,9 +251,7 @@ export function AnalysisProgressIndicator({
             <div className="text-sm font-mono text-slate-300">
               {formatElapsedTime(state.elapsedTime)}
             </div>
-            <div className="text-xs text-slate-500">
-              {state.estimatedTimeRemaining}
-            </div>
+            <div className="text-xs text-slate-500">{state.estimatedTimeRemaining}</div>
           </div>
           {state.isAnalyzing && onCancel && state.canCancel && (
             <button
@@ -308,10 +291,14 @@ export function AnalysisProgressIndicator({
                 className={`
                   absolute left-2 top-3 w-4 h-4 rounded-full border-2
                   transition-all duration-300
-                  ${phase.status === 'completed' ? 'bg-green-500 border-green-500' :
-                    phase.status === 'in_progress' ? 'bg-blue-500 border-blue-500 animate-pulse' :
-                    phase.status === 'error' ? 'bg-red-500 border-red-500' :
-                    'bg-slate-800 border-slate-600'
+                  ${
+                    phase.status === 'completed'
+                      ? 'bg-green-500 border-green-500'
+                      : phase.status === 'in_progress'
+                        ? 'bg-blue-500 border-blue-500 animate-pulse'
+                        : phase.status === 'error'
+                          ? 'bg-red-500 border-red-500'
+                          : 'bg-slate-800 border-slate-600'
                   }
                 `}
               >
@@ -389,21 +376,15 @@ export function InlineAnalysisProgress({
 
   return (
     <div className={`flex items-center gap-2 text-sm ${className}`}>
-      <span className="animate-pulse">
-        {activePhase ? PHASE_ICONS[activePhase.id] : '⏳'}
-      </span>
-      <span className="text-blue-400">
-        {activePhase?.label || 'Processing...'}
-      </span>
+      <span className="animate-pulse">{activePhase ? PHASE_ICONS[activePhase.id] : '⏳'}</span>
+      <span className="text-blue-400">{activePhase?.label || 'Processing...'}</span>
       <div className="w-20 h-1 bg-slate-700 rounded-full overflow-hidden">
         <div
           className="h-full bg-blue-500 transition-all duration-300"
           style={{ width: `${state.overallProgress}%` }}
         />
       </div>
-      <span className="text-slate-500 font-mono text-xs">
-        {state.overallProgress}%
-      </span>
+      <span className="text-slate-500 font-mono text-xs">{state.overallProgress}%</span>
     </div>
   );
 }

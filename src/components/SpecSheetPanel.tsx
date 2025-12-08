@@ -140,24 +140,14 @@ function TypographyDisplay({
       </div>
       <div className="mt-2 flex flex-wrap gap-2 text-xs">
         {fontFamily && (
-          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">
-            {fontFamily}
-          </span>
+          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">{fontFamily}</span>
         )}
-        {size && (
-          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">
-            {size}
-          </span>
-        )}
+        {size && <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">{size}</span>}
         {weight && (
-          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">
-            {weight}
-          </span>
+          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">{weight}</span>
         )}
         {lineHeight && (
-          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">
-            LH: {lineHeight}
-          </span>
+          <span className="px-2 py-0.5 bg-slate-700 rounded text-slate-300">LH: {lineHeight}</span>
         )}
       </div>
     </div>
@@ -319,10 +309,7 @@ export function SpecSheetPanel({
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <h3 className="font-semibold text-white">Design Specifications</h3>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-slate-700 rounded transition-colors"
-          >
+          <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded transition-colors">
             <XIcon className="w-5 h-5 text-slate-400" />
           </button>
         )}
@@ -453,9 +440,7 @@ export function SpecSheetPanel({
             {analysis.colors.surface && (
               <ColorSwatch color={analysis.colors.surface} label="Surface" />
             )}
-            {analysis.colors.text && (
-              <ColorSwatch color={analysis.colors.text} label="Text" />
-            )}
+            {analysis.colors.text && <ColorSwatch color={analysis.colors.text} label="Text" />}
             {analysis.colors.textMuted && (
               <ColorSwatch color={analysis.colors.textMuted} label="Text Muted" />
             )}
@@ -468,9 +453,7 @@ export function SpecSheetPanel({
             {analysis.colors.warning && (
               <ColorSwatch color={analysis.colors.warning} label="Warning" />
             )}
-            {analysis.colors.error && (
-              <ColorSwatch color={analysis.colors.error} label="Error" />
-            )}
+            {analysis.colors.error && <ColorSwatch color={analysis.colors.error} label="Error" />}
           </div>
 
           {/* Gradients */}
@@ -480,13 +463,8 @@ export function SpecSheetPanel({
               <div className="space-y-2">
                 {analysis.colors.gradients.map((gradient, i) => (
                   <div key={i} className="p-2 bg-slate-800/50 rounded-lg">
-                    <div
-                      className="h-8 rounded mb-2"
-                      style={{ background: gradient.css }}
-                    />
-                    <code className="text-xs text-slate-400 break-all">
-                      {gradient.css}
-                    </code>
+                    <div className="h-8 rounded mb-2" style={{ background: gradient.css }} />
+                    <code className="text-xs text-slate-400 break-all">{gradient.css}</code>
                   </div>
                 ))}
               </div>
@@ -521,21 +499,17 @@ export function SpecSheetPanel({
               <div className="mt-4">
                 <div className="text-xs text-slate-400 mb-2">Type Scale</div>
                 <div className="space-y-2">
-                  {Object.entries(analysis.typography.displaySizes).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-2 bg-slate-800/50 rounded"
-                      >
-                        <span className="text-sm text-white font-medium">
-                          {key.toUpperCase()}
-                        </span>
-                        <span className="text-xs text-slate-400 font-mono">
-                          {value.size} / {value.weight} / {value.lineHeight}
-                        </span>
-                      </div>
-                    )
-                  )}
+                  {Object.entries(analysis.typography.displaySizes).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-2 bg-slate-800/50 rounded"
+                    >
+                      <span className="text-sm text-white font-medium">{key.toUpperCase()}</span>
+                      <span className="text-xs text-slate-400 font-mono">
+                        {value.size} / {value.weight} / {value.lineHeight}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -595,21 +569,16 @@ export function SpecSheetPanel({
               <div>
                 <div className="text-xs text-slate-400 mb-2">Border Radius</div>
                 <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(analysis.effects.borderRadius).map(
-                    ([key, value]) => (
+                  {Object.entries(analysis.effects.borderRadius).map(([key, value]) => (
+                    <div key={key} className="p-2 bg-slate-800/50 rounded text-center">
                       <div
-                        key={key}
-                        className="p-2 bg-slate-800/50 rounded text-center"
-                      >
-                        <div
-                          className="w-8 h-8 mx-auto bg-purple-500/30 border border-purple-500/50 mb-1"
-                          style={{ borderRadius: value }}
-                        />
-                        <div className="text-xs text-slate-400">{key}</div>
-                        <div className="text-xs font-mono text-white">{value}</div>
-                      </div>
-                    )
-                  )}
+                        className="w-8 h-8 mx-auto bg-purple-500/30 border border-purple-500/50 mb-1"
+                        style={{ borderRadius: value }}
+                      />
+                      <div className="text-xs text-slate-400">{key}</div>
+                      <div className="text-xs font-mono text-white">{value}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -620,19 +589,14 @@ export function SpecSheetPanel({
                 <div className="text-xs text-slate-400 mb-2">Shadows</div>
                 <div className="space-y-2">
                   {Object.entries(analysis.effects.shadows).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex items-center gap-3 p-2 bg-slate-800/50 rounded"
-                    >
+                    <div key={key} className="flex items-center gap-3 p-2 bg-slate-800/50 rounded">
                       <div
                         className="w-10 h-10 bg-slate-600 rounded"
                         style={{ boxShadow: value }}
                       />
                       <div>
                         <div className="text-sm text-white">{key}</div>
-                        <code className="text-xs text-slate-400 break-all">
-                          {value}
-                        </code>
+                        <code className="text-xs text-slate-400 break-all">{value}</code>
                       </div>
                     </div>
                   ))}
@@ -648,9 +612,7 @@ export function SpecSheetPanel({
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
               <span className="text-slate-400">Confidence:</span>{' '}
-              <span className="text-white">
-                {Math.round(analysis.confidence * 100)}%
-              </span>
+              <span className="text-white">{Math.round(analysis.confidence * 100)}%</span>
             </div>
             <div>
               <span className="text-slate-400">Source:</span>{' '}

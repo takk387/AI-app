@@ -49,7 +49,10 @@ export const DEFAULT_Z_INDEX_SCALE: ZIndexScale = {
   max: 9999,
 };
 
-export const LAYER_GROUP_INFO: Record<LayerGroup, { name: string; color: string; zRange: [number, number] }> = {
+export const LAYER_GROUP_INFO: Record<
+  LayerGroup,
+  { name: string; color: string; zRange: [number, number] }
+> = {
   base: { name: 'Base', color: '#64748B', zRange: [0, 9] },
   content: { name: 'Content', color: '#3B82F6', zRange: [1, 9] },
   overlay: { name: 'Overlay', color: '#8B5CF6', zRange: [30, 39] },
@@ -60,27 +63,115 @@ export const LAYER_GROUP_INFO: Record<LayerGroup, { name: string; color: string;
 
 export const DEFAULT_LAYERS: LayerDefinition[] = [
   // Base layers
-  { id: 'background', name: 'Background', zIndex: 0, group: 'base', visible: true, locked: false, cssVariable: '--z-background' },
-  { id: 'content', name: 'Content', zIndex: 1, group: 'content', visible: true, locked: false, cssVariable: '--z-content' },
+  {
+    id: 'background',
+    name: 'Background',
+    zIndex: 0,
+    group: 'base',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-background',
+  },
+  {
+    id: 'content',
+    name: 'Content',
+    zIndex: 1,
+    group: 'content',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-content',
+  },
 
   // Interactive overlays
-  { id: 'dropdown', name: 'Dropdowns', zIndex: 10, group: 'content', visible: true, locked: false, cssVariable: '--z-dropdown' },
-  { id: 'sticky', name: 'Sticky Elements', zIndex: 20, group: 'content', visible: true, locked: false, cssVariable: '--z-sticky' },
+  {
+    id: 'dropdown',
+    name: 'Dropdowns',
+    zIndex: 10,
+    group: 'content',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-dropdown',
+  },
+  {
+    id: 'sticky',
+    name: 'Sticky Elements',
+    zIndex: 20,
+    group: 'content',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-sticky',
+  },
 
   // Full overlays
-  { id: 'overlay', name: 'Overlay', zIndex: 30, group: 'overlay', visible: true, locked: false, cssVariable: '--z-overlay' },
-  { id: 'sidebar-overlay', name: 'Sidebar Overlay', zIndex: 31, group: 'overlay', visible: true, locked: false, cssVariable: '--z-sidebar-overlay' },
+  {
+    id: 'overlay',
+    name: 'Overlay',
+    zIndex: 30,
+    group: 'overlay',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-overlay',
+  },
+  {
+    id: 'sidebar-overlay',
+    name: 'Sidebar Overlay',
+    zIndex: 31,
+    group: 'overlay',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-sidebar-overlay',
+  },
 
   // Modals
-  { id: 'modal', name: 'Modal', zIndex: 40, group: 'modal', visible: true, locked: false, cssVariable: '--z-modal' },
-  { id: 'modal-overlay', name: 'Modal Overlay', zIndex: 39, group: 'modal', visible: true, locked: false, cssVariable: '--z-modal-overlay' },
+  {
+    id: 'modal',
+    name: 'Modal',
+    zIndex: 40,
+    group: 'modal',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-modal',
+  },
+  {
+    id: 'modal-overlay',
+    name: 'Modal Overlay',
+    zIndex: 39,
+    group: 'modal',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-modal-overlay',
+  },
 
   // Notifications
-  { id: 'toast', name: 'Toast', zIndex: 50, group: 'toast', visible: true, locked: false, cssVariable: '--z-toast' },
+  {
+    id: 'toast',
+    name: 'Toast',
+    zIndex: 50,
+    group: 'toast',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-toast',
+  },
 
   // Tooltips (highest)
-  { id: 'tooltip', name: 'Tooltip', zIndex: 60, group: 'tooltip', visible: true, locked: false, cssVariable: '--z-tooltip' },
-  { id: 'popover', name: 'Popover', zIndex: 61, group: 'tooltip', visible: true, locked: false, cssVariable: '--z-popover' },
+  {
+    id: 'tooltip',
+    name: 'Tooltip',
+    zIndex: 60,
+    group: 'tooltip',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-tooltip',
+  },
+  {
+    id: 'popover',
+    name: 'Popover',
+    zIndex: 61,
+    group: 'tooltip',
+    visible: true,
+    locked: false,
+    cssVariable: '--z-popover',
+  },
 ];
 
 // ============================================================================
@@ -146,7 +237,7 @@ function calculateZIndexForPosition(group: LayerGroup, position: number, total: 
   const { zRange } = LAYER_GROUP_INFO[group];
   const [min, max] = zRange;
   const step = Math.floor((max - min) / Math.max(total, 1));
-  return min + (position * step);
+  return min + position * step;
 }
 
 /**
@@ -178,15 +269,16 @@ export function updateLayer(
   layerId: string,
   updates: Partial<LayerDefinition>
 ): LayerDefinition[] {
-  return layers.map((layer) =>
-    layer.id === layerId ? { ...layer, ...updates } : layer
-  );
+  return layers.map((layer) => (layer.id === layerId ? { ...layer, ...updates } : layer));
 }
 
 /**
  * Toggle layer visibility
  */
-export function toggleLayerVisibility(layers: LayerDefinition[], layerId: string): LayerDefinition[] {
+export function toggleLayerVisibility(
+  layers: LayerDefinition[],
+  layerId: string
+): LayerDefinition[] {
   return updateLayer(layers, layerId, {
     visible: !layers.find((l) => l.id === layerId)?.visible,
   });
@@ -242,10 +334,10 @@ export function generateLayerCSS(layers: LayerDefinition[]): string {
 /**
  * Generate Tailwind config for z-index
  */
-export function generateTailwindZIndex(scale: ZIndexScale = DEFAULT_Z_INDEX_SCALE): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(scale).map(([token, value]) => [token, String(value)])
-  );
+export function generateTailwindZIndex(
+  scale: ZIndexScale = DEFAULT_Z_INDEX_SCALE
+): Record<string, string> {
+  return Object.fromEntries(Object.entries(scale).map(([token, value]) => [token, String(value)]));
 }
 
 // ============================================================================
@@ -255,7 +347,9 @@ export function generateTailwindZIndex(scale: ZIndexScale = DEFAULT_Z_INDEX_SCAL
 /**
  * Check for z-index conflicts
  */
-export function findZIndexConflicts(layers: LayerDefinition[]): Array<{ layers: LayerDefinition[]; zIndex: number }> {
+export function findZIndexConflicts(
+  layers: LayerDefinition[]
+): Array<{ layers: LayerDefinition[]; zIndex: number }> {
   const byZIndex = new Map<number, LayerDefinition[]>();
 
   for (const layer of layers) {

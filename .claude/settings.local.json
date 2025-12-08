@@ -38,7 +38,8 @@
       "Bash(npm install:*)",
       "Bash(curl:*)",
       "Bash(git -C \"c:\\AI-app\" diff --stat)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(git -C \"c:\\Users\\takk3\\Desktop\\AI-APP-BUILDER\" status --short)"
     ],
     "deny": [],
     "ask": []

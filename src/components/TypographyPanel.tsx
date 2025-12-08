@@ -351,7 +351,10 @@ export function TypographyPanel({ typography, onChange }: TypographyPanelProps) 
     }
   }, [typography.fontFamily, typography.headingFont]);
 
-  const handleChange = <K extends keyof TypographySettings>(key: K, value: TypographySettings[K]) => {
+  const handleChange = <K extends keyof TypographySettings>(
+    key: K,
+    value: TypographySettings[K]
+  ) => {
     onChange({ ...typography, [key]: value });
   };
 

@@ -29,17 +29,18 @@ interface ZIndexEditorProps {
 // CONSTANTS
 // ============================================================================
 
-const TOKEN_INFO: Record<keyof ZIndexScale, { label: string; description: string; color: string }> = {
-  base: { label: 'Base', description: 'Default stacking context', color: '#64748B' },
-  content: { label: 'Content', description: 'Regular content elements', color: '#3B82F6' },
-  dropdown: { label: 'Dropdown', description: 'Dropdowns & menus', color: '#06B6D4' },
-  sticky: { label: 'Sticky', description: 'Sticky headers & elements', color: '#10B981' },
-  overlay: { label: 'Overlay', description: 'Background overlays', color: '#8B5CF6' },
-  modal: { label: 'Modal', description: 'Modal dialogs', color: '#EC4899' },
-  toast: { label: 'Toast', description: 'Toast notifications', color: '#F59E0B' },
-  tooltip: { label: 'Tooltip', description: 'Tooltips & popovers', color: '#EF4444' },
-  max: { label: 'Max', description: 'Maximum z-index', color: '#1F2937' },
-};
+const TOKEN_INFO: Record<keyof ZIndexScale, { label: string; description: string; color: string }> =
+  {
+    base: { label: 'Base', description: 'Default stacking context', color: '#64748B' },
+    content: { label: 'Content', description: 'Regular content elements', color: '#3B82F6' },
+    dropdown: { label: 'Dropdown', description: 'Dropdowns & menus', color: '#06B6D4' },
+    sticky: { label: 'Sticky', description: 'Sticky headers & elements', color: '#10B981' },
+    overlay: { label: 'Overlay', description: 'Background overlays', color: '#8B5CF6' },
+    modal: { label: 'Modal', description: 'Modal dialogs', color: '#EC4899' },
+    toast: { label: 'Toast', description: 'Toast notifications', color: '#F59E0B' },
+    tooltip: { label: 'Tooltip', description: 'Tooltips & popovers', color: '#EF4444' },
+    max: { label: 'Max', description: 'Maximum z-index', color: '#1F2937' },
+  };
 
 const SCALE_PRESETS: { id: string; name: string; scale: ZIndexScale }[] = [
   {
@@ -50,12 +51,32 @@ const SCALE_PRESETS: { id: string; name: string; scale: ZIndexScale }[] = [
   {
     id: 'compact',
     name: 'Compact (1s)',
-    scale: { base: 0, content: 1, dropdown: 2, sticky: 3, overlay: 4, modal: 5, toast: 6, tooltip: 7, max: 99 },
+    scale: {
+      base: 0,
+      content: 1,
+      dropdown: 2,
+      sticky: 3,
+      overlay: 4,
+      modal: 5,
+      toast: 6,
+      tooltip: 7,
+      max: 99,
+    },
   },
   {
     id: 'spaced',
     name: 'Spaced (100s)',
-    scale: { base: 0, content: 100, dropdown: 200, sticky: 300, overlay: 400, modal: 500, toast: 600, tooltip: 700, max: 9999 },
+    scale: {
+      base: 0,
+      content: 100,
+      dropdown: 200,
+      sticky: 300,
+      overlay: 400,
+      modal: 500,
+      toast: 600,
+      tooltip: 700,
+      max: 9999,
+    },
   },
 ];
 
@@ -63,13 +84,7 @@ const SCALE_PRESETS: { id: string; name: string; scale: ZIndexScale }[] = [
 // SUB-COMPONENTS
 // ============================================================================
 
-function ScaleVisualization({
-  scale,
-  maxValue = 100,
-}: {
-  scale: ZIndexScale;
-  maxValue?: number;
-}) {
+function ScaleVisualization({ scale, maxValue = 100 }: { scale: ZIndexScale; maxValue?: number }) {
   const sortedTokens = useMemo(() => {
     return Object.entries(scale)
       .filter(([key]) => key !== 'max')
@@ -81,12 +96,12 @@ function ScaleVisualization({
       {/* Scale marks */}
       <div className="absolute inset-0 flex">
         {[...Array(11)].map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 border-r border-slate-700 last:border-r-0"
-          >
+          <div key={i} className="flex-1 border-r border-slate-700 last:border-r-0">
             {i % 2 === 0 && (
-              <span className="absolute bottom-0 text-[8px] text-slate-600 transform -translate-x-1/2" style={{ left: `${i * 10}%` }}>
+              <span
+                className="absolute bottom-0 text-[8px] text-slate-600 transform -translate-x-1/2"
+                style={{ left: `${i * 10}%` }}
+              >
                 {Math.round((i / 10) * maxValue)}
               </span>
             )}
@@ -138,10 +153,7 @@ function TokenEditor({
 
   return (
     <div className="flex items-center gap-3 py-2">
-      <div
-        className="w-3 h-3 rounded-full flex-shrink-0"
-        style={{ backgroundColor: info.color }}
-      />
+      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: info.color }} />
       <div className="w-20 flex-shrink-0">
         <div className="text-xs font-medium text-slate-300">{info.label}</div>
         <div className="text-[10px] text-slate-500">{info.description}</div>
@@ -166,13 +178,7 @@ function TokenEditor({
   );
 }
 
-function CodeOutput({
-  scale,
-  format,
-}: {
-  scale: ZIndexScale;
-  format: 'css' | 'tailwind';
-}) {
+function CodeOutput({ scale, format }: { scale: ZIndexScale; format: 'css' | 'tailwind' }) {
   const code = useMemo(() => {
     if (format === 'css') {
       return `:root {\n${generateZIndexCSS(scale)}\n}`;
@@ -210,11 +216,7 @@ module.exports = {
 // MAIN COMPONENT
 // ============================================================================
 
-export function ZIndexEditor({
-  scale: initialScale,
-  onChange,
-  className = '',
-}: ZIndexEditorProps) {
+export function ZIndexEditor({ scale: initialScale, onChange, className = '' }: ZIndexEditorProps) {
   const [scale, setScale] = useState<ZIndexScale>({
     ...DEFAULT_Z_INDEX_SCALE,
     ...initialScale,
@@ -284,9 +286,10 @@ export function ZIndexEditor({
               onClick={() => applyPreset(preset.id)}
               className={`
                 flex-1 px-3 py-2 text-xs rounded-lg border transition-all
-                ${selectedPreset === preset.id
-                  ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+                ${
+                  selectedPreset === preset.id
+                    ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                    : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
                 }
               `}
             >
@@ -323,7 +326,9 @@ export function ZIndexEditor({
                 setShowCode(true);
               }}
               className={`px-2 py-1 text-xs rounded ${
-                showCode && codeFormat === 'css' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
+                showCode && codeFormat === 'css'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-400'
               }`}
             >
               CSS
@@ -334,7 +339,9 @@ export function ZIndexEditor({
                 setShowCode(true);
               }}
               className={`px-2 py-1 text-xs rounded ${
-                showCode && codeFormat === 'tailwind' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
+                showCode && codeFormat === 'tailwind'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-400'
               }`}
             >
               Tailwind

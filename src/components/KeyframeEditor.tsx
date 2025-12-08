@@ -235,9 +235,7 @@ function EasingSelector({
     typeof value === 'object' && value.type === 'cubic-bezier'
   );
   const [customValues, setCustomValues] = useState<[number, number, number, number]>(
-    typeof value === 'object' && value.type === 'cubic-bezier'
-      ? value.values
-      : [0.25, 0.1, 0.25, 1]
+    typeof value === 'object' && value.type === 'cubic-bezier' ? value.values : [0.25, 0.1, 0.25, 1]
   );
 
   const handlePresetChange = (preset: string) => {
@@ -262,7 +260,7 @@ function EasingSelector({
       <label className="text-xs text-slate-500">Easing to Next Keyframe</label>
 
       <select
-        value={showCustom ? 'custom' : (typeof value === 'string' ? value : 'custom')}
+        value={showCustom ? 'custom' : typeof value === 'string' ? value : 'custom'}
         onChange={(e) => handlePresetChange(e.target.value)}
         className="w-full px-3 py-1.5 text-sm bg-slate-800 border border-slate-600 rounded-md text-slate-200 focus:border-blue-500 focus:outline-none"
       >
@@ -312,9 +310,16 @@ function EasingCurve({ easing }: { easing: EasingFunction }) {
     } else {
       const preset = EASING_PRESETS.find((p) => p.id === easing);
       if (preset) {
-        const match = preset.cssValue.match(/cubic-bezier\(([\d.-]+),\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+)\)/);
+        const match = preset.cssValue.match(
+          /cubic-bezier\(([\d.-]+),\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+)\)/
+        );
         if (match) {
-          bezier = [parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4])];
+          bezier = [
+            parseFloat(match[1]),
+            parseFloat(match[2]),
+            parseFloat(match[3]),
+            parseFloat(match[4]),
+          ];
         } else if (preset.cssValue === 'linear') {
           bezier = [0, 0, 1, 1];
         } else {
@@ -414,7 +419,16 @@ export function KeyframeEditor({
   );
 
   // Group properties by category
-  const transformProps = ['translateX', 'translateY', 'scale', 'scaleX', 'scaleY', 'rotate', 'skewX', 'skewY'];
+  const transformProps = [
+    'translateX',
+    'translateY',
+    'scale',
+    'scaleX',
+    'scaleY',
+    'rotate',
+    'skewX',
+    'skewY',
+  ];
   const appearanceProps = ['opacity', 'backgroundColor', 'borderColor', 'color', 'borderRadius'];
   const sizeProps = ['width', 'height'];
   const effectProps = ['boxShadow'];
@@ -475,7 +489,12 @@ export function KeyframeEditor({
               title="Duplicate"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
             </button>
           )}
@@ -486,7 +505,12 @@ export function KeyframeEditor({
               title="Delete"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             </button>
           )}
@@ -527,14 +551,18 @@ export function KeyframeEditor({
       {/* Transform Properties */}
       <PropertyGroup title="Transform">
         <div className="grid grid-cols-2 gap-3">
-          {PROPERTY_TRACKS.filter((t) => transformProps.includes(t.property)).map(renderPropertyInput)}
+          {PROPERTY_TRACKS.filter((t) => transformProps.includes(t.property)).map(
+            renderPropertyInput
+          )}
         </div>
       </PropertyGroup>
 
       {/* Appearance Properties */}
       <PropertyGroup title="Appearance">
         <div className="space-y-3">
-          {PROPERTY_TRACKS.filter((t) => appearanceProps.includes(t.property)).map(renderPropertyInput)}
+          {PROPERTY_TRACKS.filter((t) => appearanceProps.includes(t.property)).map(
+            renderPropertyInput
+          )}
         </div>
       </PropertyGroup>
 

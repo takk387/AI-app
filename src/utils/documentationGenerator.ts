@@ -4,7 +4,12 @@
  * Generate design system documentation in HTML, Markdown, and PDF formats.
  */
 
-import type { LayoutDesign, CompleteDesignAnalysis, ColorSettings, TypographySettings } from '@/types/layoutDesign';
+import type {
+  LayoutDesign,
+  CompleteDesignAnalysis,
+  ColorSettings,
+  TypographySettings,
+} from '@/types/layoutDesign';
 
 // ============================================================================
 // TYPES
@@ -125,8 +130,8 @@ function generateHTMLHead(config: DocumentationConfig): string {
 }
 
 function generateNavigation(sections: DocumentationSection[]): string {
-  const enabledSections = sections.filter(s => s.enabled);
-  const links = enabledSections.map(s => `    <a href="#${s.id}">${s.title}</a>`).join('\n');
+  const enabledSections = sections.filter((s) => s.enabled);
+  const links = enabledSections.map((s) => `    <a href="#${s.id}">${s.title}</a>`).join('\n');
 
   return `<nav>
   <div style="font-weight: 600; margin-bottom: 1.5rem; padding: 0 1rem;">Contents</div>
@@ -136,12 +141,16 @@ ${links}
 
 function generateColorsSection(colors: Partial<ColorSettings>): string {
   const colorEntries = Object.entries(colors).filter(([, v]) => v);
-  const swatches = colorEntries.map(([name, value]) => `
+  const swatches = colorEntries
+    .map(
+      ([name, value]) => `
       <div class="card">
         <div class="color-swatch" style="background: ${value}"></div>
         <div class="color-name">${name}</div>
         <div class="color-value">${value}</div>
-      </div>`).join('');
+      </div>`
+    )
+    .join('');
 
   return `<section id="colors" class="section">
     <h2>Colors</h2>
@@ -188,11 +197,15 @@ function generateTypographySection(typography: Partial<TypographySettings>): str
 function generateSpacingSection(): string {
   const spacingScale = [4, 8, 12, 16, 20, 24, 32, 40, 48, 64];
 
-  const spacingItems = spacingScale.map(size => `
+  const spacingItems = spacingScale
+    .map(
+      (size) => `
       <div class="spacing-item">
         <div class="spacing-label">${size}px</div>
         <div class="spacing-bar" style="width: ${size * 2}px"></div>
-      </div>`).join('');
+      </div>`
+    )
+    .join('');
 
   return `<section id="spacing" class="section">
     <h2>Spacing</h2>
@@ -269,19 +282,19 @@ export function generateHTMLDocumentation(
   const colors = design.globalStyles?.colors || {};
   const typography = design.globalStyles?.typography || {};
 
-  if (sections.find(s => s.id === 'colors' && s.enabled)) {
+  if (sections.find((s) => s.id === 'colors' && s.enabled)) {
     html += generateColorsSection(colors);
   }
 
-  if (sections.find(s => s.id === 'typography' && s.enabled)) {
+  if (sections.find((s) => s.id === 'typography' && s.enabled)) {
     html += generateTypographySection(typography);
   }
 
-  if (sections.find(s => s.id === 'spacing' && s.enabled)) {
+  if (sections.find((s) => s.id === 'spacing' && s.enabled)) {
     html += generateSpacingSection();
   }
 
-  if (sections.find(s => s.id === 'tokens' && s.enabled)) {
+  if (sections.find((s) => s.id === 'tokens' && s.enabled)) {
     html += generateTokensSection(design, mergedConfig);
   }
 
@@ -332,10 +345,12 @@ export function generateMarkdownDocumentation(
   md += '## Colors\n\n';
   md += '| Name | Value | Preview |\n';
   md += '|------|-------|----------|\n';
-  Object.entries(colors).filter(([, v]) => v).forEach(([name, value]) => {
-    const colorValue = String(value);
-    md += `| ${name} | \`${colorValue}\` | ![${name}](https://via.placeholder.com/30/${colorValue.slice(1)}/${colorValue.slice(1)}) |\n`;
-  });
+  Object.entries(colors)
+    .filter(([, v]) => v)
+    .forEach(([name, value]) => {
+      const colorValue = String(value);
+      md += `| ${name} | \`${colorValue}\` | ![${name}](https://via.placeholder.com/30/${colorValue.slice(1)}/${colorValue.slice(1)}) |\n`;
+    });
   md += '\n';
 
   // Typography
@@ -350,9 +365,11 @@ export function generateMarkdownDocumentation(
   if (mergedConfig.includeCSSVariables) {
     md += '## CSS Variables\n\n';
     md += '```css\n:root {\n';
-    Object.entries(colors).filter(([, v]) => v).forEach(([key, value]) => {
-      md += `  --color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};\n`;
-    });
+    Object.entries(colors)
+      .filter(([, v]) => v)
+      .forEach(([key, value]) => {
+        md += `  --color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};\n`;
+      });
     md += '}\n```\n\n';
   }
 
@@ -360,9 +377,11 @@ export function generateMarkdownDocumentation(
   if (mergedConfig.includeTailwindConfig) {
     md += '## Tailwind Config\n\n';
     md += '```javascript\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n';
-    Object.entries(colors).filter(([, v]) => v).forEach(([key, value]) => {
-      md += `        '${key}': '${value}',\n`;
-    });
+    Object.entries(colors)
+      .filter(([, v]) => v)
+      .forEach(([key, value]) => {
+        md += `        '${key}': '${value}',\n`;
+      });
     md += '      }\n    }\n  }\n}\n```\n';
   }
 
@@ -388,12 +407,14 @@ export function generateJSONExport(
       structure: design.structure,
       responsive: design.responsive,
     },
-    analysis: analysis ? {
-      colors: analysis.colors,
-      typography: analysis.typography,
-      spacing: analysis.spacing,
-      effects: analysis.effects,
-    } : undefined,
+    analysis: analysis
+      ? {
+          colors: analysis.colors,
+          typography: analysis.typography,
+          spacing: analysis.spacing,
+          effects: analysis.effects,
+        }
+      : undefined,
   };
 
   return JSON.stringify(exportData, null, 2);

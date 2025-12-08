@@ -154,7 +154,12 @@ MODIFICATION MODE for "${currentAppName}":
 
     // Build compressed prompt using modular sections from src/prompts/
     // Pass layoutDesign to inject design tokens into the prompt
-    const systemPrompt = buildFullAppPrompt(baseInstructions, hasImage, isModification, layoutDesign);
+    const systemPrompt = buildFullAppPrompt(
+      baseInstructions,
+      hasImage,
+      isModification,
+      layoutDesign
+    );
     const estimatedPromptTokens = Math.round(systemPrompt.length / 4);
 
     perfTracker.checkpoint('prompt_built');
@@ -388,7 +393,11 @@ MODIFICATION MODE for "${currentAppName}":
 
       // Add new design files
       files = [
-        ...filesToAdd.map((df) => ({ path: df.path, content: df.content, description: `Design system: ${df.path}` })),
+        ...filesToAdd.map((df) => ({
+          path: df.path,
+          content: df.content,
+          description: `Design system: ${df.path}`,
+        })),
         ...files,
       ];
     }

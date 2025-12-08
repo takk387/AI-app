@@ -54,25 +54,31 @@ export function generateCSSVariables(
   // Colors
   addComment('Colors - Primary Palette');
   if (analysis.colors.primary) lines.push(`  --${p}color-primary: ${analysis.colors.primary};`);
-  if (analysis.colors.secondary) lines.push(`  --${p}color-secondary: ${analysis.colors.secondary};`);
+  if (analysis.colors.secondary)
+    lines.push(`  --${p}color-secondary: ${analysis.colors.secondary};`);
   if (analysis.colors.accent) lines.push(`  --${p}color-accent: ${analysis.colors.accent};`);
   lines.push('');
 
   addComment('Colors - Background & Surface');
-  if (analysis.colors.background) lines.push(`  --${p}color-background: ${analysis.colors.background};`);
+  if (analysis.colors.background)
+    lines.push(`  --${p}color-background: ${analysis.colors.background};`);
   if (analysis.colors.surface) lines.push(`  --${p}color-surface: ${analysis.colors.surface};`);
-  if (analysis.colors.surfaceAlt) lines.push(`  --${p}color-surface-alt: ${analysis.colors.surfaceAlt};`);
+  if (analysis.colors.surfaceAlt)
+    lines.push(`  --${p}color-surface-alt: ${analysis.colors.surfaceAlt};`);
   lines.push('');
 
   addComment('Colors - Text');
   if (analysis.colors.text) lines.push(`  --${p}color-text: ${analysis.colors.text};`);
-  if (analysis.colors.textMuted) lines.push(`  --${p}color-text-muted: ${analysis.colors.textMuted};`);
-  if (analysis.colors.textInverted) lines.push(`  --${p}color-text-inverted: ${analysis.colors.textInverted};`);
+  if (analysis.colors.textMuted)
+    lines.push(`  --${p}color-text-muted: ${analysis.colors.textMuted};`);
+  if (analysis.colors.textInverted)
+    lines.push(`  --${p}color-text-inverted: ${analysis.colors.textInverted};`);
   lines.push('');
 
   addComment('Colors - Borders');
   if (analysis.colors.border) lines.push(`  --${p}color-border: ${analysis.colors.border};`);
-  if (analysis.colors.borderLight) lines.push(`  --${p}color-border-light: ${analysis.colors.borderLight};`);
+  if (analysis.colors.borderLight)
+    lines.push(`  --${p}color-border-light: ${analysis.colors.borderLight};`);
   lines.push('');
 
   addComment('Colors - Semantic');
@@ -96,7 +102,9 @@ export function generateCSSVariables(
     addComment('Typography - Font Families');
     if (analysis.typography.headingFont) {
       const fallbacks = analysis.typography.headingFont.fallbacks?.join(', ') || 'sans-serif';
-      lines.push(`  --${p}font-heading: '${analysis.typography.headingFont.family}', ${fallbacks};`);
+      lines.push(
+        `  --${p}font-heading: '${analysis.typography.headingFont.family}', ${fallbacks};`
+      );
     }
     if (analysis.typography.bodyFont) {
       const fallbacks = analysis.typography.bodyFont.fallbacks?.join(', ') || 'sans-serif';
@@ -386,7 +394,10 @@ export function generateFigmaTokens(
       if (scale) {
         typographyTokens[`size-${key}`] = { value: scale.size, type: 'fontSizes' };
         typographyTokens[`weight-${key}`] = { value: String(scale.weight), type: 'fontWeights' };
-        typographyTokens[`line-height-${key}`] = { value: String(scale.lineHeight), type: 'lineHeights' };
+        typographyTokens[`line-height-${key}`] = {
+          value: String(scale.lineHeight),
+          type: 'lineHeights',
+        };
       }
     });
   }

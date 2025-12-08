@@ -6,7 +6,12 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import type { AnalysisPhase, AnalysisSubPhase, QuickAnalysis, CompleteDesignAnalysis } from '@/types/layoutDesign';
+import type {
+  AnalysisPhase,
+  AnalysisSubPhase,
+  QuickAnalysis,
+  CompleteDesignAnalysis,
+} from '@/types/layoutDesign';
 
 // ============================================================================
 // TYPES
@@ -52,7 +57,11 @@ export interface UseAnalysisProgressReturn {
   state: AnalysisProgressState;
   startAnalysis: () => void;
   updatePhase: (phaseId: AnalysisPhaseId, update: Partial<AnalysisPhaseState>) => void;
-  updateSubPhase: (phaseId: AnalysisPhaseId, subPhaseId: string, update: Partial<AnalysisSubPhaseState>) => void;
+  updateSubPhase: (
+    phaseId: AnalysisPhaseId,
+    subPhaseId: string,
+    update: Partial<AnalysisSubPhaseState>
+  ) => void;
   completePhase: (phaseId: AnalysisPhaseId) => void;
   startPhase: (phaseId: AnalysisPhaseId) => void;
   setQuickAnalysis: (analysis: QuickAnalysis) => void;
@@ -118,9 +127,7 @@ const createDefaultPhases = (): AnalysisPhaseState[] => [
     label: 'Rendering Preview',
     status: 'pending',
     progress: 0,
-    subPhases: [
-      { id: 'preview', label: 'Creating preview', status: 'pending', progress: 0 },
-    ],
+    subPhases: [{ id: 'preview', label: 'Creating preview', status: 'pending', progress: 0 }],
   },
   {
     id: 'complete',
@@ -175,20 +182,20 @@ export function useAnalysisProgress(): UseAnalysisProgressReturn {
   }, []);
 
   // Calculate estimated time remaining
-  const calculateTimeRemaining = useCallback((
-    overallProgress: number,
-    elapsedTime: number
-  ): string => {
-    if (overallProgress < 5) return 'Calculating...';
-    if (overallProgress >= 100) return 'Complete';
+  const calculateTimeRemaining = useCallback(
+    (overallProgress: number, elapsedTime: number): string => {
+      if (overallProgress < 5) return 'Calculating...';
+      if (overallProgress >= 100) return 'Complete';
 
-    const estimatedTotal = (elapsedTime / overallProgress) * 100;
-    const remaining = estimatedTotal - elapsedTime;
+      const estimatedTotal = (elapsedTime / overallProgress) * 100;
+      const remaining = estimatedTotal - elapsedTime;
 
-    if (remaining < 1000) return 'Almost done...';
-    if (remaining < 60000) return `~${Math.ceil(remaining / 1000)}s remaining`;
-    return `~${Math.ceil(remaining / 60000)} min remaining`;
-  }, []);
+      if (remaining < 1000) return 'Almost done...';
+      if (remaining < 60000) return `~${Math.ceil(remaining / 1000)}s remaining`;
+      return `~${Math.ceil(remaining / 60000)} min remaining`;
+    },
+    []
+  );
 
   // Start elapsed time tracking
   const startTimer = useCallback(() => {
@@ -233,79 +240,73 @@ export function useAnalysisProgress(): UseAnalysisProgressReturn {
   }, [startTimer]);
 
   // Update a phase
-  const updatePhase = useCallback((
-    phaseId: AnalysisPhaseId,
-    update: Partial<AnalysisPhaseState>
-  ) => {
-    setState((prev) => {
-      const newPhases = prev.phases.map((phase) => {
-        if (phase.id === phaseId) {
-          return { ...phase, ...update };
-        }
-        return phase;
-      });
+  const updatePhase = useCallback(
+    (phaseId: AnalysisPhaseId, update: Partial<AnalysisPhaseState>) => {
+      setState((prev) => {
+        const newPhases = prev.phases.map((phase) => {
+          if (phase.id === phaseId) {
+            return { ...phase, ...update };
+          }
+          return phase;
+        });
 
-      const overallProgress = calculateOverallProgress(newPhases);
+        const overallProgress = calculateOverallProgress(newPhases);
 
-      return {
-        ...prev,
-        phases: newPhases,
-        overallProgress,
-        estimatedTimeRemaining: calculateTimeRemaining(
+        return {
+          ...prev,
+          phases: newPhases,
           overallProgress,
-          prev.elapsedTime
-        ),
-      };
-    });
-  }, [calculateOverallProgress, calculateTimeRemaining]);
+          estimatedTimeRemaining: calculateTimeRemaining(overallProgress, prev.elapsedTime),
+        };
+      });
+    },
+    [calculateOverallProgress, calculateTimeRemaining]
+  );
 
   // Update a sub-phase
-  const updateSubPhase = useCallback((
-    phaseId: AnalysisPhaseId,
-    subPhaseId: string,
-    update: Partial<AnalysisSubPhaseState>
-  ) => {
-    setState((prev) => {
-      const newPhases = prev.phases.map((phase) => {
-        if (phase.id === phaseId) {
-          const newSubPhases = phase.subPhases.map((sub) => {
-            if (sub.id === subPhaseId) {
-              return { ...sub, ...update };
-            }
-            return sub;
-          });
+  const updateSubPhase = useCallback(
+    (phaseId: AnalysisPhaseId, subPhaseId: string, update: Partial<AnalysisSubPhaseState>) => {
+      setState((prev) => {
+        const newPhases = prev.phases.map((phase) => {
+          if (phase.id === phaseId) {
+            const newSubPhases = phase.subPhases.map((sub) => {
+              if (sub.id === subPhaseId) {
+                return { ...sub, ...update };
+              }
+              return sub;
+            });
 
-          // Calculate phase progress from sub-phases
-          const completedSubs = newSubPhases.filter((s) => s.status === 'completed').length;
-          const inProgressSubs = newSubPhases.filter((s) => s.status === 'in_progress');
-          const inProgressProgress = inProgressSubs.reduce((sum, s) => sum + s.progress, 0) /
-            (inProgressSubs.length || 1);
-          const totalProgress = newSubPhases.length > 0
-            ? ((completedSubs + (inProgressProgress / 100)) / newSubPhases.length) * 100
-            : phase.progress;
+            // Calculate phase progress from sub-phases
+            const completedSubs = newSubPhases.filter((s) => s.status === 'completed').length;
+            const inProgressSubs = newSubPhases.filter((s) => s.status === 'in_progress');
+            const inProgressProgress =
+              inProgressSubs.reduce((sum, s) => sum + s.progress, 0) / (inProgressSubs.length || 1);
+            const totalProgress =
+              newSubPhases.length > 0
+                ? ((completedSubs + inProgressProgress / 100) / newSubPhases.length) * 100
+                : phase.progress;
 
-          return {
-            ...phase,
-            subPhases: newSubPhases,
-            progress: Math.round(totalProgress),
-          };
-        }
-        return phase;
-      });
+            return {
+              ...phase,
+              subPhases: newSubPhases,
+              progress: Math.round(totalProgress),
+            };
+          }
+          return phase;
+        });
 
-      const overallProgress = calculateOverallProgress(newPhases);
+        const overallProgress = calculateOverallProgress(newPhases);
 
-      return {
-        ...prev,
-        phases: newPhases,
-        overallProgress,
-        estimatedTimeRemaining: calculateTimeRemaining(
+        return {
+          ...prev,
+          phases: newPhases,
           overallProgress,
-          prev.elapsedTime
-        ),
-      };
-    });
-  }, [calculateOverallProgress, calculateTimeRemaining]);
+          estimatedTimeRemaining: calculateTimeRemaining(overallProgress, prev.elapsedTime),
+        };
+      });
+    },
+    [calculateOverallProgress, calculateTimeRemaining]
+  );
 
   // Start a phase
   const startPhase = useCallback((phaseId: AnalysisPhaseId) => {
@@ -321,7 +322,7 @@ export function useAnalysisProgress(): UseAnalysisProgressReturn {
             startTime: now,
             subPhases: phase.subPhases.map((sub, i) => ({
               ...sub,
-              status: i === 0 ? 'in_progress' as const : 'pending' as const,
+              status: i === 0 ? ('in_progress' as const) : ('pending' as const),
             })),
           };
         }
@@ -341,46 +342,49 @@ export function useAnalysisProgress(): UseAnalysisProgressReturn {
   }, []);
 
   // Complete a phase
-  const completePhase = useCallback((phaseId: AnalysisPhaseId) => {
-    setState((prev) => {
-      const now = Date.now();
-      const phaseIndex = prev.phases.findIndex((p) => p.id === phaseId);
-      const nextPhaseId = prev.phases[phaseIndex + 1]?.id;
+  const completePhase = useCallback(
+    (phaseId: AnalysisPhaseId) => {
+      setState((prev) => {
+        const now = Date.now();
+        const phaseIndex = prev.phases.findIndex((p) => p.id === phaseId);
+        const nextPhaseId = prev.phases[phaseIndex + 1]?.id;
 
-      const newPhases = prev.phases.map((phase) => {
-        if (phase.id === phaseId) {
-          return {
-            ...phase,
-            status: 'completed' as const,
-            progress: 100,
-            endTime: now,
-            subPhases: phase.subPhases.map((sub) => ({
-              ...sub,
+        const newPhases = prev.phases.map((phase) => {
+          if (phase.id === phaseId) {
+            return {
+              ...phase,
               status: 'completed' as const,
               progress: 100,
-            })),
-          };
+              endTime: now,
+              subPhases: phase.subPhases.map((sub) => ({
+                ...sub,
+                status: 'completed' as const,
+                progress: 100,
+              })),
+            };
+          }
+          return phase;
+        });
+
+        const overallProgress = calculateOverallProgress(newPhases);
+        const isComplete = phaseId === 'render' || phaseId === 'complete';
+
+        if (isComplete) {
+          stopTimer();
         }
-        return phase;
+
+        return {
+          ...prev,
+          currentPhase: isComplete ? 'complete' : nextPhaseId || prev.currentPhase,
+          phases: newPhases,
+          overallProgress,
+          isAnalyzing: !isComplete,
+          estimatedTimeRemaining: isComplete ? 'Complete' : prev.estimatedTimeRemaining,
+        };
       });
-
-      const overallProgress = calculateOverallProgress(newPhases);
-      const isComplete = phaseId === 'render' || phaseId === 'complete';
-
-      if (isComplete) {
-        stopTimer();
-      }
-
-      return {
-        ...prev,
-        currentPhase: isComplete ? 'complete' : (nextPhaseId || prev.currentPhase),
-        phases: newPhases,
-        overallProgress,
-        isAnalyzing: !isComplete,
-        estimatedTimeRemaining: isComplete ? 'Complete' : prev.estimatedTimeRemaining,
-      };
-    });
-  }, [calculateOverallProgress, stopTimer]);
+    },
+    [calculateOverallProgress, stopTimer]
+  );
 
   // Set quick analysis result
   const setQuickAnalysis = useCallback((analysis: QuickAnalysis) => {
@@ -399,20 +403,23 @@ export function useAnalysisProgress(): UseAnalysisProgressReturn {
   }, []);
 
   // Set error
-  const setError = useCallback((error: string) => {
-    stopTimer();
-    setState((prev) => ({
-      ...prev,
-      isAnalyzing: false,
-      error,
-      phases: prev.phases.map((phase) => {
-        if (phase.status === 'in_progress') {
-          return { ...phase, status: 'error' as const, error };
-        }
-        return phase;
-      }),
-    }));
-  }, [stopTimer]);
+  const setError = useCallback(
+    (error: string) => {
+      stopTimer();
+      setState((prev) => ({
+        ...prev,
+        isAnalyzing: false,
+        error,
+        phases: prev.phases.map((phase) => {
+          if (phase.status === 'in_progress') {
+            return { ...phase, status: 'error' as const, error };
+          }
+          return phase;
+        }),
+      }));
+    },
+    [stopTimer]
+  );
 
   // Reset
   const reset = useCallback(() => {

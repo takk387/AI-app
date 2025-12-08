@@ -226,7 +226,11 @@ export function invertLightness(hex: string, config: Partial<DarkModeConfig> = {
 /**
  * Adjust color for dark background while maintaining brand identity
  */
-export function adjustForDarkMode(hex: string, backgroundHex: string, config: Partial<DarkModeConfig> = {}): string {
+export function adjustForDarkMode(
+  hex: string,
+  backgroundHex: string,
+  config: Partial<DarkModeConfig> = {}
+): string {
   const { contrastMinimum } = { ...DEFAULT_CONFIG, ...config };
   const hsl = hexToHsl(hex);
 
@@ -322,7 +326,10 @@ export function generateThemeCSS(
   const generateVars = (colors: Partial<ColorSettings>, prefix = '') => {
     return Object.entries(colors)
       .filter(([, value]) => value)
-      .map(([key, value]) => `  --color-${prefix}${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`)
+      .map(
+        ([key, value]) =>
+          `  --color-${prefix}${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`
+      )
       .join('\n');
   };
 

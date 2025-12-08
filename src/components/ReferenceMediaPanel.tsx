@@ -54,18 +54,9 @@ interface MediaItem {
 // CONSTANTS
 // ============================================================================
 
-const DEFAULT_ACCEPTED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-];
+const DEFAULT_ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-const DEFAULT_ACCEPTED_VIDEO_TYPES = [
-  'video/mp4',
-  'video/webm',
-  'video/quicktime',
-];
+const DEFAULT_ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 const MAX_IMAGE_SIZE_MB = 10;
 const MAX_VIDEO_SIZE_MB = 100;
@@ -129,20 +120,12 @@ function MediaPreview({
       {/* Preview Image/Thumbnail */}
       <div className="aspect-video bg-slate-800">
         {item.type === 'image' && item.dataUrl && (
-          <img
-            src={item.dataUrl}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={item.dataUrl} alt={item.name} className="w-full h-full object-cover" />
         )}
         {item.type === 'video' && (
           <div className="w-full h-full flex items-center justify-center">
             {item.thumbnail ? (
-              <img
-                src={item.thumbnail}
-                alt={item.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={item.thumbnail} alt={item.name} className="w-full h-full object-cover" />
             ) : (
               <PlayIcon className="w-8 h-8 text-slate-500" />
             )}
@@ -162,9 +145,7 @@ function MediaPreview({
       <div className="absolute top-2 right-2">
         <span
           className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-            item.type === 'image'
-              ? 'bg-blue-500/80 text-white'
-              : 'bg-purple-500/80 text-white'
+            item.type === 'image' ? 'bg-blue-500/80 text-white' : 'bg-purple-500/80 text-white'
           }`}
         >
           {item.type === 'image' ? 'IMG' : 'VID'}
@@ -288,9 +269,7 @@ function Dropzone({
           <UploadIcon className="w-4 h-4 text-slate-400" />
         </div>
         <div className="text-left">
-          <p className="text-xs font-medium text-white">
-            Drop images/videos or click to browse
-          </p>
+          <p className="text-xs font-medium text-white">Drop images/videos or click to browse</p>
           <p className="text-[10px] text-slate-500">
             Images up to {MAX_IMAGE_SIZE_MB}MB • Videos up to {MAX_VIDEO_SIZE_MB}MB
           </p>
@@ -393,9 +372,7 @@ export function ReferenceMediaPanel({
             const dataUrl = e.target?.result as string;
             setMediaItems((prev) =>
               prev.map((item) =>
-                item.id === itemId
-                  ? { ...item, dataUrl, status: 'ready' }
-                  : item
+                item.id === itemId ? { ...item, dataUrl, status: 'ready' } : item
               )
             );
             onImageUpload?.(dataUrl);
@@ -568,9 +545,7 @@ export function ReferenceMediaPanel({
             {imageCount < maxImages && (
               <button
                 onClick={() =>
-                  document
-                    .querySelector<HTMLInputElement>('input[type="file"]')
-                    ?.click()
+                  document.querySelector<HTMLInputElement>('input[type="file"]')?.click()
                 }
                 className="aspect-video border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-white/40 hover:bg-white/5 transition-colors"
               >
@@ -587,9 +562,7 @@ export function ReferenceMediaPanel({
         <div className="px-4 py-3 border-t border-white/10 bg-slate-800/50">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-white">
-                {mediaItems[selectedIndex].name}
-              </div>
+              <div className="text-sm text-white">{mediaItems[selectedIndex].name}</div>
               <div className="text-xs text-slate-400">
                 {formatFileSize(mediaItems[selectedIndex].size)}
                 {mediaItems[selectedIndex].duration &&

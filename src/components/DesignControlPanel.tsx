@@ -8,7 +8,14 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import type { EffectsSettings, ColorSettings, TypographySettings, SpacingSettings, LayoutDesign, ButtonSpec } from '@/types/layoutDesign';
+import type {
+  EffectsSettings,
+  ColorSettings,
+  TypographySettings,
+  SpacingSettings,
+  LayoutDesign,
+  ButtonSpec,
+} from '@/types/layoutDesign';
 import { checkContrast } from '@/utils/colorHarmony';
 import { TypographyPanel } from './TypographyPanel';
 import { SpacingPanel } from './SpacingPanel';
@@ -240,13 +247,7 @@ function Toggle({
 /**
  * Contrast badge component for WCAG compliance indication
  */
-function ContrastBadge({
-  foreground,
-  background,
-}: {
-  foreground?: string;
-  background?: string;
-}) {
+function ContrastBadge({ foreground, background }: { foreground?: string; background?: string }) {
   const result = useMemo(() => {
     if (!foreground || !background) return null;
     try {
@@ -312,7 +313,9 @@ export function DesignControlPanel({
     accessibility: false,
     componentDesign: false,
   });
-  const [componentDesignTab, setComponentDesignTab] = useState<'states' | 'buttons' | 'links'>('buttons');
+  const [componentDesignTab, setComponentDesignTab] = useState<'states' | 'buttons' | 'links'>(
+    'buttons'
+  );
 
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections((prev) => ({
@@ -611,10 +614,7 @@ export function DesignControlPanel({
               isOpen={openSections.accessibility}
               onToggle={() => toggleSection('accessibility')}
             >
-              <AccessibilityPanel
-                design={layoutDesign}
-                onAutoFix={onAccessibilityFix}
-              />
+              <AccessibilityPanel design={layoutDesign} onAutoFix={onAccessibilityFix} />
             </Section>
           )}
 
@@ -631,7 +631,9 @@ export function DesignControlPanel({
                   type="button"
                   onClick={() => setComponentDesignTab('states')}
                   className={`flex-1 px-2 py-1 text-xs rounded transition-all ${
-                    componentDesignTab === 'states' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                    componentDesignTab === 'states'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   States
@@ -640,7 +642,9 @@ export function DesignControlPanel({
                   type="button"
                   onClick={() => setComponentDesignTab('buttons')}
                   className={`flex-1 px-2 py-1 text-xs rounded transition-all ${
-                    componentDesignTab === 'buttons' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                    componentDesignTab === 'buttons'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   Buttons
@@ -649,7 +653,9 @@ export function DesignControlPanel({
                   type="button"
                   onClick={() => setComponentDesignTab('links')}
                   className={`flex-1 px-2 py-1 text-xs rounded transition-all ${
-                    componentDesignTab === 'links' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                    componentDesignTab === 'links'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   Links
@@ -658,20 +664,12 @@ export function DesignControlPanel({
 
               {/* Tab Content */}
               <div className="max-h-96 overflow-y-auto">
-                {componentDesignTab === 'states' && (
-                  <ComponentStateEditor showPreview={true} />
-                )}
+                {componentDesignTab === 'states' && <ComponentStateEditor showPreview={true} />}
                 {componentDesignTab === 'buttons' && onButtonSpecsChange && (
-                  <ButtonDesigner
-                    buttons={buttonSpecs}
-                    onChange={onButtonSpecsChange}
-                  />
+                  <ButtonDesigner buttons={buttonSpecs} onChange={onButtonSpecsChange} />
                 )}
                 {componentDesignTab === 'links' && onLinkSpecsChange && (
-                  <LinkDesigner
-                    links={linkSpecs}
-                    onChange={onLinkSpecsChange}
-                  />
+                  <LinkDesigner links={linkSpecs} onChange={onLinkSpecsChange} />
                 )}
               </div>
             </Section>

@@ -60,11 +60,7 @@ async function analyzeFramePair(
   frame2: ExtractedFrame,
   context: string
 ): Promise<FramePairAnalysis> {
-  const prompt = buildVideoAnalysisPrompt(
-    frame1.timestamp,
-    frame2.timestamp,
-    context
-  );
+  const prompt = buildVideoAnalysisPrompt(frame1.timestamp, frame2.timestamp, context);
 
   try {
     const response = await anthropic.messages.create({
@@ -125,27 +121,31 @@ async function analyzeFramePair(
       return {
         fromIndex: frame1.index,
         toIndex: frame2.index,
-        animations: (parsed.animations || []).map((anim: Partial<DetectedAnimation>, i: number) => ({
-          id: `anim-${frame1.index}-${frame2.index}-${i}`,
-          type: anim.type || 'fade',
-          property: anim.property || 'opacity',
-          fromValue: anim.fromValue || '0',
-          toValue: anim.toValue || '1',
-          duration: anim.duration || '0.3s',
-          easing: anim.easing || 'ease-out',
-          delay: anim.delay,
-          element: anim.element || 'unknown',
-          confidence: anim.confidence || 0.5,
-        })),
-        transitions: (parsed.transitions || []).map((trans: Partial<DetectedTransition>, i: number) => ({
-          id: `trans-${frame1.index}-${frame2.index}-${i}`,
-          type: trans.type || 'fade',
-          duration: trans.duration || '0.3s',
-          easing: trans.easing || 'ease-out',
-          fromState: trans.fromState || 'hidden',
-          toState: trans.toState || 'visible',
-          affectedElements: trans.affectedElements || [],
-        })),
+        animations: (parsed.animations || []).map(
+          (anim: Partial<DetectedAnimation>, i: number) => ({
+            id: `anim-${frame1.index}-${frame2.index}-${i}`,
+            type: anim.type || 'fade',
+            property: anim.property || 'opacity',
+            fromValue: anim.fromValue || '0',
+            toValue: anim.toValue || '1',
+            duration: anim.duration || '0.3s',
+            easing: anim.easing || 'ease-out',
+            delay: anim.delay,
+            element: anim.element || 'unknown',
+            confidence: anim.confidence || 0.5,
+          })
+        ),
+        transitions: (parsed.transitions || []).map(
+          (trans: Partial<DetectedTransition>, i: number) => ({
+            id: `trans-${frame1.index}-${frame2.index}-${i}`,
+            type: trans.type || 'fade',
+            duration: trans.duration || '0.3s',
+            easing: trans.easing || 'ease-out',
+            fromState: trans.fromState || 'hidden',
+            toState: trans.toState || 'visible',
+            affectedElements: trans.affectedElements || [],
+          })
+        ),
         description: parsed.description || 'Animation detected',
       };
     } catch {
@@ -213,9 +213,7 @@ function extractAnimationsFromText(
 /**
  * Analyze the first key frame for design elements
  */
-async function analyzeDesignFromKeyFrame(
-  frame: ExtractedFrame
-): Promise<{
+async function analyzeDesignFromKeyFrame(frame: ExtractedFrame): Promise<{
   colors: string[];
   fonts: string[];
   layoutType: string;
@@ -296,10 +294,7 @@ export async function POST(request: Request) {
     const { frames, keyFrames, metadata, analysisMode = 'detailed' } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { error: 'Anthropic API key not configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
     }
 
     if (!frames || frames.length < 2) {
@@ -314,9 +309,7 @@ export async function POST(request: Request) {
     const framesToAnalyze = frames.slice(0, maxPairs + 1);
 
     // Analyze design from first key frame
-    const designAnalysis = await analyzeDesignFromKeyFrame(
-      keyFrames?.[0] || frames[0]
-    );
+    const designAnalysis = await analyzeDesignFromKeyFrame(keyFrames?.[0] || frames[0]);
 
     // Analyze consecutive frame pairs
     const framePairResults: FramePairAnalysis[] = [];
@@ -329,11 +322,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const result = await analyzeFramePair(
-        framesToAnalyze[i],
-        framesToAnalyze[i + 1],
-        context
-      );
+      const result = await analyzeFramePair(framesToAnalyze[i], framesToAnalyze[i + 1], context);
 
       framePairResults.push(result);
     }

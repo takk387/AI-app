@@ -179,10 +179,7 @@ function BreakpointInputs({
     <div className="grid grid-cols-5 gap-2">
       {Object.entries(breakpoints).map(([key, value]) => (
         <div key={key} className="space-y-1">
-          <label
-            className="block text-xs font-medium"
-            style={{ color: BREAKPOINT_COLORS[key] }}
-          >
+          <label className="block text-xs font-medium" style={{ color: BREAKPOINT_COLORS[key] }}>
             {key}
           </label>
           <input
@@ -229,9 +226,10 @@ function DevicePresetSelector({
             onClick={() => setSelectedCategory(cat.id)}
             className={`
               px-2 py-1 text-xs rounded transition-all
-              ${selectedCategory === cat.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
+              ${
+                selectedCategory === cat.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
               }
             `}
           >
@@ -248,9 +246,10 @@ function DevicePresetSelector({
             onClick={() => onSelect(device.width, device.height)}
             className={`
               p-2 rounded-lg border text-left transition-all
-              ${currentWidth === device.width
-                ? 'border-blue-500 bg-blue-500/10'
-                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+              ${
+                currentWidth === device.width
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
               }
             `}
           >
@@ -294,9 +293,10 @@ function QuickWidthButtons({
           onClick={() => onSelect(width)}
           className={`
             px-2 py-1 text-xs rounded transition-all
-            ${currentWidth === width
-              ? 'bg-blue-600 text-white'
-              : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+            ${
+              currentWidth === width
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
             }
           `}
         >
@@ -387,7 +387,8 @@ export function BreakpointEditor({
             <span
               className="px-2 py-0.5 text-xs font-medium rounded"
               style={{
-                backgroundColor: BREAKPOINT_COLORS[currentBreakpointName.toLowerCase()] || '#64748B',
+                backgroundColor:
+                  BREAKPOINT_COLORS[currentBreakpointName.toLowerCase()] || '#64748B',
                 color: 'white',
               }}
             >
@@ -437,9 +438,10 @@ export function BreakpointEditor({
               onClick={() => handlePresetSelect(preset.id)}
               className={`
                 flex-1 px-3 py-2 text-sm rounded-lg border transition-all
-                ${selectedPreset === preset.id
-                  ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+                ${
+                  selectedPreset === preset.id
+                    ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                    : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
                 }
               `}
             >
@@ -452,10 +454,7 @@ export function BreakpointEditor({
       {/* Device presets */}
       <div>
         <label className="block text-xs text-slate-400 mb-2">Device Presets</label>
-        <DevicePresetSelector
-          currentWidth={currentWidth}
-          onSelect={handleDeviceSelect}
-        />
+        <DevicePresetSelector currentWidth={currentWidth} onSelect={handleDeviceSelect} />
       </div>
 
       {/* Advanced: Custom breakpoints */}
@@ -477,10 +476,7 @@ export function BreakpointEditor({
 
         {showAdvanced && (
           <div className="mt-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-            <BreakpointInputs
-              breakpoints={breakpoints}
-              onChange={handleBreakpointChange}
-            />
+            <BreakpointInputs breakpoints={breakpoints} onChange={handleBreakpointChange} />
             <p className="text-xs text-slate-500 mt-2">
               Drag markers on the ruler or edit values directly
             </p>

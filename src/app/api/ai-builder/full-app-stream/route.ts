@@ -15,7 +15,12 @@ import {
   PerformanceTracker,
 } from '@/utils/analytics';
 import { type StreamEvent, formatSSE, type CompleteEvent } from '@/types/streaming';
-import { detectTruncation, getTokenBudget, type PhaseContext, type Phase } from '../full-app/generation-logic';
+import {
+  detectTruncation,
+  getTokenBudget,
+  type PhaseContext,
+  type Phase,
+} from '../full-app/generation-logic';
 import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
 import type { LayoutDesign } from '@/types/layoutDesign';
 
@@ -117,7 +122,11 @@ export async function POST(request: Request) {
           completedPhases?: number[];
           cumulativeFeatures?: string[];
         };
-        currentAppState?: { name?: string; appType?: string; files?: Array<{ path: string; content: string }> };
+        currentAppState?: {
+          name?: string;
+          appType?: string;
+          files?: Array<{ path: string; content: string }>;
+        };
         layoutDesign?: LayoutDesign;
       };
 
@@ -206,7 +215,12 @@ MODIFICATION MODE for "${currentAppName}":
     : ''
 }${currentAppContext}`;
 
-      const systemPrompt = buildFullAppPrompt(baseInstructions, hasImage, isModification, layoutDesign);
+      const systemPrompt = buildFullAppPrompt(
+        baseInstructions,
+        hasImage,
+        isModification,
+        layoutDesign
+      );
       perfTracker.checkpoint('prompt_built');
 
       // Build conversation context

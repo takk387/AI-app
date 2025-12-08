@@ -826,12 +826,14 @@ export async function POST(request: Request) {
       const hasAnalysis = !!(pixelPerfectAnalysis || quickAnalysisResult);
       systemPrompt = buildPixelPerfectPrompt(
         hasAnalysis,
-        quickAnalysisResult ? {
-          layoutType: quickAnalysisResult.layoutType,
-          overallStyle: quickAnalysisResult.overallStyle,
-          primaryFont: quickAnalysisResult.primaryFont,
-          dominantColors: quickAnalysisResult.dominantColors?.map(c => c.hex),
-        } : undefined
+        quickAnalysisResult
+          ? {
+              layoutType: quickAnalysisResult.layoutType,
+              overallStyle: quickAnalysisResult.overallStyle,
+              primaryFont: quickAnalysisResult.primaryFont,
+              dominantColors: quickAnalysisResult.dominantColors?.map((c) => c.hex),
+            }
+          : undefined
       );
     } else {
       // Use standard layout builder prompt

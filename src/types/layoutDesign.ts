@@ -866,7 +866,14 @@ export interface ScrollAnimation {
  */
 export interface EntranceAnimation {
   element: string;
-  animation: 'fadeIn' | 'fadeInUp' | 'fadeInDown' | 'slideInLeft' | 'slideInRight' | 'scaleIn' | 'custom';
+  animation:
+    | 'fadeIn'
+    | 'fadeInUp'
+    | 'fadeInDown'
+    | 'slideInLeft'
+    | 'slideInRight'
+    | 'scaleIn'
+    | 'custom';
   duration: string;
   delay: string;
   stagger?: string; // For staggered children

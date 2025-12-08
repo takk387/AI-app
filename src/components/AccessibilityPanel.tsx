@@ -55,7 +55,9 @@ function ScoreCircle({ score, grade }: { score: number; grade: string }) {
   const colors = getScoreColor();
 
   return (
-    <div className={`relative inline-flex items-center justify-center ${colors.bg} rounded-full p-2`}>
+    <div
+      className={`relative inline-flex items-center justify-center ${colors.bg} rounded-full p-2`}
+    >
       <svg width="88" height="88" className="-rotate-90">
         {/* Background circle */}
         <circle
@@ -403,7 +405,9 @@ export function AccessibilityPanel({ design, onAutoFix, className = '' }: Access
             />
           </svg>
           <div className="text-green-400 font-medium">All checks passed!</div>
-          <div className="text-xs text-slate-500 mt-1">Your design meets WCAG accessibility standards</div>
+          <div className="text-xs text-slate-500 mt-1">
+            Your design meets WCAG accessibility standards
+          </div>
         </div>
       )}
 

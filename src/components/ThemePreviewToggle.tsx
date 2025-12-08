@@ -155,9 +155,10 @@ function ButtonsVariant({
           onClick={() => onChange(option.value)}
           className={`
             flex items-center gap-1.5 rounded-md transition-all ${sizeClasses[size]}
-            ${mode === option.value
-              ? 'bg-slate-700 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+            ${
+              mode === option.value
+                ? 'bg-slate-700 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
             }
           `}
           title={option.label}
@@ -228,10 +229,7 @@ function DropdownVariant({
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full mt-1 right-0 z-20 bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden">
             {options.map((option) => (
               <button
@@ -242,9 +240,10 @@ function DropdownVariant({
                 }}
                 className={`
                   w-full flex items-center gap-2 ${sizeClasses[size]} text-left
-                  ${mode === option.value
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-700'
+                  ${
+                    mode === option.value
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-300 hover:bg-slate-700'
                   }
                 `}
               >
@@ -325,12 +324,7 @@ export function FloatingThemeToggle({
 
   return (
     <div className={`absolute ${positionClasses[position]} z-10`}>
-      <ThemePreviewToggle
-        mode={mode}
-        onChange={onChange}
-        variant="toggle"
-        size="sm"
-      />
+      <ThemePreviewToggle mode={mode} onChange={onChange} variant="toggle" size="sm" />
     </div>
   );
 }

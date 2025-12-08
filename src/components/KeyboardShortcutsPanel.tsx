@@ -58,7 +58,11 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
       </svg>
     ),
     shortcuts: [
-      { keys: [MOD_KEY, 'S'], action: 'Save design', description: 'Save current design to history' },
+      {
+        keys: [MOD_KEY, 'S'],
+        action: 'Save design',
+        description: 'Save current design to history',
+      },
       { keys: [MOD_KEY, 'Z'], action: 'Undo', description: 'Undo last change' },
       { keys: [MOD_KEY, 'Shift', 'Z'], action: 'Redo', description: 'Redo last undone change' },
       { keys: [MOD_KEY, 'E'], action: 'Export', description: 'Open export options' },
@@ -90,8 +94,16 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
       { keys: ['2'], action: 'Tablet view', description: 'Switch to tablet breakpoint' },
       { keys: ['3'], action: 'Desktop view', description: 'Switch to desktop breakpoint' },
       { keys: ['G'], action: 'Toggle grid overlay', description: 'Show/hide 12-column grid' },
-      { keys: ['F'], action: 'Toggle fullscreen preview', description: 'Expand preview to fullscreen' },
-      { keys: [MOD_KEY, 'B'], action: 'Toggle sidebar', description: 'Show/hide the control sidebar' },
+      {
+        keys: ['F'],
+        action: 'Toggle fullscreen preview',
+        description: 'Expand preview to fullscreen',
+      },
+      {
+        keys: [MOD_KEY, 'B'],
+        action: 'Toggle sidebar',
+        description: 'Show/hide the control sidebar',
+      },
     ],
   },
   {
@@ -241,13 +253,7 @@ function CategorySection({ category }: { category: ShortcutCategory }) {
 /**
  * Search input component
  */
-function SearchInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
+function SearchInput({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <div className="relative">
       <svg

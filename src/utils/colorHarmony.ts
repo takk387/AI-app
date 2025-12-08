@@ -408,9 +408,7 @@ export function suggestAccessibleColor(
 
   while (currentRatio < targetRatio && iterations < maxIterations) {
     const hsl = hexToHsl(adjustedColor);
-    const newLightness = shouldDarken
-      ? Math.max(0, hsl.l - 5)
-      : Math.min(100, hsl.l + 5);
+    const newLightness = shouldDarken ? Math.max(0, hsl.l - 5) : Math.min(100, hsl.l + 5);
 
     adjustedColor = hslToHex(fgHsl.h, fgHsl.s, newLightness);
     currentRatio = getContrastRatio(adjustedColor, background);

@@ -8,7 +8,12 @@
  */
 
 import React, { useState, useMemo, CSSProperties } from 'react';
-import type { ComponentType, ComponentState, AnyComponentSpec, LinkSpec } from '@/hooks/useComponentStates';
+import type {
+  ComponentType,
+  ComponentState,
+  AnyComponentSpec,
+  LinkSpec,
+} from '@/hooks/useComponentStates';
 import type { ButtonSpec, InputSpec, CardSpec } from '@/types/layoutDesign';
 
 // ============================================================================
@@ -113,13 +118,7 @@ function buildLinkStyle(spec: LinkSpec, state: ComponentState): CSSProperties {
 // PREVIEW COMPONENTS
 // ============================================================================
 
-function ButtonPreview({
-  spec,
-  forcedState,
-}: {
-  spec: ButtonSpec;
-  forcedState?: ComponentState;
-}) {
+function ButtonPreview({ spec, forcedState }: { spec: ButtonSpec; forcedState?: ComponentState }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isActive, setIsActive] = useState(false);
@@ -154,13 +153,7 @@ function ButtonPreview({
   );
 }
 
-function InputPreview({
-  spec,
-  forcedState,
-}: {
-  spec: InputSpec;
-  forcedState?: ComponentState;
-}) {
+function InputPreview({ spec, forcedState }: { spec: InputSpec; forcedState?: ComponentState }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -194,13 +187,7 @@ function InputPreview({
   );
 }
 
-function CardPreview({
-  spec,
-  forcedState,
-}: {
-  spec: CardSpec;
-  forcedState?: ComponentState;
-}) {
+function CardPreview({ spec, forcedState }: { spec: CardSpec; forcedState?: ComponentState }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const currentState = useMemo((): ComponentState => {
@@ -230,13 +217,7 @@ function CardPreview({
   );
 }
 
-function LinkPreview({
-  spec,
-  forcedState,
-}: {
-  spec: LinkSpec;
-  forcedState?: ComponentState;
-}) {
+function LinkPreview({ spec, forcedState }: { spec: LinkSpec; forcedState?: ComponentState }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isActive, setIsActive] = useState(false);
@@ -299,14 +280,10 @@ export function StatePreview({
 
   return (
     <div className={`flex flex-col items-center justify-center min-h-[120px] ${className}`}>
-      {label && (
-        <div className="text-xs text-slate-500 mb-2">{label}</div>
-      )}
+      {label && <div className="text-xs text-slate-500 mb-2">{label}</div>}
       {renderPreview()}
       {!forcedState && (
-        <div className="text-xs text-slate-600 mt-3">
-          Hover, click, or focus to see states
-        </div>
+        <div className="text-xs text-slate-600 mt-3">Hover, click, or focus to see states</div>
       )}
     </div>
   );
@@ -329,18 +306,9 @@ export function StatePreviewGrid({
   return (
     <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${className}`}>
       {states.map((state) => (
-        <div
-          key={state}
-          className="p-4 bg-slate-800/50 rounded-lg border border-slate-700"
-        >
-          <div className="text-xs text-slate-500 mb-2 uppercase tracking-wide">
-            {state}
-          </div>
-          <StatePreview
-            componentType={componentType}
-            spec={spec}
-            forcedState={state}
-          />
+        <div key={state} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+          <div className="text-xs text-slate-500 mb-2 uppercase tracking-wide">{state}</div>
+          <StatePreview componentType={componentType} spec={spec} forcedState={state} />
         </div>
       ))}
     </div>

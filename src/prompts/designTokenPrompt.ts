@@ -395,7 +395,9 @@ export function buildAnimationPrompt(animations: CompleteDesignAnalysis['animati
   if (animations.hover && animations.hover.length > 0) {
     sections.push('\n**Hover Effects**:');
     animations.hover.forEach((anim, i) => {
-      sections.push(`${i + 1}. ${anim.element || 'Element'}: ${anim.css || anim.tailwind || 'Custom animation'}`);
+      sections.push(
+        `${i + 1}. ${anim.element || 'Element'}: ${anim.css || anim.tailwind || 'Custom animation'}`
+      );
     });
   }
 
@@ -409,7 +411,9 @@ export function buildAnimationPrompt(animations: CompleteDesignAnalysis['animati
   if (animations.transitions && animations.transitions.length > 0) {
     sections.push('\n**Transitions**:');
     animations.transitions.forEach((trans, i) => {
-      sections.push(`${i + 1}. Duration: ${trans.duration || '300ms'}, Easing: ${trans.easing || 'ease-in-out'}`);
+      sections.push(
+        `${i + 1}. Duration: ${trans.duration || '300ms'}, Easing: ${trans.easing || 'ease-in-out'}`
+      );
     });
   }
 

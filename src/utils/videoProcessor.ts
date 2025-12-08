@@ -151,9 +151,7 @@ export async function extractFrames(
     video.onloadedmetadata = () => {
       // Check duration limit
       if (video.duration > VIDEO_CONFIG.maxDuration) {
-        callbacks?.onError?.(
-          `Video too long. Maximum duration: ${VIDEO_CONFIG.maxDuration}s`
-        );
+        callbacks?.onError?.(`Video too long. Maximum duration: ${VIDEO_CONFIG.maxDuration}s`);
         URL.revokeObjectURL(video.src);
         reject(new Error(`Video exceeds ${VIDEO_CONFIG.maxDuration}s limit`));
         return;
@@ -175,10 +173,7 @@ export async function extractFrames(
 
       // Calculate frame interval
       const frameInterval = 1 / frameRate;
-      const totalFrames = Math.min(
-        Math.floor(video.duration / frameInterval),
-        maxFrames
-      );
+      const totalFrames = Math.min(Math.floor(video.duration / frameInterval), maxFrames);
 
       callbacks?.onProgress?.(0, 'Starting frame extraction');
 
@@ -197,15 +192,11 @@ export async function extractFrames(
         ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
 
         // Convert to base64
-        const imageDataUrl = canvas.toDataURL(
-          'image/jpeg',
-          VIDEO_CONFIG.compressionQuality
-        );
+        const imageDataUrl = canvas.toDataURL('image/jpeg', VIDEO_CONFIG.compressionQuality);
 
         // Determine if this is a key frame
         const isKeyFrame =
-          frameIndex === 0 ||
-          currentTime % VIDEO_CONFIG.keyFrameInterval < frameInterval;
+          frameIndex === 0 || currentTime % VIDEO_CONFIG.keyFrameInterval < frameInterval;
 
         const frame: ExtractedFrame = {
           index: frameIndex,
@@ -219,10 +210,7 @@ export async function extractFrames(
 
         // Update progress
         const progress = ((frameIndex + 1) / totalFrames) * 100;
-        callbacks?.onProgress?.(
-          progress,
-          `Extracting frame ${frameIndex + 1}/${totalFrames}`
-        );
+        callbacks?.onProgress?.(progress, `Extracting frame ${frameIndex + 1}/${totalFrames}`);
 
         // Move to next frame
         currentTime += frameInterval;
@@ -307,7 +295,10 @@ export async function extractKeyFrames(
         callbacks?.onFrameExtracted?.(frame);
 
         const progress = ((frameIndex + 1) / timestamps.length) * 100;
-        callbacks?.onProgress?.(progress, `Extracting key frame ${frameIndex + 1}/${timestamps.length}`);
+        callbacks?.onProgress?.(
+          progress,
+          `Extracting key frame ${frameIndex + 1}/${timestamps.length}`
+        );
 
         frameIndex++;
         extractFrame(frameIndex);

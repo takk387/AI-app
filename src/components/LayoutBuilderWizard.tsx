@@ -849,7 +849,9 @@ export function LayoutBuilderWizard({
   // Pixel-perfect mode state
   const [analysisMode, setAnalysisMode] = useState<'standard' | 'pixel-perfect'>('standard');
   const [showComparisonView, setShowComparisonView] = useState(false);
-  const [pixelPerfectAnalysis, setPixelPerfectAnalysis] = useState<CompleteDesignAnalysis | null>(null);
+  const [pixelPerfectAnalysis, setPixelPerfectAnalysis] = useState<CompleteDesignAnalysis | null>(
+    null
+  );
   const [quickAnalysis, setQuickAnalysis] = useState<QuickAnalysis | null>(null);
 
   // Video upload state
@@ -989,9 +991,7 @@ export function LayoutBuilderWizard({
       // Don't trigger shortcuts when typing in input fields
       const target = e.target as HTMLElement;
       const isInputField =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable;
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         if (e.shiftKey) {
@@ -1406,7 +1406,9 @@ export function LayoutBuilderWizard({
           if (videoAnalysis.animations && videoAnalysis.animations.length > 0) {
             setDetectedAnimations(videoAnalysis.animations);
             setShowAnimationPanel(true);
-            success(`Detected ${videoAnalysis.animations.length} animations - view in Animation Panel`);
+            success(
+              `Detected ${videoAnalysis.animations.length} animations - view in Animation Panel`
+            );
           } else {
             success('Video analyzed - no animations detected');
           }
@@ -1540,7 +1542,11 @@ export function LayoutBuilderWizard({
                 ? 'bg-purple-600 text-white'
                 : 'text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700'
             }`}
-            title={analysisMode === 'pixel-perfect' ? 'Switch to standard mode' : 'Enable pixel-perfect replication mode'}
+            title={
+              analysisMode === 'pixel-perfect'
+                ? 'Switch to standard mode'
+                : 'Enable pixel-perfect replication mode'
+            }
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -2057,12 +2063,28 @@ export function LayoutBuilderWizard({
             <div className="px-4 py-2 bg-purple-500/20 border-b border-purple-500/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <svg
+                    className="w-4 h-4 text-purple-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
                   </svg>
                   <span className="text-sm text-purple-300">
-                    Pixel-Perfect Mode {referenceImages.length > 0 ? `(${referenceImages.length} ref)` : ''}
+                    Pixel-Perfect Mode{' '}
+                    {referenceImages.length > 0 ? `(${referenceImages.length} ref)` : ''}
                   </span>
                 </div>
                 {/* Panel toggle buttons */}
@@ -2076,8 +2098,18 @@ export function LayoutBuilderWizard({
                           : 'text-purple-400 hover:text-purple-300 hover:bg-purple-500/20'
                       }`}
                     >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
                       </svg>
                       Animations ({detectedAnimations.length})
                     </button>
@@ -2091,8 +2123,18 @@ export function LayoutBuilderWizard({
                           : 'text-purple-400 hover:text-purple-300 hover:bg-purple-500/20'
                       }`}
                     >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
                       Specs
                     </button>
@@ -2108,8 +2150,8 @@ export function LayoutBuilderWizard({
               <AnimationPanel
                 animations={detectedAnimations}
                 onEditAnimation={(id, updates) => {
-                  setDetectedAnimations(prev =>
-                    prev.map(a => a.id === id ? { ...a, ...updates } : a)
+                  setDetectedAnimations((prev) =>
+                    prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
                   );
                 }}
                 onApplyAnimation={(animation, targetElement) => {
@@ -2117,7 +2159,7 @@ export function LayoutBuilderWizard({
                   success(`Applied ${animation.type} animation to ${targetElement || 'element'}`);
                 }}
                 onRemoveAnimation={(id) => {
-                  setDetectedAnimations(prev => prev.filter(a => a.id !== id));
+                  setDetectedAnimations((prev) => prev.filter((a) => a.id !== id));
                   if (detectedAnimations.length <= 1) {
                     setShowAnimationPanel(false);
                   }
@@ -2134,7 +2176,12 @@ export function LayoutBuilderWizard({
                 analysis={pixelPerfectAnalysis}
                 onExport={(format, _content) => {
                   // Use existing export handler which generates content internally
-                  if (format === 'json' || format === 'css' || format === 'tailwind' || format === 'figma') {
+                  if (
+                    format === 'json' ||
+                    format === 'css' ||
+                    format === 'tailwind' ||
+                    format === 'figma'
+                  ) {
                     handleExportSpecSheet(format);
                   }
                 }}
@@ -2299,7 +2346,12 @@ export function LayoutBuilderWizard({
                 aria-label="Close code preview"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>

@@ -122,9 +122,7 @@ function PropertyTrack({
   const [dragging, setDragging] = useState<string | null>(null);
 
   // Get keyframes that have this property
-  const relevantKeyframes = keyframes.filter(
-    (kf) => kf.properties[property] !== undefined
-  );
+  const relevantKeyframes = keyframes.filter((kf) => kf.properties[property] !== undefined);
 
   const handleMouseDown = (e: React.MouseEvent, kfId: string) => {
     e.stopPropagation();
@@ -193,9 +191,10 @@ function PropertyTrack({
             className={`
               absolute top-1/2 -translate-y-1/2 -translate-x-1/2
               w-4 h-4 rotate-45 cursor-move transition-all
-              ${selectedKeyframeId === kf.id
-                ? 'bg-blue-500 ring-2 ring-blue-300 scale-110'
-                : 'bg-amber-500 hover:bg-amber-400'
+              ${
+                selectedKeyframeId === kf.id
+                  ? 'bg-blue-500 ring-2 ring-blue-300 scale-110'
+                  : 'bg-amber-500 hover:bg-amber-400'
               }
               ${dragging === kf.id ? 'scale-125' : ''}
             `}
@@ -406,11 +405,7 @@ function AnimationSettings({
   );
 }
 
-function PresetSelector({
-  onSelect,
-}: {
-  onSelect: (animation: CustomAnimation) => void;
-}) {
+function PresetSelector({ onSelect }: { onSelect: (animation: CustomAnimation) => void }) {
   return (
     <div className="grid grid-cols-5 gap-2">
       {ANIMATION_PRESETS.map((preset) => (
@@ -588,11 +583,7 @@ export function AnimationTimeline({
       {/* Preview */}
       <div>
         <label className="block text-xs text-slate-400 mb-2">Preview</label>
-        <AnimationPreview
-          animation={animation}
-          currentTime={currentTime}
-          isPlaying={isPlaying}
-        />
+        <AnimationPreview animation={animation} currentTime={currentTime} isPlaying={isPlaying} />
       </div>
 
       {/* Settings */}
@@ -671,9 +662,7 @@ export function AnimationTimeline({
       {selectedKeyframe && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs text-slate-400">
-              Keyframe at {selectedKeyframe.time}%
-            </label>
+            <label className="text-xs text-slate-400">Keyframe at {selectedKeyframe.time}%</label>
             <button
               onClick={handleRemoveKeyframe}
               className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
@@ -707,9 +696,7 @@ export function AnimationTimeline({
                     {track.type === 'color' ? (
                       <input
                         type="color"
-                        value={
-                          (selectedKeyframe.properties[track.property] as string) || '#000000'
-                        }
+                        value={(selectedKeyframe.properties[track.property] as string) || '#000000'}
                         onChange={(e) =>
                           handleKeyframePropertyChange(track.property, e.target.value)
                         }
@@ -751,7 +738,9 @@ export function AnimationTimeline({
             <div>
               <label className="block text-xs text-slate-500 mb-1">Easing to Next</label>
               <select
-                value={typeof selectedKeyframe.easing === 'string' ? selectedKeyframe.easing : 'ease'}
+                value={
+                  typeof selectedKeyframe.easing === 'string' ? selectedKeyframe.easing : 'ease'
+                }
                 onChange={(e) => handleEasingChange(e.target.value as EasingFunction)}
                 className="w-full px-3 py-1.5 text-sm bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none"
               >

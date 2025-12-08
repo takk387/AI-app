@@ -90,9 +90,10 @@ function PresetButton({
       onClick={onClick}
       className={`
         px-2 py-1 text-[10px] rounded transition-all
-        ${isSelected
-          ? 'bg-blue-600 text-white'
-          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+        ${
+          isSelected
+            ? 'bg-blue-600 text-white'
+            : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
         }
       `}
       title={presetData.label}
@@ -157,10 +158,7 @@ function AnimationPreviewBall({
 
       {/* Progress indicator */}
       <div className="absolute bottom-1 left-2 right-2 h-0.5 bg-slate-700 rounded overflow-hidden">
-        <div
-          className="h-full bg-blue-500/50"
-          style={{ width: `${progress * 100}%` }}
-        />
+        <div className="h-full bg-blue-500/50" style={{ width: `${progress * 100}%` }} />
       </div>
     </div>
   );
@@ -273,7 +271,13 @@ function CurveCanvas({
           <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#334155" strokeWidth="0.5" />
         </pattern>
       </defs>
-      <rect x={padding} y={padding} width={width - 2 * padding} height={height - 2 * padding} fill="url(#grid)" />
+      <rect
+        x={padding}
+        y={padding}
+        width={width - 2 * padding}
+        height={height - 2 * padding}
+        fill="url(#grid)"
+      />
 
       {/* Diagonal reference line */}
       <line
@@ -335,7 +339,11 @@ function CurveCanvas({
       <text x={padding - 5} y={height - padding + 15} className="text-[10px] fill-slate-500">
         0
       </text>
-      <text x={width - padding - 5} y={height - padding + 15} className="text-[10px] fill-slate-500">
+      <text
+        x={width - padding - 5}
+        y={height - padding + 15}
+        className="text-[10px] fill-slate-500"
+      >
         1
       </text>
       <text x={padding - 15} y={height - padding + 3} className="text-[10px] fill-slate-500">
@@ -529,9 +537,7 @@ export function EasingCurveEditor({
             <button
               onClick={() => setIsPlaying(!isPlaying)}
               className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                isPlaying
-                  ? 'bg-red-600 text-white'
-                  : 'bg-blue-600 text-white hover:bg-blue-500'
+                isPlaying ? 'bg-red-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-500'
               }`}
             >
               {isPlaying ? 'Stop' : 'Play'}

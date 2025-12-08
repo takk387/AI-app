@@ -12,7 +12,16 @@
 export interface GoogleFont {
   family: string;
   category: 'sans-serif' | 'serif' | 'monospace' | 'display' | 'handwriting';
-  style: 'geometric' | 'humanist' | 'neo-grotesque' | 'transitional' | 'didone' | 'slab' | 'modern' | 'classic' | 'decorative';
+  style:
+    | 'geometric'
+    | 'humanist'
+    | 'neo-grotesque'
+    | 'transitional'
+    | 'didone'
+    | 'slab'
+    | 'modern'
+    | 'classic'
+    | 'decorative';
   weights: number[];
   characteristics: string[];
   popular?: boolean;

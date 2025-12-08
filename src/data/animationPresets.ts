@@ -965,7 +965,8 @@ const microInteractions: AnimationPreset[] = [
       hover: 'transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);',
     },
     tailwind: {
-      class: 'transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm',
+      class:
+        'transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm',
     },
     framerMotion: {
       whileHover: { y: -2, boxShadow: '0 4px 8px rgba(0,0,0,0.1)' },
@@ -1101,14 +1102,12 @@ export function getAnimationsByTrigger(trigger: AnimationTrigger): AnimationPres
 /**
  * Match detected animation to closest preset
  */
-export function matchAnimationToPreset(
-  detected: {
-    type?: string;
-    property?: string;
-    duration?: number | string;
-    easing?: string;
-  }
-): AnimationPreset | null {
+export function matchAnimationToPreset(detected: {
+  type?: string;
+  property?: string;
+  duration?: number | string;
+  easing?: string;
+}): AnimationPreset | null {
   // Score each preset based on match
   let bestMatch: AnimationPreset | null = null;
   let bestScore = 0;

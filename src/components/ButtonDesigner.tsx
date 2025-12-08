@@ -55,24 +55,19 @@ function PresetCard({
       onClick={onSelect}
       className={`
         p-3 rounded-lg border transition-all text-left
-        ${isSelected
-          ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
-          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+        ${
+          isSelected
+            ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
+            : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
         }
       `}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-slate-200">{preset.name}</span>
-        {isSelected && (
-          <span className="text-xs text-blue-400">Active</span>
-        )}
+        {isSelected && <span className="text-xs text-blue-400">Active</span>}
       </div>
       <div className="flex justify-center py-2">
-        <StatePreview
-          componentType="button"
-          spec={preset.spec}
-          forcedState="default"
-        />
+        <StatePreview componentType="button" spec={preset.spec} forcedState="default" />
       </div>
       <p className="text-xs text-slate-500 mt-2">{preset.description}</p>
     </button>
@@ -94,9 +89,10 @@ function SizeSelector({
           onClick={() => onSelect(size)}
           className={`
             flex-1 py-2 px-3 text-sm rounded-lg border transition-all
-            ${currentSize === size.id
-              ? 'border-purple-500 bg-purple-500/20 text-purple-300'
-              : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+            ${
+              currentSize === size.id
+                ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
             }
           `}
         >
@@ -157,9 +153,10 @@ function VariantManager({
             key={variant.id}
             className={`
               group relative flex items-center gap-1 px-3 py-1.5 rounded-lg border transition-all cursor-pointer
-              ${selectedIndex === index
-                ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+              ${
+                selectedIndex === index
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
               }
             `}
             onClick={() => onSelect(index)}
@@ -242,9 +239,10 @@ function IconSettings({
             onClick={() => onPositionChange('left')}
             className={`
               flex-1 py-2 px-3 text-sm rounded-lg border transition-all flex items-center justify-center gap-2
-              ${iconPosition === 'left'
-                ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+              ${
+                iconPosition === 'left'
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
               }
             `}
           >
@@ -254,9 +252,10 @@ function IconSettings({
             onClick={() => onPositionChange('right')}
             className={`
               flex-1 py-2 px-3 text-sm rounded-lg border transition-all flex items-center justify-center gap-2
-              ${iconPosition === 'right'
-                ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+              ${
+                iconPosition === 'right'
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
               }
             `}
           >
@@ -329,9 +328,7 @@ export function ButtonDesigner({
         spec,
       }));
     }
-    return [
-      { id: 'variant-0', name: 'Primary', spec: BUTTON_PRESETS[0].spec },
-    ];
+    return [{ id: 'variant-0', name: 'Primary', spec: BUTTON_PRESETS[0].spec }];
   });
 
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -452,11 +449,7 @@ export function ButtonDesigner({
           </button>
         </div>
         {showAllStates ? (
-          <StatePreviewGrid
-            componentType="button"
-            spec={currentSpec}
-            states={availableStates}
-          />
+          <StatePreviewGrid componentType="button" spec={currentSpec} states={availableStates} />
         ) : (
           <StatePreview componentType="button" spec={currentSpec} />
         )}
@@ -465,10 +458,7 @@ export function ButtonDesigner({
       {/* Size Selector */}
       <div>
         <label className="block text-xs text-slate-400 mb-2">Size</label>
-        <SizeSelector
-          currentSize={currentSpec?.size || 'md'}
-          onSelect={handleSizeSelect}
-        />
+        <SizeSelector currentSize={currentSpec?.size || 'md'} onSelect={handleSizeSelect} />
       </div>
 
       {/* Preset Category Tabs */}
@@ -481,9 +471,10 @@ export function ButtonDesigner({
               onClick={() => setSelectedCategory(cat.id)}
               className={`
                 flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all
-                ${selectedCategory === cat.id
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                ${
+                  selectedCategory === cat.id
+                    ? 'bg-slate-700 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
                 }
               `}
             >

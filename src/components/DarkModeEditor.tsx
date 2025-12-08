@@ -60,16 +60,13 @@ const COLOR_LABELS: Record<ColorKey, string> = {
 // SUB-COMPONENTS
 // ============================================================================
 
-function ContrastBadge({
-  foreground,
-  background,
-}: {
-  foreground: string;
-  background: string;
-}) {
+function ContrastBadge({ foreground, background }: { foreground: string; background: string }) {
   const ratio = useMemo(() => getContrastRatio(foreground, background), [foreground, background]);
   const passesAA = useMemo(() => meetsContrastAA(foreground, background), [foreground, background]);
-  const passesAAA = useMemo(() => meetsContrastAAA(foreground, background), [foreground, background]);
+  const passesAAA = useMemo(
+    () => meetsContrastAAA(foreground, background),
+    [foreground, background]
+  );
 
   const getBadgeColor = () => {
     if (passesAAA) return 'bg-green-500/20 text-green-400 border-green-500/30';
@@ -200,13 +197,7 @@ function ColorComparisonRow({
   );
 }
 
-function ThemePreview({
-  colors,
-  isDark,
-}: {
-  colors: Partial<ColorSettings>;
-  isDark: boolean;
-}) {
+function ThemePreview({ colors, isDark }: { colors: Partial<ColorSettings>; isDark: boolean }) {
   return (
     <div
       className="p-4 rounded-lg border"
@@ -240,10 +231,7 @@ function ThemePreview({
             borderColor: colors.border || (isDark ? '#334155' : '#E2E8F0'),
           }}
         >
-          <p
-            className="text-xs"
-            style={{ color: colors.text || (isDark ? '#F8FAFC' : '#1F2937') }}
-          >
+          <p className="text-xs" style={{ color: colors.text || (isDark ? '#F8FAFC' : '#1F2937') }}>
             Card content
           </p>
           <p
@@ -290,17 +278,12 @@ export function DarkModeEditor({
   onChange,
   className = '',
 }: DarkModeEditorProps) {
-  const [darkColors, setDarkColors] = useState<Partial<ColorSettings>>(
-    initialDarkColors || {}
-  );
+  const [darkColors, setDarkColors] = useState<Partial<ColorSettings>>(initialDarkColors || {});
   const [overrides, setOverrides] = useState<Set<ColorKey>>(new Set());
   const [showCode, setShowCode] = useState(false);
 
   // Generate auto dark colors
-  const autoDarkColors = useMemo(
-    () => generateDarkPalette(lightColors),
-    [lightColors]
-  );
+  const autoDarkColors = useMemo(() => generateDarkPalette(lightColors), [lightColors]);
 
   // Merge auto with overrides
   const effectiveDarkColors = useMemo(() => {

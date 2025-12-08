@@ -537,9 +537,7 @@ export function AnimatedButton({ children, onClick, className }) {
 /**
  * Generate all Framer Motion code from multiple detected animations
  */
-export function generateAllAnimations(
-  animations: DetectedAnimation[]
-): {
+export function generateAllAnimations(animations: DetectedAnimation[]): {
   components: GeneratedMotionComponent[];
   variants: Record<string, FramerMotionVariants>;
   fullCode: string;
@@ -576,12 +574,12 @@ export function presetToFramerMotion(preset: AnimationPreset): {
   props: Record<string, unknown>;
 } {
   return {
-    variants: preset.framerMotion.variants as FramerMotionVariants || {
+    variants: (preset.framerMotion.variants as FramerMotionVariants) || {
       initial: preset.framerMotion.initial,
       animate: preset.framerMotion.animate,
       exit: preset.framerMotion.exit,
     },
-    transition: preset.framerMotion.transition as FramerMotionTransition || {
+    transition: (preset.framerMotion.transition as FramerMotionTransition) || {
       duration: preset.duration / 1000,
       ease: cssEasingToFramerMotion(preset.easing) as string,
     },

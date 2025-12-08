@@ -2074,10 +2074,7 @@ export function LayoutPreview({
               <div className="h-full w-full max-w-full px-4">
                 <div className="h-full grid grid-cols-12 gap-2">
                   {Array.from({ length: 12 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-full bg-cyan-500/10 border-x border-cyan-500/20"
-                    />
+                    <div key={i} className="h-full bg-cyan-500/10 border-x border-cyan-500/20" />
                   ))}
                 </div>
               </div>

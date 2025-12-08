@@ -69,26 +69,96 @@ const DEVICE_PRESETS: DevicePreset[] = [
   // Mobile devices
   { id: 'iphone-se', name: 'iPhone SE', width: 375, height: 667, category: 'mobile', icon: '📱' },
   { id: 'iphone-14', name: 'iPhone 14', width: 390, height: 844, category: 'mobile', icon: '📱' },
-  { id: 'iphone-14-pro-max', name: 'iPhone 14 Pro Max', width: 430, height: 932, category: 'mobile', icon: '📱' },
+  {
+    id: 'iphone-14-pro-max',
+    name: 'iPhone 14 Pro Max',
+    width: 430,
+    height: 932,
+    category: 'mobile',
+    icon: '📱',
+  },
   { id: 'pixel-7', name: 'Pixel 7', width: 412, height: 915, category: 'mobile', icon: '📱' },
   { id: 'galaxy-s23', name: 'Galaxy S23', width: 360, height: 780, category: 'mobile', icon: '📱' },
 
   // Tablets
   { id: 'ipad-mini', name: 'iPad Mini', width: 768, height: 1024, category: 'tablet', icon: '📲' },
   { id: 'ipad-air', name: 'iPad Air', width: 820, height: 1180, category: 'tablet', icon: '📲' },
-  { id: 'ipad-pro-11', name: 'iPad Pro 11"', width: 834, height: 1194, category: 'tablet', icon: '📲' },
-  { id: 'ipad-pro-12', name: 'iPad Pro 12.9"', width: 1024, height: 1366, category: 'tablet', icon: '📲' },
-  { id: 'surface-pro', name: 'Surface Pro', width: 912, height: 1368, category: 'tablet', icon: '📲' },
+  {
+    id: 'ipad-pro-11',
+    name: 'iPad Pro 11"',
+    width: 834,
+    height: 1194,
+    category: 'tablet',
+    icon: '📲',
+  },
+  {
+    id: 'ipad-pro-12',
+    name: 'iPad Pro 12.9"',
+    width: 1024,
+    height: 1366,
+    category: 'tablet',
+    icon: '📲',
+  },
+  {
+    id: 'surface-pro',
+    name: 'Surface Pro',
+    width: 912,
+    height: 1368,
+    category: 'tablet',
+    icon: '📲',
+  },
 
   // Laptops
-  { id: 'macbook-air', name: 'MacBook Air', width: 1280, height: 832, category: 'laptop', icon: '💻' },
-  { id: 'macbook-pro-14', name: 'MacBook Pro 14"', width: 1512, height: 982, category: 'laptop', icon: '💻' },
-  { id: 'macbook-pro-16', name: 'MacBook Pro 16"', width: 1728, height: 1117, category: 'laptop', icon: '💻' },
+  {
+    id: 'macbook-air',
+    name: 'MacBook Air',
+    width: 1280,
+    height: 832,
+    category: 'laptop',
+    icon: '💻',
+  },
+  {
+    id: 'macbook-pro-14',
+    name: 'MacBook Pro 14"',
+    width: 1512,
+    height: 982,
+    category: 'laptop',
+    icon: '💻',
+  },
+  {
+    id: 'macbook-pro-16',
+    name: 'MacBook Pro 16"',
+    width: 1728,
+    height: 1117,
+    category: 'laptop',
+    icon: '💻',
+  },
 
   // Desktops
-  { id: 'desktop-hd', name: 'Desktop HD', width: 1920, height: 1080, category: 'desktop', icon: '🖥️' },
-  { id: 'desktop-2k', name: 'Desktop 2K', width: 2560, height: 1440, category: 'desktop', icon: '🖥️' },
-  { id: 'desktop-4k', name: 'Desktop 4K', width: 3840, height: 2160, category: 'desktop', icon: '🖥️' },
+  {
+    id: 'desktop-hd',
+    name: 'Desktop HD',
+    width: 1920,
+    height: 1080,
+    category: 'desktop',
+    icon: '🖥️',
+  },
+  {
+    id: 'desktop-2k',
+    name: 'Desktop 2K',
+    width: 2560,
+    height: 1440,
+    category: 'desktop',
+    icon: '🖥️',
+  },
+  {
+    id: 'desktop-4k',
+    name: 'Desktop 4K',
+    width: 3840,
+    height: 2160,
+    category: 'desktop',
+    icon: '🖥️',
+  },
 ];
 
 const DEFAULT_STATE: ResponsivePreviewState = {
@@ -148,7 +218,7 @@ export function useResponsivePreview(
         return {
           ...prev,
           orientation: newOrientation,
-          width: prev.height === 'auto' ? prev.width : prev.height as number,
+          width: prev.height === 'auto' ? prev.width : (prev.height as number),
           height: prev.height === 'auto' ? 'auto' : prev.width,
         };
       }

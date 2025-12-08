@@ -98,7 +98,14 @@ export const PROPERTY_TRACKS: PropertyTrack[] = [
   { property: 'borderColor', label: 'Border Color', type: 'color' },
   { property: 'color', label: 'Text Color', type: 'color' },
   { property: 'boxShadow', label: 'Box Shadow', type: 'string' },
-  { property: 'borderRadius', label: 'Border Radius', type: 'number', unit: 'px', min: 0, max: 100 },
+  {
+    property: 'borderRadius',
+    label: 'Border Radius',
+    type: 'number',
+    unit: 'px',
+    min: 0,
+    max: 100,
+  },
   { property: 'width', label: 'Width', type: 'number', unit: 'px', min: 0, max: 1000 },
   { property: 'height', label: 'Height', type: 'number', unit: 'px', min: 0, max: 1000 },
 ];
@@ -111,17 +118,53 @@ export const EASING_PRESETS: { id: EasingFunction; label: string; cssValue: stri
   { id: 'ease-in-out', label: 'Ease In Out', cssValue: 'ease-in-out' },
   { id: 'ease-in-quad', label: 'Ease In Quad', cssValue: 'cubic-bezier(0.55, 0.085, 0.68, 0.53)' },
   { id: 'ease-out-quad', label: 'Ease Out Quad', cssValue: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)' },
-  { id: 'ease-in-out-quad', label: 'Ease In Out Quad', cssValue: 'cubic-bezier(0.455, 0.03, 0.515, 0.955)' },
-  { id: 'ease-in-cubic', label: 'Ease In Cubic', cssValue: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)' },
-  { id: 'ease-out-cubic', label: 'Ease Out Cubic', cssValue: 'cubic-bezier(0.215, 0.61, 0.355, 1)' },
-  { id: 'ease-in-out-cubic', label: 'Ease In Out Cubic', cssValue: 'cubic-bezier(0.645, 0.045, 0.355, 1)' },
-  { id: 'ease-in-quart', label: 'Ease In Quart', cssValue: 'cubic-bezier(0.895, 0.03, 0.685, 0.22)' },
+  {
+    id: 'ease-in-out-quad',
+    label: 'Ease In Out Quad',
+    cssValue: 'cubic-bezier(0.455, 0.03, 0.515, 0.955)',
+  },
+  {
+    id: 'ease-in-cubic',
+    label: 'Ease In Cubic',
+    cssValue: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+  },
+  {
+    id: 'ease-out-cubic',
+    label: 'Ease Out Cubic',
+    cssValue: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+  },
+  {
+    id: 'ease-in-out-cubic',
+    label: 'Ease In Out Cubic',
+    cssValue: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+  },
+  {
+    id: 'ease-in-quart',
+    label: 'Ease In Quart',
+    cssValue: 'cubic-bezier(0.895, 0.03, 0.685, 0.22)',
+  },
   { id: 'ease-out-quart', label: 'Ease Out Quart', cssValue: 'cubic-bezier(0.165, 0.84, 0.44, 1)' },
-  { id: 'ease-in-out-quart', label: 'Ease In Out Quart', cssValue: 'cubic-bezier(0.77, 0, 0.175, 1)' },
+  {
+    id: 'ease-in-out-quart',
+    label: 'Ease In Out Quart',
+    cssValue: 'cubic-bezier(0.77, 0, 0.175, 1)',
+  },
   { id: 'ease-in-back', label: 'Ease In Back', cssValue: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)' },
-  { id: 'ease-out-back', label: 'Ease Out Back', cssValue: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' },
-  { id: 'ease-in-out-back', label: 'Ease In Out Back', cssValue: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' },
-  { id: 'ease-out-bounce', label: 'Ease Out Bounce', cssValue: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
+  {
+    id: 'ease-out-back',
+    label: 'Ease Out Back',
+    cssValue: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  },
+  {
+    id: 'ease-in-out-back',
+    label: 'Ease In Out Back',
+    cssValue: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  },
+  {
+    id: 'ease-out-bounce',
+    label: 'Ease Out Bounce',
+    cssValue: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+  },
 ];
 
 export const DEFAULT_ANIMATION: CustomAnimation = {
@@ -287,8 +330,8 @@ export function getEasingBezier(easing: EasingFunction): [number, number, number
   }
 
   const bezierMap: Record<string, [number, number, number, number]> = {
-    'linear': [0, 0, 1, 1],
-    'ease': [0.25, 0.1, 0.25, 1],
+    linear: [0, 0, 1, 1],
+    ease: [0.25, 0.1, 0.25, 1],
     'ease-in': [0.42, 0, 1, 1],
     'ease-out': [0, 0, 0.58, 1],
     'ease-in-out': [0.42, 0, 0.58, 1],
@@ -328,13 +371,7 @@ export function getEasingCSS(easing: EasingFunction): string {
 /**
  * Calculate bezier curve point at t
  */
-export function cubicBezier(
-  t: number,
-  p0: number,
-  p1: number,
-  p2: number,
-  p3: number
-): number {
+export function cubicBezier(t: number, p0: number, p1: number, p2: number, p3: number): number {
   const u = 1 - t;
   return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
 }
@@ -342,10 +379,7 @@ export function cubicBezier(
 /**
  * Get Y value for X on bezier curve (for easing)
  */
-export function getEasingValue(
-  progress: number,
-  bezier: [number, number, number, number]
-): number {
+export function getEasingValue(progress: number, bezier: [number, number, number, number]): number {
   // Newton-Raphson iteration to find t for given x
   const [x1, y1, x2, y2] = bezier;
   let t = progress;
@@ -420,10 +454,7 @@ function rgbToHex(r: number, g: number, b: number): string {
 /**
  * Interpolate keyframe properties at a given time
  */
-export function interpolateKeyframes(
-  keyframes: Keyframe[],
-  time: number
-): KeyframeProperties {
+export function interpolateKeyframes(keyframes: Keyframe[], time: number): KeyframeProperties {
   if (keyframes.length === 0) return {};
   if (keyframes.length === 1) return keyframes[0].properties;
 
@@ -474,10 +505,20 @@ export function interpolateKeyframes(
 
     // Interpolate based on type
     if (typeof fromVal === 'number' && typeof toVal === 'number') {
-      (result as Record<string, unknown>)[prop] = interpolateNumber(fromVal, toVal, progress, fromKf.easing);
+      (result as Record<string, unknown>)[prop] = interpolateNumber(
+        fromVal,
+        toVal,
+        progress,
+        fromKf.easing
+      );
     } else if (typeof fromVal === 'string' && typeof toVal === 'string') {
       if (fromVal.startsWith('#') && toVal.startsWith('#')) {
-        (result as Record<string, unknown>)[prop] = interpolateColor(fromVal, toVal, progress, fromKf.easing);
+        (result as Record<string, unknown>)[prop] = interpolateColor(
+          fromVal,
+          toVal,
+          progress,
+          fromKf.easing
+        );
       } else {
         // Can't interpolate strings, use "from" value until 50%
         (result as Record<string, unknown>)[prop] = progress < 0.5 ? fromVal : toVal;
@@ -504,8 +545,10 @@ export function propertiesToStyle(properties: KeyframeProperties): React.CSSProp
 
   // Build transform string
   const transforms: string[] = [];
-  if (properties.translateX !== undefined) transforms.push(`translateX(${properties.translateX}px)`);
-  if (properties.translateY !== undefined) transforms.push(`translateY(${properties.translateY}px)`);
+  if (properties.translateX !== undefined)
+    transforms.push(`translateX(${properties.translateX}px)`);
+  if (properties.translateY !== undefined)
+    transforms.push(`translateY(${properties.translateY}px)`);
   if (properties.scale !== undefined) transforms.push(`scale(${properties.scale})`);
   if (properties.scaleX !== undefined) transforms.push(`scaleX(${properties.scaleX})`);
   if (properties.scaleY !== undefined) transforms.push(`scaleY(${properties.scaleY})`);
@@ -555,7 +598,10 @@ export function generateKeyframesCSS(animation: CustomAnimation): string {
 /**
  * Generate full CSS animation rule
  */
-export function generateAnimationCSS(animation: CustomAnimation, selector: string = '.animated'): string {
+export function generateAnimationCSS(
+  animation: CustomAnimation,
+  selector: string = '.animated'
+): string {
   const keyframesCSS = generateKeyframesCSS(animation);
   const { name, duration, delay, iterationCount, direction, fillMode } = animation;
 
@@ -641,11 +687,7 @@ export function updateKeyframe(
 /**
  * Duplicate a keyframe at a new time
  */
-export function duplicateKeyframe(
-  keyframes: Keyframe[],
-  id: string,
-  newTime: number
-): Keyframe[] {
+export function duplicateKeyframe(keyframes: Keyframe[], id: string, newTime: number): Keyframe[] {
   const source = keyframes.find((kf) => kf.id === id);
   if (!source) return keyframes;
 

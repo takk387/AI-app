@@ -106,7 +106,12 @@ const CARD_PROPERTIES: StateProperty[] = [
 
 const LINK_PROPERTIES: StateProperty[] = [
   { name: 'color', type: 'color', label: 'Text Color' },
-  { name: 'textDecoration', type: 'select', label: 'Text Decoration', options: ['none', 'underline', 'line-through'] },
+  {
+    name: 'textDecoration',
+    type: 'select',
+    label: 'Text Decoration',
+    options: ['none', 'underline', 'line-through'],
+  },
   { name: 'opacity', type: 'number', label: 'Opacity', min: 0, max: 1 },
   { name: 'background', type: 'color', label: 'Background' },
 ];
@@ -336,23 +341,21 @@ export function useComponentStates(
   );
 
   // Copy all properties from one state to another
-  const copyState = useCallback(
-    (fromState: ComponentState, toState: ComponentState) => {
-      setSpecInternal((prev) => {
-        const newSpec = { ...prev };
-        const states = (newSpec as { states: Record<string, Record<string, string>> }).states;
-        states[toState] = { ...states[fromState] };
-        return newSpec;
-      });
-    },
-    []
-  );
+  const copyState = useCallback((fromState: ComponentState, toState: ComponentState) => {
+    setSpecInternal((prev) => {
+      const newSpec = { ...prev };
+      const states = (newSpec as { states: Record<string, Record<string, string>> }).states;
+      states[toState] = { ...states[fromState] };
+      return newSpec;
+    });
+  }, []);
 
   // Reset a specific state to defaults
   const resetState = useCallback(
     (state: ComponentState) => {
       const defaultSpec = DEFAULT_SPECS[componentType];
-      const defaultStates = (defaultSpec as { states: Record<string, Record<string, string>> }).states;
+      const defaultStates = (defaultSpec as { states: Record<string, Record<string, string>> })
+        .states;
 
       setSpecInternal((prev) => {
         const newSpec = { ...prev };
@@ -371,7 +374,7 @@ export function useComponentStates(
 
   // Update spec with partial values
   const updateSpec = useCallback((updates: Partial<AnyComponentSpec>) => {
-    setSpecInternal((prev) => ({ ...prev, ...updates } as AnyComponentSpec));
+    setSpecInternal((prev) => ({ ...prev, ...updates }) as AnyComponentSpec);
   }, []);
 
   // Set complete spec
@@ -387,15 +390,9 @@ export function useComponentStates(
   }, []);
 
   // Memoized available properties and states
-  const availableProperties = useMemo(
-    () => PROPERTIES_BY_TYPE[componentType],
-    [componentType]
-  );
+  const availableProperties = useMemo(() => PROPERTIES_BY_TYPE[componentType], [componentType]);
 
-  const availableStates = useMemo(
-    () => STATES_BY_TYPE[componentType],
-    [componentType]
-  );
+  const availableStates = useMemo(() => STATES_BY_TYPE[componentType], [componentType]);
 
   return {
     componentType,

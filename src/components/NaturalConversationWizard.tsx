@@ -25,7 +25,15 @@ import type {
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { LayoutDesign } from '@/types/layoutDesign';
 import { useToast } from '@/components/Toast';
-import { WandIcon, ImageIcon, SendIcon, XIcon, LoaderIcon, SaveIcon, PaletteIcon } from './ui/Icons';
+import {
+  WandIcon,
+  ImageIcon,
+  SendIcon,
+  XIcon,
+  LoaderIcon,
+  SaveIcon,
+  PaletteIcon,
+} from './ui/Icons';
 import { useAppStore } from '@/store/useAppStore';
 import {
   WIZARD_DRAFT_KEYS,
@@ -860,7 +868,10 @@ Does this look good? You can:
               <button
                 onClick={() => {
                   setImportedLayoutDesign(currentLayoutDesign);
-                  showToast({ type: 'success', message: 'Layout design imported! Your app will use these exact styles.' });
+                  showToast({
+                    type: 'success',
+                    message: 'Layout design imported! Your app will use these exact styles.',
+                  });
                 }}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 rounded-lg border border-purple-500/30 transition-colors"
               >

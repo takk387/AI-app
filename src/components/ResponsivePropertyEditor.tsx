@@ -86,9 +86,10 @@ function BreakpointTabs({
           onClick={() => onSelect(bp)}
           className={`
             flex-1 px-2 py-1.5 text-xs font-medium rounded transition-all relative
-            ${selected === bp
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-400 hover:text-white hover:bg-slate-700'
+            ${
+              selected === bp
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700'
             }
           `}
         >
@@ -149,7 +150,7 @@ function SelectInput<T extends string>({
   return (
     <select
       value={value || ''}
-      onChange={(e) => onChange(e.target.value as T || undefined)}
+      onChange={(e) => onChange((e.target.value as T) || undefined)}
       className="w-full px-2 py-1.5 text-sm bg-slate-800 border border-slate-600 rounded text-slate-200 focus:border-blue-500 focus:outline-none"
     >
       <option value="">{placeholder || 'Inherit'}</option>
@@ -314,7 +315,7 @@ export function ResponsivePropertyEditor({
     }
 
     // Check smaller breakpoints (inheritance)
-    const bpIndex = BREAKPOINT_ORDER.indexOf(breakpoint as typeof BREAKPOINT_ORDER[number]);
+    const bpIndex = BREAKPOINT_ORDER.indexOf(breakpoint as (typeof BREAKPOINT_ORDER)[number]);
     for (let i = bpIndex - 1; i >= 0; i--) {
       const bp = BREAKPOINT_ORDER[i];
       if ((responsiveValue as Record<string, T>)[bp] !== undefined) {
@@ -335,17 +336,13 @@ export function ResponsivePropertyEditor({
     <div className={`space-y-4 ${className}`}>
       {/* Breakpoint selector */}
       <div>
-        <label className="block text-xs text-slate-400 mb-2">
-          Configure at Breakpoint
-        </label>
+        <label className="block text-xs text-slate-400 mb-2">Configure at Breakpoint</label>
         <BreakpointTabs
           selected={selectedBreakpoint}
           onSelect={setSelectedBreakpoint}
           currentBreakpoint={currentBreakpoint}
         />
-        <p className="text-xs text-slate-500 mt-1">
-          Values cascade down to smaller breakpoints
-        </p>
+        <p className="text-xs text-slate-500 mt-1">Values cascade down to smaller breakpoints</p>
       </div>
 
       {/* Property editors */}
@@ -388,7 +385,9 @@ export function ResponsivePropertyEditor({
               { value: 'inline', label: 'Inline' },
               { value: 'stacked', label: 'Stacked' },
             ]}
-            onChange={(value) => updateProperty('headerLayout', value as 'inline' | 'stacked' | undefined)}
+            onChange={(value) =>
+              updateProperty('headerLayout', value as 'inline' | 'stacked' | undefined)
+            }
             placeholder="Inherit"
           />
         </PropertyRow>
@@ -436,7 +435,8 @@ export function ResponsivePropertyEditor({
       {/* Summary of overrides */}
       <div className="text-xs text-slate-500 p-2 bg-slate-800/30 rounded">
         <strong className="text-slate-400">Active overrides:</strong>{' '}
-        {Object.entries(properties).filter(([, v]) => v && Object.keys(v).length > 0).length} properties
+        {Object.entries(properties).filter(([, v]) => v && Object.keys(v).length > 0).length}{' '}
+        properties
       </div>
     </div>
   );

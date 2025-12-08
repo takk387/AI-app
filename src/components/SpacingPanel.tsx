@@ -241,9 +241,7 @@ function GridOverlayToggle({
       type="button"
       onClick={() => onToggle(!enabled)}
       className={`w-full mt-4 px-3 py-2 rounded-md flex items-center justify-center gap-2 transition-all ${
-        enabled
-          ? 'bg-blue-600 text-white'
-          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+        enabled ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
       }`}
     >
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

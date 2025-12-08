@@ -67,9 +67,10 @@ function ViewModeSelector({
           onClick={() => onModeChange(m.id)}
           className={`
             px-3 py-1.5 rounded text-sm transition-all
-            ${mode === m.id
-              ? 'bg-blue-500 text-white'
-              : 'text-slate-400 hover:text-white hover:bg-slate-700'
+            ${
+              mode === m.id
+                ? 'bg-blue-500 text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700'
             }
           `}
           title={m.label}
@@ -100,11 +101,11 @@ function ZoomControl({
       >
         −
       </button>
-      <span className="text-sm text-slate-400 w-12 text-center">
-        {Math.round(zoom * 100)}%
-      </span>
+      <span className="text-sm text-slate-400 w-12 text-center">{Math.round(zoom * 100)}%</span>
       <button
-        onClick={() => zoomIndex < ZOOM_LEVELS.length - 1 && onZoomChange(ZOOM_LEVELS[zoomIndex + 1])}
+        onClick={() =>
+          zoomIndex < ZOOM_LEVELS.length - 1 && onZoomChange(ZOOM_LEVELS[zoomIndex + 1])
+        }
         disabled={zoomIndex === ZOOM_LEVELS.length - 1}
         className="p-1.5 rounded bg-slate-800 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -114,13 +115,7 @@ function ZoomControl({
   );
 }
 
-function PanelLabel({
-  label,
-  position,
-}: {
-  label: string;
-  position: 'left' | 'right' | 'center';
-}) {
+function PanelLabel({ label, position }: { label: string; position: 'left' | 'right' | 'center' }) {
   const positionClasses = {
     left: 'left-2',
     right: 'right-2',
@@ -136,13 +131,7 @@ function PanelLabel({
   );
 }
 
-function SliderHandle({
-  position,
-  onDrag,
-}: {
-  position: number;
-  onDrag: (x: number) => void;
-}) {
+function SliderHandle({ position, onDrag }: { position: number; onDrag: (x: number) => void }) {
   const handleRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
@@ -212,17 +201,20 @@ export function DesignComparison({
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   // Synchronized scrolling
-  const handleScroll = useCallback((source: 'left' | 'right') => {
-    if (!syncScroll) return;
+  const handleScroll = useCallback(
+    (source: 'left' | 'right') => {
+      if (!syncScroll) return;
 
-    const sourceRef = source === 'left' ? leftPanelRef : rightPanelRef;
-    const targetRef = source === 'left' ? rightPanelRef : leftPanelRef;
+      const sourceRef = source === 'left' ? leftPanelRef : rightPanelRef;
+      const targetRef = source === 'left' ? rightPanelRef : leftPanelRef;
 
-    if (sourceRef.current && targetRef.current) {
-      targetRef.current.scrollTop = sourceRef.current.scrollTop;
-      targetRef.current.scrollLeft = sourceRef.current.scrollLeft;
-    }
-  }, [syncScroll]);
+      if (sourceRef.current && targetRef.current) {
+        targetRef.current.scrollTop = sourceRef.current.scrollTop;
+        targetRef.current.scrollLeft = sourceRef.current.scrollLeft;
+      }
+    },
+    [syncScroll]
+  );
 
   // Generate clickable regions from analysis
   const clickableRegions: ClickableRegion[] = React.useMemo(() => {
@@ -245,12 +237,15 @@ export function DesignComparison({
   }, [analysis]);
 
   // Handle region click
-  const handleRegionClick = useCallback((region: ClickableRegion) => {
-    if (onRequestAdjustment) {
-      const description = `Adjust the ${region.name.toLowerCase()} to match the reference more closely`;
-      onRequestAdjustment(region.id, 'style', description);
-    }
-  }, [onRequestAdjustment]);
+  const handleRegionClick = useCallback(
+    (region: ClickableRegion) => {
+      if (onRequestAdjustment) {
+        const description = `Adjust the ${region.name.toLowerCase()} to match the reference more closely`;
+        onRequestAdjustment(region.id, 'style', description);
+      }
+    },
+    [onRequestAdjustment]
+  );
 
   // Render reference image
   const renderReference = (showLabel = true) => (
@@ -277,24 +272,25 @@ export function DesignComparison({
       </div>
 
       {/* Clickable regions overlay */}
-      {showClickableRegions && clickableRegions.map((region) => (
-        <button
-          key={region.id}
-          onClick={() => handleRegionClick(region)}
-          className="absolute border-2 border-dashed border-blue-400/50 hover:border-blue-400 hover:bg-blue-400/10 transition-all cursor-pointer group"
-          style={{
-            left: `${region.x}%`,
-            top: `${region.y}%`,
-            width: `${region.width}%`,
-            height: `${region.height}%`,
-          }}
-          title={`Adjust ${region.name}`}
-        >
-          <span className="absolute top-1 left-1 px-1 py-0.5 text-xs bg-blue-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
-            {region.name}
-          </span>
-        </button>
-      ))}
+      {showClickableRegions &&
+        clickableRegions.map((region) => (
+          <button
+            key={region.id}
+            onClick={() => handleRegionClick(region)}
+            className="absolute border-2 border-dashed border-blue-400/50 hover:border-blue-400 hover:bg-blue-400/10 transition-all cursor-pointer group"
+            style={{
+              left: `${region.x}%`,
+              top: `${region.y}%`,
+              width: `${region.width}%`,
+              height: `${region.height}%`,
+            }}
+            title={`Adjust ${region.name}`}
+          >
+            <span className="absolute top-1 left-1 px-1 py-0.5 text-xs bg-blue-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
+              {region.name}
+            </span>
+          </button>
+        ))}
     </div>
   );
 
@@ -328,9 +324,7 @@ export function DesignComparison({
         return (
           <div className="relative h-full overflow-auto border border-white/10 rounded-lg bg-slate-900">
             {/* Base layer - Generated */}
-            <div className="absolute inset-0">
-              {renderGenerated(false)}
-            </div>
+            <div className="absolute inset-0">{renderGenerated(false)}</div>
 
             {/* Overlay - Reference */}
             <div
@@ -364,9 +358,7 @@ export function DesignComparison({
         return (
           <div className="relative h-full overflow-hidden border border-white/10 rounded-lg bg-slate-900">
             {/* Generated (full width) */}
-            <div className="absolute inset-0">
-              {renderGenerated(false)}
-            </div>
+            <div className="absolute inset-0">{renderGenerated(false)}</div>
 
             {/* Reference (clipped by slider) */}
             <div
@@ -451,9 +443,7 @@ export function DesignComparison({
       </div>
 
       {/* Comparison View */}
-      <div className="flex-1 min-h-0 p-2">
-        {renderContent()}
-      </div>
+      <div className="flex-1 min-h-0 p-2">{renderContent()}</div>
 
       {/* Analysis Summary Bar */}
       {analysis && (
@@ -467,14 +457,17 @@ export function DesignComparison({
                 analysis.colors.secondary,
                 analysis.colors.accent,
                 analysis.colors.background,
-              ].filter(Boolean).slice(0, 4).map((color, i) => (
-                <div
-                  key={i}
-                  className="w-5 h-5 rounded border border-white/20"
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
+              ]
+                .filter(Boolean)
+                .slice(0, 4)
+                .map((color, i) => (
+                  <div
+                    key={i}
+                    className="w-5 h-5 rounded border border-white/20"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
             </div>
           </div>
 
@@ -485,8 +478,7 @@ export function DesignComparison({
               <span className="text-xs text-slate-300">
                 {analysis.typography.headingFont.family}
                 {analysis.typography.bodyFont?.family &&
-                  ` / ${analysis.typography.bodyFont.family}`
-                }
+                  ` / ${analysis.typography.bodyFont.family}`}
               </span>
             </div>
           )}
@@ -495,9 +487,7 @@ export function DesignComparison({
           {analysis.layout?.type && (
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-xs text-slate-500">Layout:</span>
-              <span className="text-xs text-purple-400 capitalize">
-                {analysis.layout.type}
-              </span>
+              <span className="text-xs text-purple-400 capitalize">{analysis.layout.type}</span>
             </div>
           )}
 
@@ -506,9 +496,11 @@ export function DesignComparison({
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-xs text-slate-500">Components:</span>
               <span className="text-xs text-blue-400">
-                {Object.keys(analysis.components).filter(
-                  (k) => analysis.components[k as keyof typeof analysis.components]
-                ).length}
+                {
+                  Object.keys(analysis.components).filter(
+                    (k) => analysis.components[k as keyof typeof analysis.components]
+                  ).length
+                }
               </span>
             </div>
           )}

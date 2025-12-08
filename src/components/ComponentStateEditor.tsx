@@ -83,7 +83,9 @@ function PropertyEditor({
             max={property.max ?? 100}
             step={property.max && property.max <= 1 ? 0.1 : 1}
             value={parseFloat(value) || 0}
-            onChange={(e) => onChange(property.unit ? `${e.target.value}${property.unit}` : e.target.value)}
+            onChange={(e) =>
+              onChange(property.unit ? `${e.target.value}${property.unit}` : e.target.value)
+            }
             className="flex-1 accent-blue-500"
           />
           <input
@@ -153,9 +155,10 @@ function StateTabs({
             onClick={() => onSelect(state)}
             className={`
               flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all
-              ${isActive
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700'
+              ${
+                isActive
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
               }
             `}
           >
@@ -190,9 +193,10 @@ function ComponentTypeTabs({
           onClick={() => onSelect(type)}
           className={`
             px-4 py-2 text-sm font-medium rounded-lg transition-all border
-            ${currentType === type
-              ? 'bg-purple-600/20 border-purple-500 text-purple-300'
-              : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+            ${
+              currentType === type
+                ? 'bg-purple-600/20 border-purple-500 text-purple-300'
+                : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
             }
           `}
         >
@@ -310,7 +314,7 @@ export function ComponentStateEditor({
             <div className="flex items-center gap-1">
               <select
                 value={copySource || ''}
-                onChange={(e) => setCopySource(e.target.value as ComponentState || null)}
+                onChange={(e) => setCopySource((e.target.value as ComponentState) || null)}
                 className="text-xs bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-300"
               >
                 <option value="">Copy from...</option>

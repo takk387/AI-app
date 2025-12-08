@@ -69,28 +69,59 @@ function AnimationPreview({
       {/* CSS Keyframes injection */}
       <style jsx>{`
         @keyframes preview-fade {
-          0%, 100% { opacity: 0; }
-          50% { opacity: 1; }
+          0%,
+          100% {
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
         }
         @keyframes preview-slide {
-          0%, 100% { transform: translateX(-10px); }
-          50% { transform: translateX(10px); }
+          0%,
+          100% {
+            transform: translateX(-10px);
+          }
+          50% {
+            transform: translateX(10px);
+          }
         }
         @keyframes preview-scale {
-          0%, 100% { transform: scale(0.5); }
-          50% { transform: scale(1); }
+          0%,
+          100% {
+            transform: scale(0.5);
+          }
+          50% {
+            transform: scale(1);
+          }
         }
         @keyframes preview-rotate {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
         @keyframes preview-hover-effect {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
         }
         @keyframes preview-scroll-reveal {
-          0%, 100% { opacity: 0; transform: translateY(10px); }
-          50% { opacity: 1; transform: translateY(0); }
+          0%,
+          100% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
@@ -217,7 +248,9 @@ const variants = {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getTypeColor(animation.type)}`}>
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-medium ${getTypeColor(animation.type)}`}
+            >
               {animation.type}
             </span>
             <span className="text-sm text-white truncate">{animation.element}</span>
@@ -228,9 +261,7 @@ const variants = {
               {animation.duration}
             </span>
             <span>{animation.easing}</span>
-            <span className="text-purple-400">
-              {Math.round(animation.confidence * 100)}% match
-            </span>
+            <span className="text-purple-400">{Math.round(animation.confidence * 100)}% match</span>
           </div>
         </div>
 
@@ -414,9 +445,7 @@ export function AnimationPanel({
   const [filter, setFilter] = useState<string>('all');
 
   const filteredAnimations =
-    filter === 'all'
-      ? animations
-      : animations.filter((a) => a.type === filter);
+    filter === 'all' ? animations : animations.filter((a) => a.type === filter);
 
   const animationTypes = [...new Set(animations.map((a) => a.type))];
 
@@ -439,7 +468,12 @@ export function AnimationPanel({
                 className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors flex items-center gap-1"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 Create Custom
               </button>
@@ -453,9 +487,7 @@ export function AnimationPanel({
             <button
               onClick={() => setFilter('all')}
               className={`px-2 py-1 text-xs rounded transition-colors ${
-                filter === 'all'
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-white'
+                filter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
               All
@@ -465,9 +497,7 @@ export function AnimationPanel({
                 key={type}
                 onClick={() => setFilter(type)}
                 className={`px-2 py-1 text-xs rounded transition-colors ${
-                  filter === type
-                    ? 'bg-slate-700 text-white'
-                    : 'text-slate-400 hover:text-white'
+                  filter === type ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {type}
@@ -483,9 +513,7 @@ export function AnimationPanel({
           <div className="text-center py-8 text-slate-400">
             <RefreshIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No animations detected</p>
-            <p className="text-xs mt-1">
-              Upload a video to detect animations
-            </p>
+            <p className="text-xs mt-1">Upload a video to detect animations</p>
           </div>
         ) : (
           filteredAnimations.map((animation) => (
@@ -493,20 +521,12 @@ export function AnimationPanel({
               key={animation.id}
               animation={animation}
               onEdit={
-                onEditAnimation
-                  ? (updates) => onEditAnimation(animation.id, updates)
-                  : undefined
+                onEditAnimation ? (updates) => onEditAnimation(animation.id, updates) : undefined
               }
               onApply={
-                onApplyAnimation
-                  ? (target) => onApplyAnimation(animation, target)
-                  : undefined
+                onApplyAnimation ? (target) => onApplyAnimation(animation, target) : undefined
               }
-              onRemove={
-                onRemoveAnimation
-                  ? () => onRemoveAnimation(animation.id)
-                  : undefined
-              }
+              onRemove={onRemoveAnimation ? () => onRemoveAnimation(animation.id) : undefined}
             />
           ))
         )}
@@ -525,9 +545,7 @@ export function AnimationPanel({
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-white">{transition.type}</span>
-                    <span className="text-xs text-slate-400">
-                      {transition.duration}
-                    </span>
+                    <span className="text-xs text-slate-400">{transition.duration}</span>
                   </div>
                   {transition.fromState && transition.toState && (
                     <div className="mt-2 text-xs text-slate-400">
@@ -545,15 +563,12 @@ export function AnimationPanel({
       <div className="px-4 py-3 border-t border-white/10">
         <div className="flex items-center justify-between text-xs text-slate-400">
           <span>
-            Matched Presets:{' '}
-            {animations.filter((a) => a.matchedPreset).length}/{animations.length}
+            Matched Presets: {animations.filter((a) => a.matchedPreset).length}/{animations.length}
           </span>
           <span>
             Avg Confidence:{' '}
             {Math.round(
-              (animations.reduce((sum, a) => sum + a.confidence, 0) /
-                animations.length) *
-                100
+              (animations.reduce((sum, a) => sum + a.confidence, 0) / animations.length) * 100
             ) || 0}
             %
           </span>

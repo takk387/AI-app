@@ -53,9 +53,10 @@ function FormatSelector({
           onClick={() => onSelect(format.value)}
           className={`
             p-3 rounded-lg border text-left transition-all
-            ${selected === format.value
-              ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
-              : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+            ${
+              selected === format.value
+                ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
+                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
             }
           `}
         >
@@ -100,13 +101,7 @@ function SectionToggle({
   );
 }
 
-function PreviewPane({
-  content,
-  format,
-}: {
-  content: string;
-  format: ExportFormat;
-}) {
+function PreviewPane({ content, format }: { content: string; format: ExportFormat }) {
   const [showPreview, setShowPreview] = useState(false);
 
   if (format === 'html' && showPreview) {
@@ -147,7 +142,10 @@ function PreviewPane({
         )}
       </div>
       <pre className="p-3 bg-slate-900 rounded-lg text-xs text-slate-300 overflow-auto max-h-64 border border-slate-700">
-        <code>{content.slice(0, 2000)}{content.length > 2000 ? '\n...(truncated)' : ''}</code>
+        <code>
+          {content.slice(0, 2000)}
+          {content.length > 2000 ? '\n...(truncated)' : ''}
+        </code>
       </pre>
     </div>
   );
@@ -176,9 +174,7 @@ export function DocumentationExport({
   // Toggle section
   const toggleSection = useCallback((sectionId: string) => {
     setSections((prev) =>
-      prev.map((s) =>
-        s.id === sectionId ? { ...s, enabled: !s.enabled } : s
-      )
+      prev.map((s) => (s.id === sectionId ? { ...s, enabled: !s.enabled } : s))
     );
   }, []);
 
@@ -328,7 +324,9 @@ export function DocumentationExport({
         </div>
         <div className="flex justify-between">
           <span>Sections included:</span>
-          <span>{sections.filter(s => s.enabled).length} of {sections.length}</span>
+          <span>
+            {sections.filter((s) => s.enabled).length} of {sections.length}
+          </span>
         </div>
       </div>
     </div>
