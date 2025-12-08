@@ -40,12 +40,6 @@ interface DesignControlPanelProps {
 // CONSTANTS
 // ============================================================================
 
-const SPACING_OPTIONS = [
-  { value: 'compact', label: 'Compact' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'relaxed', label: 'Relaxed' },
-] as const;
-
 const BORDER_RADIUS_OPTIONS = [
   { value: 'none', label: 'None' },
   { value: 'sm', label: 'Small' },

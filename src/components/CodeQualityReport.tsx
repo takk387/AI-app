@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { QualityReport, QualityMetrics, QualityIssue } from '@/types/aiBuilderTypes';
+import type { QualityReport, QualityIssue } from '@/types/aiBuilderTypes';
 
 export interface CodeQualityReportProps {
   isOpen: boolean;

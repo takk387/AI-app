@@ -18,7 +18,6 @@ import type {
   SuggestedAction,
   DesignChange,
   MessageError,
-  MessageErrorType,
 } from '@/types/layoutDesign';
 import type { UIPreferences, AppConcept } from '@/types/appConcept';
 
@@ -31,8 +30,6 @@ const VERSION_HISTORY_KEY = 'layoutBuilder_versionHistory';
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 const MAX_HISTORY_SIZE = 50;
 const MAX_VERSION_HISTORY_SIZE = 20;
-const MAX_RETRY_ATTEMPTS = 3;
-const BASE_RETRY_DELAY = 1000; // 1 second
 
 // ============================================================================
 // TYPES
@@ -340,14 +337,6 @@ function categorizeError(error: unknown, statusCode?: number): MessageError {
   };
 }
 
-/**
- * Calculate retry delay with exponential backoff
- */
-function calculateRetryDelay(attemptNumber: number): number {
-  // Exponential backoff: 1s, 2s, 4s, etc.
-  return BASE_RETRY_DELAY * Math.pow(2, attemptNumber - 1);
-}
-
 // ============================================================================
 // HOOK IMPLEMENTATION
 // ============================================================================
@@ -380,7 +369,6 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [lastCapture, setLastCapture] = useState<string | null>(null);
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [recentChanges, setRecentChanges] = useState<DesignChange[]>([]);
-  const [initialDesign] = useState(design);
 
   // Draft recovery state
   const [hasDraftToRecover, setHasDraftToRecover] = useState(false);

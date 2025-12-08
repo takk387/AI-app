@@ -21,7 +21,6 @@ import type {
   ModificationResult,
   ASTModifierOptions,
   NodePosition,
-  ModificationContext,
 } from './astModifierTypes';
 
 /**
@@ -357,7 +356,7 @@ export class ASTModifier {
     const openBrace = bodyNode.children.find((c) => c.type === '{');
     if (!openBrace) return this;
 
-    let insertPosition = openBrace.endIndex;
+    const insertPosition = openBrace.endIndex;
 
     // Check if there's already a newline after the brace
     const hasNewlineAfterBrace = this.originalCode[insertPosition] === '\n';
@@ -716,7 +715,7 @@ export class ASTModifier {
     const openBrace = bodyNode.children.find((c) => c.type === '{');
     if (!openBrace) return this;
 
-    let insertPosition = openBrace.endIndex;
+    const insertPosition = openBrace.endIndex;
 
     // Check if there's already a newline after the brace
     const hasNewlineAfterBrace = this.originalCode[insertPosition] === '\n';
@@ -917,7 +916,7 @@ export class ASTModifier {
     const openBrace = bodyNode.children.find((c) => c.type === '{');
     if (!openBrace) return this;
 
-    let reducerInsertPosition = openBrace.endIndex;
+    const reducerInsertPosition = openBrace.endIndex;
     const hasNewlineAfterBrace = this.originalCode[reducerInsertPosition] === '\n';
 
     // Build reducer function with switch statement
@@ -1465,13 +1464,6 @@ export class ASTModifier {
   private findFunction(functionName: string): Parser.SyntaxNode | null {
     if (!this.tree) return null;
 
-    // Look for function declarations and arrow functions
-    const query = `
-      (function_declaration name: (identifier) @name (#eq? @name "${functionName}"))
-      (variable_declarator name: (identifier) @name value: (arrow_function) (#eq? @name "${functionName}"))
-      (variable_declarator name: (identifier) @name value: (function) (#eq? @name "${functionName}"))
-    `;
-
     try {
       // Fallback: manually search the tree
       return this.searchForFunction(this.tree.rootNode, functionName);
@@ -1681,7 +1673,7 @@ export class ASTModifier {
     // Delete the rest
     for (let i = 1; i < imports.length; i++) {
       const importNode = imports[i];
-      let deleteStart = importNode.startIndex;
+      const deleteStart = importNode.startIndex;
       let deleteEnd = importNode.endIndex;
 
       // Include trailing newline
@@ -1711,7 +1703,7 @@ export class ASTModifier {
 
       if (seen.has(importText)) {
         // This is a duplicate, delete it
-        let deleteStart = importNode.startIndex;
+        const deleteStart = importNode.startIndex;
         let deleteEnd = importNode.endIndex;
 
         // Include trailing newline

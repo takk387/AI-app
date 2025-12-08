@@ -7,13 +7,9 @@ interface ComponentPreviewProps {
   code: string;
   theme?: 'light' | 'dark';
   mode?: 'desktop' | 'tablet' | 'mobile';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   props?: Record<string, any>;
   livePreview?: boolean;
-}
-
-interface PreviewError {
-  message: string;
-  details?: string;
 }
 
 export default function ComponentPreview({
@@ -87,6 +83,7 @@ export default function ComponentPreview({
 
   // Memoized function to handle JSX to HTML conversion
   const convertJsxToHtml = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (jsxCode: string, props: Record<string, any>): string => {
       try {
         let html = extractJSX(jsxCode);

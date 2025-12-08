@@ -52,8 +52,6 @@ export function ResizablePanel({
   maxSize,
   collapsible = false,
   collapsedSize = 0,
-  onCollapse,
-  onExpand,
   className = '',
   style = {},
   id,
@@ -90,6 +88,7 @@ export function ResizablePanel({
 
 // Attach type symbol for identification
 ResizablePanel.displayName = 'ResizablePanel';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (ResizablePanel as any).__RESIZABLE_TYPE__ = RESIZABLE_PANEL_TYPE;
 
 /**

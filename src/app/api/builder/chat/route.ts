@@ -70,7 +70,6 @@ function analyzeResponseType(
   aiResponse: string,
   hasCurrentApp: boolean
 ): { responseType: ResponseType; shouldTriggerBuild: boolean; shouldTriggerModify: boolean } {
-  const lowerUser = userMessage.toLowerCase();
   const lowerResponse = aiResponse.toLowerCase();
 
   // Check if AI is asking for clarification
@@ -138,8 +137,6 @@ function analyzeResponseType(
 // ============================================================================
 
 export async function POST(request: Request) {
-  const startTime = Date.now();
-
   try {
     const body: BuilderRequest = await request.json();
     const { message, conversationHistory, currentAppState, image, hasImage } = body;
@@ -239,10 +236,6 @@ export async function POST(request: Request) {
         output: response.usage.output_tokens,
       },
     };
-
-    console.log(
-      `Builder chat response in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out) - Type: ${responseType}`
-    );
 
     return NextResponse.json(result);
   } catch (error) {

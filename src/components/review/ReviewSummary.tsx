@@ -130,6 +130,7 @@ export default function ReviewSummary({
             <div key={category} className="px-3 py-2 rounded-lg bg-black/20 border border-white/5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-300">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {getCategoryIcon(category as any)} {getCategoryDisplayName(category as any)}
                 </span>
                 <span className="text-xs text-slate-500">{data.count} files</span>

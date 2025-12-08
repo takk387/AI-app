@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { BuildPhase, PhaseTask, ValidationCheck } from '../../types/buildPhases';
+import type { BuildPhase, PhaseTask } from '../../types/buildPhases';
 
 /** Maximum length for code preview in task details */
 const MAX_TASK_CODE_PREVIEW_LENGTH = 500;

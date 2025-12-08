@@ -12,13 +12,16 @@ import type { ErrorCategory } from '@/utils/analytics';
 export interface GenerationContext {
   anthropic: Anthropic;
   systemPrompt: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   messages: any[];
   modelName: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   currentAppState: any;
   correctionPrompt?: string; // Added for retry with specific fixes
 }
 
 export interface GenerationResult {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   diffResponse: any;
   responseText: string;
   inputTokens: number;
@@ -33,6 +36,7 @@ export interface GenerationResult {
 export interface GenerationError extends Error {
   category: ErrorCategory;
   originalResponse?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validationDetails?: any;
 }
 
@@ -50,12 +54,6 @@ export async function generateModifications(
     correctionPrompt && attemptNumber > 1
       ? [...messages, { role: 'user', content: correctionPrompt }]
       : messages;
-
-  console.log(
-    attemptNumber > 1
-      ? `🔄 Retry attempt ${attemptNumber} with correction prompt`
-      : 'Generating modifications with Claude Sonnet 4.5...'
-  );
 
   // Use streaming for better handling with timeout
   const stream = await anthropic.messages.stream({
@@ -113,9 +111,6 @@ export async function generateModifications(
     throw error;
   }
 
-  console.log('Modification response length:', responseText.length, 'chars');
-  console.log('Response preview:', responseText.substring(0, 500));
-
   if (!responseText) {
     const error = new Error('No response from Claude') as GenerationError;
     error.category = 'ai_error';
@@ -123,6 +118,7 @@ export async function generateModifications(
   }
 
   // Parse JSON response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let diffResponse: any;
 
   try {
@@ -139,12 +135,6 @@ export async function generateModifications(
       error.originalResponse = responseText;
       throw error;
     }
-
-    console.log('Parsed diff response:', {
-      changeType: diffResponse.changeType,
-      summary: diffResponse.summary,
-      filesCount: diffResponse.files.length,
-    });
   } catch (parseError) {
     console.error('Failed to parse diff response:', parseError);
     console.error('Response text:', responseText);
@@ -158,7 +148,6 @@ export async function generateModifications(
   // ============================================================================
   // VALIDATION LAYER - Validate code snippets in diff instructions
   // ============================================================================
-  console.log('🔍 Validating code snippets in modification instructions...');
 
   const validationErrors: Array<{ file: string; change: number; errors: ValidationError[] }> = [];
   let totalSnippets = 0;
@@ -187,15 +176,11 @@ export async function generateModifications(
         const validation = await validateGeneratedCode(code, fileDiff.path);
 
         if (!validation.valid) {
-          console.log(
-            `⚠️ Found ${validation.errors.length} error(s) in ${fileDiff.path} change #${index + 1} (${field})`
-          );
           errorsFound += validation.errors.length;
 
           // Attempt auto-fix
           const fixedCode = autoFixCode(code, validation.errors);
           if (fixedCode !== code) {
-            console.log(`✅ Auto-fixed errors in ${field}`);
             // Update the change with fixed code
             if (field === 'content') change.content = fixedCode;
             else if (field === 'replaceWith') change.replaceWith = fixedCode;
@@ -216,15 +201,6 @@ export async function generateModifications(
         }
       }
     }
-  }
-
-  // Log validation summary
-  if (totalSnippets > 0) {
-    console.log(`📊 Validation Summary:`);
-    console.log(`   Code snippets checked: ${totalSnippets}`);
-    console.log(`   Errors found: ${errorsFound}`);
-    console.log(`   Successfully validated/fixed: ${validatedSnippets}`);
-    console.log(`   Remaining issues: ${validationErrors.length}`);
   }
 
   // If validation failed and we have unfixed errors, throw for retry

@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { executeASTOperation, isASTOperation, type ASTOperation } from '@/utils/astExecutor';
-import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildModifyPrompt } from '@/prompts/builder';
 import {
   analytics,
   generateRequestId,
   categorizeError,
   PerformanceTracker,
-  type ErrorCategory,
 } from '@/utils/analytics';
 import {
   generateRetryStrategy,
   type RetryContext,
   DEFAULT_RETRY_CONFIG,
-  type RetryConfig,
 } from '@/utils/retryLogic';
 import {
   generateModifications,
@@ -30,7 +26,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// TypeScript interfaces for diff format
+// TypeScript interfaces for diff format (kept for documentation)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface DiffChange {
   type:
     | 'ADD_IMPORT'
@@ -110,25 +107,6 @@ interface DiffChange {
   }>;
 }
 
-interface FileDiff {
-  path: string;
-  action: 'MODIFY' | 'CREATE' | 'DELETE';
-  changes: DiffChange[];
-}
-
-interface StagePlan {
-  currentStage: number;
-  totalStages: number;
-  stageDescription: string;
-  nextStages: string[];
-}
-
-interface DiffResponse {
-  changeType: 'MODIFICATION';
-  summary: string;
-  files: FileDiff[];
-  stagePlan?: StagePlan;
-}
 
 export async function POST(request: Request) {
   // ============================================================================
@@ -220,9 +198,6 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     const systemPrompt = buildModifyPrompt(baseInstructions);
     const estimatedPromptTokens = Math.round(systemPrompt.length / 4);
 
-    console.log('✅ Phase 3: Using compressed modular prompts');
-    console.log('📊 Token estimate:', estimatedPromptTokens, 'tokens');
-
     perfTracker.checkpoint('prompt_built');
 
     // Extract current file contents for AI reference
@@ -230,6 +205,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     if (currentAppState && currentAppState.files && Array.isArray(currentAppState.files)) {
       fileContentsSection =
         '\n\n📁 **CURRENT FILE CONTENTS** (Read these EXACTLY for your SEARCH blocks):\n\n';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentAppState.files.forEach((file: any) => {
         fileContentsSection += `\n${'='.repeat(60)}\n`;
         fileContentsSection += `FILE: ${file.path}\n`;
@@ -242,9 +218,11 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     }
 
     // Build conversation context
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messages: any[] = [];
 
     if (conversationHistory && Array.isArray(conversationHistory)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       conversationHistory.forEach((msg: any) => {
         if (msg.role === 'user') {
           messages.push({ role: 'user', content: msg.content });
@@ -263,7 +241,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     if (hasImage && image) {
       const imageMatch = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
       if (imageMatch) {
-        let mediaType = imageMatch[1];
+        const mediaType = imageMatch[1];
         const base64Data = imageMatch[2];
 
         const validMediaTypes: { [key: string]: string } = {
@@ -281,8 +259,6 @@ ${JSON.stringify(currentAppState, null, 2)}`;
             `Unsupported image type: ${mediaType}. Please use JPEG, PNG, GIF, or WebP.`
           );
         }
-
-        console.log('Image media type:', normalizedType, 'Original:', mediaType);
 
         messages.push({
           role: 'user',
@@ -315,6 +291,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     const modelName = 'claude-sonnet-4-5-20250929';
     const maxRetries = DEFAULT_RETRY_CONFIG.maxAttempts;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let result: any;
     let lastError: GenerationError | null = null;
     let attemptNumber = 1;
@@ -344,11 +321,9 @@ ${JSON.stringify(currentAppState, null, 2)}`;
           const retryStrategy = generateRetryStrategy(retryContext, DEFAULT_RETRY_CONFIG);
 
           if (!retryStrategy.shouldRetry) {
-            console.log(`❌ Retry not allowed for error category: ${lastError.category}`);
             throw lastError;
           }
 
-          console.log(`🔄 Retry attempt ${attemptNumber}/${maxRetries} - ${lastError.category}`);
           generationContext.correctionPrompt = retryStrategy.correctionPrompt;
 
           // Wait if retry delay specified
@@ -377,11 +352,6 @@ ${JSON.stringify(currentAppState, null, 2)}`;
         perfTracker.checkpoint('validation_complete');
 
         // Success! Break out of retry loop
-        console.log(
-          attemptNumber > 1
-            ? `✅ Retry attempt ${attemptNumber} succeeded!`
-            : '✅ Generation successful on first attempt'
-        );
         break;
       } catch (error) {
         lastError = error as GenerationError;
@@ -431,7 +401,6 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     const responseText = result.responseText;
     const validationErrors = result.validationErrors;
     const totalSnippets = result.totalSnippets;
-    const validatedSnippets = result.validatedSnippets;
     const errorsFound = result.errorsFound;
 
     // Add validation warnings if errors remain

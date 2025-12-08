@@ -16,7 +16,6 @@ import {
   OmittedSummary,
   FileType,
   CodeParserConfig,
-  DEFAULT_CODE_PARSER_CONFIG,
 } from '../types/codeContext';
 import { CodeParser, getCodeParser } from './CodeParser';
 import { DependencyGraphBuilder, getDependencyGraphBuilder } from './DependencyGraphBuilder';
@@ -376,8 +375,7 @@ export class CodeContextService {
   // ==========================================================================
 
   private buildSnapshot(
-    selectedFiles: SelectedFile[],
-    excludedFiles: Array<{ path: string; reason: string }>
+    selectedFiles: SelectedFile[]
   ): CodeContextSnapshot {
     // Build omitted summary
     const includedPaths = new Set(selectedFiles.map((f) => f.path));

@@ -96,7 +96,7 @@ function generateImageConstantsFile(images: AppImageGenerationResult): string {
   // Card images
   if (images.cards.length > 0) {
     lines.push('export const CARD_IMAGES = [');
-    images.cards.forEach((card, index) => {
+    images.cards.forEach((card) => {
       lines.push(`  {`);
       lines.push(`    url: '${card.url}',`);
       lines.push(`    alt: '${card.title}',`);

@@ -194,8 +194,6 @@ function isRequestingPhases(message: string): boolean {
 // ============================================================================
 
 export async function POST(request: Request) {
-  const startTime = Date.now();
-
   try {
     const body: WizardRequest = await request.json();
     const { message, conversationHistory, currentState, referenceImages, contextSummary } = body;
@@ -263,7 +261,6 @@ ${contextSummary}
 
 ---
 `;
-      console.log(`[Wizard] Using compressed context summary (${contextSummary.length} chars)`);
     }
 
     // Add current state context if we have gathered information
@@ -376,10 +373,6 @@ Ask any final technical questions if needed (platform, technology preferences) b
         output: response.usage.output_tokens,
       },
     };
-
-    console.log(
-      `Wizard response generated in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`
-    );
 
     return NextResponse.json(result);
   } catch (error) {

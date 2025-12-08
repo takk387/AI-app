@@ -235,7 +235,7 @@ function generateStats(appType: AppType): MockContent['stats'] {
 function generateCards(features: Feature[], appType: AppType): MockContent['cards'] {
   // Use features if available
   if (features.length > 0) {
-    return features.slice(0, 4).map((f, i) => ({
+    return features.slice(0, 4).map((f) => ({
       title: f.name,
       subtitle: f.description.slice(0, 60) || 'Feature description',
       tag: f.priority === 'high' ? 'Priority' : f.priority === 'medium' ? 'Standard' : 'Optional',

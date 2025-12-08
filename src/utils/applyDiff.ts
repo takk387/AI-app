@@ -7,7 +7,7 @@
  * Now supports both string-based diffs and AST-based operations.
  */
 
-import { executeASTOperation, isASTOperation, type ASTOperation } from './astExecutor';
+import { executeASTOperation, type ASTOperation } from './astExecutor';
 
 interface DiffChange {
   type:
@@ -174,6 +174,7 @@ async function applyChange(content: string, change: DiffChange): Promise<string>
       return append(content, change.content || '');
 
     default:
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throw new Error(`Unknown change type: ${(change as any).type}`);
   }
 }
@@ -183,6 +184,7 @@ async function applyChange(content: string, change: DiffChange): Promise<string>
  */
 async function applyASTChange(content: string, change: DiffChange): Promise<string> {
   // Convert DiffChange to ASTOperation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const operation: ASTOperation = change as any;
 
   // Validate required fields based on operation type
@@ -276,7 +278,7 @@ function insertBefore(content: string, searchFor: string, insertContent: string)
   }
 
   // Find the start of the line containing the search pattern
-  let startOfLine = content.lastIndexOf('\n', index - 1) + 1;
+  const startOfLine = content.lastIndexOf('\n', index - 1) + 1;
 
   // Handle escaped newlines in insertContent
   const processedContent = insertContent.replace(/\\n/g, '\n');

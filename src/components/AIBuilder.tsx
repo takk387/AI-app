@@ -72,11 +72,9 @@ import type {
   AppVersion,
   StagePlan,
   Phase,
-  PendingChange,
   PendingDiff,
-  CurrentStagePlan,
 } from '../types/aiBuilderTypes';
-import type { PhasedAppConcept, PhaseId } from '../types/buildPhases';
+import type { PhaseId } from '../types/buildPhases';
 import type { DynamicPhasePlan } from '../types/dynamicPhases';
 import { buildPhaseExecutionPrompt } from '../services/PhaseExecutionManager';
 
@@ -86,7 +84,6 @@ import {
   downloadBlob,
   parseAppFiles,
   getDeploymentInstructions,
-  type DeploymentInstructions,
 } from '../utils/exportApp';
 
 // Services
@@ -171,7 +168,7 @@ function formatPhaseContent(phases: PhaseApiData[]): string {
 
 export default function AIBuilder() {
   // Authentication
-  const { user, loading: authLoading, sessionReady } = useAuth();
+  const { user, sessionReady } = useAuth();
 
   // ============================================================================
   // ZUSTAND STORE STATE
@@ -190,7 +187,6 @@ export default function AIBuilder() {
     // Mode
     currentMode,
     setCurrentMode,
-    lastUserRequest,
     setLastUserRequest,
 
     // Components
@@ -198,9 +194,7 @@ export default function AIBuilder() {
     setComponents,
     currentComponent,
     setCurrentComponent,
-    loadingApps,
     setLoadingApps,
-    dbSyncError,
     setDbSyncError,
 
     // UI
@@ -250,13 +244,10 @@ export default function AIBuilder() {
     setExportingApp,
     compareVersions,
     setCompareVersions,
-    currentStagePlan,
-    setCurrentStagePlan,
     newAppStagePlan,
     setNewAppStagePlan,
     appConcept,
     setAppConcept,
-    implementationPlan,
     setImplementationPlan,
     selectedPhaseId,
     setSelectedPhaseId,
@@ -275,7 +266,6 @@ export default function AIBuilder() {
   // ============================================================================
   const previousModeRef = useRef<'PLAN' | 'ACT'>('PLAN');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Smart Conversations: Wizard state for PLAN mode
   const [wizardState, setWizardState] = useState<{
@@ -319,8 +309,6 @@ export default function AIBuilder() {
     saveComponent: saveComponentToDb,
     deleteComponent: deleteComponentFromDb,
     loadComponents: loadComponentsFromDb,
-    isLoading: isDbLoading,
-    error: dbError,
   } = useDatabaseSync({
     userId: user?.id || null,
     onError: handleDbError,
@@ -369,7 +357,6 @@ export default function AIBuilder() {
     uploadedImage,
     onClearImage: () => {
       setUploadedImage(null);
-      setImageFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -384,10 +371,8 @@ export default function AIBuilder() {
     onFileStart: (filePath) => {
       setGenerationProgress(`Generating ${filePath.split('/').pop()}...`);
     },
-    onComplete: (data, stats) => {
-      console.log(
-        `Generation complete: ${stats.filesGenerated} files in ${(stats.totalTime / 1000).toFixed(1)}s`
-      );
+    onComplete: () => {
+      // Generation complete
     },
     onError: (message) => {
       console.error('Streaming error:', message);
@@ -509,8 +494,8 @@ export default function AIBuilder() {
             if (stored) {
               try {
                 localComponents = JSON.parse(stored);
-              } catch (e) {
-                console.error('Error parsing localStorage:', e);
+              } catch {
+                // Error parsing localStorage
               }
             }
           }
@@ -543,8 +528,8 @@ export default function AIBuilder() {
                   setActiveTab('preview');
                 }
               }
-            } catch (e) {
-              console.warn('Failed to save to localStorage:', e);
+            } catch {
+              // Failed to save to localStorage
             }
           }
         } else {
@@ -569,8 +554,8 @@ export default function AIBuilder() {
                     setActiveTab('preview');
                   }
                 }
-              } catch (e) {
-                console.error('Error loading components from localStorage:', e);
+              } catch {
+                // Error loading components from localStorage
               }
             }
           }
@@ -598,8 +583,8 @@ export default function AIBuilder() {
     if (typeof window !== 'undefined' && components.length > 0) {
       try {
         localStorage.setItem('ai_components', JSON.stringify(components));
-      } catch (e) {
-        console.warn('Failed to save components to localStorage:', e);
+      } catch {
+        // Failed to save components to localStorage
       }
     }
   }, [components]);
@@ -609,8 +594,8 @@ export default function AIBuilder() {
     if (typeof window !== 'undefined' && currentComponent) {
       try {
         localStorage.setItem('current_app_id', currentComponent.id);
-      } catch (e) {
-        console.warn('Failed to save current app ID to localStorage:', e);
+      } catch {
+        // Failed to save current app ID to localStorage
       }
     }
   }, [currentComponent?.id]);
@@ -643,8 +628,6 @@ export default function AIBuilder() {
         return;
       }
 
-      setImageFile(file);
-
       const reader = new FileReader();
       reader.onloadend = () => {
         setUploadedImage(reader.result as string);
@@ -657,7 +640,6 @@ export default function AIBuilder() {
   // Remove uploaded image
   const removeImage = useCallback(() => {
     setUploadedImage(null);
-    setImageFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -1032,8 +1014,8 @@ export default function AIBuilder() {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('current_app_id');
-      } catch (e) {
-        console.warn('Failed to clear current app ID from localStorage:', e);
+      } catch {
+        // Failed to clear current app ID from localStorage
       }
     }
   }, [setCurrentComponent, setChatMessages, setActiveTab]);
@@ -1353,8 +1335,8 @@ export default function AIBuilder() {
           if (currentComponent?.id === id) {
             localStorage.removeItem('current_app_id');
           }
-        } catch (e) {
-          console.warn('Failed to update localStorage after delete:', e);
+        } catch {
+          // Failed to update localStorage after delete
         }
       }
 
@@ -1412,6 +1394,7 @@ export default function AIBuilder() {
       setShowLibrary(false);
       setActiveTab('preview');
       const hasPendingPhases = comp.stagePlan?.phases?.some((p) => p.status === 'pending') ?? false;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       setNewAppStagePlan(hasPendingPhases ? comp.stagePlan! : null);
     },
     [setCurrentComponent, setChatMessages, setShowLibrary, setActiveTab, setNewAppStagePlan]
@@ -1825,7 +1808,6 @@ export default function AIBuilder() {
     } finally {
       setIsGenerating(false);
       setUploadedImage(null);
-      setImageFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -1979,8 +1961,6 @@ export default function AIBuilder() {
                   isExporting={!!exportingApp}
                   onScreenshot={(image) => {
                     setUploadedImage(image);
-                    // Show a subtle indicator that capture is ready
-                    console.log('Preview captured - will be sent with next message');
                   }}
                 />
               </ResizablePanel>

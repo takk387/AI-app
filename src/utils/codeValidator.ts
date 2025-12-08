@@ -487,7 +487,7 @@ export function validateGeneratedCodeSync(
     }
 
     allErrors.push(...hasNestedFunctionDeclarations(code));
-  } catch (error) {
+  } catch {
     // Fallback to legacy validators
     allErrors.push(...hasNestedFunctionDeclarations(code));
     allErrors.push(...hasBalancedJSXTags(code));

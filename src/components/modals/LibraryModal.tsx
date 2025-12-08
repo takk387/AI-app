@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileCard, FileGrid, FileFilters, FileUploader, StorageStats } from '../storage';
+import { FileGrid, FileFilters, FileUploader, StorageStats } from '../storage';
 import type { GeneratedComponent } from '@/types/aiBuilderTypes';
 import type { FileMetadata, StorageStats as StorageStatsType, FileId } from '@/types/storage';
 import {

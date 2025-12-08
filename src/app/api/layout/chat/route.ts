@@ -9,12 +9,10 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import {
-  LAYOUT_BUILDER_SYSTEM_PROMPT,
   buildLayoutBuilderPrompt,
 } from '@/prompts/layoutBuilderSystemPrompt';
 import type {
   LayoutDesign,
-  LayoutMessage,
   LayoutChatRequest,
   LayoutChatResponse,
   DesignChange,
@@ -706,8 +704,6 @@ function generateSuggestedActions(
 // ============================================================================
 
 export async function POST(request: Request) {
-  const startTime = Date.now();
-
   try {
     const body: LayoutChatRequest = await request.json();
     const {
@@ -875,10 +871,6 @@ export async function POST(request: Request) {
         output: response.usage.output_tokens,
       },
     };
-
-    console.log(
-      `Layout chat response in ${Date.now() - startTime}ms (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`
-    );
 
     return NextResponse.json(result);
   } catch (error) {

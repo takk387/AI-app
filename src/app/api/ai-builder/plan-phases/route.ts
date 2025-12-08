@@ -140,20 +140,16 @@ async function extractPhasesWithRetry(
   // Try strict parsing first
   let phases = parsePhasesStrict(responseText);
   if (phases.length > 0) {
-    console.log(`✅ Strict parser extracted ${phases.length} phases`);
     return phases;
   }
 
   // Try lenient parsing
-  console.log('⚠️ Strict parsing failed, trying lenient parser...');
   phases = parsePhasesLenient(responseText);
   if (phases.length > 0) {
-    console.log(`✅ Lenient parser extracted ${phases.length} phases`);
     return phases;
   }
 
   // Retry with correction prompt
-  console.log('⚠️ Both parsers failed, attempting reformat retry...');
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -192,7 +188,6 @@ ${responseText.substring(0, 3000)}`,
 
       phases = parsePhasesStrict(reformatted);
       if (phases.length > 0) {
-        console.log(`✅ Reformat retry ${attempt + 1} succeeded with ${phases.length} phases`);
         return phases;
       }
     } catch (retryError) {
@@ -291,12 +286,14 @@ export async function POST(request: Request) {
     }
 
     // Build conversation context with size limit
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messages: any[] = [];
 
     if (conversationHistory && Array.isArray(conversationHistory)) {
       // Limit conversation history to last 20 messages to avoid context overflow
       const recentHistory = conversationHistory.slice(-20);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recentHistory.forEach((msg: any) => {
         if (msg.role === 'user' || msg.role === 'assistant') {
           // Truncate very long messages
@@ -315,8 +312,6 @@ export async function POST(request: Request) {
       role: 'user',
       content: `Analyze this conversation and extract a phase-by-phase implementation plan for the app described. The user has requested: "${userRequest}"\n\nIMPORTANT: Use the EXACT delimiter format specified (===PHASE:1===, etc.). Start with ===TOTAL_PHASES===.`,
     });
-
-    console.log('📋 Extracting phase plan from conversation...');
 
     // ============================================================================
     // FIX 3.2: STREAMING API WITH TIMEOUT
@@ -373,8 +368,6 @@ export async function POST(request: Request) {
       throw new Error('No response from Claude');
     }
 
-    console.log('📝 Phase plan response length:', responseText.length, 'chars');
-
     // ============================================================================
     // FIX 3.1: USE FLEXIBLE PARSING WITH RETRY
     // ============================================================================
@@ -408,10 +401,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-
-    console.log(
-      `✅ Successfully extracted ${phases.length} phases in ${(Date.now() - startTime) / 1000}s`
-    );
 
     return NextResponse.json({
       totalPhases: phases.length,

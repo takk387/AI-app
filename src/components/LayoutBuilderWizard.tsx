@@ -1098,7 +1098,7 @@ export function LayoutBuilderWizard({
       await new Promise((resolve) => setTimeout(resolve, 300));
       saveDesign();
       success('Design saved!');
-    } catch (err) {
+    } catch {
       error('Failed to save design');
     } finally {
       setIsSaving(false);
@@ -1114,7 +1114,7 @@ export function LayoutBuilderWizard({
       success('Design saved successfully!');
       setShowCloseConfirm(false);
       onClose();
-    } catch (err) {
+    } catch {
       error('Failed to save design');
     } finally {
       setIsSaving(false);
@@ -1141,7 +1141,7 @@ export function LayoutBuilderWizard({
       setShowApplyConfirm(false);
       success('Design applied to app concept!');
       onApplyToAppConcept?.();
-    } catch (err) {
+    } catch {
       error('Failed to apply design');
     } finally {
       setIsApplying(false);
@@ -1158,7 +1158,7 @@ export function LayoutBuilderWizard({
       } else {
         error('Failed to capture preview');
       }
-    } catch (err) {
+    } catch {
       error('Failed to capture preview');
     } finally {
       setIsCapturing(false);
@@ -1316,7 +1316,7 @@ export function LayoutBuilderWizard({
         } else {
           success('Reference image added');
         }
-      } catch (err) {
+      } catch {
         error('Failed to process image. Please try another file.');
       }
 

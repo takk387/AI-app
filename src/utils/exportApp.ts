@@ -297,12 +297,14 @@ export function downloadBlob(blob: Blob, filename: string): void {
 /**
  * Parse app data to extract files
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseAppFiles(appData: any): AppFile[] {
   const files: AppFile[] = [];
 
   try {
     // Handle the app structure
     if (appData.files && Array.isArray(appData.files)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       appData.files.forEach((file: any) => {
         files.push({
           path: file.path,
@@ -328,7 +330,7 @@ export interface DeploymentInstructions {
 
 export function getDeploymentInstructions(
   platform: 'vercel' | 'netlify' | 'github',
-  appName: string
+  _appName: string
 ): DeploymentInstructions {
   switch (platform) {
     case 'vercel':

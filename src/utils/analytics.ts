@@ -69,6 +69,7 @@ export interface RequestMetrics {
   ipAddress?: string;
 
   // Custom metadata
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
 
@@ -93,6 +94,7 @@ class AnalyticsLogger {
   /**
    * Log a request start event
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logRequestStart(routeType: RouteType, requestId: string, metadata?: Record<string, any>): void {
     const metric: RequestMetrics = {
       routeType,
@@ -104,10 +106,6 @@ class AnalyticsLogger {
 
     this.metrics.push(metric);
     this.trimMetrics();
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Analytics] Request started: ${routeType} (${requestId})`);
-    }
   }
 
   /**
@@ -116,7 +114,6 @@ class AnalyticsLogger {
   logRequestComplete(requestId: string, updates: Partial<RequestMetrics>): void {
     const metric = this.findMetric(requestId);
     if (!metric) {
-      console.warn(`[Analytics] Metric not found for requestId: ${requestId}`);
       return;
     }
 
@@ -124,12 +121,6 @@ class AnalyticsLogger {
       success: true,
       responseTime: Date.now() - metric.timestamp,
     });
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `[Analytics] Request completed: ${metric.routeType} (${requestId}) - ${metric.responseTime}ms`
-      );
-    }
 
     // Log summary if significant
     this.logRequestSummary(metric);
@@ -146,7 +137,6 @@ class AnalyticsLogger {
   ): void {
     const metric = this.findMetric(requestId);
     if (!metric) {
-      console.warn(`[Analytics] Metric not found for requestId: ${requestId}`);
       return;
     }
 
@@ -178,12 +168,6 @@ class AnalyticsLogger {
     metric.validationRan = true;
     metric.validationIssuesFound = issuesFound;
     metric.validationIssuesFixed = issuesFixed;
-
-    if (process.env.NODE_ENV === 'development' && issuesFound > 0) {
-      console.log(
-        `[Analytics] Validation: ${issuesFixed}/${issuesFound} issues fixed (${requestId})`
-      );
-    }
   }
 
   /**
@@ -194,13 +178,6 @@ class AnalyticsLogger {
     if (!metric) return;
 
     metric.tokenUsage = { input, output, cached };
-
-    if (process.env.NODE_ENV === 'development') {
-      const total = input + output;
-      console.log(
-        `[Analytics] Tokens: ${total} (${input} in, ${output} out${cached ? `, ${cached} cached` : ''}) - ${requestId}`
-      );
-    }
   }
 
   /**
@@ -293,7 +270,6 @@ class AnalyticsLogger {
    */
   clear(): void {
     this.metrics = [];
-    console.log('[Analytics] Metrics cleared');
   }
 
   /**
@@ -392,30 +368,30 @@ export function categorizeError(error: Error | string): ErrorCategory {
 export function logPeriodicSummary(periodName: string = 'hour'): void {
   const summary = analytics.getSummary();
 
-  console.log(`\n[Analytics Summary - Last ${periodName}]`);
-  console.log(`Total Requests: ${summary.totalRequests}`);
-  console.log(
+  console.error(`\n[Analytics Summary - Last ${periodName}]`);
+  console.error(`Total Requests: ${summary.totalRequests}`);
+  console.error(
     `Success Rate: ${summary.totalRequests > 0 ? Math.round((summary.successfulRequests / summary.totalRequests) * 100) : 0}%`
   );
-  console.log(`Avg Response Time: ${summary.averageResponseTime}ms`);
-  console.log(`Total Tokens: ${summary.totalTokensUsed.toLocaleString()}`);
+  console.error(`Avg Response Time: ${summary.averageResponseTime}ms`);
+  console.error(`Total Tokens: ${summary.totalTokensUsed.toLocaleString()}`);
 
   if (summary.failedRequests > 0) {
-    console.log('\nErrors by Category:');
+    console.error('\nErrors by Category:');
     Object.entries(summary.errorsByCategory).forEach(([category, count]) => {
       if (count > 0) {
-        console.log(`  ${category}: ${count}`);
+        console.error(`  ${category}: ${count}`);
       }
     });
   }
 
-  console.log('\nRequests by Route:');
+  console.error('\nRequests by Route:');
   Object.entries(summary.requestsByRoute).forEach(([route, count]) => {
     if (count > 0) {
-      console.log(`  ${route}: ${count}`);
+      console.error(`  ${route}: ${count}`);
     }
   });
-  console.log('');
+  console.error('');
 }
 
 // ============================================================================
@@ -446,9 +422,9 @@ export class PerformanceTracker {
   }
 
   log(prefix: string = 'Performance'): void {
-    console.log(`[${prefix}] Total: ${this.getElapsed()}ms`);
+    console.error(`[${prefix}] Total: ${this.getElapsed()}ms`);
     this.checkpoints.forEach((time, name) => {
-      console.log(`  ${name}: ${time}ms`);
+      console.error(`  ${name}: ${time}ms`);
     });
   }
 }

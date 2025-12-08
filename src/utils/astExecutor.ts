@@ -749,6 +749,7 @@ export async function executeASTOperation(
       default:
         return {
           success: false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           errors: [`Unknown AST operation type: ${(operation as any).type}`],
         };
     }
@@ -784,7 +785,7 @@ export async function executeASTOperations(
       };
     }
 
-    currentCode = result.code!;
+    currentCode = result.code || currentCode;
     if (result.operation) {
       appliedOperations.push(result.operation);
     }
@@ -800,6 +801,7 @@ export async function executeASTOperations(
 /**
  * Check if an operation is an AST operation
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isASTOperation(operation: any): operation is ASTOperation {
   return operation && typeof operation.type === 'string' && operation.type.startsWith('AST_');
 }

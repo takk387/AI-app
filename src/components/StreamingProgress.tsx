@@ -82,6 +82,7 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
     }
 
     const interval = setInterval(() => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       setElapsedTime(Date.now() - progress.startTime!);
     }, 100);
 

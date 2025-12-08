@@ -283,11 +283,9 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
     updatePreviewSettings,
     updateBuildSettings,
     updateAppearanceSettings,
-    updateShortcut,
     updateAccountSettings,
     resetSettings,
     resetSection,
-    exportSettingsToJson,
     importSettingsFromJson,
     downloadSettingsFile,
   } = useSettings();

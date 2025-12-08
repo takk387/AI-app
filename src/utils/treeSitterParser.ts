@@ -52,11 +52,13 @@ export class CodeParser {
         try {
           const TypeScript = await import('tree-sitter-typescript');
           const lang = TypeScript.default?.tsx || TypeScript.tsx;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.parser.setLanguage(lang as any);
-        } catch (_esmError) {
+        } catch {
           // Fallback to CommonJS require
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const TypeScript = require('tree-sitter-typescript');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.parser.setLanguage(TypeScript.tsx as any);
         }
       } else {
@@ -64,10 +66,12 @@ export class CodeParser {
         try {
           const JavaScript = await import('tree-sitter-javascript');
           const lang = JavaScript.default || JavaScript;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.parser.setLanguage(lang as any);
-        } catch (_esmError) {
+        } catch {
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           const JavaScript = require('tree-sitter-javascript');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.parser.setLanguage(JavaScript as any);
         }
       }

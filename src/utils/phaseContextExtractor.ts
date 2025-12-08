@@ -10,15 +10,11 @@ import type { ChatMessage } from '@/types/aiBuilderTypes';
 import type { FeatureDomain } from '@/types/dynamicPhases';
 import {
   segmentConversation,
-  getHighImportanceSegments,
-  buildContextFromSegments,
   type ConversationSegment,
   type SegmentTopic,
 } from './conversationSegmentation';
 import {
   buildStructuredContext,
-  structuredContextToSummary,
-  type StructuredAppContext,
   type ExtractedFeature,
   type ExtractedWorkflow,
   type ExtractedTechnicalSpec,
@@ -390,7 +386,7 @@ function extractDecisionsFromSegments(segments: ConversationSegment[]): string[]
  */
 function extractTechnicalNotesFromSegments(
   segments: ConversationSegment[],
-  phaseType: FeatureDomain
+  _phaseType: FeatureDomain
 ): string[] {
   const notes: string[] = [];
 
@@ -411,7 +407,7 @@ function extractTechnicalNotesFromSegments(
  */
 function extractValidationRules(
   segments: ConversationSegment[],
-  phaseType: FeatureDomain
+  _phaseType: FeatureDomain
 ): string[] {
   const rules: string[] = [];
 
@@ -443,7 +439,7 @@ function extractValidationRules(
 /**
  * Extract UI patterns from segments
  */
-function extractUIPatterns(segments: ConversationSegment[], phaseType: FeatureDomain): string[] {
+function extractUIPatterns(segments: ConversationSegment[], _phaseType: FeatureDomain): string[] {
   const patterns: string[] = [];
 
   for (const segment of segments) {

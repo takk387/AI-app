@@ -174,7 +174,6 @@ export function useSmartContext(): UseSmartContextReturn {
       const {
         maxTokens = 4000,
         preserveLastN = 4,
-        maxMemories = 5,
         includeMemories = true,
       } = options;
 
@@ -192,7 +191,7 @@ export function useSmartContext(): UseSmartContextReturn {
           if (memoryTokens > maxTokens * 0.25) {
             // Truncate memories to stay within budget
             const lines = memoriesContext.split('\n');
-            let truncated: string[] = [lines[0]]; // Keep header
+            const truncated: string[] = [lines[0]]; // Keep header
             let tokens = estimateTokens(lines[0]);
 
             for (let i = 1; i < lines.length && tokens < maxTokens * 0.2; i++) {
@@ -269,7 +268,7 @@ export function useSmartContext(): UseSmartContextReturn {
    * Search for relevant memories
    */
   const searchMemories = useCallback(
-    async (query: string, limit?: number): Promise<string> => {
+    async (query: string): Promise<string> => {
       if (!isMemoryEnabled || !memoryManagerRef.current) {
         return '';
       }

@@ -263,7 +263,7 @@ export class RollbackService implements IRollbackService {
         this.pruneOldPoints();
         this.saveToStorage();
       }
-    } catch (error) {
+    } catch {
       throw new Error('Invalid restore points data');
     }
   }

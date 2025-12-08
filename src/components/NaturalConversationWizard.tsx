@@ -43,7 +43,6 @@ import {
   segmentConversation,
   getHighImportanceSegments,
   buildContextFromSegments,
-  getSegmentationSummary,
 } from '@/utils/conversationSegmentation';
 
 // ============================================================================
@@ -142,12 +141,9 @@ export default function NaturalConversationWizard({
       const messagesMetadata = getDraftMetadata(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
       const stateMetadata = getDraftMetadata(WIZARD_DRAFT_KEYS.CONVERSATION_STATE);
 
-      console.log('[Wizard] Checking for drafts:', { messagesMetadata, stateMetadata });
-
       // If we have a saved conversation with more than just the greeting
       if (messagesMetadata || stateMetadata) {
         const savedMessages = loadWizardDraft<Message[]>(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES);
-        console.log('[Wizard] Loaded messages:', savedMessages?.length, 'messages');
 
         // Check if there's actual conversation content (more than just greeting)
         if (savedMessages && savedMessages.length > 1) {
@@ -155,14 +151,12 @@ export default function NaturalConversationWizard({
           if (timestamp) {
             setDraftAge(formatDraftAge(timestamp));
           }
-          console.log('[Wizard] Showing recovery prompt');
           setShowRecoveryPrompt(true);
           return;
         }
       }
 
       // No valid draft found, start fresh
-      console.log('[Wizard] Starting fresh conversation');
       startFreshConversation();
     };
 
@@ -261,7 +255,6 @@ What would you like to build?`,
 
     // Debounce save
     const saveTimeout = setTimeout(() => {
-      console.log('[Wizard] Auto-saving messages:', messages.length, 'messages');
       saveWizardDraft(WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES, messages);
     }, 500);
 
@@ -366,10 +359,6 @@ What would you like to build?`,
           // Build summary context if messages were compressed
           if (compressed.summary.messageCount > 0) {
             contextSummary = buildCompressedContext(compressed);
-            console.log(
-              `[Wizard] Compressed ${compressed.summary.messageCount} messages, ` +
-                `ratio: ${compressed.compressionRatio.toFixed(2)}x`
-            );
           }
         } else {
           conversationHistory = filteredMessages.map((m) => ({
@@ -464,8 +453,6 @@ What would you like to build?`,
         contextParts.push('=== KEY CONVERSATION SEGMENTS ===');
         contextParts.push(segmentContext);
         contextParts.push('');
-
-        console.log(`[Wizard] Segmentation: ${getSegmentationSummary(segmentationResult)}`);
       }
     }
 
@@ -491,12 +478,6 @@ What would you like to build?`,
 
     contextParts.push('=== RECENT CONVERSATION ===');
     contextParts.push(conversationSummary);
-
-    console.log(
-      `[Wizard] Built context: ${structuredContext.features.length} features, ` +
-        `${structuredContext.roles.length} roles, ${structuredContext.technicalSpecs.length} tech specs, ` +
-        `${relevantMessages.length} messages`
-    );
 
     return contextParts.join('\n');
   }, [messages]);
@@ -553,6 +534,7 @@ What would you like to build?`,
     try {
       // Build complete concept with ALL details from the conversation
       const concept: AppConcept = {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         name: wizardState.name!,
         description: wizardState.description || `A ${wizardState.name} application`,
         purpose: wizardState.purpose || wizardState.description || '',
@@ -682,6 +664,7 @@ Does this look good? You can:
         case 'start_building':
           if (phasePlan) {
             const concept: AppConcept = {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               name: wizardState.name!,
               description: wizardState.description || '',
               purpose: wizardState.purpose || '',
@@ -717,7 +700,8 @@ Does this look good? You can:
           break;
 
         default:
-          console.warn('Unknown action:', action);
+          // Unknown action
+          break;
       }
     },
     [generatePhases, phasePlan, wizardState, onComplete, sendMessage, clearDrafts]

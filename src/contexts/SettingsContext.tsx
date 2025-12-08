@@ -10,7 +10,6 @@ import type {
   PreviewSettings,
   BuildSettings,
   ThemeSettings,
-  KeyboardShortcut,
   AccountSettings,
 } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';

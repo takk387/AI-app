@@ -144,7 +144,7 @@ export function adaptDynamicProgressToUI(
     totalPhases: plan.totalPhases,
     completedPhases: plan.completedPhaseNumbers.map((n) => generatePhaseId(n)),
     percentComplete: Math.round((completedCount / plan.totalPhases) * 100),
-    estimatedTimeRemaining: calculateRemainingTime(plan),
+    estimatedTimeRemaining: manager ? calculateRemainingTime(plan) : null,
     startedAt: plan.createdAt,
     lastUpdated: plan.updatedAt,
   };

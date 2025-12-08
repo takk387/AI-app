@@ -23,6 +23,7 @@ export interface RetryContext {
   previousError: string; // Error message from previous attempt
   errorCategory: ErrorCategory; // Categorized error type
   originalResponse?: string; // AI's problematic response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validationDetails?: any; // Validation error details
 }
 
@@ -44,6 +45,7 @@ export interface PhaseRetryContext {
   previousError: string; // Error message from previous attempt
   errorCategory: PhaseErrorCategory; // Phase-specific categorized error type
   originalResponse?: string; // AI's problematic response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validationDetails?: any; // Validation error details
   phaseNumber?: number;
   estimatedTokens?: number;
@@ -288,6 +290,7 @@ Now, please retry addressing the error above:`;
 /**
  * Format validation errors for display in correction prompt
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatValidationIssues(validationDetails: any): string {
   if (!validationDetails || !Array.isArray(validationDetails)) {
     return '(validation details unavailable)';
@@ -295,8 +298,10 @@ function formatValidationIssues(validationDetails: any): string {
 
   const issues: string[] = [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validationDetails.forEach((detail: any, index: number) => {
     if (detail.errors && Array.isArray(detail.errors)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       detail.errors.forEach((error: any) => {
         issues.push(`${index + 1}. [${detail.file}] ${error.type}: ${error.message}`);
       });
@@ -363,11 +368,6 @@ export async function executeWithRetry<T>(
         // No more retries, throw error
         throw lastError;
       }
-
-      // Log retry attempt
-      console.log(
-        `[Retry] Attempt ${attempt + 1}/${config.maxAttempts} failed. Retrying with correction...`
-      );
 
       // Wait before retry if needed
       if (strategy.retryDelay && strategy.retryDelay > 0) {

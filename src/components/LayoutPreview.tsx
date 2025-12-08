@@ -13,11 +13,8 @@ import type {
 import { generateMockContent } from '../utils/mockContentGenerator';
 import {
   DragDropCanvas,
-  SortableSection,
   useSectionOrder,
   type LayoutSection,
-  type SectionType,
-  DEFAULT_SECTION_ORDER,
 } from './layout/DragDropCanvas';
 import { imageAssets, getFallbackImage } from '../utils/imageAssets';
 import { imageCache } from '../utils/imageCache';
@@ -289,17 +286,6 @@ const colorSchemes = {
 type ColorScheme = (typeof colorSchemes)[keyof typeof colorSchemes];
 
 /**
- * Header style classes based on HeaderDesign.style
- */
-const headerStyles = {
-  solid: (colors: ColorScheme) => colors.header,
-  gradient: (colors: ColorScheme, primary: string) =>
-    `bg-gradient-to-r from-[${primary}] to-[${primary}80]`,
-  blur: (colors: ColorScheme) => `backdrop-blur-md bg-opacity-80 ${colors.header}`,
-  transparent: () => 'bg-transparent',
-} as const;
-
-/**
  * Card hover effect classes based on CardDesign.hoverEffect
  */
 const cardHoverEffects = {
@@ -308,19 +294,6 @@ const cardHoverEffects = {
   glow: 'hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all duration-200',
   scale: 'hover:scale-[1.02] transition-transform duration-200',
   border: 'hover:border-blue-500 transition-colors duration-200',
-} as const;
-
-/**
- * Navigation item style classes based on NavigationDesign.itemStyle
- */
-const navItemStyles = {
-  text: (colors: ColorScheme) => `${colors.textMuted} hover:opacity-80`,
-  pills: (colors: ColorScheme, primary: string) =>
-    `px-3 py-1 rounded-full ${colors.textMuted} hover:bg-[${primary}]/10`,
-  underline: (colors: ColorScheme) =>
-    `${colors.textMuted} border-b-2 border-transparent hover:border-current pb-1`,
-  boxed: (colors: ColorScheme) =>
-    `px-3 py-1 border rounded ${colors.border} ${colors.textMuted} hover:border-current`,
 } as const;
 
 /**
@@ -425,7 +398,7 @@ interface SelectableProps {
   style?: React.CSSProperties;
 }
 
-function Selectable({ id, children, isSelected, onClick, className = '', style }: SelectableProps) {
+function Selectable({ id, children, isSelected, onClick, className = '' }: SelectableProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -916,7 +889,6 @@ function CardGrid({
   // Get border radius from effects settings
   const radiusClass = getBorderRadiusClass(effectsSettings?.borderRadius);
   const animationBase = getAnimationClass(effectsSettings?.animations, 'base');
-  const showImages = cardImages.length > 0 || cardDesign?.imagePosition !== 'none';
 
   return (
     <Selectable
@@ -1000,7 +972,7 @@ interface ListItemsProps {
 function ListItems({
   items,
   colors,
-  style,
+  style: _style,
   onElementSelect,
   selectedElement,
   effectsSettings,

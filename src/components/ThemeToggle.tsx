@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useTheme, type UseTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/contexts/ThemeContext';
 
 interface ThemeToggleProps {

@@ -121,10 +121,6 @@ export default function PowerfulPreview({
   // Ensure we have /App.tsx
   if (!sandpackFiles['/App.tsx']) {
     console.error('No /App.tsx found in files:', Object.keys(sandpackFiles));
-    console.log(
-      'Original file paths:',
-      appData.files.map((f) => f.path)
-    );
   }
 
   // Add index.tsx for TypeScript support

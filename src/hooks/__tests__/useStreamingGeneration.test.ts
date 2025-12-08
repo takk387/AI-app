@@ -282,6 +282,7 @@ describe('useStreamingGeneration', () => {
 
       const { result } = renderHook(() => useStreamingGeneration());
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let returnedData: any;
       await act(async () => {
         returnedData = await result.current.generate({ test: 'data' });
@@ -296,6 +297,7 @@ describe('useStreamingGeneration', () => {
 
       const { result } = renderHook(() => useStreamingGeneration());
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let returnedData: any;
       await act(async () => {
         returnedData = await result.current.generate({ test: 'data' });
@@ -309,6 +311,7 @@ describe('useStreamingGeneration', () => {
 
       const { result } = renderHook(() => useStreamingGeneration());
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let returnedData: any;
       await act(async () => {
         returnedData = await result.current.generate({ test: 'data' });
@@ -328,6 +331,7 @@ describe('useStreamingGeneration', () => {
 
       const { result } = renderHook(() => useStreamingGeneration());
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let returnedData: any;
       await act(async () => {
         returnedData = await result.current.generate({ test: 'data' });
@@ -749,6 +753,7 @@ describe('useStreamingGeneration', () => {
 
       const { result } = renderHook(() => useStreamingGeneration());
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let returnedData: any;
       await act(async () => {
         returnedData = await result.current.generate({});
@@ -925,6 +930,7 @@ describe('useStreamingGeneration', () => {
         })
       );
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let returnedData: any;
       await act(async () => {
         returnedData = await result.current.generate({

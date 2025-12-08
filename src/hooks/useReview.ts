@@ -18,7 +18,6 @@ import type {
   ApprovalStatus,
   LineComment,
   RestorePoint,
-  ImpactAnalysis,
   ReviewStatistics,
   DiffHunk,
 } from '@/types/review';
@@ -395,6 +394,7 @@ export function useReview(): UseReviewReturn {
         .filter((c) => c.originalContent)
         .map((c) => ({
           path: c.path,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           content: c.originalContent!,
         }));
 

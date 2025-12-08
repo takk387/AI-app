@@ -2,13 +2,6 @@
 
 import React, { useState, useRef } from 'react';
 
-interface UploadProgress {
-  file: File;
-  progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
-  error?: string;
-}
-
 interface FileUploaderProps {
   onUpload: (files: File[]) => Promise<void>;
   maxFileSize?: number; // in bytes
@@ -34,7 +27,6 @@ export function FileUploader({
 }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<Map<string, UploadProgress>>(new Map());
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

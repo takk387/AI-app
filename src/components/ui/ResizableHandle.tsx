@@ -188,6 +188,7 @@ export function ResizableHandle({
 
 // Attach type symbol for identification
 ResizableHandle.displayName = 'ResizableHandle';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (ResizableHandle as any).__RESIZABLE_TYPE__ = RESIZABLE_HANDLE_TYPE;
 
 export default ResizableHandle;

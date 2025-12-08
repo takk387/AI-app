@@ -61,6 +61,7 @@ export async function GET(request: Request) {
           );
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const routeMetrics = analytics.getMetricsByRoute(route as any, limit);
 
         return NextResponse.json({

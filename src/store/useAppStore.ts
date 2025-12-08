@@ -260,7 +260,7 @@ export interface AppState
  */
 export const useAppStore = create<AppState>()(
   devtools(
-    immer((set, get) => ({
+    immer((set, _get) => ({
       // ========================================================================
       // CHAT SLICE
       // ========================================================================

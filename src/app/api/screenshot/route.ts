@@ -169,7 +169,6 @@ export async function POST(req: NextRequest) {
         },
         { timeout: 10000 }
       );
-      console.log('React rendered successfully');
     } catch {
       // If waitForFunction times out, log what's in #root for debugging
       const rootContent = await page.evaluate(() => {

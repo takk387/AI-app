@@ -48,7 +48,7 @@ const MAX_TOASTS = 5;
 // ============================================================================
 
 function generateToastId(): string {
-  return `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `toast_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // ============================================================================
@@ -61,9 +61,10 @@ export function useToast(): UseToastReturn {
 
   // Clean up timeouts on unmount
   useEffect(() => {
+    const timeouts = timeoutRefs.current;
     return () => {
-      timeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
-      timeoutRefs.current.clear();
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+      timeouts.clear();
     };
   }, []);
 

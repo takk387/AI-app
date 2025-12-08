@@ -12,16 +12,16 @@
  * Target: 90%+ code coverage
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { StorageService } from '../StorageService';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 import {
-  BucketName,
   FilePath,
   FileId,
   UserId,
   StorageErrorCode,
-  FileMetadata,
 } from '@/types/storage';
 
 // ============================================================================

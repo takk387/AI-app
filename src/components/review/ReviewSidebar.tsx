@@ -7,7 +7,6 @@ import {
   getCategoryIcon,
   getRiskLevelColor,
   getRiskLevelBgColor,
-  getStatusColor,
 } from '@/types/review';
 
 /**

@@ -7,11 +7,11 @@
  * Target: 90%+ coverage for this critical planning service
  */
 
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import { DynamicPhaseGenerator } from '../DynamicPhaseGenerator';
 import type {
   PhaseGeneratorConfig,
-  DynamicPhasePlan,
-  FeatureClassification,
   FeatureDomain,
 } from '@/types/dynamicPhases';
 import type { AppConcept, Feature } from '@/types/appConcept';

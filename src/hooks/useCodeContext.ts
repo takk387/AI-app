@@ -363,6 +363,7 @@ export function useFileDependencies(
     const seen = new Set<string>();
     const queue = [...getDependencies(filePath)];
     while (queue.length > 0 && seen.size < 50) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const dep = queue.shift()!;
       if (!seen.has(dep)) {
         seen.add(dep);

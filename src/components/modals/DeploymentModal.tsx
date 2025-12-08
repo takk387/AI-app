@@ -26,7 +26,6 @@ export function DeploymentModal({
   onClose,
   deploymentInstructions,
   onPlatformChange,
-  appName = 'app',
 }: DeploymentModalProps) {
   if (!isOpen || !deploymentInstructions) return null;
 

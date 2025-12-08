@@ -7,7 +7,6 @@
  */
 
 import type { ChatMessage } from '@/types/aiBuilderTypes';
-import type { Feature, UserRole, Workflow, TechnicalRequirements } from '@/types/appConcept';
 
 // ============================================================================
 // TYPES
@@ -128,39 +127,39 @@ const FEATURE_PATTERNS = {
 };
 
 /**
- * Patterns to identify role-related content
+ * Patterns to identify role-related content (currently unused but kept for future use)
  */
-const ROLE_PATTERNS = {
-  definition: [
-    /(?:role|user type|user kind):\s*(.+?)(?:\.|$)/gi,
-    /(?:admin(?:istrator)?s?|moderators?|users?|guests?|viewers?|editors?|managers?|owners?)/gi,
-    /(?:there (?:are|will be))\s+(?:different\s+)?(?:types? of\s+)?(?:users?|roles?):\s*(.+?)(?:\.|$)/gi,
-  ],
-  capabilities: [
-    /(?:can|able to|allowed to|permitted to)\s+(.+?)(?:\.|,|$)/gi,
-    /(?:has|have) (?:access to|permission to)\s+(.+?)(?:\.|,|$)/gi,
-  ],
-  restrictions: [
-    /(?:cannot|can't|unable to|not allowed to|restricted from)\s+(.+?)(?:\.|,|$)/gi,
-    /(?:only\s+(?:admins?|managers?|owners?))\s+can\s+(.+?)(?:\.|,|$)/gi,
-  ],
-};
+// const ROLE_PATTERNS = {
+//   definition: [
+//     /(?:role|user type|user kind):\s*(.+?)(?:\.|$)/gi,
+//     /(?:admin(?:istrator)?s?|moderators?|users?|guests?|viewers?|editors?|managers?|owners?)/gi,
+//     /(?:there (?:are|will be))\s+(?:different\s+)?(?:types? of\s+)?(?:users?|roles?):\s*(.+?)(?:\.|$)/gi,
+//   ],
+//   capabilities: [
+//     /(?:can|able to|allowed to|permitted to)\s+(.+?)(?:\.|,|$)/gi,
+//     /(?:has|have) (?:access to|permission to)\s+(.+?)(?:\.|,|$)/gi,
+//   ],
+//   restrictions: [
+//     /(?:cannot|can't|unable to|not allowed to|restricted from)\s+(.+?)(?:\.|,|$)/gi,
+//     /(?:only\s+(?:admins?|managers?|owners?))\s+can\s+(.+?)(?:\.|,|$)/gi,
+//   ],
+// };
 
 /**
- * Patterns to identify workflow-related content
+ * Patterns to identify workflow-related content (currently unused but kept for future use)
  */
-const WORKFLOW_PATTERNS = {
-  definition: [
-    /(?:workflow|process|flow|procedure):\s*(.+?)(?:\.|$)/gi,
-    /(?:when|after|once)\s+(.+?),\s*(?:then|the system|it)\s+(.+?)(?:\.|$)/gi,
-    /(?:step\s*\d+|first|then|next|finally|after that):\s*(.+?)(?:\.|$)/gi,
-  ],
-  sequence: [
-    /(?:first|initially|to start),?\s*(.+?)(?:\.|,|$)/gi,
-    /(?:then|next|after that|subsequently),?\s*(.+?)(?:\.|,|$)/gi,
-    /(?:finally|lastly|at the end),?\s*(.+?)(?:\.|$)/gi,
-  ],
-};
+// const WORKFLOW_PATTERNS = {
+//   definition: [
+//     /(?:workflow|process|flow|procedure):\s*(.+?)(?:\.|$)/gi,
+//     /(?:when|after|once)\s+(.+?),\s*(?:then|the system|it)\s+(.+?)(?:\.|$)/gi,
+//     /(?:step\s*\d+|first|then|next|finally|after that):\s*(.+?)(?:\.|$)/gi,
+//   ],
+//   sequence: [
+//     /(?:first|initially|to start),?\s*(.+?)(?:\.|,|$)/gi,
+//     /(?:then|next|after that|subsequently),?\s*(.+?)(?:\.|,|$)/gi,
+//     /(?:finally|lastly|at the end),?\s*(.+?)(?:\.|$)/gi,
+//   ],
+// };
 
 /**
  * Patterns to identify technical requirements
@@ -719,7 +718,7 @@ function extractInvolvedRoles(content: string, contextText: string): string[] {
   return roles;
 }
 
-function extractConstraints(content: string, category: string): string[] {
+function extractConstraints(content: string, _category: string): string[] {
   const constraints: string[] = [];
   const constraintPatterns = [
     /(?:must not|cannot|should not|don't|avoid)\s+([^.]+)/gi,

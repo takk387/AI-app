@@ -64,11 +64,7 @@ export function useStateInspector(): void {
 
     // Log availability
     if (DEBUG.EXPOSE_STATE) {
-      console.log('🔍 State Inspector Active');
-      console.log('   Available globals:');
-      console.log('   - window.__APP_STATE__ (current state snapshot)');
-      console.log('   - window.__STORE__ (Zustand store with getState/setState)');
-      console.log('   - window.__DEBUG__ (debug flags)');
+      // Development mode logging
     }
 
     return () => {
@@ -86,26 +82,10 @@ export function useStateInspector(): void {
 /**
  * Utility function to log current state (can be called from anywhere)
  */
-export function logCurrentState(slice?: string): void {
+export function logCurrentState(_slice?: string): void {
   if (!DEBUG.EXPOSE_STATE && !DEBUG.VERBOSE_ERRORS) return;
 
-  const state = useAppStore.getState();
-
-  if (slice) {
-    console.log(`[STATE] ${slice}:`, (state as unknown as Record<string, unknown>)[slice]);
-  } else {
-    console.log('[STATE] Full snapshot:', {
-      mode: state.currentMode,
-      isGenerating: state.isGenerating,
-      messagesCount: state.chatMessages?.length || 0,
-      componentsCount: state.components?.length || 0,
-      undoStackSize: state.undoStack?.length || 0,
-      redoStackSize: state.redoStack?.length || 0,
-      activeTab: state.activeTab,
-      hasPendingChange: !!state.pendingChange,
-      hasAppConcept: !!state.appConcept,
-    });
-  }
+  // Development mode logging available in debug mode
 }
 
 /**

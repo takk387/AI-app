@@ -103,6 +103,7 @@ export interface ErrorEventData extends BaseEventData {
   errorStack?: string;
   isRetryable: boolean;
   retryAttempt?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: Record<string, any>;
 }
 
@@ -248,14 +249,6 @@ export class StorageAnalyticsService {
       : 'storage_upload_error';
 
     await this.storeEvent(eventType, eventData);
-
-    // Log in development
-    if (process.env.NODE_ENV === 'development') {
-      const status = data.success ? '✅' : '❌';
-      console.log(
-        `[Storage Analytics] ${status} Upload: ${data.fileName} (${this.formatBytes(data.fileSize)}) - ${data.duration || 0}ms`
-      );
-    }
   }
 
   /**
@@ -293,14 +286,6 @@ export class StorageAnalyticsService {
       : 'storage_download_error';
 
     await this.storeEvent(eventType, eventData);
-
-    // Log in development
-    if (process.env.NODE_ENV === 'development') {
-      const status = data.success ? '✅' : '❌';
-      console.log(
-        `[Storage Analytics] ${status} Download: ${data.fileName} (${this.formatBytes(data.fileSize)}) - ${data.duration || 0}ms`
-      );
-    }
   }
 
   /**
@@ -332,12 +317,6 @@ export class StorageAnalyticsService {
       : 'storage_delete_error';
 
     await this.storeEvent(eventType, eventData);
-
-    // Log in development
-    if (process.env.NODE_ENV === 'development') {
-      const status = data.success ? '✅' : '❌';
-      console.log(`[Storage Analytics] ${status} Delete: ${data.fileName}`);
-    }
   }
 
   /**
@@ -364,11 +343,6 @@ export class StorageAnalyticsService {
       : 'storage_list_error';
 
     await this.storeEvent(eventType, eventData);
-
-    // Log in development
-    if (process.env.NODE_ENV === 'development' && !data.success) {
-      console.log(`[Storage Analytics] ❌ List operation failed - ${data.duration || 0}ms`);
-    }
   }
 
   /**
@@ -380,6 +354,7 @@ export class StorageAnalyticsService {
     error: StorageError;
     isRetryable: boolean;
     retryAttempt?: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     context?: Record<string, any>;
   }): Promise<void> {
     const eventData: ErrorEventData = {
@@ -583,8 +558,6 @@ export class StorageAnalyticsService {
       quotaWarnings: 0,
       lastUpdated: Date.now(),
     };
-
-    console.log('[Storage Analytics] In-memory metrics cleared');
   }
 
   // ==========================================================================
@@ -606,6 +579,7 @@ export class StorageAnalyticsService {
       const { error } = await this.client.from('analytics_events').insert({
         user_id: user?.id || null,
         event_type: eventType,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         event_data: eventData as any, // JSONB type
       });
 

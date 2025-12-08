@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ASTModifier } from '@/utils/astModifier';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   const results = {
     timestamp: new Date().toISOString(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tests: [] as any[],
     summary: { passed: 0, failed: 0, total: 0 },
   };
 
   try {
     // TEST 1: Add Import to Clean File
-    console.log('\n🧪 TEST 1: Add Import to Clean File');
     const test1Code = `
 export default function App() {
   return <div>Hello</div>;
@@ -35,7 +35,6 @@ export default function App() {
     });
 
     // TEST 2: Merge Imports
-    console.log('\n🧪 TEST 2: Merge Imports');
     const test2Code = `
 import { useState } from 'react';
 
@@ -66,7 +65,6 @@ export default function App() {
     });
 
     // TEST 3: Wrap Element in AuthGuard
-    console.log('\n🧪 TEST 3: Wrap Element in AuthGuard');
     const test3Code = `
 export default function App() {
   return (
@@ -83,32 +81,7 @@ export default function App() {
     const tree3 = modifier3.getTree();
     const parser3 = modifier3.getParser();
 
-    // Debug: Check what nodes exist
-    console.log('🔍 DEBUG: Tree exists?', !!tree3);
-    console.log('🔍 DEBUG: Root node exists?', !!tree3?.rootNode);
-
-    // Try to find JSX elements
-    const jsxElements = parser3.findNodes(tree3, 'jsx_element');
-    console.log('🔍 DEBUG: JSX elements found:', jsxElements.length);
-
-    if (jsxElements.length > 0) {
-      const firstJsx = jsxElements[0];
-      console.log('🔍 DEBUG: First JSX type:', firstJsx.type);
-      const opening = firstJsx.childForFieldName('opening_element');
-      console.log('🔍 DEBUG: Opening element exists?', !!opening);
-      if (opening) {
-        const name = opening.childForFieldName('name');
-        console.log('🔍 DEBUG: Name node exists?', !!name);
-        console.log('🔍 DEBUG: Name text:', name?.text);
-      }
-    }
-
     const divElement = parser3.findComponent(tree3, 'div');
-
-    console.log('🔍 DEBUG: divElement found?', !!divElement);
-    console.log('🔍 DEBUG: divElement type:', divElement?.type);
-    console.log('🔍 DEBUG: divElement start:', divElement?.startIndex);
-    console.log('🔍 DEBUG: divElement end:', divElement?.endIndex);
 
     if (divElement) {
       modifier3.wrapElement(divElement, {
@@ -118,16 +91,9 @@ export default function App() {
           defaultImport: 'AuthGuard',
         },
       });
-
-      // Check modifications after wrapElement
-      console.log('🔍 DEBUG: Modifications count:', (modifier3 as any).modifications?.length);
-    } else {
-      console.log('❌ DEBUG: divElement is null/undefined!');
     }
 
     const result3 = await modifier3.generate();
-    console.log('🔍 DEBUG: Result success:', result3.success);
-    console.log('🔍 DEBUG: Result errors:', result3.errors);
 
     results.tests.push({
       name: 'Wrap Element in AuthGuard',
@@ -141,7 +107,6 @@ export default function App() {
     });
 
     // TEST 4: Add State Variable
-    console.log('\n🧪 TEST 4: Add State Variable');
     const test4Code = `
 export default function App() {
   return <div>Hello</div>;
@@ -170,7 +135,6 @@ export default function App() {
     });
 
     // TEST 5: Multiple Modifications (The Big One!)
-    console.log('\n🧪 TEST 5: Multiple Modifications (Complete Workflow)');
     const test5Code = `
 export default function App() {
   return (
@@ -241,7 +205,6 @@ export default function App() {
     });
 
     // TEST 6: Error Handling - Invalid Syntax
-    console.log('\n🧪 TEST 6: Error Handling');
     const test6Code = `export default function App() { return <div>Test</div>; }`;
 
     const modifier6 = new ASTModifier(test6Code);
@@ -251,12 +214,13 @@ export default function App() {
     let error6Caught = false;
     try {
       // This should throw an error (can't combine default + namespace)
-      modifier6['generateImportCode']({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (modifier6 as any)['generateImportCode']({
         source: 'react',
         defaultImport: 'React',
         namespaceImport: 'ReactNS',
       });
-    } catch (e) {
+    } catch {
       error6Caught = true;
     }
 
@@ -270,11 +234,6 @@ export default function App() {
     results.summary.total = results.tests.length;
     results.summary.passed = results.tests.filter((t) => t.passed).length;
     results.summary.failed = results.summary.total - results.summary.passed;
-
-    console.log('\n📊 TEST SUMMARY:');
-    console.log(`Total: ${results.summary.total}`);
-    console.log(`✅ Passed: ${results.summary.passed}`);
-    console.log(`❌ Failed: ${results.summary.failed}`);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

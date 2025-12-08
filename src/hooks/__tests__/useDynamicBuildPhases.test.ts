@@ -688,6 +688,7 @@ describe('useDynamicBuildPhases', () => {
 
       expect(prompt).not.toBeNull();
       expect(typeof prompt).toBe('string');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(prompt!.length).toBeGreaterThan(0);
     });
 

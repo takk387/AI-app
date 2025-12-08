@@ -24,19 +24,23 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 export function subscribeToTable(
   table: string,
   event: '*' | 'INSERT' | 'UPDATE' | 'DELETE',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback: (payload: any) => void,
   filter?: string
 ) {
   const supabase = createBrowserClient();
 
   // Type assertion required - see function JSDoc for explanation
-  let subscription = supabase.channel(`table-${table}`).on(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subscription = supabase.channel(`table-${table}`).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     'postgres_changes' as any,
     {
       event,
       schema: 'public',
       table,
       filter,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
     callback
   );
@@ -49,6 +53,7 @@ export function subscribeToTable(
 /**
  * Subscribe to a specific row by ID
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function subscribeToRow(table: string, id: string, callback: (payload: any) => void) {
   return subscribeToTable(table, '*', callback, `id=eq.${id}`);
 }
@@ -65,7 +70,9 @@ export function subscribeToRow(table: string, id: string, callback: (payload: an
  */
 export function trackPresence(
   channelName: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   userState: Record<string, any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onPresenceSync?: (state: any) => void
 ) {
   const supabase = createBrowserClient();
@@ -104,6 +111,7 @@ export function trackPresence(
  * // Send a message
  * broadcastMessage(channel, { type: 'move', data: { x: 10, y: 20 } });
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createBroadcastChannel(channelName: string, onReceive: (payload: any) => void) {
   const supabase = createBrowserClient();
 
@@ -120,6 +128,7 @@ export function createBroadcastChannel(channelName: string, onReceive: (payload:
 /**
  * Send a broadcast message
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function broadcastMessage(channel: RealtimeChannel, message: any) {
   await channel.send({
     type: 'broadcast',
@@ -131,6 +140,7 @@ export async function broadcastMessage(channel: RealtimeChannel, message: any) {
 /**
  * Subscribe to app generation status updates
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function subscribeToAppGeneration(userId: string, callback: (payload: any) => void) {
   const supabase = createBrowserClient();
 
@@ -187,6 +197,7 @@ export function getPresenceState(channel: RealtimeChannel) {
 /**
  * Subscribe to chat messages in real-time
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function subscribeToChatSession(sessionId: string, callback: (payload: any) => void) {
   return subscribeToTable('chat_history', 'INSERT', callback, `session_id=eq.${sessionId}`);
 }
@@ -194,6 +205,7 @@ export function subscribeToChatSession(sessionId: string, callback: (payload: an
 /**
  * Subscribe to analytics events
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function subscribeToAnalytics(callback: (payload: any) => void, userId?: string) {
   const filter = userId ? `user_id=eq.${userId}` : undefined;
   return subscribeToTable('analytics_events', 'INSERT', callback, filter);

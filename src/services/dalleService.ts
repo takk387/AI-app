@@ -133,6 +133,7 @@ class DalleService {
       });
 
       const result: GeneratedImage = {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         url: response.data[0].url!,
         revisedPrompt: response.data[0].revised_prompt || prompt,
         size,

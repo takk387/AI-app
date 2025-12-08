@@ -8,7 +8,7 @@
  */
 
 import type { ChatMessage } from '@/types/aiBuilderTypes';
-import { countTokens, countMessageTokens, countMessagesTokens } from './tokenizer';
+import { countTokens, countMessagesTokens } from './tokenizer';
 
 // ============================================================================
 // TYPES

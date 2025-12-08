@@ -59,7 +59,7 @@ export default function SignupPage() {
           router.push('/login');
         }, 3000);
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong');
     } finally {
       setLoading(false);

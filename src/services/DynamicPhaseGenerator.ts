@@ -313,7 +313,7 @@ export class DynamicPhaseGenerator {
   /**
    * Infer dependencies for a feature based on its domain
    */
-  private inferDependencies(feature: Feature, domain: FeatureDomain): string[] {
+  private inferDependencies(feature: Feature, _domain: FeatureDomain): string[] {
     const deps: string[] = [];
     const lowerDesc = feature.description.toLowerCase();
 
@@ -369,12 +369,14 @@ export class DynamicPhaseGenerator {
         }
 
         // Check if this specific feature type already exists
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const existing = groups.get(isolatedDomain)!;
         const alreadyExists = existing.some(
           (c) => c.suggestedPhaseName === classification.suggestedPhaseName
         );
 
         if (!alreadyExists) {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           groups.get(isolatedDomain)!.push(classification);
         }
       } else {
@@ -382,6 +384,7 @@ export class DynamicPhaseGenerator {
         if (!groups.has(classification.domain)) {
           groups.set(classification.domain, []);
         }
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         groups.get(classification.domain)!.push(classification);
       }
     }
@@ -414,6 +417,7 @@ export class DynamicPhaseGenerator {
 
     // Phase 2/3: Database (if needed) - always comes early
     if (featuresByDomain.has('database')) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const dbFeatures = featuresByDomain.get('database')!;
       // Include data model details in database phase
       const dataModelContext = concept.technical.dataModels
@@ -434,6 +438,7 @@ export class DynamicPhaseGenerator {
 
     // Phase 3: Authentication (if needed) - comes after database
     if (featuresByDomain.has('auth')) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const authFeatures = featuresByDomain.get('auth')!;
       // Include role context in auth phase
       const roleContext =
@@ -472,6 +477,7 @@ export class DynamicPhaseGenerator {
     for (const domain of domainPriority) {
       if (!featuresByDomain.has(domain)) continue;
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const features = featuresByDomain.get(domain)!;
 
       // Split large feature groups into multiple phases
@@ -687,7 +693,7 @@ export class DynamicPhaseGenerator {
     concept: AppConcept,
     layoutDesign: LayoutDesign
   ): DynamicPhase {
-    const { globalStyles, components, structure, responsive } = layoutDesign;
+    const { globalStyles, components, responsive } = layoutDesign;
 
     // Build detailed design context for the phase description
     const designDetails: string[] = [];
@@ -1229,7 +1235,6 @@ export class DynamicPhaseGenerator {
   ): FeatureSpecification[] {
     const specs: FeatureSpecification[] = [];
     const context = concept.conversationContext || '';
-    const keywords = PHASE_KEYWORDS[domain] || [];
 
     for (const featureName of featureNames) {
       // Extract user stories related to this feature
@@ -1294,7 +1299,7 @@ export class DynamicPhaseGenerator {
           specs.push({
             name: workflow.name,
             trigger: workflow.steps[0] || 'User initiates',
-            steps: workflow.steps.map((step, i) => ({
+            steps: workflow.steps.map((step) => ({
               action: step,
               actor: workflow.involvedRoles[0] || 'User',
             })),

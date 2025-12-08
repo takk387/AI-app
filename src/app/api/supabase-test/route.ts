@@ -16,6 +16,7 @@ import { createClient } from '@/utils/supabase/server';
  * - Automatic cleanup
  */
 export async function GET() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const testResults: any = {
     success: true,
     message: 'Supabase connection test',
@@ -84,7 +85,7 @@ export async function GET() {
     // ========================================================================
     // 4. Test database connection
     // ========================================================================
-    const { data: dbData, error: dbError } = await supabase
+    const { error: dbError } = await supabase
       .from('user_profiles')
       .select('count')
       .limit(1);
@@ -137,7 +138,7 @@ export async function GET() {
       const userId = authData.session.user.id;
 
       // Test 6a: Can list own files (should succeed with RLS)
-      const { data: listData, error: listError } = await supabase.storage
+      const { error: listError } = await supabase.storage
         .from('user-uploads')
         .list(userId);
 
@@ -191,7 +192,7 @@ export async function GET() {
       try {
         // Test 7a: Upload a test file
         const testBlob = new Blob([testContent], { type: 'text/plain' });
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('user-uploads')
           .upload(testFilePath, testBlob);
 
@@ -243,10 +244,11 @@ export async function GET() {
             }
           }
         }
-      } catch (storageError: any) {
+      } catch (storageError) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         testResults.tests.storageOperations = {
           status: 'FAIL',
-          message: `Storage operations test failed: ${storageError.message}`,
+          message: `Storage operations test failed: ${storageError instanceof Error ? storageError.message : 'Unknown error'}`,
           error: storageError,
         };
         testResults.success = false;
@@ -269,9 +271,10 @@ export async function GET() {
         await Promise.all(cleanupTasks.map((task) => task()));
         cleanupStatus = 'PASS';
         cleanupMessage = `Successfully cleaned up ${cleanupTasks.length} test file(s)`;
-      } catch (cleanupError: any) {
+      } catch (cleanupError) {
         cleanupStatus = 'WARNING';
-        cleanupMessage = `Cleanup partially failed: ${cleanupError.message}`;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        cleanupMessage = `Cleanup partially failed: ${cleanupError instanceof Error ? cleanupError.message : 'Unknown error'}`;
       }
     }
 
@@ -285,10 +288,12 @@ export async function GET() {
     // Generate Next Steps
     // ========================================================================
     const failures = Object.entries(testResults.tests)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter(([_, test]: [string, any]) => test.status === 'FAIL')
       .map(([name, _]) => name);
 
     const warnings = Object.entries(testResults.tests)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter(([_, test]: [string, any]) => test.status === 'WARNING')
       .map(([name, _]) => name);
 
@@ -343,7 +348,7 @@ export async function GET() {
       : 'Some Supabase tests failed';
 
     return NextResponse.json(testResults);
-  } catch (error: any) {
+  } catch (error) {
     // Execute cleanup tasks even on error
     if (cleanupTasks.length > 0) {
       try {
@@ -357,7 +362,7 @@ export async function GET() {
       {
         success: false,
         error: 'Supabase test failed',
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
         details: error,
       },
       { status: 500 }

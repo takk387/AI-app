@@ -478,7 +478,9 @@ export function getPhaseSummary(phaseId: PhaseId): {
   return summaries[phaseId];
 }
 
-export default {
+const phasePromptsExport = {
   getPhasePrompt,
   getPhaseSummary,
 };
+
+export default phasePromptsExport;

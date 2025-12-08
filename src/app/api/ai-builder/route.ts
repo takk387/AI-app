@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
+import { validateGeneratedCode, autoFixCode } from '@/utils/codeValidator';
 import {
   analytics,
   generateRequestId,
@@ -8,7 +8,7 @@ import {
   PerformanceTracker,
 } from '@/utils/analytics';
 import { isMockAIEnabled, mockComponentResponse } from '@/utils/mockAI';
-import { logAPI, logTokens } from '@/utils/debug';
+import { logAPI } from '@/utils/debug';
 
 // Vercel serverless function config
 export const maxDuration = 60;
@@ -46,11 +46,6 @@ export async function POST(request: Request) {
     // Log request start after parsing body
     analytics.logRequestStart('ai-builder', requestId, {
       hasConversationHistory: !!conversationHistory,
-    });
-
-    console.log('Environment check:', {
-      hasKey: !!process.env.ANTHROPIC_API_KEY,
-      keyLength: process.env.ANTHROPIC_API_KEY?.length,
     });
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -139,10 +134,12 @@ CRITICAL RULES:
 `;
 
     // Build conversation context for Claude
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messages: any[] = [];
 
     // Add conversation history if provided
     if (conversationHistory && Array.isArray(conversationHistory)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       conversationHistory.forEach((msg: any) => {
         if (msg.role === 'user') {
           messages.push({ role: 'user', content: msg.content });
@@ -155,7 +152,6 @@ CRITICAL RULES:
     // Add current user prompt
     messages.push({ role: 'user', content: prompt });
 
-    console.log('Generating component with Claude Sonnet 4.5...');
     perfTracker.checkpoint('prompt_built');
 
     const modelName = 'claude-sonnet-4-5-20250929';
@@ -225,8 +221,6 @@ CRITICAL RULES:
       throw new Error('No response from Claude');
     }
 
-    console.log('Raw Claude response length:', responseText.length);
-
     // Parse using delimiters - bulletproof method
     const nameMatch = responseText.match(/===NAME===\s*([\s\S]*?)\s*===EXPLANATION===/);
     const explanationMatch = responseText.match(/===EXPLANATION===\s*([\s\S]*?)\s*===CODE===/);
@@ -234,7 +228,6 @@ CRITICAL RULES:
 
     if (!nameMatch || !explanationMatch || !codeMatch) {
       console.error('Failed to parse response');
-      console.log('Response preview:', responseText.substring(0, 500));
 
       analytics.logRequestError(
         requestId,
@@ -255,10 +248,6 @@ CRITICAL RULES:
       code: codeMatch[1].trim(),
     };
 
-    console.log('Successfully parsed:', {
-      name: aiResponse.name,
-      codeLength: aiResponse.code.length,
-    });
     perfTracker.checkpoint('response_parsed');
 
     // Ensure code is a string
@@ -269,7 +258,6 @@ CRITICAL RULES:
     // ============================================================================
     // VALIDATION LAYER - Validate generated component code
     // ============================================================================
-    console.log('🔍 Validating generated component...');
 
     // Assume TypeScript component (this route generates .tsx components)
     const validation = await validateGeneratedCode(aiResponse.code, 'Component.tsx');
@@ -277,17 +265,9 @@ CRITICAL RULES:
     let validationWarnings;
 
     if (!validation.valid) {
-      console.log(`⚠️ Found ${validation.errors.length} error(s) in generated component`);
-
-      // Log each error
-      validation.errors.forEach((err) => {
-        console.log(`  - Line ${err.line}: ${err.message}`);
-      });
-
       // Attempt auto-fix
       const fixedCode = autoFixCode(aiResponse.code, validation.errors);
       if (fixedCode !== aiResponse.code) {
-        console.log(`✅ Auto-fixed errors in component`);
         aiResponse.code = fixedCode;
 
         // Re-validate after fix
@@ -299,8 +279,6 @@ CRITICAL RULES:
             message: `Code validation detected ${revalidation.errors.length} potential issue(s). The component has been generated but may need manual review.`,
             errors: revalidation.errors,
           };
-        } else {
-          console.log(`✅ Component validated successfully after auto-fix`);
         }
       } else {
         // No auto-fix possible
@@ -310,8 +288,6 @@ CRITICAL RULES:
           errors: validation.errors,
         };
       }
-    } else {
-      console.log(`✅ Component validated successfully - no errors found`);
     }
 
     perfTracker.checkpoint('validation_complete');

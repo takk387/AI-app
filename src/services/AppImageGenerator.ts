@@ -9,11 +9,10 @@
 import {
   getDalleService,
   type DesignContext,
-  type GeneratedImage,
   getImageCost,
 } from './dalleService';
 import { getDalleRateLimiter } from '@/utils/dalleRateLimiter';
-import { detectAppType, type AppType } from '@/utils/imagePromptBuilder';
+import { detectAppType } from '@/utils/imagePromptBuilder';
 import { generateLayoutFallbackImages } from '@/utils/imageAssets';
 import type { LayoutDesign } from '@/types/layoutDesign';
 
@@ -117,9 +116,6 @@ export async function generateImagesForApp(
   const dalleAvailable = dalleService.checkAvailability();
 
   if (!canGenerate || !dalleAvailable) {
-    console.log(
-      `Image generation skipped: canGenerate=${canGenerate}, dalleAvailable=${dalleAvailable}`
-    );
     return buildFallbackResult(appDescription, features.length, startTime);
   }
 
@@ -153,7 +149,6 @@ export async function generateImagesForApp(
         };
 
         // Record usage and cost
-        const quality = opts.quality === 'hd' ? 'hd' : 'standard';
         rateLimiter.recordGeneration('hero', 'hd', '1792x1024'); // Hero is always HD wide
         result.totalCost += getImageCost('hd', '1792x1024');
       } catch (error) {

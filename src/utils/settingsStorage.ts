@@ -40,7 +40,7 @@ function isValidSettings(settings: unknown): settings is AppSettings {
  * Migrate settings from older versions if needed
  */
 function migrateSettings(settings: Partial<AppSettings>): AppSettings {
-  const version = settings.version || 0;
+  const _version = settings.version || 0;
 
   // Deep merge with defaults to ensure all fields exist
   const migrated: AppSettings = {

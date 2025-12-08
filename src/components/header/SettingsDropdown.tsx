@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { HeaderDropdown, DropdownItem } from '../ui/HeaderDropdown';
-import { SettingsIcon, SunIcon, MoonIcon, HelpIcon, KeyboardIcon } from '../ui/Icons';
+import { SettingsIcon, SunIcon, MoonIcon, HelpIcon } from '../ui/Icons';
 
 type Theme = 'light' | 'dark' | 'system';
 

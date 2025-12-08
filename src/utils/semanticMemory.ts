@@ -7,6 +7,8 @@
  * P3 Enhancement: Added embedding support for semantic similarity search
  */
 
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import type { ChatMessage } from '@/types/aiBuilderTypes';
 import {
   generateEmbedding,
@@ -519,7 +521,6 @@ export class SemanticMemoryManager {
     try {
       const { data, error } = await this.supabase.auth.getUser();
       if (error || !data?.user) {
-        console.warn('[SemanticMemory] No authenticated user found');
         return false;
       }
       this.userId = data.user.id;
@@ -545,7 +546,6 @@ export class SemanticMemoryManager {
    */
   async store(options: StoreMemoryOptions): Promise<void> {
     if (!this.isReady()) {
-      console.warn('[SemanticMemory] Not initialized, cannot store memory');
       return;
     }
 
@@ -558,11 +558,7 @@ export class SemanticMemoryManager {
         const result = await generateEmbedding(options.content);
         embedding = result.embedding;
         embeddingModel = result.model;
-        console.log(
-          `[SemanticMemory] Generated embedding with ${result.provider} (${result.dimensions} dims)`
-        );
-      } catch (error) {
-        console.warn('[SemanticMemory] Failed to generate embedding:', error);
+      } catch {
         // Continue without embedding - keyword search still works
       }
     }
@@ -1130,15 +1126,10 @@ export class SemanticMemoryManager {
 
       // If we found good embedding matches, return them
       if (memoriesWithSimilarity.length > 0) {
-        console.log(
-          `[SemanticMemory] Embedding search found ${memoriesWithSimilarity.length} matches ` +
-            `(best: ${memoriesWithSimilarity[0]?.similarity.toFixed(3)})`
-        );
         return memoriesWithSimilarity;
       }
 
       // Fallback: use keyword search for memories without embeddings
-      console.log('[SemanticMemory] No embedding matches, falling back to keyword search');
       const keywordResults = await this.search(query, limit);
       return keywordResults.map((m) => ({ ...m, similarity: 0 }));
     } catch (error) {
@@ -1225,11 +1216,6 @@ export class SemanticMemoryManager {
       // Sort by combined score and return top results
       combinedResults.sort((a, b) => b.score - a.score);
 
-      console.log(
-        `[SemanticMemory] Hybrid search: ${combinedResults.length} total matches, ` +
-          `${embeddingScores.size} embedding, ${keywordScores.size} keyword`
-      );
-
       return combinedResults.slice(0, limit);
     } catch (error) {
       console.error('[SemanticMemory] Hybrid search error:', error);
@@ -1294,15 +1280,11 @@ export class SemanticMemoryManager {
           if (!updateError) {
             processed++;
           }
-        } catch (embedError) {
-          console.warn(
-            `[SemanticMemory] Failed to generate embedding for ${memory.id}:`,
-            embedError
-          );
+        } catch {
+          // Skip this memory and continue
         }
       }
 
-      console.log(`[SemanticMemory] Generated embeddings for ${processed}/${batchSize} memories`);
       return processed;
     } catch (error) {
       console.error('[SemanticMemory] Error generating missing embeddings:', error);

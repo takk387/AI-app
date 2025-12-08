@@ -132,14 +132,14 @@ export function getContrastRatio(color1: RGB, color2: RGB): number {
 }
 
 /**
- * Get saturation from RGB
+ * Get saturation from RGB (currently unused but kept for future use)
  */
-function getSaturation(r: number, g: number, b: number): number {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  if (max === 0) return 0;
-  return (max - min) / max;
-}
+// function getSaturation(r: number, g: number, b: number): number {
+//   const max = Math.max(r, g, b);
+//   const min = Math.min(r, g, b);
+//   if (max === 0) return 0;
+//   return (max - min) / max;
+// }
 
 // ============================================================================
 // K-Means Clustering
@@ -263,7 +263,6 @@ function categorizeColors(colors: ExtractedColor[], isDark: boolean): ColorPalet
   // Sort by different criteria
   const bySaturation = [...colors].sort((a, b) => b.hsl.s - a.hsl.s);
   const byLightness = [...colors].sort((a, b) => a.hsl.l - b.hsl.l);
-  const byPercentage = [...colors].sort((a, b) => b.percentage - a.percentage);
 
   // Most saturated color is likely the primary/accent
   const primary = bySaturation[0]?.hex || '#3B82F6';
@@ -531,7 +530,7 @@ export function adjustLightness(hex: string, amount: number): string {
   return rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
 }
 
-export default {
+const colorUtils = {
   extractColorsFromImage,
   extractColorsFromFile,
   rgbToHex,
@@ -543,3 +542,5 @@ export default {
   getContrastingTextColor,
   adjustLightness,
 };
+
+export default colorUtils;

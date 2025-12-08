@@ -10,8 +10,6 @@
 
 import type {
   LayoutDesign,
-  GlobalStyles,
-  ExtendedLayoutDesign,
   GridConfig,
 } from '@/types/layoutDesign';
 
@@ -355,28 +353,28 @@ export function exportToFigmaTokens(design: LayoutDesign): object {
 // ============================================================================
 
 /**
- * Generate CSS class string from design settings
+ * Generate CSS class string from design settings (currently unused but kept for future use)
  */
-function generateClassString(globalStyles: GlobalStyles): string {
-  const classes: string[] = [];
+// function generateClassString(globalStyles: GlobalStyles): string {
+//   const classes: string[] = [];
 
-  // Typography classes
-  classes.push(`font-[${globalStyles.typography.fontFamily.split(',')[0].trim()}]`);
+//   // Typography classes
+//   classes.push(`font-[${globalStyles.typography.fontFamily.split(',')[0].trim()}]`);
 
-  // Spacing classes
-  switch (globalStyles.spacing.density) {
-    case 'compact':
-      classes.push('gap-2');
-      break;
-    case 'relaxed':
-      classes.push('gap-6');
-      break;
-    default:
-      classes.push('gap-4');
-  }
+//   // Spacing classes
+//   switch (globalStyles.spacing.density) {
+//     case 'compact':
+//       classes.push('gap-2');
+//       break;
+//     case 'relaxed':
+//       classes.push('gap-6');
+//       break;
+//     default:
+//       classes.push('gap-4');
+//   }
 
-  return classes.join(' ');
-}
+//   return classes.join(' ');
+// }
 
 /**
  * Export LayoutDesign to a React component string

@@ -135,6 +135,7 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
             className="absolute left-full top-0 ml-1 min-w-[180px] py-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg shadow-black/30 z-50"
             role="menu"
           >
+            {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
             {item.subItems!.map((subItem) => renderItem(subItem, true))}
           </div>
         )}

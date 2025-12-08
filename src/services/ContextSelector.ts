@@ -301,8 +301,7 @@ export class ContextSelector {
     analysis: FileAnalysis,
     features: string[],
     dependencies: string[],
-    previousPhaseFiles: string[],
-    state: CodeContextState
+    previousPhaseFiles: string[]
   ): { score: number; reason: string } {
     let score = analysis.importanceScore;
     let reason = 'Base importance';

@@ -108,6 +108,7 @@ export function FileFilters({
         <div className="flex gap-2 ml-auto">
           <select
             value={sortBy}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onChange={(e) => onSortChange(e.target.value as any, sortOrder)}
             className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Sort by"

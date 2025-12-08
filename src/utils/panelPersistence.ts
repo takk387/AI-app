@@ -17,7 +17,7 @@ const DEFAULT_VERSION = 1;
 const DEFAULT_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Debounce timeout for saving
-let saveTimeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
+const saveTimeouts: Map<string, ReturnType<typeof setTimeout>> = new Map();
 const DEBOUNCE_DELAY = 300;
 
 /**

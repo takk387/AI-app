@@ -262,6 +262,7 @@ export class DependencyGraphBuilder {
     const queue: Array<{ path: string; route: string[] }> = [{ path: fromPath, route: [fromPath] }];
 
     while (queue.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const { path, route } = queue.shift()!;
 
       if (visited.has(path)) continue;
@@ -289,7 +290,7 @@ export class DependencyGraphBuilder {
     const deps = new Set(this.getDependencies(graph, filePath));
     const related = new Set<string>();
 
-    for (const [path, node] of graph.files) {
+    for (const [path] of graph.files) {
       if (path === filePath) continue;
 
       const otherDeps = this.getDependencies(graph, path);
@@ -381,6 +382,7 @@ export class DependencyGraphBuilder {
     }));
 
     while (queue.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const { path, depth } = queue.shift()!;
       const node = this.files.get(path);
 

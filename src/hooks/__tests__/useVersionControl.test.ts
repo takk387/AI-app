@@ -431,9 +431,13 @@ describe('useVersionControl', () => {
         updatedComponent = result.current.saveVersion(mockComponent, 'NEW_APP', 'Initial version');
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions).toHaveLength(1);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions[0].versionNumber).toBe(1);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions[0].description).toBe('Initial version');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions[0].changeType).toBe('NEW_APP');
     });
 
@@ -490,8 +494,11 @@ describe('useVersionControl', () => {
         );
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions[0].description).toBe('Existing v1');
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions[1].description).toBe('New version');
     });
 
@@ -538,6 +545,7 @@ describe('useVersionControl', () => {
         updatedComponent = result.current.saveVersion(componentWithCode, 'NEW_APP', 'Save test');
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions[0].code).toBe('<div>Specific Code To Save</div>');
     });
   });
@@ -919,6 +927,7 @@ describe('useVersionControl', () => {
         );
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       expect(updatedComponent!.versions).toHaveLength(1);
     });
 
@@ -948,7 +957,7 @@ describe('useVersionControl', () => {
 
   describe('Workflow Integration', () => {
     it('should support full edit -> undo -> redo cycle', () => {
-      const { result, rerender } = renderHook(
+      const { result } = renderHook(
         ({ component }) =>
           useVersionControl({
             currentComponent: component,

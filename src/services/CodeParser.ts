@@ -134,6 +134,7 @@ export class CodeParser {
       imports,
       dependencies: imports
         .filter((i) => !i.isExternal && i.resolvedPath)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .map((i) => i.resolvedPath!),
       dependents: [], // Filled in by DependencyGraphBuilder
       components,
@@ -953,8 +954,7 @@ export class CodeParser {
   }
 
   private returnsJSX(
-    node: ts.FunctionLikeDeclaration | ts.ArrowFunction,
-    sourceFile: ts.SourceFile
+    node: ts.FunctionLikeDeclaration | ts.ArrowFunction
   ): boolean {
     let hasJSX = false;
 

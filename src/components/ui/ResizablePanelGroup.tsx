@@ -30,6 +30,7 @@ interface PanelData {
 
 // Type guard to check if element is a ResizablePanel
 function isResizablePanel(child: React.ReactElement): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const type = child.type as any;
   // Check for symbol first (most reliable)
   if (type?.__RESIZABLE_TYPE__ === RESIZABLE_PANEL_TYPE) return true;
@@ -44,6 +45,7 @@ function isResizablePanel(child: React.ReactElement): boolean {
 
 // Type guard to check if element is a ResizableHandle
 function isResizableHandle(child: React.ReactElement): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const type = child.type as any;
   // Check for symbol first (most reliable)
   if (type?.__RESIZABLE_TYPE__ === RESIZABLE_HANDLE_TYPE) return true;

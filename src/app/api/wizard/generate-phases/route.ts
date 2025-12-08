@@ -20,8 +20,6 @@ interface GeneratePhasesRequest {
 }
 
 export async function POST(request: Request) {
-  const startTime = Date.now();
-
   try {
     const body: GeneratePhasesRequest = await request.json();
     const { concept, config } = body;
@@ -82,10 +80,8 @@ export async function POST(request: Request) {
     const generator = new DynamicPhaseGenerator(config);
     const result = generator.generatePhasePlan(normalizedConcept);
 
-    const duration = Date.now() - startTime;
-
     if (!result.success) {
-      console.error(`Phase generation failed in ${duration}ms:`, result.error);
+      console.error(`Phase generation failed:`, result.error);
       return NextResponse.json(
         {
           error: result.error,
@@ -96,16 +92,11 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Generated ${result.plan!.totalPhases} phases in ${duration}ms`);
-    console.log(`   Complexity: ${result.plan!.complexity}`);
-    console.log(`   Estimated time: ${result.plan!.estimatedTotalTime}`);
-
     return NextResponse.json({
       success: true,
       plan: result.plan,
       warnings: result.warnings,
       analysisDetails: result.analysisDetails,
-      generationTime: duration,
     });
   } catch (error) {
     console.error('Phase generation error:', error);

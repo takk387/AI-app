@@ -12,7 +12,7 @@
  * - Mirror the user's communication style
  */
 
-import type { AppConcept, TechnicalRequirements } from '@/types/appConcept';
+import type { AppConcept } from '@/types/appConcept';
 
 /**
  * The main system prompt for the wizard conversation
@@ -103,8 +103,7 @@ Remember: The goal is a shared understanding, not a filled-out form.`;
  * Generate a context-aware continuation prompt
  */
 export function generateContinuationPrompt(
-  currentConcept: Partial<AppConcept>,
-  conversationSummary: string
+  currentConcept: Partial<AppConcept>
 ): string {
   const missingInfo: string[] = [];
 

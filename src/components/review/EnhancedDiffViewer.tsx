@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
-import type { EnhancedDiffViewerProps, DiffHunk, DiffLine } from '@/types/review';
+import type { EnhancedDiffViewerProps, DiffLine } from '@/types/review';
 import { getStatusBgColor } from '@/types/review';
 import HunkApprovalCard from './HunkApprovalCard';
 import CommentThread from './CommentThread';
@@ -19,8 +19,6 @@ import CommentThread from './CommentThread';
  * - Inline commenting
  */
 export default function EnhancedDiffViewer({
-  original,
-  modified,
   fileName,
   language,
   hunks,
@@ -28,7 +26,6 @@ export default function EnhancedDiffViewer({
   onHunkReject,
   onAddComment,
   showLineNumbers = true,
-  contextLines = 3,
 }: EnhancedDiffViewerProps) {
   const [expandedHunks, setExpandedHunks] = useState<Set<string>>(new Set(hunks.map((h) => h.id)));
   const [commentingLine, setCommentingLine] = useState<{
@@ -69,17 +66,6 @@ export default function EnhancedDiffViewer({
   const handleSubmitComment = useCallback(() => {
     handleAddComment(commentText);
   }, [handleAddComment, commentText]);
-
-  const getLineTypeClass = (type: DiffLine['type']): string => {
-    switch (type) {
-      case 'added':
-        return 'bg-green-500/20 border-l-2 border-green-500';
-      case 'removed':
-        return 'bg-red-500/20 border-l-2 border-red-500';
-      default:
-        return 'bg-transparent';
-    }
-  };
 
   const getLineNumberClass = (type: DiffLine['type']): string => {
     switch (type) {

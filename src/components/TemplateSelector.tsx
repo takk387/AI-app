@@ -7,7 +7,6 @@ import type {
   TemplateComplexity,
 } from '../types/architectureTemplates';
 import {
-  architectureTemplates,
   filterTemplates,
   getAllCategories,
   getCategoryDisplayName,
