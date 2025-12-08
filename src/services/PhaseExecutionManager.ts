@@ -13,12 +13,26 @@ import type {
   DynamicPhasePlan,
   PhaseExecutionContext,
   PhaseExecutionResult,
-  PhaseConceptContext,
   AccumulatedFile,
   AccumulatedFeature,
   APIContract,
 } from '@/types/dynamicPhases';
-import type { TechnicalRequirements, UIPreferences, UserRole } from '@/types/appConcept';
+import type { QualityReport, ReviewFile, ReviewStrictness } from '@/types/codeReview';
+
+// Dynamic import for CodeReviewService to avoid bundling tree-sitter in client
+// This is imported lazily only when quality review methods are called (server-side only)
+// Using webpackIgnore to prevent webpack from analyzing this import at build time
+type CodeReviewServiceType = typeof import('./CodeReviewService');
+let codeReviewService: CodeReviewServiceType | null = null;
+
+async function getCodeReviewService(): Promise<CodeReviewServiceType> {
+  if (!codeReviewService) {
+    // webpackIgnore tells webpack to skip this import during bundling
+    // This import will only be resolved at runtime on the server
+    codeReviewService = await import(/* webpackIgnore: true */ './CodeReviewService');
+  }
+  return codeReviewService;
+}
 import type { LayoutDesign } from '@/types/layoutDesign';
 import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
 import { getCodeContextService, CodeContextService } from './CodeContextService';
@@ -783,6 +797,10 @@ export class PhaseExecutionManager {
   // Store raw file contents for smart context building
   private rawGeneratedFiles: Array<{ path: string; content: string }> = [];
 
+  // Quality review tracking
+  private qualityReports: Map<number, QualityReport> = new Map();
+  private reviewStrictness: ReviewStrictness = 'standard';
+
   constructor(plan: DynamicPhasePlan) {
     this.plan = plan;
     this.phaseGenerator = new DynamicPhaseGenerator();
@@ -1176,6 +1194,218 @@ export class PhaseExecutionManager {
    */
   getCodeContextService(): CodeContextService | null {
     return this.codeContextService;
+  }
+
+  // ==========================================================================
+  // QUALITY REVIEW API
+  // ==========================================================================
+
+  /**
+   * Set the review strictness level
+   */
+  setReviewStrictness(strictness: ReviewStrictness): void {
+    this.reviewStrictness = strictness;
+  }
+
+  /**
+   * Get the review strictness level
+   */
+  getReviewStrictness(): ReviewStrictness {
+    return this.reviewStrictness;
+  }
+
+  /**
+   * Run a light quality review on files from a specific phase
+   * This should be called after recordPhaseResult()
+   */
+  async runPhaseQualityReview(phaseNumber: number): Promise<{
+    report: QualityReport;
+    modifiedFiles: ReviewFile[];
+  } | null> {
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
+    if (!phase) {
+      return null;
+    }
+
+    // Get files generated in this phase
+    const phaseFiles = this.getPhaseFiles(phaseNumber);
+    if (phaseFiles.length === 0) {
+      return null;
+    }
+
+    // Convert to ReviewFile format
+    const reviewFiles: ReviewFile[] = phaseFiles.map((f) => ({
+      path: f.path,
+      content: f.content,
+      language: this.getFileLanguage(f.path),
+    }));
+
+    // Run light review (dynamic import to avoid bundling tree-sitter in client)
+    const { performLightReview } = await getCodeReviewService();
+    const result = await performLightReview(
+      reviewFiles,
+      {
+        phaseNumber,
+        phaseName: phase.name,
+        features: phase.features,
+      },
+      { strictness: this.reviewStrictness }
+    );
+
+    // Store the report
+    this.qualityReports.set(phaseNumber, result.report);
+
+    // Update raw files with fixed content
+    if (result.modifiedFiles.length > 0) {
+      this.updateFilesWithFixes(result.modifiedFiles);
+    }
+
+    return {
+      report: result.report,
+      modifiedFiles: result.modifiedFiles,
+    };
+  }
+
+  /**
+   * Run a comprehensive quality review at the end of the build
+   * This includes semantic analysis with Claude AI
+   */
+  async runFinalQualityReview(): Promise<{
+    report: QualityReport;
+    modifiedFiles: ReviewFile[];
+  } | null> {
+    if (this.rawGeneratedFiles.length === 0) {
+      return null;
+    }
+
+    // Convert all files to ReviewFile format
+    const reviewFiles: ReviewFile[] = this.rawGeneratedFiles.map((f) => ({
+      path: f.path,
+      content: f.content,
+      language: this.getFileLanguage(f.path),
+    }));
+
+    // Build comprehensive review context
+    const requirements = {
+      originalRequirements: this.plan.concept.conversationContext || '',
+      expectedFeatures: this.accumulatedFeaturesRich.map((f) => f.name),
+      apiContracts: this.apiContracts,
+      allFeatures: this.accumulatedFeaturesRich.map((f) => ({
+        name: f.name,
+        description: f.name,
+        priority: 'high' as const,
+      })),
+      technicalRequirements: this.plan.concept.technical,
+    };
+
+    // Run comprehensive review (dynamic import to avoid bundling tree-sitter in client)
+    const { performComprehensiveReview } = await getCodeReviewService();
+    const result = await performComprehensiveReview(reviewFiles, requirements, {
+      strictness: this.reviewStrictness,
+    });
+
+    // Store the final report
+    this.qualityReports.set(-1, result.report); // -1 indicates final review
+
+    // Update files with fixes
+    if (result.modifiedFiles.length > 0) {
+      this.updateFilesWithFixes(result.modifiedFiles);
+    }
+
+    return {
+      report: result.report,
+      modifiedFiles: result.modifiedFiles,
+    };
+  }
+
+  /**
+   * Get the quality report for a specific phase
+   */
+  getPhaseQualityReport(phaseNumber: number): QualityReport | null {
+    return this.qualityReports.get(phaseNumber) || null;
+  }
+
+  /**
+   * Get the final quality report
+   */
+  getFinalQualityReport(): QualityReport | null {
+    return this.qualityReports.get(-1) || null;
+  }
+
+  /**
+   * Get all quality reports
+   */
+  getAllQualityReports(): Map<number, QualityReport> {
+    return new Map(this.qualityReports);
+  }
+
+  /**
+   * Get files generated in a specific phase
+   */
+  private getPhaseFiles(phaseNumber: number): Array<{ path: string; content: string }> {
+    // Get files that were generated in this phase
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
+    if (!phase || !phase.generatedCode) {
+      return [];
+    }
+
+    return this.extractRawFiles(phase.generatedCode);
+  }
+
+  /**
+   * Update raw files with fixed content
+   */
+  private updateFilesWithFixes(modifiedFiles: ReviewFile[]): void {
+    for (const modified of modifiedFiles) {
+      const index = this.rawGeneratedFiles.findIndex((f) => f.path === modified.path);
+      if (index !== -1) {
+        this.rawGeneratedFiles[index].content = modified.content;
+      }
+    }
+
+    // Update accumulated code with the fixed files
+    this.accumulatedCode = this.rebuildAccumulatedCode();
+  }
+
+  /**
+   * Rebuild accumulated code from raw files
+   */
+  private rebuildAccumulatedCode(): string {
+    let code = `===NAME===\n${this.plan.appName}\n`;
+    code += `===DESCRIPTION===\n${this.plan.appDescription}\n`;
+    code += `===APP_TYPE===\n${this.plan.concept.technical.needsDatabase ? 'FULL_STACK' : 'FRONTEND_ONLY'}\n`;
+
+    for (const file of this.rawGeneratedFiles) {
+      code += `===FILE:${file.path}===\n${file.content}\n`;
+    }
+
+    code += `===END===`;
+    return code;
+  }
+
+  /**
+   * Get the file language from path
+   */
+  private getFileLanguage(path: string): string {
+    const ext = path.split('.').pop()?.toLowerCase() || '';
+    const languageMap: Record<string, string> = {
+      ts: 'typescript',
+      tsx: 'typescript',
+      js: 'javascript',
+      jsx: 'javascript',
+      css: 'css',
+      json: 'json',
+      md: 'markdown',
+      html: 'html',
+    };
+    return languageMap[ext] || 'text';
+  }
+
+  /**
+   * Get raw generated files (for external access)
+   */
+  getRawGeneratedFiles(): Array<{ path: string; content: string }> {
+    return [...this.rawGeneratedFiles];
   }
 }
 

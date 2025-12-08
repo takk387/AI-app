@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { PhaseProgressIndicator, PhaseControlPanel, ValidationDashboard } from '../build';
+import { PhaseProgressIndicator, PhaseControlPanel, QualityPanel } from '../build';
 import type { BuildPhase, BuildProgress, PhaseId } from '@/types/buildPhases';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
+import type { QualityReport, QualityPipelineState, ReviewStrictness } from '@/types/codeReview';
 
 export interface PhasedBuildPanelProps {
   isOpen: boolean;
@@ -28,6 +29,13 @@ export interface PhasedBuildPanelProps {
   dynamicPlan?: DynamicPhasePlan | null;
   /** When true, renders inline without modal overlay */
   isFullPage?: boolean;
+  /** Code review state */
+  qualityReport?: QualityReport | null;
+  pipelineState?: QualityPipelineState;
+  isReviewing?: boolean;
+  strictness?: ReviewStrictness;
+  onRunReview?: () => void;
+  onStrictnessChange?: (strictness: ReviewStrictness) => void;
 }
 
 export function PhasedBuildPanel({
@@ -51,6 +59,12 @@ export function PhasedBuildPanel({
   onProceedToNextPhase,
   dynamicPlan,
   isFullPage = false,
+  qualityReport,
+  pipelineState,
+  isReviewing = false,
+  strictness = 'standard',
+  onRunReview,
+  onStrictnessChange,
 }: PhasedBuildPanelProps) {
   if (!isOpen) return null;
 
@@ -112,16 +126,20 @@ export function PhasedBuildPanel({
             onViewPhaseDetails={onViewPhaseDetails}
           />
 
-          {/* Validation Dashboard */}
-          {currentPhase && (
-            <ValidationDashboard
-              phase={currentPhase}
-              onRunValidation={onRunValidation}
-              onProceedAnyway={onProceedToNextPhase}
-              onRetryPhase={onRetryPhase.bind(null, currentPhase.id)}
-              isValidating={isValidating}
-            />
-          )}
+          {/* Quality Panel (Validation + Code Review) */}
+          <QualityPanel
+            phase={currentPhase}
+            pipelineState={pipelineState}
+            qualityReport={qualityReport}
+            isValidating={isValidating}
+            isReviewing={isReviewing}
+            strictness={strictness}
+            onRunValidation={onRunValidation}
+            onRunReview={onRunReview}
+            onStrictnessChange={onStrictnessChange}
+            onProceedAnyway={onProceedToNextPhase}
+            onRetryPhase={currentPhase ? onRetryPhase.bind(null, currentPhase.id) : undefined}
+          />
         </div>
       </div>
 

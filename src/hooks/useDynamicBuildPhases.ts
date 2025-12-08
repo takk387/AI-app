@@ -16,12 +16,21 @@ import type {
   PhaseExecutionResult,
 } from '@/types/dynamicPhases';
 import type { BuildPhase, BuildProgress, PhaseId } from '@/types/buildPhases';
+import type { QualityReport, QualityPipelineState, ReviewStrictness } from '@/types/codeReview';
 import { PhaseExecutionManager, buildPhaseExecutionPrompt } from '@/services/PhaseExecutionManager';
+
+// Dynamic import for CodeReviewService to avoid bundling tree-sitter in client
+// getPipelineState is only called during quality review (which happens server-side via API)
+// Using webpackIgnore to prevent webpack from analyzing this import at build time
+async function getCodeReviewPipelineState(): Promise<QualityPipelineState> {
+  const { getPipelineState } = await import(
+    /* webpackIgnore: true */ '@/services/CodeReviewService'
+  );
+  return getPipelineState();
+}
 import {
-  adaptDynamicPhaseToUI,
   adaptAllPhasesToUI,
   adaptDynamicProgressToUI,
-  generatePhaseId,
   getPlanSummary,
   type PlanSummary,
 } from '@/types/phaseAdapters';
@@ -49,6 +58,12 @@ export interface UseDynamicBuildPhasesReturn {
   isPaused: boolean;
   accumulatedCode: string;
 
+  // Quality state
+  qualityReport: QualityReport | null;
+  pipelineState: QualityPipelineState;
+  isReviewing: boolean;
+  reviewStrictness: ReviewStrictness;
+
   // Actions
   initializePlan: (plan: DynamicPhasePlan) => void;
   startPhase: (phaseNumber: number) => void;
@@ -58,6 +73,11 @@ export interface UseDynamicBuildPhasesReturn {
   pauseBuild: () => void;
   resumeBuild: () => void;
   resetBuild: () => void;
+
+  // Quality actions
+  runPhaseQualityCheck: (phaseNumber: number) => Promise<void>;
+  runFinalQualityCheck: () => Promise<void>;
+  setReviewStrictness: (strictness: ReviewStrictness) => void;
 
   // Phase execution helpers
   getExecutionContext: (phaseNumber: number) => PhaseExecutionContext | null;
@@ -93,6 +113,18 @@ export function useDynamicBuildPhases(
   const [isBuilding, setIsBuilding] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [accumulatedCode, setAccumulatedCodeState] = useState('');
+
+  // Quality state
+  const [qualityReport, setQualityReport] = useState<QualityReport | null>(null);
+  const [pipelineState, setPipelineState] = useState<QualityPipelineState>({
+    currentStep: 'idle',
+    validationStatus: 'pending',
+    reviewStatus: 'pending',
+    fixStatus: 'pending',
+    progress: 0,
+  });
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [reviewStrictness, setReviewStrictnessState] = useState<ReviewStrictness>('standard');
 
   // Force re-render trigger for manager state changes
   const [, forceUpdate] = useState({});
@@ -384,6 +416,73 @@ export function useDynamicBuildPhases(
     [plan]
   );
 
+  // ========== Quality Actions ==========
+
+  /**
+   * Run quality check for a specific phase
+   */
+  const runPhaseQualityCheck = useCallback(
+    async (phaseNumber: number) => {
+      if (!mountedRef.current || !manager) return;
+
+      setIsReviewing(true);
+      setPipelineState(await getCodeReviewPipelineState());
+
+      try {
+        const result = await manager.runPhaseQualityReview(phaseNumber);
+        if (result && mountedRef.current) {
+          setQualityReport(result.report);
+          setPipelineState(await getCodeReviewPipelineState());
+        }
+      } catch (error) {
+        onError?.(error as Error);
+      } finally {
+        if (mountedRef.current) {
+          setIsReviewing(false);
+        }
+      }
+    },
+    [manager, onError]
+  );
+
+  /**
+   * Run final comprehensive quality check
+   */
+  const runFinalQualityCheck = useCallback(async () => {
+    if (!mountedRef.current || !manager) return;
+
+    setIsReviewing(true);
+    setPipelineState(await getCodeReviewPipelineState());
+
+    try {
+      const result = await manager.runFinalQualityReview();
+      if (result && mountedRef.current) {
+        setQualityReport(result.report);
+        setPipelineState(await getCodeReviewPipelineState());
+      }
+    } catch (error) {
+      onError?.(error as Error);
+    } finally {
+      if (mountedRef.current) {
+        setIsReviewing(false);
+      }
+    }
+  }, [manager, onError]);
+
+  /**
+   * Set review strictness level
+   */
+  const setReviewStrictness = useCallback(
+    (strictness: ReviewStrictness) => {
+      if (!mountedRef.current) return;
+      setReviewStrictnessState(strictness);
+      if (manager) {
+        manager.setReviewStrictness(strictness);
+      }
+    },
+    [manager]
+  );
+
   // ========== Return ==========
 
   return {
@@ -398,6 +497,12 @@ export function useDynamicBuildPhases(
     isPaused,
     accumulatedCode,
 
+    // Quality state
+    qualityReport,
+    pipelineState,
+    isReviewing,
+    reviewStrictness,
+
     // Actions
     initializePlan,
     startPhase,
@@ -407,6 +512,11 @@ export function useDynamicBuildPhases(
     pauseBuild,
     resumeBuild,
     resetBuild,
+
+    // Quality actions
+    runPhaseQualityCheck,
+    runFinalQualityCheck,
+    setReviewStrictness,
 
     // Execution helpers
     getExecutionContext,
