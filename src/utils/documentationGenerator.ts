@@ -313,8 +313,8 @@ export function generateMarkdownDocumentation(
   config: Partial<DocumentationConfig> = {}
 ): string {
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
-  const colors = design.globalStyles?.colors || {};
-  const typography = design.globalStyles?.typography || {};
+  const colors: Partial<ColorSettings> = design.globalStyles?.colors || {};
+  const typography: Partial<TypographySettings> = design.globalStyles?.typography || {};
 
   let md = `# ${mergedConfig.title}\n\n`;
 
@@ -333,7 +333,8 @@ export function generateMarkdownDocumentation(
   md += '| Name | Value | Preview |\n';
   md += '|------|-------|----------|\n';
   Object.entries(colors).filter(([, v]) => v).forEach(([name, value]) => {
-    md += `| ${name} | \`${value}\` | ![${name}](https://via.placeholder.com/30/${value?.slice(1)}/${value?.slice(1)}) |\n`;
+    const colorValue = String(value);
+    md += `| ${name} | \`${colorValue}\` | ![${name}](https://via.placeholder.com/30/${colorValue.slice(1)}/${colorValue.slice(1)}) |\n`;
   });
   md += '\n';
 

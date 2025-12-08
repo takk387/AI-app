@@ -371,7 +371,7 @@ export function useComponentStates(
 
   // Update spec with partial values
   const updateSpec = useCallback((updates: Partial<AnyComponentSpec>) => {
-    setSpecInternal((prev) => ({ ...prev, ...updates }));
+    setSpecInternal((prev) => ({ ...prev, ...updates } as AnyComponentSpec));
   }, []);
 
   // Set complete spec

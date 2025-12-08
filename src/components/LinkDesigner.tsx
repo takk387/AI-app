@@ -7,9 +7,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { LinkSpec } from '@/hooks/useComponentStates';
+import type { LinkSpec, ComponentState } from '@/hooks/useComponentStates';
 import { StatePreview, StatePreviewGrid } from './StatePreview';
-import type { ComponentState } from '@/hooks/useComponentStates';
 
 // ============================================================================
 // TYPES
@@ -470,8 +469,8 @@ export function LinkDesigner({
               <label className="block text-xs text-slate-500 mb-2 uppercase">{state}</label>
               <ColorPicker
                 label="Color"
-                value={currentSpec?.states[state]?.color || '#3B82F6'}
-                onChange={(value) => handleColorChange(state, 'color', value)}
+                value={currentSpec?.states[state as keyof LinkSpec['states']]?.color || '#3B82F6'}
+                onChange={(value) => handleColorChange(state as keyof LinkSpec['states'], 'color', value)}
               />
             </div>
           ))}
