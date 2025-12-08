@@ -171,11 +171,7 @@ export function useSmartContext(): UseSmartContextReturn {
       query: string,
       options: SmartContextOptions = {}
     ): Promise<SmartContextResult> => {
-      const {
-        maxTokens = 4000,
-        preserveLastN = 4,
-        includeMemories = true,
-      } = options;
+      const { maxTokens = 4000, preserveLastN = 4, includeMemories = true } = options;
 
       // Get semantic memories if available
       let memoriesContext = '';

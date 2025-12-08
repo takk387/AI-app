@@ -85,10 +85,7 @@ export async function GET() {
     // ========================================================================
     // 4. Test database connection
     // ========================================================================
-    const { error: dbError } = await supabase
-      .from('user_profiles')
-      .select('count')
-      .limit(1);
+    const { error: dbError } = await supabase.from('user_profiles').select('count').limit(1);
 
     testResults.tests.databaseConnection = {
       status: dbError ? 'WARNING' : 'PASS',
@@ -138,9 +135,7 @@ export async function GET() {
       const userId = authData.session.user.id;
 
       // Test 6a: Can list own files (should succeed with RLS)
-      const { error: listError } = await supabase.storage
-        .from('user-uploads')
-        .list(userId);
+      const { error: listError } = await supabase.storage.from('user-uploads').list(userId);
 
       const canListOwnFiles = !listError;
 

@@ -8,10 +8,7 @@
  * - Design tokens (Figma-compatible JSON)
  */
 
-import type {
-  LayoutDesign,
-  GridConfig,
-} from '@/types/layoutDesign';
+import type { LayoutDesign, GridConfig } from '@/types/layoutDesign';
 
 // ============================================================================
 // CSS VARIABLES EXPORT

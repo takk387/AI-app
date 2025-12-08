@@ -6,11 +6,7 @@
  * the app's design system and purpose.
  */
 
-import {
-  getDalleService,
-  type DesignContext,
-  getImageCost,
-} from './dalleService';
+import { getDalleService, type DesignContext, getImageCost } from './dalleService';
 import { getDalleRateLimiter } from '@/utils/dalleRateLimiter';
 import { detectAppType } from '@/utils/imagePromptBuilder';
 import { generateLayoutFallbackImages } from '@/utils/imageAssets';

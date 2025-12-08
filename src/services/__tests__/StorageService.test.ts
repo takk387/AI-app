@@ -17,12 +17,7 @@
 import { StorageService } from '../StorageService';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
-import {
-  FilePath,
-  FileId,
-  UserId,
-  StorageErrorCode,
-} from '@/types/storage';
+import { FilePath, FileId, UserId, StorageErrorCode } from '@/types/storage';
 
 // ============================================================================
 // Mock Setup

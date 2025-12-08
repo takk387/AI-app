@@ -11,11 +11,7 @@ import type {
   ColorSettings,
 } from '../types/layoutDesign';
 import { generateMockContent } from '../utils/mockContentGenerator';
-import {
-  DragDropCanvas,
-  useSectionOrder,
-  type LayoutSection,
-} from './layout/DragDropCanvas';
+import { DragDropCanvas, useSectionOrder, type LayoutSection } from './layout/DragDropCanvas';
 import { imageAssets, getFallbackImage } from '../utils/imageAssets';
 import { imageCache } from '../utils/imageCache';
 

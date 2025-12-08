@@ -102,9 +102,7 @@ Remember: The goal is a shared understanding, not a filled-out form.`;
 /**
  * Generate a context-aware continuation prompt
  */
-export function generateContinuationPrompt(
-  currentConcept: Partial<AppConcept>
-): string {
+export function generateContinuationPrompt(currentConcept: Partial<AppConcept>): string {
   const missingInfo: string[] = [];
 
   if (!currentConcept.name) missingInfo.push('app name');

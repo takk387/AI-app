@@ -374,9 +374,7 @@ export class CodeContextService {
   // PRIVATE METHODS
   // ==========================================================================
 
-  private buildSnapshot(
-    selectedFiles: SelectedFile[]
-  ): CodeContextSnapshot {
+  private buildSnapshot(selectedFiles: SelectedFile[]): CodeContextSnapshot {
     // Build omitted summary
     const includedPaths = new Set(selectedFiles.map((f) => f.path));
     const omittedSummary: OmittedSummary = {

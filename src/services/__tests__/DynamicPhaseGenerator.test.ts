@@ -10,10 +10,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { DynamicPhaseGenerator } from '../DynamicPhaseGenerator';
-import type {
-  PhaseGeneratorConfig,
-  FeatureDomain,
-} from '@/types/dynamicPhases';
+import type { PhaseGeneratorConfig, FeatureDomain } from '@/types/dynamicPhases';
 import type { AppConcept, Feature } from '@/types/appConcept';
 
 // ============================================================================

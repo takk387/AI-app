@@ -8,9 +8,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import {
-  buildLayoutBuilderPrompt,
-} from '@/prompts/layoutBuilderSystemPrompt';
+import { buildLayoutBuilderPrompt } from '@/prompts/layoutBuilderSystemPrompt';
 import type {
   LayoutDesign,
   LayoutChatRequest,

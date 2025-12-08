@@ -953,9 +953,7 @@ export class CodeParser {
     return /^[A-Z][a-zA-Z0-9]*$/.test(name);
   }
 
-  private returnsJSX(
-    node: ts.FunctionLikeDeclaration | ts.ArrowFunction
-  ): boolean {
+  private returnsJSX(node: ts.FunctionLikeDeclaration | ts.ArrowFunction): boolean {
     let hasJSX = false;
 
     const visit = (n: ts.Node) => {
