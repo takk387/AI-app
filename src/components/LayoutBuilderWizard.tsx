@@ -61,6 +61,19 @@ import {
   createVideoThumbnail,
   VIDEO_CONFIG,
 } from '@/utils/videoProcessor';
+import { AnimationTimeline } from '@/components/AnimationTimeline';
+import { BreakpointEditor } from '@/components/BreakpointEditor';
+import {
+  ResponsivePropertyEditor,
+  type ResponsiveProperties,
+} from '@/components/ResponsivePropertyEditor';
+import { DarkModeEditor } from '@/components/DarkModeEditor';
+import { LayerPanel } from '@/components/LayerPanel';
+import { PerformanceReport } from '@/components/PerformanceReport';
+import { DEFAULT_LAYERS, type LayerDefinition } from '@/utils/layerUtils';
+import { DEFAULT_BREAKPOINTS } from '@/hooks/useResponsivePreview';
+import type { CustomAnimation } from '@/utils/keyframeUtils';
+import type { PerformanceReport as PerformanceReportType } from '@/types/aiBuilderTypes';
 
 // ============================================================================
 // CONSTANTS
@@ -925,6 +938,23 @@ export function LayoutBuilderWizard({
   // Component library and architecture blueprints state
   const [showComponentLibrary, setShowComponentLibrary] = useState(false);
   const [showArchitectureTemplates, setShowArchitectureTemplates] = useState(false);
+
+  // Advanced panel states
+  const [showAnimationTimeline, setShowAnimationTimeline] = useState(false);
+  const [showBreakpointEditor, setShowBreakpointEditor] = useState(false);
+  const [showDarkModeEditor, setShowDarkModeEditor] = useState(false);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
+  const [showPerformanceReport, setShowPerformanceReport] = useState(false);
+
+  // Data states for advanced features
+  const [customAnimation, setCustomAnimation] = useState<CustomAnimation | null>(null);
+  const [layers, setLayers] = useState<LayerDefinition[]>(DEFAULT_LAYERS);
+  const [darkColors, setDarkColors] = useState<Partial<ColorSettings> | null>(null);
+  const [responsiveProperties, setResponsiveProperties] = useState<ResponsiveProperties>({});
+  const [performanceReport, _setPerformanceReport] = useState<PerformanceReportType | null>(null);
+  const [breakpoints, setBreakpoints] = useState(DEFAULT_BREAKPOINTS);
+  const [previewWidth, setPreviewWidth] = useState(1280);
+  const [currentBreakpoint, _setCurrentBreakpoint] = useState('lg');
 
   // Analysis progress hook
   const analysisProgress = useAnalysisProgress();
@@ -1952,6 +1982,85 @@ export function LayoutBuilderWizard({
                 />
               </svg>
             </button>
+            {/* Divider */}
+            <div className="w-px h-6 bg-slate-700" />
+            {/* Advanced Tools */}
+            <button
+              onClick={() => setShowAnimationTimeline(true)}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Animation Timeline"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowLayerPanel(true)}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Layer Panel (z-index)"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowDarkModeEditor(true)}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Dark Mode Colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowBreakpointEditor(true)}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Responsive Breakpoints"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowPerformanceReport(true)}
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Performance Report"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </button>
             <input
               ref={importInputRef}
               type="file"
@@ -2532,6 +2641,187 @@ export function LayoutBuilderWizard({
         colors={extractedColors}
         onApply={handleApplyExtractedColors}
         onDismiss={() => setShowExtractedColors(false)}
+      />
+
+      {/* Animation Timeline Panel (slide-over) */}
+      {showAnimationTimeline && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowAnimationTimeline(false)}
+          />
+          <div className="fixed inset-y-0 right-0 w-[700px] max-w-full bg-slate-900 border-l border-slate-700 shadow-2xl z-50 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h2 className="text-lg font-semibold text-white">Animation Timeline</h2>
+              <button
+                type="button"
+                onClick={() => setShowAnimationTimeline(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Close animation timeline"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <AnimationTimeline
+                animation={customAnimation ?? undefined}
+                onChange={setCustomAnimation}
+                onExport={(css) => {
+                  copyToClipboard(css);
+                  success('Animation CSS copied to clipboard');
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Layer Panel (slide-over from left) */}
+      {showLayerPanel && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowLayerPanel(false)}
+          />
+          <div className="fixed inset-y-0 left-0 w-[350px] max-w-full bg-slate-900 border-r border-slate-700 shadow-2xl z-50 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h2 className="text-lg font-semibold text-white">Layer Stack</h2>
+              <button
+                type="button"
+                onClick={() => setShowLayerPanel(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Close layer panel"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <LayerPanel layers={layers} onChange={setLayers} className="h-full" />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Dark Mode Editor Modal */}
+      {showDarkModeEditor && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowDarkModeEditor(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 rounded-xl border border-slate-700 w-[800px] max-w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-slate-700">
+                <h2 className="text-lg font-semibold text-white">Dark Mode Colors</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowDarkModeEditor(false)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                  aria-label="Close dark mode editor"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <DarkModeEditor
+                  lightColors={design.globalStyles?.colors || {}}
+                  darkColors={darkColors ?? undefined}
+                  onChange={setDarkColors}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Breakpoint Editor Modal */}
+      {showBreakpointEditor && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowBreakpointEditor(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 rounded-xl border border-slate-700 w-[1000px] max-w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-slate-700">
+                <h2 className="text-lg font-semibold text-white">Responsive Breakpoints</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowBreakpointEditor(false)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                  aria-label="Close breakpoint editor"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-300 mb-3">
+                      Breakpoint Configuration
+                    </h3>
+                    <BreakpointEditor
+                      breakpoints={breakpoints}
+                      currentWidth={previewWidth}
+                      onChange={setBreakpoints}
+                      onWidthChange={setPreviewWidth}
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-300 mb-3">
+                      Responsive Properties
+                    </h3>
+                    <ResponsivePropertyEditor
+                      properties={responsiveProperties}
+                      breakpoints={breakpoints}
+                      currentBreakpoint={currentBreakpoint}
+                      onChange={setResponsiveProperties}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Performance Report Modal */}
+      <PerformanceReport
+        isOpen={showPerformanceReport}
+        onClose={() => setShowPerformanceReport(false)}
+        report={performanceReport}
+        onRunBenchmark={() => {
+          // Placeholder - would need API endpoint to generate report
+          info('Performance benchmarking is not yet implemented');
+        }}
       />
 
       {/* Toast notifications */}
