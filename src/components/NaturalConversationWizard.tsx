@@ -580,11 +580,22 @@ What would you like to build?`,
         updatedAt: new Date().toISOString(),
       };
 
-      // Call phase generation API
+      // Convert messages to ChatMessage format for phase context extraction
+      const conversationMessages = messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp.toISOString(),
+      }));
+
+      // Call phase generation API with conversation for context extraction
       const response = await fetch('/api/wizard/generate-phases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ concept }),
+        body: JSON.stringify({
+          concept,
+          conversationMessages, // Include for phase-specific context extraction
+        }),
       });
 
       if (!response.ok) {
@@ -627,6 +638,7 @@ What would you like to build?`,
     convertRolesToUserRoles,
     extractWorkflowsFromConversation,
     buildConversationContext,
+    messages, // Required for conversation context extraction
   ]);
 
   // Auto-trigger phase generation when ready

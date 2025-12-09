@@ -212,6 +212,21 @@ export interface APIContract {
 }
 
 /**
+ * Phase-specific context extracted from conversation
+ * Serializable version of PhaseContext for API responses
+ */
+export interface SerializedPhaseContext {
+  phaseType: FeatureDomain;
+  extractedRequirements: string[];
+  userDecisions: string[];
+  technicalNotes: string[];
+  validationRules: string[];
+  uiPatterns: string[];
+  contextSummary: string;
+  tokenEstimate: number;
+}
+
+/**
  * Complete phase plan for an application
  */
 export interface DynamicPhasePlan {
@@ -242,6 +257,9 @@ export interface DynamicPhasePlan {
   establishedPatterns?: string[];
   sharedState?: string[];
   apiContracts?: APIContract[];
+
+  // Phase-specific context extracted from conversation (domain -> context)
+  phaseContexts?: Record<FeatureDomain, SerializedPhaseContext>;
 }
 
 /**
@@ -377,6 +395,9 @@ export interface PhaseExecutionContext {
 
   // Which user roles this phase serves
   relevantRoles?: string[];
+
+  // Extracted context from conversation for this specific phase
+  extractedPhaseContext?: SerializedPhaseContext;
 }
 
 /**

@@ -29,7 +29,6 @@ import type {
   ColorSettings,
   LayoutDesign,
   CompleteDesignAnalysis,
-  QuickAnalysis,
   DetectedAnimation,
   TypographySettings,
   SpacingSettings,
@@ -46,6 +45,7 @@ import { ComponentLibraryPanel } from '@/components/ComponentLibraryPanel';
 import { ArchitectureTemplatePicker } from '@/components/ArchitectureTemplatePicker';
 import type { ComponentPattern } from '@/data/componentPatterns';
 import type { FullTemplate } from '@/types/architectureTemplates';
+import { extractColorsFromImage, type ExtractionResult } from '@/utils/colorExtraction';
 import {
   exportToCSSVariables,
   exportToTailwindConfig,
@@ -59,7 +59,6 @@ import {
   validateVideoFile,
   processVideo,
   createVideoThumbnail,
-  formatDuration,
   VIDEO_CONFIG,
 } from '@/utils/videoProcessor';
 
@@ -170,6 +169,106 @@ interface LayoutBuilderWizardProps {
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
+
+/**
+ * Extracted Colors Panel - shows colors extracted from reference image
+ */
+function ExtractedColorsPanel({
+  isOpen,
+  colors,
+  onApply,
+  onDismiss,
+}: {
+  isOpen: boolean;
+  colors: ExtractionResult | null;
+  onApply: () => void;
+  onDismiss: () => void;
+}) {
+  if (!isOpen || !colors) return null;
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-4 max-w-sm">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-white">Extracted Colors</h4>
+        <button onClick={onDismiss} className="text-slate-400 hover:text-white transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div className="mb-3">
+        <p className="text-xs text-slate-400 mb-2">
+          {colors.isDarkImage ? 'Dark theme detected' : 'Light theme detected'}
+        </p>
+        <div className="flex gap-1 flex-wrap">
+          {colors.colors.slice(0, 8).map((color, i) => (
+            <div
+              key={i}
+              className="w-8 h-8 rounded border border-slate-600"
+              style={{ backgroundColor: color.hex }}
+              title={`${color.hex} (${Math.round(color.percentage)}%)`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <p className="text-xs text-slate-400 mb-1">Suggested Palette</p>
+        <div className="grid grid-cols-4 gap-1 text-[10px]">
+          <div className="flex flex-col items-center">
+            <div
+              className="w-6 h-6 rounded border border-slate-600"
+              style={{ backgroundColor: colors.palette.primary }}
+            />
+            <span className="text-slate-500">Primary</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div
+              className="w-6 h-6 rounded border border-slate-600"
+              style={{ backgroundColor: colors.palette.secondary }}
+            />
+            <span className="text-slate-500">Second</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div
+              className="w-6 h-6 rounded border border-slate-600"
+              style={{ backgroundColor: colors.palette.accent }}
+            />
+            <span className="text-slate-500">Accent</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <div
+              className="w-6 h-6 rounded border border-slate-600"
+              style={{ backgroundColor: colors.palette.background }}
+            />
+            <span className="text-slate-500">BG</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={onDismiss}
+          className="flex-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
+        >
+          Dismiss
+        </button>
+        <button
+          onClick={onApply}
+          className="flex-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
+        >
+          Apply Colors
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Confirmation dialog component
@@ -482,63 +581,6 @@ function RecentChangesIndicator({ changes }: { changes: DesignChange[] }) {
 }
 
 /**
- * Reference images panel
- * Note: Uses parent's file input via onAdd callback for consistent compression handling
- */
-function ReferenceImagesPanel({
-  images,
-  onRemove,
-  onAdd,
-}: {
-  images: string[];
-  onRemove: (index: number) => void;
-  onAdd: () => void;
-}) {
-  if (images.length === 0) {
-    return (
-      <button
-        type="button"
-        onClick={onAdd}
-        className="w-full px-4 py-3 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-slate-500 hover:text-slate-300 transition-colors text-sm"
-      >
-        + Add design inspiration
-      </button>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="text-xs text-slate-400 font-medium">Reference Images</div>
-      <div className="flex flex-wrap gap-2">
-        {images.map((img, i) => (
-          <div key={i} className="relative group">
-            <img
-              src={img}
-              alt={`Reference ${i + 1}`}
-              className="w-16 h-16 object-cover rounded-lg border border-slate-600"
-            />
-            <button
-              type="button"
-              onClick={() => onRemove(i)}
-              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              x
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={onAdd}
-          className="w-16 h-16 border-2 border-dashed border-slate-600 rounded-lg text-slate-500 hover:border-slate-500 hover:text-slate-400 transition-colors text-2xl flex items-center justify-center"
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
  * Template picker component for quick start
  */
 function TemplatePicker({
@@ -844,6 +886,10 @@ export function LayoutBuilderWizard({
   // Loading states for async operations
   const [isSaving, setIsSaving] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+
+  // Extracted colors from reference image
+  const [extractedColors, setExtractedColors] = useState<ExtractionResult | null>(null);
+  const [showExtractedColors, setShowExtractedColors] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
 
   // Template picker state - show on first open when only greeting message
@@ -858,21 +904,20 @@ export function LayoutBuilderWizard({
   // Pixel-perfect mode state
   const [analysisMode, setAnalysisMode] = useState<'standard' | 'pixel-perfect'>('standard');
   const [showComparisonView, setShowComparisonView] = useState(false);
-  const [pixelPerfectAnalysis, setPixelPerfectAnalysis] = useState<CompleteDesignAnalysis | null>(
+  const [pixelPerfectAnalysis, _setPixelPerfectAnalysis] = useState<CompleteDesignAnalysis | null>(
     null
   );
-  const [quickAnalysis, setQuickAnalysis] = useState<QuickAnalysis | null>(null);
 
-  // Video upload state
-  const [uploadedVideo, setUploadedVideo] = useState<File | null>(null);
-  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
+  // Video upload state (values stored for future video preview feature)
+  const [_uploadedVideo, setUploadedVideo] = useState<File | null>(null);
+  const [_videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
 
   // New panel states for integrated components
   const [detectedAnimations, setDetectedAnimations] = useState<DetectedAnimation[]>([]);
   const [showAnimationPanel, setShowAnimationPanel] = useState(false);
   const [showSpecSheetPanel, setShowSpecSheetPanel] = useState(false);
-  const [showReferenceMediaPanel, setShowReferenceMediaPanel] = useState(true);
+  const [showReferenceMediaPanel, _setShowReferenceMediaPanel] = useState(true);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
@@ -1078,14 +1123,7 @@ export function LayoutBuilderWizard({
           break;
       }
     },
-    [
-      capturePreview,
-      updateDesign,
-      design.basePreferences,
-      saveDesign,
-      applyToAppConcept,
-      onApplyToAppConcept,
-    ]
+    [capturePreview, updateDesign, design, saveDesign, applyToAppConcept, onApplyToAppConcept]
   );
 
   // Handle effects settings change from DesignControlPanel
@@ -1209,6 +1247,15 @@ export function LayoutBuilderWizard({
 
         addReferenceImage(dataUrl);
 
+        // Extract colors from the reference image
+        try {
+          const colorResult = await extractColorsFromImage(dataUrl);
+          setExtractedColors(colorResult);
+          setShowExtractedColors(true);
+        } catch {
+          // Non-critical - continue without extracted colors
+        }
+
         // Show compression info if significant size reduction
         const reduction = ((originalSize - compressedSize) / originalSize) * 100;
         if (reduction > 10) {
@@ -1227,6 +1274,31 @@ export function LayoutBuilderWizard({
     },
     [addReferenceImage, error, success]
   );
+
+  // Apply extracted colors to design
+  const handleApplyExtractedColors = useCallback(() => {
+    if (!extractedColors) return;
+
+    const { palette } = extractedColors;
+
+    updateDesign({
+      globalStyles: {
+        ...design.globalStyles,
+        colors: {
+          ...design.globalStyles?.colors,
+          primary: palette.primary,
+          secondary: palette.secondary,
+          accent: palette.accent,
+          background: palette.background,
+          surface: palette.surface,
+          text: palette.text,
+        },
+      },
+    });
+
+    setShowExtractedColors(false);
+    success('Applied extracted colors from reference image');
+  }, [extractedColors, updateDesign, design.globalStyles, success]);
 
   // Handle template selection
   const handleTemplateSelect = useCallback(
@@ -2453,6 +2525,14 @@ export function LayoutBuilderWizard({
           </div>
         </>
       )}
+
+      {/* Extracted Colors Panel - shows when reference image is uploaded */}
+      <ExtractedColorsPanel
+        isOpen={showExtractedColors}
+        colors={extractedColors}
+        onApply={handleApplyExtractedColors}
+        onDismiss={() => setShowExtractedColors(false)}
+      />
 
       {/* Toast notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismiss} position="top-right" />

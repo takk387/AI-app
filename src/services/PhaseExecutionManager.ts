@@ -634,6 +634,53 @@ ${context.features.map((f) => `- ${f}`).join('\n')}
 
 `;
 
+  // Include extracted phase-specific context from conversation analysis
+  if (context.extractedPhaseContext) {
+    const epc = context.extractedPhaseContext;
+
+    if (epc.extractedRequirements.length > 0) {
+      prompt += `## User Requirements (from conversation)
+${epc.extractedRequirements.map((r) => `- ${r}`).join('\n')}
+
+`;
+    }
+
+    if (epc.userDecisions.length > 0) {
+      prompt += `## User Decisions
+${epc.userDecisions.map((d) => `- ${d}`).join('\n')}
+
+`;
+    }
+
+    if (epc.technicalNotes.length > 0) {
+      prompt += `## Technical Notes
+${epc.technicalNotes.map((n) => `- ${n}`).join('\n')}
+
+`;
+    }
+
+    if (epc.validationRules.length > 0) {
+      prompt += `## Validation Rules
+${epc.validationRules.map((r) => `- ${r}`).join('\n')}
+
+`;
+    }
+
+    if (epc.uiPatterns.length > 0) {
+      prompt += `## UI Patterns
+${epc.uiPatterns.map((p) => `- ${p}`).join('\n')}
+
+`;
+    }
+
+    if (epc.contextSummary) {
+      prompt += `## Conversation Context Summary
+${epc.contextSummary}
+
+`;
+    }
+  }
+
   // Context from previous phases
   if (!isFirstPhase && context.cumulativeFiles.length > 0) {
     prompt += `## Existing Project Context
@@ -868,6 +915,9 @@ export class PhaseExecutionManager {
 
       // Which user roles this phase serves
       relevantRoles: phase.relevantRoles,
+
+      // Extracted phase context from conversation analysis (if available)
+      extractedPhaseContext: this.plan.phaseContexts?.[phase.domain],
 
       // Enhanced tracking for prompt builder
       apiContracts: [...this.apiContracts],

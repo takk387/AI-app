@@ -3,12 +3,21 @@
  *
  * Takes a completed AppConcept and generates an optimal phase plan
  * using the DynamicPhaseGenerator service.
+ *
+ * Optionally accepts conversation messages to extract phase-specific context
+ * using the PhaseContextExtractor.
  */
 
 import { NextResponse } from 'next/server';
 import { DynamicPhaseGenerator } from '@/services/DynamicPhaseGenerator';
 import type { AppConcept } from '@/types/appConcept';
-import type { PhaseGeneratorConfig } from '@/types/dynamicPhases';
+import type { ChatMessage } from '@/types/aiBuilderTypes';
+import type {
+  PhaseGeneratorConfig,
+  FeatureDomain,
+  SerializedPhaseContext,
+} from '@/types/dynamicPhases';
+import { extractContextForAllPhases, type PhaseContext } from '@/utils/phaseContextExtractor';
 
 // Vercel serverless function config
 export const maxDuration = 30;
@@ -17,12 +26,29 @@ export const dynamic = 'force-dynamic';
 interface GeneratePhasesRequest {
   concept: AppConcept;
   config?: Partial<PhaseGeneratorConfig>;
+  conversationMessages?: ChatMessage[]; // Optional: for phase-specific context extraction
+}
+
+/**
+ * Convert PhaseContext to serializable format (removes non-JSON-safe fields)
+ */
+function serializePhaseContext(context: PhaseContext): SerializedPhaseContext {
+  return {
+    phaseType: context.phaseType,
+    extractedRequirements: context.extractedRequirements,
+    userDecisions: context.userDecisions,
+    technicalNotes: context.technicalNotes,
+    validationRules: context.validationRules,
+    uiPatterns: context.uiPatterns,
+    contextSummary: context.contextSummary,
+    tokenEstimate: context.tokenEstimate,
+  };
 }
 
 export async function POST(request: Request) {
   try {
     const body: GeneratePhasesRequest = await request.json();
-    const { concept, config } = body;
+    const { concept, config, conversationMessages } = body;
 
     // Validate concept
     if (!concept) {
@@ -90,6 +116,33 @@ export async function POST(request: Request) {
         },
         { status: 400 }
       );
+    }
+
+    // Extract phase-specific context from conversation if messages provided
+    let phaseContexts: Record<FeatureDomain, SerializedPhaseContext> | undefined;
+
+    if (conversationMessages && conversationMessages.length > 0 && result.plan) {
+      try {
+        // Get unique domains from generated phases
+        const phaseDomains = [...new Set(result.plan.phases.map((p) => p.domain))];
+
+        // Extract context for each domain
+        const contextMap = await extractContextForAllPhases(conversationMessages, phaseDomains);
+
+        // Convert to serializable format
+        phaseContexts = {} as Record<FeatureDomain, SerializedPhaseContext>;
+        for (const [domain, context] of contextMap) {
+          phaseContexts[domain] = serializePhaseContext(context);
+        }
+
+        // Attach to plan
+        result.plan.phaseContexts = phaseContexts;
+
+        console.log(`[generate-phases] Extracted context for ${phaseDomains.length} phase domains`);
+      } catch (extractionError) {
+        console.warn('[generate-phases] Context extraction failed:', extractionError);
+        // Continue without phase contexts - non-critical
+      }
     }
 
     return NextResponse.json({
