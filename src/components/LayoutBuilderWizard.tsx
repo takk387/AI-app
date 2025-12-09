@@ -74,6 +74,17 @@ import { DEFAULT_LAYERS, type LayerDefinition } from '@/utils/layerUtils';
 import { DEFAULT_BREAKPOINTS } from '@/hooks/useResponsivePreview';
 import type { CustomAnimation } from '@/utils/keyframeUtils';
 import type { PerformanceReport as PerformanceReportType } from '@/types/aiBuilderTypes';
+import {
+  ExtractedColorsPanel,
+  ConfirmDialog,
+  DraftRecoveryBanner,
+  MessageBubble,
+  SuggestedActionsBar,
+  RecentChangesIndicator,
+  TemplatePicker,
+  ChatInput,
+} from '@/components/layout-builder';
+import { useLayoutPanelStore } from '@/stores/useLayoutPanelStore';
 
 // ============================================================================
 // CONSTANTS
@@ -180,669 +191,6 @@ interface LayoutBuilderWizardProps {
 }
 
 // ============================================================================
-// SUB-COMPONENTS
-// ============================================================================
-
-/**
- * Extracted Colors Panel - shows colors extracted from reference image
- */
-function ExtractedColorsPanel({
-  isOpen,
-  colors,
-  onApply,
-  onDismiss,
-}: {
-  isOpen: boolean;
-  colors: ExtractionResult | null;
-  onApply: () => void;
-  onDismiss: () => void;
-}) {
-  if (!isOpen || !colors) return null;
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-4 max-w-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-white">Extracted Colors</h4>
-        <button onClick={onDismiss} className="text-slate-400 hover:text-white transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
-
-      <div className="mb-3">
-        <p className="text-xs text-slate-400 mb-2">
-          {colors.isDarkImage ? 'Dark theme detected' : 'Light theme detected'}
-        </p>
-        <div className="flex gap-1 flex-wrap">
-          {colors.colors.slice(0, 8).map((color, i) => (
-            <div
-              key={i}
-              className="w-8 h-8 rounded border border-slate-600"
-              style={{ backgroundColor: color.hex }}
-              title={`${color.hex} (${Math.round(color.percentage)}%)`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <p className="text-xs text-slate-400 mb-1">Suggested Palette</p>
-        <div className="grid grid-cols-4 gap-1 text-[10px]">
-          <div className="flex flex-col items-center">
-            <div
-              className="w-6 h-6 rounded border border-slate-600"
-              style={{ backgroundColor: colors.palette.primary }}
-            />
-            <span className="text-slate-500">Primary</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className="w-6 h-6 rounded border border-slate-600"
-              style={{ backgroundColor: colors.palette.secondary }}
-            />
-            <span className="text-slate-500">Second</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className="w-6 h-6 rounded border border-slate-600"
-              style={{ backgroundColor: colors.palette.accent }}
-            />
-            <span className="text-slate-500">Accent</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className="w-6 h-6 rounded border border-slate-600"
-              style={{ backgroundColor: colors.palette.background }}
-            />
-            <span className="text-slate-500">BG</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={onDismiss}
-          className="flex-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
-        >
-          Dismiss
-        </button>
-        <button
-          onClick={onApply}
-          className="flex-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
-        >
-          Apply Colors
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Confirmation dialog component
- */
-function ConfirmDialog({
-  isOpen,
-  title,
-  message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  onConfirm,
-  onCancel,
-  variant = 'warning',
-}: {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  variant?: 'warning' | 'danger' | 'info';
-}) {
-  if (!isOpen) return null;
-
-  const variantStyles = {
-    warning: 'bg-yellow-600 hover:bg-yellow-500',
-    danger: 'bg-red-600 hover:bg-red-500',
-    info: 'bg-blue-600 hover:bg-blue-500',
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 rounded-xl shadow-2xl max-w-md w-full mx-4 border border-slate-700">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-          <p className="text-slate-300 text-sm">{message}</p>
-        </div>
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-700">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`px-4 py-2 text-white rounded-lg font-medium transition-colors ${variantStyles[variant]}`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Draft recovery banner
- */
-function DraftRecoveryBanner({
-  onRecover,
-  onDiscard,
-}: {
-  onRecover: () => void;
-  onDiscard: () => void;
-}) {
-  return (
-    <div className="bg-blue-500/20 border-b border-blue-500/30 px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <svg
-          className="w-5 h-5 text-blue-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <span className="text-sm text-blue-200">
-          You have an unsaved draft from a previous session
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onDiscard}
-          className="px-3 py-1.5 text-sm text-slate-300 hover:text-white transition-colors"
-        >
-          Discard
-        </button>
-        <button
-          onClick={onRecover}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          Recover Draft
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Message bubble component with error retry support
- */
-function MessageBubble({
-  message,
-  onRetry,
-}: {
-  message: LayoutMessage;
-  onRetry?: (messageId: string) => void;
-}) {
-  const isUser = message.role === 'user';
-  const isSystem = message.role === 'system';
-  const hasError = message.error && !isUser;
-  const canRetry = hasError && message.error?.canRetry;
-
-  if (isSystem) return null;
-
-  // Get error icon based on error type
-  const getErrorIcon = () => {
-    switch (message.error?.type) {
-      case 'network':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"
-            />
-          </svg>
-        );
-      case 'rate_limit':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        );
-      case 'server':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
-            />
-          </svg>
-        );
-      default:
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        );
-    }
-  };
-
-  return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-      <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-          isUser
-            ? 'bg-blue-600 text-white'
-            : hasError
-              ? 'bg-red-500/20 border border-red-500/30 text-slate-100'
-              : 'bg-slate-700 text-slate-100'
-        }`}
-      >
-        {/* Show error header if present */}
-        {hasError && (
-          <div className="flex items-center gap-2 text-red-400 text-xs font-medium mb-2">
-            {getErrorIcon()}
-            <span>Error</span>
-          </div>
-        )}
-
-        {/* Show selected element indicator if present */}
-        {message.selectedElement && (
-          <div className="text-xs opacity-70 mb-2 flex items-center gap-1">
-            <span>Selected:</span>
-            <span className="font-medium">{message.selectedElement}</span>
-          </div>
-        )}
-
-        {/* Show attached snapshot indicator */}
-        {message.previewSnapshot && (
-          <div className="text-xs opacity-70 mb-2 flex items-center gap-1">
-            <span>Attached preview snapshot</span>
-          </div>
-        )}
-
-        {/* Message content */}
-        <div
-          className={`text-sm whitespace-pre-wrap leading-relaxed ${hasError ? 'text-red-200' : ''}`}
-        >
-          {message.isRetrying ? (
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Retrying...
-            </span>
-          ) : (
-            message.content
-          )}
-        </div>
-
-        {/* Retry button for errors */}
-        {canRetry && !message.isRetrying && onRetry && (
-          <button
-            onClick={() => onRetry(message.id)}
-            className="mt-3 px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 text-red-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            Retry
-          </button>
-        )}
-
-        {/* Timestamp */}
-        <div
-          className={`text-xs mt-2 ${isUser ? 'text-blue-200' : hasError ? 'text-red-300/70' : 'text-slate-400'}`}
-        >
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Suggested actions bar
- */
-function SuggestedActionsBar({
-  actions,
-  onAction,
-}: {
-  actions: SuggestedAction[];
-  onAction: (action: string) => void;
-}) {
-  if (actions.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-slate-700">
-      {actions.map((action, i) => (
-        <button
-          key={i}
-          onClick={() => onAction(action.action)}
-          className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition-colors flex items-center gap-1.5"
-        >
-          {action.icon && <span>{action.icon}</span>}
-          {action.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Recent changes indicator
- */
-function RecentChangesIndicator({ changes }: { changes: DesignChange[] }) {
-  if (changes.length === 0) return null;
-
-  return (
-    <div className="px-4 py-2 bg-green-500/10 border-t border-green-500/20">
-      <div className="text-xs text-green-400 font-medium mb-1">Recent Changes:</div>
-      <div className="space-y-1">
-        {changes.slice(0, 3).map((change, i) => (
-          <div key={i} className="text-xs text-green-300/80">
-            {change.property}: {String(change.oldValue)} → {String(change.newValue)}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Template picker component for quick start
- */
-function TemplatePicker({
-  isOpen,
-  onSelect,
-  onClose,
-}: {
-  isOpen: boolean;
-  onSelect: (template: DesignTemplate) => void;
-  onClose: () => void;
-}) {
-  if (!isOpen) return null;
-
-  const getCategoryIcon = (category: DesignTemplate['category']) => {
-    switch (category) {
-      case 'business':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
-          </svg>
-        );
-      case 'creative':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-            />
-          </svg>
-        );
-      case 'commerce':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-        );
-      case 'utility':
-        return (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-        );
-    }
-  };
-
-  return (
-    <div className="absolute inset-0 bg-slate-900/95 z-20 flex flex-col">
-      <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-white">Choose a Template</h3>
-          <p className="text-sm text-slate-400">Start with a pre-designed layout</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-2 text-slate-400 hover:text-white transition-colors"
-          aria-label="Close template picker"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 gap-4">
-          {DESIGN_TEMPLATES.map((template) => (
-            <button
-              key={template.id}
-              onClick={() => onSelect(template)}
-              className="text-left p-4 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-500 hover:bg-slate-750 transition-all group"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-slate-400 group-hover:text-blue-400 transition-colors">
-                  {getCategoryIcon(template.category)}
-                </span>
-                <span className="text-sm font-medium text-white">{template.name}</span>
-              </div>
-              <p className="text-xs text-slate-400 line-clamp-2">{template.description}</p>
-              <div className="mt-3 flex items-center gap-2">
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    template.design.basePreferences?.colorScheme === 'dark'
-                      ? 'bg-slate-700 text-slate-300'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  {template.design.basePreferences?.colorScheme}
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
-                  {template.design.basePreferences?.layout}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="p-4 border-t border-slate-700">
-        <button
-          onClick={onClose}
-          className="w-full py-2 text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          Skip and start from scratch
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Chat input component
- */
-function ChatInput({
-  onSend,
-  onCapture,
-  isLoading,
-  isCapturing,
-  hasSelection,
-}: {
-  onSend: (text: string, includeCapture: boolean) => void;
-  onCapture: () => void;
-  isLoading: boolean;
-  isCapturing: boolean;
-  hasSelection: boolean;
-}) {
-  const [input, setInput] = useState('');
-  const [includeCapture, setIncludeCapture] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.trim() || includeCapture) {
-      onSend(input, includeCapture);
-      setInput('');
-      setIncludeCapture(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="border-t border-slate-700 p-4">
-      {/* Capture toggle */}
-      <div className="flex items-center gap-2 mb-3">
-        <button
-          type="button"
-          onClick={() => setIncludeCapture(!includeCapture)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            includeCapture
-              ? 'bg-blue-600 text-white'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-          }`}
-        >
-          {includeCapture ? 'Attached' : 'Attach Preview'}
-        </button>
-
-        <button
-          type="button"
-          onClick={onCapture}
-          disabled={isCapturing}
-          className="px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-sm font-medium transition-colors flex items-center gap-1.5"
-        >
-          {isCapturing ? (
-            <>
-              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Capturing...
-            </>
-          ) : (
-            'Capture Now'
-          )}
-        </button>
-
-        {hasSelection && (
-          <span className="text-xs text-blue-400 ml-auto">
-            Element selected - AI will see it highlighted
-          </span>
-        )}
-      </div>
-
-      {/* Input area */}
-      <div className="flex gap-2">
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Describe what you'd like to change..."
-          className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none focus:border-blue-500 transition-colors"
-          rows={2}
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          disabled={isLoading || (!input.trim() && !includeCapture)}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
-        >
-          {isLoading ? '...' : 'Send'}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -892,9 +240,52 @@ export function LayoutBuilderWizard({
   // Toast notifications
   const { toasts, success, error, info, dismiss } = useToast();
 
-  // Confirmation dialog state
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const [showApplyConfirm, setShowApplyConfirm] = useState(false);
+  // Panel visibility state (from Zustand store)
+  const {
+    showCloseConfirm,
+    showApplyConfirm,
+    showExtractedColors,
+    showTemplatePicker,
+    showVersionHistory,
+    showExportMenu,
+    showComparisonView,
+    showAnimationPanel,
+    showSpecSheetPanel,
+    showGridOverlay,
+    showKeyboardShortcuts,
+    showCodePreview,
+    showComponentLibrary,
+    showArchitectureTemplates,
+    showAnimationTimeline,
+    showBreakpointEditor,
+    showDarkModeEditor,
+    showLayerPanel,
+    showPerformanceReport,
+    setPanel,
+    initTemplatePicker,
+  } = useLayoutPanelStore();
+
+  // Convenience setters using store actions
+  const setShowCloseConfirm = (v: boolean) => setPanel('closeConfirm', v);
+  const setShowApplyConfirm = (v: boolean) => setPanel('applyConfirm', v);
+  const setShowExtractedColors = (v: boolean) => setPanel('extractedColors', v);
+  const setShowTemplatePicker = (v: boolean) => setPanel('templatePicker', v);
+  const setShowVersionHistory = (v: boolean) => setPanel('versionHistory', v);
+  const setShowExportMenu = (v: boolean) => setPanel('exportMenu', v);
+  const setShowComparisonView = (v: boolean) => setPanel('comparisonView', v);
+  const setShowAnimationPanel = (v: boolean) => setPanel('animationPanel', v);
+  const setShowSpecSheetPanel = (v: boolean) => setPanel('specSheetPanel', v);
+  // useCallback for setters passed as props to child components
+  const setShowGridOverlay = useCallback((v: boolean) => setPanel('gridOverlay', v), [setPanel]);
+  const setShowKeyboardShortcuts = (v: boolean) => setPanel('keyboardShortcuts', v);
+  const setShowCodePreview = (v: boolean) => setPanel('codePreview', v);
+  const setShowComponentLibrary = (v: boolean) => setPanel('componentLibrary', v);
+  const setShowArchitectureTemplates = (v: boolean) => setPanel('architectureTemplates', v);
+  const setShowAnimationTimeline = (v: boolean) => setPanel('animationTimeline', v);
+  const setShowBreakpointEditor = (v: boolean) => setPanel('breakpointEditor', v);
+  const setShowDarkModeEditor = (v: boolean) => setPanel('darkModeEditor', v);
+  const setShowLayerPanel = (v: boolean) => setPanel('layerPanel', v);
+  const setShowPerformanceReport = (v: boolean) => setPanel('performanceReport', v);
 
   // Loading states for async operations
   const [isSaving, setIsSaving] = useState(false);
@@ -902,21 +293,10 @@ export function LayoutBuilderWizard({
 
   // Extracted colors from reference image
   const [extractedColors, setExtractedColors] = useState<ExtractionResult | null>(null);
-  const [showExtractedColors, setShowExtractedColors] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
-
-  // Template picker state - show on first open when only greeting message
-  const [showTemplatePicker, setShowTemplatePicker] = useState(messages.length <= 1);
-
-  // Version history panel state
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-
-  // Export menu state
-  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Pixel-perfect mode state
   const [analysisMode, setAnalysisMode] = useState<'standard' | 'pixel-perfect'>('standard');
-  const [showComparisonView, setShowComparisonView] = useState(false);
   const [pixelPerfectAnalysis, _setPixelPerfectAnalysis] = useState<CompleteDesignAnalysis | null>(
     null
   );
@@ -926,25 +306,9 @@ export function LayoutBuilderWizard({
   const [_videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [isProcessingVideo, setIsProcessingVideo] = useState(false);
 
-  // New panel states for integrated components
+  // Animation detection data
   const [detectedAnimations, setDetectedAnimations] = useState<DetectedAnimation[]>([]);
-  const [showAnimationPanel, setShowAnimationPanel] = useState(false);
-  const [showSpecSheetPanel, setShowSpecSheetPanel] = useState(false);
   const [showReferenceMediaPanel, _setShowReferenceMediaPanel] = useState(true);
-  const [showGridOverlay, setShowGridOverlay] = useState(false);
-  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
-  const [showCodePreview, setShowCodePreview] = useState(false);
-
-  // Component library and architecture blueprints state
-  const [showComponentLibrary, setShowComponentLibrary] = useState(false);
-  const [showArchitectureTemplates, setShowArchitectureTemplates] = useState(false);
-
-  // Advanced panel states
-  const [showAnimationTimeline, setShowAnimationTimeline] = useState(false);
-  const [showBreakpointEditor, setShowBreakpointEditor] = useState(false);
-  const [showDarkModeEditor, setShowDarkModeEditor] = useState(false);
-  const [showLayerPanel, setShowLayerPanel] = useState(false);
-  const [showPerformanceReport, setShowPerformanceReport] = useState(false);
 
   // Data states for advanced features
   const [customAnimation, setCustomAnimation] = useState<CustomAnimation | null>(null);
@@ -988,6 +352,11 @@ export function LayoutBuilderWizard({
       setVisibleMessageCount(MESSAGES_PAGE_SIZE);
     }
   }, [messages.length]);
+
+  // Initialize template picker on first open (when only greeting message)
+  useEffect(() => {
+    initTemplatePicker(messages.length <= 1);
+  }, [messages.length, initTemplatePicker]);
 
   // Handle close with confirmation
   const handleClose = useCallback(() => {
@@ -1094,7 +463,7 @@ export function LayoutBuilderWizard({
       // '?' to toggle keyboard shortcuts (Shift + /)
       if (e.key === '?' && !isInputField) {
         e.preventDefault();
-        setShowKeyboardShortcuts((prev) => !prev);
+        setShowKeyboardShortcuts(!showKeyboardShortcuts);
       }
 
       // 'Escape' to close panels
