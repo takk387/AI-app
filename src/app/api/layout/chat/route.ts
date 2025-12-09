@@ -20,6 +20,7 @@ import type {
   SuggestedAction,
   CompleteDesignAnalysis,
   QuickAnalysis,
+  DesignContext,
 } from '@/types/layoutDesign';
 import {
   matchDesignPattern,
@@ -704,6 +705,93 @@ function generateSuggestedActions(
 }
 
 // ============================================================================
+// CONTEXT EXTRACTION
+// ============================================================================
+
+/**
+ * Extract design context from user message
+ * Detects purpose, target users, and requirements from natural language
+ */
+function extractDesignContext(
+  userMessage: string,
+  existingContext?: DesignContext
+): DesignContext | null {
+  const context: DesignContext = { ...existingContext };
+  let hasNewContext = false;
+
+  // Purpose detection patterns
+  const purposePatterns = [
+    /(?:building|creating|designing|making|working on)\s+(?:a|an|the)?\s*([^,.]+?)(?:\s+(?:for|aimed|targeted|designed)|\s*[,.]|$)/i,
+    /(?:this is|it's|its)\s+(?:a|an|the)?\s*([^,.]+?)(?:\s+(?:for|aimed)|\s*[,.]|$)/i,
+    /(?:app|site|website|platform|dashboard|portal|store|shop)\s+(?:for|about|to)\s+([^,.]+)/i,
+  ];
+
+  for (const pattern of purposePatterns) {
+    const match = userMessage.match(pattern);
+    if (match && match[1] && match[1].length > 3 && match[1].length < 100) {
+      const purpose = match[1].trim();
+      // Avoid matching design-related terms
+      if (!/^(modern|dark|light|minimal|clean|professional)/i.test(purpose)) {
+        context.purpose = purpose;
+        hasNewContext = true;
+        break;
+      }
+    }
+  }
+
+  // Target users detection patterns
+  const userPatterns = [
+    /(?:for|aimed at|targeting|designed for|meant for)\s+([^,.]+?)(?:\s+(?:who|that|and)|\s*[,.]|$)/i,
+    /(?:users?|audience|customers?|clients?)\s+(?:are|will be|include)\s+([^,.]+)/i,
+    /(?:small business|enterprise|developers?|designers?|teams?|professionals?|students?|creators?)/i,
+  ];
+
+  for (const pattern of userPatterns) {
+    const match = userMessage.match(pattern);
+    if (match) {
+      const users = match[1] ? match[1].trim() : match[0].trim();
+      if (users.length > 2 && users.length < 100) {
+        context.targetUsers = users;
+        hasNewContext = true;
+        break;
+      }
+    }
+  }
+
+  // Requirements detection
+  const requirementPatterns = [
+    { pattern: /mobile[- ]?first/i, req: 'Mobile-first' },
+    { pattern: /accessible|accessibility|a11y/i, req: 'Accessible' },
+    { pattern: /fast|performance|speed/i, req: 'Fast loading' },
+    { pattern: /premium|luxury|high[- ]?end/i, req: 'Premium feel' },
+    { pattern: /simple|minimal|clean/i, req: 'Simple & clean' },
+    { pattern: /professional|corporate|business/i, req: 'Professional' },
+    { pattern: /playful|fun|friendly/i, req: 'Playful' },
+    { pattern: /dark\s*mode/i, req: 'Dark mode' },
+    { pattern: /responsive/i, req: 'Responsive' },
+  ];
+
+  const requirements = new Set(existingContext?.requirements || []);
+  for (const { pattern, req } of requirementPatterns) {
+    if (pattern.test(userMessage)) {
+      requirements.add(req);
+      hasNewContext = true;
+    }
+  }
+
+  if (requirements.size > 0) {
+    context.requirements = Array.from(requirements);
+  }
+
+  if (hasNewContext) {
+    context.lastUpdated = new Date().toISOString();
+    return context;
+  }
+
+  return null;
+}
+
+// ============================================================================
 // MAIN HANDLER
 // ============================================================================
 
@@ -912,6 +1000,12 @@ export async function POST(request: Request) {
       Object.assign(updatedDesign, analysisDesign);
     }
 
+    // Extract design context from user message (auto-detection)
+    const extractedContext = extractDesignContext(message, currentDesign.designContext);
+    if (extractedContext) {
+      updatedDesign.designContext = extractedContext;
+    }
+
     const result: LayoutChatResponse = {
       message: assistantMessage,
       updatedDesign,
@@ -931,6 +1025,8 @@ export async function POST(request: Request) {
       // Include pixel-perfect analysis results if available
       pixelPerfectAnalysis: pixelPerfectAnalysis || undefined,
       quickAnalysis: quickAnalysisResult || undefined,
+      // Include extracted context if detected from user message
+      extractedContext: extractedContext || undefined,
     };
 
     return NextResponse.json(result);

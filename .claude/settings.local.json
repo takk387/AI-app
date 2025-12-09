@@ -39,7 +39,10 @@
       "Bash(curl:*)",
       "Bash(git -C \"c:\\AI-app\" diff --stat)",
       "Bash(npx eslint:*)",
-      "Bash(git -C \"c:\\Users\\takk3\\Desktop\\AI-APP-BUILDER\" status --short)"
+      "Bash(git -C \"c:\\Users\\takk3\\Desktop\\AI-APP-BUILDER\" status --short)",
+      "Bash(git -C \"c:\\AI-app\" status --short)",
+      "Bash(git -C \"c:\\AI-app\" add -A)",
+      "Bash(git -C \"c:\\AI-app\" commit -m \"$(cat <<''EOF''\nfeat(layout-builder): integrate architecture blueprints and component library\n\n- Add ArchitectureTemplatePicker component for selecting app architecture blueprints\n- Add ComponentLibraryPanel with 30+ pre-defined UI component patterns\n- Add componentPatterns.ts data file with navigation, content, forms, data, feedback, and commerce patterns\n- Hook up Blueprints button in Layout Builder header toolbar\n- Add Component Library toggle button below suggested actions\n- Create handlers for architecture template and component pattern selection\n- Fix TypeScript types with DeepPartial for nested partial layout configs\n- Map architecture templates to layout designs with category-specific styling\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

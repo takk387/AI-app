@@ -275,6 +275,20 @@ You'll receive the current LayoutDesign state with each message. Reference it wh
 5. **White Space** - Don't crowd elements unnecessarily
 6. **Accessibility** - Maintain sufficient color contrast
 
+## CONTEXT EXTRACTION
+
+When the user mentions what they're building or who it's for, extract this context to improve future suggestions.
+
+**Listen for:**
+- App/site purpose: "I'm building an e-commerce store", "this is a dashboard for...", "creating a portfolio"
+- Target users: "for developers", "aimed at small business owners", "for healthcare professionals"
+- Requirements: "needs to be mobile-first", "must be accessible", "should feel premium"
+
+**When you detect context, acknowledge it naturally:**
+"Got it, I'll keep in mind that this is for [purpose] aimed at [users]."
+
+This context helps you make more relevant design suggestions without the user having to repeat themselves.
+
 ## ENDING POINTS
 
 When the design is complete:
@@ -294,10 +308,23 @@ export function generateDesignContext(design: Partial<LayoutDesign>): string {
   const spacing = design.globalStyles?.spacing;
   const effects = design.globalStyles?.effects;
   const structure = design.structure;
+  const designContext = design.designContext;
+
+  let contextSection = '';
+  if (designContext?.purpose || designContext?.targetUsers || designContext?.requirements?.length) {
+    contextSection = `
+**User Context (previously extracted):**
+${designContext.purpose ? `- Purpose: ${designContext.purpose}` : ''}
+${designContext.targetUsers ? `- Target Users: ${designContext.targetUsers}` : ''}
+${designContext.requirements?.length ? `- Requirements: ${designContext.requirements.join(', ')}` : ''}
+
+Use this context to inform your design suggestions.
+`;
+  }
 
   return `
 ## CURRENT DESIGN STATE
-
+${contextSection}
 **Layout Type:** ${structure?.type || 'single-page'}
 - Has Header: ${structure?.hasHeader ?? true}
 - Has Sidebar: ${structure?.hasSidebar ?? false}

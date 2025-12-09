@@ -35,8 +35,17 @@ import type {
   SpacingSettings,
 } from '@/types/layoutDesign';
 import type { UIPreferences } from '@/types/appConcept';
-import { DESIGN_TEMPLATES, type DesignTemplate } from '@/data/designTemplates';
+import {
+  DESIGN_TEMPLATES,
+  type DesignTemplate,
+  mapArchitectureToLayout,
+  generateArchitecturePrompt,
+} from '@/data/designTemplates';
 import { VersionHistoryPanel } from '@/components/VersionHistoryPanel';
+import { ComponentLibraryPanel } from '@/components/ComponentLibraryPanel';
+import { ArchitectureTemplatePicker } from '@/components/ArchitectureTemplatePicker';
+import type { ComponentPattern } from '@/data/componentPatterns';
+import type { FullTemplate } from '@/types/architectureTemplates';
 import {
   exportToCSSVariables,
   exportToTailwindConfig,
@@ -868,6 +877,10 @@ export function LayoutBuilderWizard({
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
 
+  // Component library and architecture blueprints state
+  const [showComponentLibrary, setShowComponentLibrary] = useState(false);
+  const [showArchitectureTemplates, setShowArchitectureTemplates] = useState(false);
+
   // Analysis progress hook
   const analysisProgress = useAnalysisProgress();
 
@@ -1225,6 +1238,33 @@ export function LayoutBuilderWizard({
     [updateDesign, success]
   );
 
+  // Handle architecture template selection (from App Concept blueprints)
+  const handleArchitectureTemplateSelect = useCallback(
+    (template: FullTemplate) => {
+      // Map the architecture template to layout design
+      const layoutDesign = mapArchitectureToLayout(template);
+      updateDesign(layoutDesign as Partial<LayoutDesign>);
+      setShowArchitectureTemplates(false);
+
+      // Generate and send an initial message based on the template
+      const initialPrompt = generateArchitecturePrompt(template);
+      sendMessage(initialPrompt);
+
+      success(`Applied "${template.name}" architecture blueprint`);
+    },
+    [updateDesign, sendMessage, success]
+  );
+
+  // Handle component pattern selection (sends suggested message to chat)
+  const handleComponentPatternSelect = useCallback(
+    (pattern: ComponentPattern) => {
+      // Send the suggested message to the chat
+      sendMessage(pattern.suggestedMessage);
+      setShowComponentLibrary(false);
+    },
+    [sendMessage]
+  );
+
   // Handle export - JSON (original)
   const handleExportJSON = useCallback(() => {
     exportDesign(false);
@@ -1532,6 +1572,23 @@ export function LayoutBuilderWizard({
               />
             </svg>
             Templates
+          </button>
+
+          {/* Architecture Blueprints button */}
+          <button
+            onClick={() => setShowArchitectureTemplates(true)}
+            className="px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2"
+            title="Choose an architecture blueprint"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+            Blueprints
           </button>
 
           {/* Pixel-Perfect Mode Toggle */}
@@ -1949,6 +2006,13 @@ export function LayoutBuilderWizard({
             onClose={() => setShowTemplatePicker(false)}
           />
 
+          {/* Architecture Template Picker Overlay */}
+          <ArchitectureTemplatePicker
+            isOpen={showArchitectureTemplates}
+            onSelect={handleArchitectureTemplateSelect}
+            onClose={() => setShowArchitectureTemplates(false)}
+          />
+
           {/* Messages */}
           <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {/* Load more button for older messages */}
@@ -2003,6 +2067,34 @@ export function LayoutBuilderWizard({
 
           {/* Suggested actions */}
           <SuggestedActionsBar actions={suggestedActions} onAction={handleAction} />
+
+          {/* Component Library Panel */}
+          {showComponentLibrary && (
+            <ComponentLibraryPanel
+              onSelectPattern={handleComponentPatternSelect}
+              onClose={() => setShowComponentLibrary(false)}
+            />
+          )}
+
+          {/* Component Library Toggle (when collapsed) */}
+          {!showComponentLibrary && (
+            <div className="px-4 py-2 border-t border-slate-700/50">
+              <button
+                onClick={() => setShowComponentLibrary(true)}
+                className="w-full px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  />
+                </svg>
+                Browse Component Patterns
+              </button>
+            </div>
+          )}
 
           {/* Reference Media Panel - Unified image & video uploads */}
           {showReferenceMediaPanel && (
