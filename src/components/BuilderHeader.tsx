@@ -33,7 +33,6 @@ export interface BuilderHeaderProps {
   appVersion?: string;
 
   // AI Builder workflow props
-  onPlanApp?: () => void;
   onWizard?: () => void;
   onLayoutBuilder?: () => void;
   onPhasedBuild?: () => void;
@@ -97,7 +96,6 @@ interface MobileMenuProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   isSaving?: boolean;
-  onPlanApp?: () => void;
   onWizard?: () => void;
   onLayoutBuilder?: () => void;
   onPhasedBuild?: () => void;
@@ -125,7 +123,6 @@ function MobileMenu({
   currentView,
   onViewChange,
   isSaving,
-  onPlanApp,
   onWizard,
   onLayoutBuilder,
   onPhasedBuild,
@@ -214,18 +211,6 @@ function MobileMenu({
               >
                 <WandIcon size={16} />
                 Wizard
-              </button>
-            )}
-            {onPlanApp && (
-              <button
-                onClick={() => {
-                  onPlanApp();
-                  onClose();
-                }}
-                className="w-full linear-btn-secondary justify-start"
-              >
-                <RocketIcon size={16} />
-                Plan App
               </button>
             )}
             {hasAppConcept && onPhasedBuild && (
@@ -411,7 +396,6 @@ export function BuilderHeader({
   onHelp,
   isSaving = false,
   appVersion = '1.0.0',
-  onPlanApp,
   onWizard,
   onLayoutBuilder,
   onPhasedBuild,
@@ -499,13 +483,11 @@ export function BuilderHeader({
           />
 
           <BuildDropdown
-            showPlanApp={!!onPlanApp}
             showPhasedBuild={!!hasAppConcept && !!onPhasedBuild}
             showPhasesToggle={!!isPhasedMode && !!onTogglePhasedPanel}
             showVersionHistory={!!versionCount && versionCount > 0 && !!onShowHistory}
             isPhasedMode={showPhasedBuildPanel}
             versionCount={versionCount}
-            onPlanApp={onPlanApp}
             onPhasedBuild={onPhasedBuild}
             onTogglePhases={onTogglePhasedPanel}
             onVersionHistory={onShowHistory}
@@ -602,7 +584,6 @@ export function BuilderHeader({
         currentView={currentView}
         onViewChange={onViewChange}
         isSaving={isSaving}
-        onPlanApp={onPlanApp}
         onWizard={onWizard}
         onLayoutBuilder={onLayoutBuilder}
         onPhasedBuild={onPhasedBuild}

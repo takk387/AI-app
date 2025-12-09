@@ -2,11 +2,10 @@
 
 import React from 'react';
 import { HeaderDropdown, DropdownItem } from '../ui/HeaderDropdown';
-import { LayersIcon, RocketIcon, HistoryIcon, ToggleLeftIcon, ToggleRightIcon } from '../ui/Icons';
+import { LayersIcon, HistoryIcon, ToggleLeftIcon, ToggleRightIcon } from '../ui/Icons';
 
 interface BuildDropdownProps {
   // Conditional visibility props
-  showPlanApp?: boolean;
   showPhasedBuild?: boolean;
   showPhasesToggle?: boolean;
   showVersionHistory?: boolean;
@@ -16,35 +15,22 @@ interface BuildDropdownProps {
   versionCount?: number;
 
   // Action handlers
-  onPlanApp?: () => void;
   onPhasedBuild?: () => void;
   onTogglePhases?: () => void;
   onVersionHistory?: () => void;
 }
 
 export const BuildDropdown: React.FC<BuildDropdownProps> = ({
-  showPlanApp = false,
   showPhasedBuild = false,
   showPhasesToggle = false,
   showVersionHistory = false,
   isPhasedMode = false,
   versionCount = 0,
-  onPlanApp,
   onPhasedBuild,
   onTogglePhases,
   onVersionHistory,
 }) => {
   const items: DropdownItem[] = [];
-
-  // Plan App (conditional)
-  if (showPlanApp && onPlanApp) {
-    items.push({
-      id: 'plan-app',
-      label: 'Plan App',
-      icon: <RocketIcon size={16} />,
-      onClick: onPlanApp,
-    });
-  }
 
   // Phased Build (conditional)
   if (showPhasedBuild && onPhasedBuild) {

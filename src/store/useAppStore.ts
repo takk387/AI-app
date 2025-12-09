@@ -129,7 +129,6 @@ interface UISlice {
   showDeploymentModal: boolean;
   showCompareModal: boolean;
   showNewAppStagingModal: boolean;
-  showConceptWizard: boolean;
   showConversationalWizard: boolean;
   showLayoutBuilder: boolean;
   showSettings: boolean;
@@ -148,7 +147,6 @@ interface UISlice {
   setShowDeploymentModal: (show: boolean) => void;
   setShowCompareModal: (show: boolean) => void;
   setShowNewAppStagingModal: (show: boolean) => void;
-  setShowConceptWizard: (show: boolean) => void;
   setShowConversationalWizard: (show: boolean) => void;
   setShowLayoutBuilder: (show: boolean) => void;
   setShowSettings: (show: boolean) => void;
@@ -359,7 +357,6 @@ export const useAppStore = create<AppState>()(
       showDeploymentModal: false,
       showCompareModal: false,
       showNewAppStagingModal: false,
-      showConceptWizard: false,
       showConversationalWizard: false,
       showLayoutBuilder: false,
       showSettings: false,
@@ -377,7 +374,6 @@ export const useAppStore = create<AppState>()(
       setShowDeploymentModal: (show) => set({ showDeploymentModal: show }),
       setShowCompareModal: (show) => set({ showCompareModal: show }),
       setShowNewAppStagingModal: (show) => set({ showNewAppStagingModal: show }),
-      setShowConceptWizard: (show) => set({ showConceptWizard: show }),
       setShowConversationalWizard: (show) => set({ showConversationalWizard: show }),
       setShowLayoutBuilder: (show) => set({ showLayoutBuilder: show }),
       setShowSettings: (show) => set({ showSettings: show }),
@@ -549,7 +545,6 @@ export const useUIState = () =>
       showDeploymentModal: state.showDeploymentModal,
       showCompareModal: state.showCompareModal,
       showNewAppStagingModal: state.showNewAppStagingModal,
-      showConceptWizard: state.showConceptWizard,
       showConversationalWizard: state.showConversationalWizard,
       showLayoutBuilder: state.showLayoutBuilder,
       showSettings: state.showSettings,

@@ -21,7 +21,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { ChatPanel } from './ChatPanel';
 import { PreviewPanel } from './PreviewPanel';
 import { ToastProvider } from './Toast';
-import AppConceptWizard from './AppConceptWizard';
 import NaturalConversationWizard from './NaturalConversationWizard';
 import LayoutBuilderWizard from './LayoutBuilderWizard';
 import SettingsPage from './SettingsPage';
@@ -218,8 +217,6 @@ export default function AIBuilder() {
     setShowCompareModal,
     showNewAppStagingModal,
     setShowNewAppStagingModal,
-    showConceptWizard,
-    setShowConceptWizard,
     showConversationalWizard,
     setShowConversationalWizard,
     showLayoutBuilder,
@@ -730,30 +727,6 @@ export default function AIBuilder() {
       setNewAppStagePlan(stagePlan);
     },
     [setChatMessages, setImplementationPlan, setNewAppStagePlan]
-  );
-
-  // Handle concept wizard completion
-  const handleConceptComplete = useCallback(
-    (concept: AppConcept) => {
-      setAppConcept(concept);
-      setShowConceptWizard(false);
-
-      const welcomeMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content:
-          `✨ **App Concept Created: "${concept.name}"**\n\n` +
-          `**Description:** ${concept.description}\n\n` +
-          `**Target Users:** ${concept.targetUsers}\n\n` +
-          `**Features:** ${concept.coreFeatures.length} defined\n\n` +
-          `I'm now generating your implementation plan...`,
-        timestamp: new Date().toISOString(),
-      };
-      setChatMessages((prev) => [...prev, welcomeMessage]);
-
-      generateImplementationPlan(concept);
-    },
-    [setAppConcept, setShowConceptWizard, setChatMessages, generateImplementationPlan]
   );
 
   // Handle natural wizard completion with dynamic phase plan
@@ -1899,7 +1872,6 @@ export default function AIBuilder() {
           onHelp={() => {
             /* Could open help modal */
           }}
-          onPlanApp={() => setShowConceptWizard(true)}
           onWizard={() => setActiveView('wizard')}
           onLayoutBuilder={() => setActiveView('layout')}
           onPhasedBuild={() => setActiveView('build')}
@@ -2241,13 +2213,6 @@ export default function AIBuilder() {
           }}
           currentComponent={currentComponent}
         />
-
-        {showConceptWizard && (
-          <AppConceptWizard
-            onComplete={handleConceptComplete}
-            onCancel={() => setShowConceptWizard(false)}
-          />
-        )}
 
         {showConversationalWizard && (
           <NaturalConversationWizard
