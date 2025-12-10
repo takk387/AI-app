@@ -1,0 +1,2 @@
+echo "Running ESLint before push..."
+npm run lint
