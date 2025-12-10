@@ -1099,7 +1099,6 @@ export function LayoutBuilderWizard({
             onOpenAnimationTimeline={() => setShowAnimationTimeline(true)}
             onOpenLayerPanel={() => setShowLayerPanel(true)}
             onOpenDarkModeEditor={() => setShowDarkModeEditor(true)}
-            onOpenBreakpointEditor={() => setShowBreakpointEditor(true)}
             onOpenPerformanceReport={() => setShowPerformanceReport(true)}
           />
 

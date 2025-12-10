@@ -44,11 +44,13 @@ function LayerGroupHeader({
   isExpanded,
   onToggle,
   layerCount,
+  showUseCases,
 }: {
   group: LayerGroup;
   isExpanded: boolean;
   onToggle: () => void;
   layerCount: number;
+  showUseCases: boolean;
 }) {
   const info = LAYER_GROUP_INFO[group];
 
@@ -66,7 +68,9 @@ function LayerGroupHeader({
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: info.color }} />
-      <span className="text-xs font-medium text-slate-300">{info.name}</span>
+      <span className="text-xs font-medium text-slate-300">
+        {showUseCases ? info.useCase : info.name}
+      </span>
       <span className="text-[10px] text-slate-500 ml-auto">
         z: {info.zRange[0]}-{info.zRange[1]}
       </span>
@@ -318,6 +322,7 @@ export function LayerPanel({
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showUseCases, setShowUseCases] = useState(true); // Default to friendly names for new users
 
   // Group layers
   const groupedLayers = useMemo(() => groupLayers(layers), [layers]);
@@ -436,12 +441,26 @@ export function LayerPanel({
           <span className="text-sm font-medium text-slate-300">Layers</span>
           <span className="text-xs text-slate-500">({layers.length})</span>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
-        >
-          + Add
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Use Case / Technical Toggle */}
+          <button
+            onClick={() => setShowUseCases(!showUseCases)}
+            className={`text-[10px] px-2 py-1 rounded transition-colors ${
+              showUseCases
+                ? 'bg-purple-600/30 text-purple-300 hover:bg-purple-600/40'
+                : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+            }`}
+            title={showUseCases ? 'Show technical names' : 'Show use cases'}
+          >
+            {showUseCases ? 'Use Cases' : 'Technical'}
+          </button>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+          >
+            + Add
+          </button>
+        </div>
       </div>
 
       {/* Conflicts warning */}
@@ -474,6 +493,7 @@ export function LayerPanel({
                 isExpanded={expandedGroups.has(group)}
                 onToggle={() => toggleGroup(group)}
                 layerCount={groupLayerList.length}
+                showUseCases={showUseCases}
               />
               {expandedGroups.has(group) && (
                 <div className="pl-2">

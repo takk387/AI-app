@@ -51,14 +51,14 @@ export const DEFAULT_Z_INDEX_SCALE: ZIndexScale = {
 
 export const LAYER_GROUP_INFO: Record<
   LayerGroup,
-  { name: string; color: string; zRange: [number, number] }
+  { name: string; useCase: string; color: string; zRange: [number, number] }
 > = {
-  base: { name: 'Base', color: '#64748B', zRange: [0, 9] },
-  content: { name: 'Content', color: '#3B82F6', zRange: [1, 9] },
-  overlay: { name: 'Overlay', color: '#8B5CF6', zRange: [30, 39] },
-  modal: { name: 'Modal', color: '#EC4899', zRange: [40, 49] },
-  toast: { name: 'Toast', color: '#F59E0B', zRange: [50, 59] },
-  tooltip: { name: 'Tooltip', color: '#10B981', zRange: [60, 99] },
+  base: { name: 'Base', useCase: 'Background & Footer', color: '#64748B', zRange: [0, 9] },
+  content: { name: 'Content', useCase: 'Main Page Elements', color: '#3B82F6', zRange: [1, 9] },
+  overlay: { name: 'Overlay', useCase: 'Sidebars & Backdrops', color: '#8B5CF6', zRange: [30, 39] },
+  modal: { name: 'Modal', useCase: 'Dialogs & Drawers', color: '#EC4899', zRange: [40, 49] },
+  toast: { name: 'Toast', useCase: 'Notifications & Alerts', color: '#F59E0B', zRange: [50, 59] },
+  tooltip: { name: 'Tooltip', useCase: 'Help Text & Popovers', color: '#10B981', zRange: [60, 99] },
 };
 
 export const DEFAULT_LAYERS: LayerDefinition[] = [
