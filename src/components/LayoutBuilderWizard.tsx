@@ -16,7 +16,6 @@ import { DesignControlPanel } from '@/components/DesignControlPanel';
 import { AnalysisProgressIndicator } from '@/components/AnalysisProgressIndicator';
 import { DesignComparison } from '@/components/DesignComparison';
 import { ToastContainer } from '@/components/ui/Toast';
-import { ReferenceMediaPanel } from '@/components/ReferenceMediaPanel';
 import { SpecSheetPanel } from '@/components/SpecSheetPanel';
 import { AnimationPanel } from '@/components/AnimationPanel';
 import { CodePreviewPanel } from '@/components/CodePreviewPanel';
@@ -86,6 +85,7 @@ import {
   TemplatesMenu,
   ToolsMenu,
   DesignSidePanel,
+  MediaUploadZone,
 } from '@/components/layout-builder';
 import { useLayoutPanelStore } from '@/stores/useLayoutPanelStore';
 
@@ -201,7 +201,7 @@ export function LayoutBuilderWizard({
   isOpen,
   onClose,
   onApplyToAppConcept,
-  isFullPage = false,
+  isFullPage = true,
 }: LayoutBuilderWizardProps) {
   // State for generated backgrounds (from DALL-E) - declared early for handler reference
   const [generatedBackgrounds, setGeneratedBackgrounds] = useState<
@@ -1374,10 +1374,10 @@ export function LayoutBuilderWizard({
             </div>
           )}
 
-          {/* Reference Media Panel - Unified image & video uploads */}
+          {/* Unified Media Upload Zone - Auto-detects image/video with mode selector */}
           {showReferenceMediaPanel && (
-            <div className="border-t border-slate-700 max-h-64 overflow-hidden">
-              <ReferenceMediaPanel
+            <div className="border-t border-slate-700">
+              <MediaUploadZone
                 onImageUpload={(dataUrl) => {
                   addReferenceImage(dataUrl);
                   // Auto-enable pixel-perfect mode when image is added
@@ -1385,14 +1385,51 @@ export function LayoutBuilderWizard({
                     setAnalysisMode('pixel-perfect');
                   }
                 }}
-                onVideoUpload={(file) => {
-                  // Process video directly
+                onVideoUpload={(file, mode) => {
+                  // Set analysis mode based on user selection, then process
+                  setAnalysisMode(mode);
                   processVideoFile(file);
                 }}
-                onRemoveMedia={(index) => removeReferenceImage(index)}
-                maxImages={5}
-                className="h-full"
+                analysisMode={analysisMode}
+                onAnalysisModeChange={setAnalysisMode}
+                compact={true}
               />
+              {/* Reference Images Preview */}
+              {referenceImages.length > 0 && (
+                <div className="px-3 pb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs text-slate-400">
+                      Reference Images ({referenceImages.length})
+                    </span>
+                    <button
+                      onClick={() => {
+                        // Clear all reference images
+                        referenceImages.forEach((_, i) => removeReferenceImage(i));
+                      }}
+                      className="text-xs text-slate-500 hover:text-red-400"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto">
+                    {referenceImages.map((img, i) => (
+                      <div key={i} className="relative group flex-shrink-0">
+                        <img
+                          src={img}
+                          alt={`Reference ${i + 1}`}
+                          className="w-16 h-12 object-cover rounded border border-slate-600"
+                        />
+                        <button
+                          onClick={() => removeReferenceImage(i)}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {/* Hidden file inputs for fallback */}

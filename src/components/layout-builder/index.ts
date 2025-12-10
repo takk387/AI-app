@@ -12,3 +12,4 @@ export { ChatInput } from './ChatInput';
 export { TemplatesMenu } from './TemplatesMenu';
 export { ToolsMenu } from './ToolsMenu';
 export { DesignSidePanel } from './DesignSidePanel';
+export { MediaUploadZone } from './MediaUploadZone';
