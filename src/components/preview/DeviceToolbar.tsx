@@ -90,24 +90,6 @@ function DeviceSelector({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-56 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-[200] overflow-hidden">
-          {/* Responsive (no device) option */}
-          <button
-            onClick={() => {
-              onSelect('none');
-              setIsOpen(false);
-            }}
-            className={`w-full px-3 py-2 text-left text-sm hover:bg-zinc-700 transition-colors flex items-center gap-2 ${
-              !currentDeviceId || currentDeviceId === 'none'
-                ? 'bg-blue-600/20 text-blue-300'
-                : 'text-white'
-            }`}
-          >
-            <span>🔲</span>
-            <span>Responsive</span>
-          </button>
-
-          <div className="h-px bg-zinc-700" />
-
           {categoryOrder.map((category) => (
             <div key={category}>
               <div className="px-3 py-1.5 text-xs font-medium text-zinc-400 bg-zinc-900/50">

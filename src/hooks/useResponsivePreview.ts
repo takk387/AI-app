@@ -88,10 +88,10 @@ const DEVICE_PRESETS: DevicePreset[] = [
 
 const DEFAULT_STATE: ResponsivePreviewState = {
   width: 1280,
-  height: 'auto',
+  height: 800,
   orientation: 'portrait',
   activeBreakpoint: null,
-  devicePreset: null,
+  devicePreset: 'laptop',
 };
 
 // ============================================================================

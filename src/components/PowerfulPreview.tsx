@@ -53,8 +53,6 @@ export default function PowerfulPreview({
   const isMobileOrTablet =
     devicePreset && ['iphone-se', 'iphone-14', 'ipad', 'ipad-pro'].includes(devicePreset);
   const shouldEnableTouchSimulation = enableTouchSimulation && isMobileOrTablet;
-  // Only center the preview for mobile/tablet device frames - everything else fills container
-  const shouldCenterDevice = isMobileOrTablet && showDeviceFrame;
   // Parse JSON with error handling to prevent crashes
   const appData = useMemo((): FullAppData | null => {
     try {
@@ -229,14 +227,8 @@ h1, h2, h3, h4, h5, h6 {
           externalResources: ['https://cdn.tailwindcss.com'],
         }}
       >
-        {/* Main preview area - center only for mobile/tablet device frames, fill for everything else */}
-        <div
-          className={`flex-1 flex flex-col bg-zinc-950 overflow-auto relative ${
-            shouldCenterDevice
-              ? 'items-center justify-center p-4' // Mobile/tablet device frames: centered
-              : 'p-0' // Responsive, desktop, laptop: fill container
-          }`}
-        >
+        {/* Main preview area - always centered */}
+        <div className="flex-1 flex flex-col bg-zinc-950 overflow-auto relative items-center justify-center p-4">
           {/* Full-stack warning badge */}
           {appData.appType === 'FULL_STACK' && (
             <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
@@ -244,40 +236,14 @@ h1, h2, h3, h4, h5, h6 {
             </div>
           )}
 
-          {/* Device frame with touch simulation - for mobile/tablet only */}
-          {showDeviceFrame && isMobileOrTablet ? (
-            <TouchSimulator
-              enabled={shouldEnableTouchSimulation}
-              iframeSelector=".sp-preview-iframe"
+          {/* All devices render through DeviceFrame */}
+          <TouchSimulator enabled={shouldEnableTouchSimulation} iframeSelector=".sp-preview-iframe">
+            <DeviceFrame
+              device={(devicePreset as DeviceType) || 'laptop'}
+              orientation={orientation}
+              width={previewWidth}
+              height={previewHeight === 'auto' ? 800 : previewHeight}
             >
-              <DeviceFrame
-                device={devicePreset as DeviceType}
-                orientation={orientation}
-                width={previewWidth}
-                height={previewHeight}
-              >
-                <SandpackLayout
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    border: 'none',
-                    borderRadius: 0,
-                  }}
-                >
-                  <SandpackPreview
-                    showOpenInCodeSandbox={false}
-                    showRefreshButton={false}
-                    style={{
-                      height: '100%',
-                      width: '100%',
-                    }}
-                  />
-                </SandpackLayout>
-              </DeviceFrame>
-            </TouchSimulator>
-          ) : (
-            /* Responsive, Desktop, Laptop - fill entire container */
-            <div className="w-full h-full bg-white">
               <SandpackLayout
                 style={{
                   height: '100%',
@@ -295,8 +261,8 @@ h1, h2, h3, h4, h5, h6 {
                   }}
                 />
               </SandpackLayout>
-            </div>
-          )}
+            </DeviceFrame>
+          </TouchSimulator>
         </div>
 
         {/* Console side panel */}
