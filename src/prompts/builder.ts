@@ -53,6 +53,40 @@ CRITICAL REMINDERS:
 }
 
 /**
+ * Quality enforcement guidelines included in all builder prompts
+ */
+const QUALITY_ENFORCEMENT = `
+## CODE ORGANIZATION REQUIREMENTS
+
+**Component Structure:**
+- Group imports: React first, then libraries, then local imports, then types
+- Define component props interface directly above the component
+- Declare all hooks at the top of the component function
+- Define event handlers before the return statement
+- Keep JSX clean - extract complex logic to variables or functions above
+
+**File Organization:**
+- src/components/ - React components
+- src/components/ui/ - Reusable UI primitives (Button, Input, etc.)
+- src/hooks/ - Custom React hooks
+- src/types/ - TypeScript interfaces and types
+- src/utils/ - Utility functions and helpers
+- src/lib/ - External service configurations
+
+**Type Safety:**
+- Define interfaces for all component props
+- Export types for reuse across the codebase
+- Avoid 'any' type - use specific types or 'unknown' with type guards
+- Use consistent naming: ComponentProps, FormData, ApiResponse
+
+**Error Prevention:**
+- Add try-catch for async operations
+- Include loading states for data fetching
+- Handle empty states with user-friendly messages
+- Validate inputs before processing
+`.trim();
+
+/**
  * Build system prompt for full-app route
  * Combines: base rules + frontend + fullstack + examples + design tokens
  */
@@ -60,7 +94,8 @@ export function buildFullAppPrompt(
   baseInstructions: string,
   includeImageContext: boolean = false,
   isModification: boolean = false,
-  layoutDesign?: LayoutDesign
+  layoutDesign?: LayoutDesign,
+  qualityPromptAdditions?: string
 ): string {
   const imageContext = includeImageContext
     ? `
@@ -93,12 +128,18 @@ ${buildDesignTokenPrompt(layoutDesign)}
 `
     : '';
 
+  // Include quality prompt additions if provided (learned patterns, structure requirements)
+  const qualityContext = qualityPromptAdditions ? `\n${qualityPromptAdditions}\n` : '';
+
   return `${baseInstructions}
 ${imageContext}
 ${modificationContext ? '\n' + modificationContext + '\n' : ''}
 ${designTokenContext}
 
 ${ACCURACY_GUIDELINES}
+
+${QUALITY_ENFORCEMENT}
+${qualityContext}
 
 ${COMPONENT_SYNTAX_RULES}
 
@@ -118,6 +159,7 @@ REMEMBER:
 - Complete code (never truncate mid-line/tag/string)
 - ${layoutDesign ? 'Use CSS variables from design system (var(--color-*), etc.)' : 'Tailwind CSS for styling'}
 - Include setup instructions
+- Follow the code organization structure above
 `.trim();
 }
 

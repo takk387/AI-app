@@ -38,6 +38,12 @@ import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
 import { getCodeContextService, CodeContextService } from './CodeContextService';
 import type { CodeContextSnapshot } from '@/types/codeContext';
 import {
+  BuildQualityEnforcer,
+  type PreGenerationContext,
+  type PreGenerationResult,
+  type AppStructureType,
+} from './BuildQualityEnforcer';
+import {
   borderRadiusMap,
   shadowMap,
   blurMap,
@@ -848,9 +854,20 @@ export class PhaseExecutionManager {
   private qualityReports: Map<number, QualityReport> = new Map();
   private reviewStrictness: ReviewStrictness = 'standard';
 
+  // Build quality enforcement
+  private qualityEnforcer: BuildQualityEnforcer;
+
   constructor(plan: DynamicPhasePlan) {
     this.plan = plan;
     this.phaseGenerator = new DynamicPhaseGenerator();
+
+    // Initialize quality enforcer with appropriate app type
+    const appType: AppStructureType = plan.concept.technical.needsDatabase
+      ? plan.concept.uiPreferences?.layout === 'dashboard'
+        ? 'DASHBOARD'
+        : 'FULL_STACK'
+      : 'FRONTEND_ONLY';
+    this.qualityEnforcer = new BuildQualityEnforcer('standard', appType);
 
     // Initialize from plan if available
     if (plan.accumulatedFilesRich) {
@@ -1457,6 +1474,154 @@ export class PhaseExecutionManager {
    */
   getRawGeneratedFiles(): Array<{ path: string; content: string }> {
     return [...this.rawGeneratedFiles];
+  }
+
+  // ==========================================================================
+  // BUILD QUALITY ENFORCEMENT API
+  // ==========================================================================
+
+  /**
+   * Get the quality enforcer instance
+   */
+  getQualityEnforcer(): BuildQualityEnforcer {
+    return this.qualityEnforcer;
+  }
+
+  /**
+   * Run pre-generation checks before executing a phase
+   * Returns warnings and suggestions to include in the prompt
+   */
+  runPreGenerationChecks(phaseNumber: number): PreGenerationResult {
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
+    if (!phase) {
+      return {
+        passed: false,
+        warnings: [`Phase ${phaseNumber} not found`],
+        suggestions: [],
+        requiredActions: [],
+      };
+    }
+
+    const appType: AppStructureType = this.plan.concept.technical.needsDatabase
+      ? this.plan.concept.uiPreferences?.layout === 'dashboard'
+        ? 'DASHBOARD'
+        : 'FULL_STACK'
+      : 'FRONTEND_ONLY';
+
+    const context: PreGenerationContext = {
+      phaseNumber,
+      phaseName: phase.name,
+      features: phase.features,
+      existingFiles: this.accumulatedFiles,
+      appType,
+      layoutDesign: !!this.plan.concept.layoutDesign,
+    };
+
+    return this.qualityEnforcer.runPreGenerationChecks(context);
+  }
+
+  /**
+   * Run post-generation validations after phase completion
+   * Checks for structural issues, consistency, and best practices
+   */
+  runPostGenerationValidations(phaseNumber: number): {
+    passed: boolean;
+    issues: Array<{ file: string; message: string; suggestion: string; line?: number }>;
+    summary: string;
+  } {
+    const phaseFiles = this.getPhaseFiles(phaseNumber);
+    if (phaseFiles.length === 0) {
+      return {
+        passed: true,
+        issues: [],
+        summary: 'No files to validate',
+      };
+    }
+
+    const reviewFiles: ReviewFile[] = phaseFiles.map((f) => ({
+      path: f.path,
+      content: f.content,
+      language: this.getFileLanguage(f.path),
+    }));
+
+    return this.qualityEnforcer.runPostGenerationValidations(reviewFiles);
+  }
+
+  /**
+   * Get quality-enhanced prompt additions for a phase
+   * Includes folder structure guidelines and learned patterns
+   */
+  getQualityPromptAdditions(): string {
+    // Include pattern feedback from previous quality issues
+    const patternFeedback = this.qualityEnforcer.getPatternFeedbackForPrompt();
+
+    // Include structure and organization guidelines
+    const structurePrompt = this.qualityEnforcer.generateStructurePrompt();
+    const codeOrgPrompt = this.qualityEnforcer.generateCodeOrganizationPrompt();
+
+    return `
+${patternFeedback}
+
+${structurePrompt}
+
+${codeOrgPrompt}
+`.trim();
+  }
+
+  /**
+   * Record quality feedback from a report to improve future generations
+   */
+  recordQualityFeedback(report: QualityReport): void {
+    this.qualityEnforcer.recordPatternFeedback(report);
+  }
+
+  /**
+   * Validate the entire build plan before execution
+   */
+  validateBuildPlan(): {
+    isValid: boolean;
+    warnings: string[];
+    recommendations: string[];
+  } {
+    return this.qualityEnforcer.validatePlan(this.plan);
+  }
+
+  /**
+   * Generate a summary for a completed phase including quality metrics
+   */
+  generatePhaseSummary(phaseNumber: number): string {
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
+    if (!phase) {
+      return `Phase ${phaseNumber} not found`;
+    }
+
+    const phaseFiles = this.getPhaseFiles(phaseNumber);
+    const reviewFiles: ReviewFile[] = phaseFiles.map((f) => ({
+      path: f.path,
+      content: f.content,
+      language: this.getFileLanguage(f.path),
+    }));
+
+    const qualityReport = this.qualityReports.get(phaseNumber);
+    return this.qualityEnforcer.generatePhaseSummary(phase, reviewFiles, qualityReport || undefined);
+  }
+
+  /**
+   * Get folder structure recommendations for the current app type
+   */
+  getFolderStructureRecommendations(): {
+    description: string;
+    structure: string[];
+    requiredFiles: string[];
+    guidelines: string[];
+  } {
+    const structure = this.qualityEnforcer.getFolderStructure();
+    return {
+      description: structure.description,
+      structure: [...structure.structure],
+      requiredFiles: [...structure.requiredFiles],
+      guidelines: [...structure.guidelines],
+    };
   }
 }
 
