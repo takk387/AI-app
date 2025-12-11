@@ -2,6 +2,8 @@
 
 import React, { useMemo, useEffect, useCallback } from 'react';
 import { SandpackProvider, SandpackPreview, SandpackLayout } from '@codesandbox/sandpack-react';
+import { DeviceFrame, TouchSimulator, ConsolePanel } from './preview';
+import type { DeviceType } from './preview/DeviceFrame';
 
 interface AppFile {
   path: string;
@@ -22,13 +24,49 @@ interface PowerfulPreviewProps {
   appDataJson: string;
   isFullscreen?: boolean;
   onCaptureReady?: (captureFunc: () => Promise<string | null>) => void;
+  // New responsive preview props
+  devicePreset?: string | null;
+  orientation?: 'portrait' | 'landscape';
+  scale?: number;
+  previewWidth?: number;
+  previewHeight?: number | 'auto';
+  showDeviceFrame?: boolean;
+  enableTouchSimulation?: boolean;
+  showConsole?: boolean;
+  onConsoleToggle?: () => void;
 }
 
 export default function PowerfulPreview({
   appDataJson,
   isFullscreen = false,
   onCaptureReady,
+  // Responsive preview props with defaults
+  devicePreset = null,
+  orientation = 'portrait',
+  scale = 1,
+  previewWidth = 1280,
+  previewHeight = 'auto',
+  showDeviceFrame = true,
+  enableTouchSimulation = true,
+  showConsole = false,
+  onConsoleToggle,
 }: PowerfulPreviewProps) {
+  // Determine if touch simulation should be active (mobile/tablet devices only)
+  const isMobileOrTablet =
+    devicePreset &&
+    [
+      'iphone-se',
+      'iphone-14',
+      'iphone-14-pro-max',
+      'pixel-7',
+      'galaxy-s23',
+      'ipad-mini',
+      'ipad-air',
+      'ipad-pro-11',
+      'ipad-pro-12',
+      'surface-pro',
+    ].includes(devicePreset);
+  const shouldEnableTouchSimulation = enableTouchSimulation && isMobileOrTablet;
   // Parse JSON with error handling to prevent crashes
   const appData = useMemo((): FullAppData | null => {
     try {
@@ -183,7 +221,7 @@ h1, h2, h3, h4, h5, h6 {
 
   return (
     <div
-      className="w-full h-full flex flex-col"
+      className="w-full h-full flex"
       style={{
         minHeight: isFullscreen ? '100vh' : '600px',
         height: isFullscreen ? '100vh' : '100%',
@@ -203,30 +241,91 @@ h1, h2, h3, h4, h5, h6 {
           externalResources: ['https://cdn.tailwindcss.com'],
         }}
       >
-        <SandpackLayout
-          style={{
-            height: '100%',
-            width: '100%',
-            minHeight: isFullscreen ? '100vh' : '600px',
-            flex: 1,
-          }}
-        >
-          <SandpackPreview
-            showOpenInCodeSandbox={false}
-            showRefreshButton={true}
-            style={{
-              height: '100%',
-              width: '100%',
-              minHeight: isFullscreen ? '100vh' : '600px',
-            }}
-          />
-        </SandpackLayout>
+        {/* Main preview area */}
+        <div className="flex-1 flex items-center justify-center bg-zinc-950 overflow-auto p-4 relative">
+          {/* Full-stack warning badge */}
+          {appData.appType === 'FULL_STACK' && (
+            <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
+              ⚠️ Preview mode: Backend features disabled
+            </div>
+          )}
 
-        {appData.appType === 'FULL_STACK' && (
-          <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
-            ⚠️ Preview mode: Backend features disabled
-          </div>
-        )}
+          {/* Device frame with touch simulation */}
+          {showDeviceFrame && devicePreset && devicePreset !== 'none' ? (
+            <TouchSimulator
+              enabled={shouldEnableTouchSimulation}
+              iframeSelector=".sp-preview-iframe"
+            >
+              <DeviceFrame
+                device={devicePreset as DeviceType}
+                orientation={orientation}
+                scale={scale}
+                width={previewWidth}
+                height={previewHeight}
+              >
+                <SandpackLayout
+                  style={{
+                    height: '100%',
+                    width: '100%',
+                    border: 'none',
+                    borderRadius: 0,
+                  }}
+                >
+                  <SandpackPreview
+                    showOpenInCodeSandbox={false}
+                    showRefreshButton={false}
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                    }}
+                  />
+                </SandpackLayout>
+              </DeviceFrame>
+            </TouchSimulator>
+          ) : (
+            /* No device frame - responsive/desktop mode */
+            <div
+              className="bg-white rounded-lg overflow-hidden shadow-2xl transition-all duration-300"
+              style={{
+                width: previewWidth * scale,
+                height: previewHeight === 'auto' ? '100%' : (previewHeight as number) * scale,
+                maxWidth: '100%',
+                maxHeight: '100%',
+              }}
+            >
+              <div
+                style={{
+                  width: previewWidth,
+                  height: previewHeight === 'auto' ? '100%' : previewHeight,
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <SandpackLayout
+                  style={{
+                    height: '100%',
+                    width: '100%',
+                    border: 'none',
+                    borderRadius: 0,
+                  }}
+                >
+                  <SandpackPreview
+                    showOpenInCodeSandbox={false}
+                    showRefreshButton={true}
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                      minHeight: isFullscreen ? '100vh' : '600px',
+                    }}
+                  />
+                </SandpackLayout>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Console side panel */}
+        <ConsolePanel isOpen={showConsole} onToggle={onConsoleToggle || (() => {})} />
       </SandpackProvider>
     </div>
   );

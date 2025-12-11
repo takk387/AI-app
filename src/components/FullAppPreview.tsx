@@ -4,6 +4,9 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import PowerfulPreview from './PowerfulPreview';
 import { useToast } from './Toast';
+import { DeviceToolbar } from './preview';
+import { useResponsivePreview } from '@/hooks/useResponsivePreview';
+import { useSettings } from '@/hooks/useSettings';
 
 interface AppFile {
   path: string;
@@ -34,6 +37,58 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
   const [captureSuccess, setCaptureSuccess] = useState(false);
   const captureFunc = useRef<(() => Promise<string | null>) | null>(null);
   const { showToast } = useToast();
+
+  // Responsive preview state
+  const {
+    state: responsiveState,
+    devicePresets,
+    breakpoints,
+    currentBreakpointName,
+    selectDevicePreset,
+    toggleOrientation,
+    setScale,
+    setWidth,
+    resetToDefault,
+  } = useResponsivePreview();
+
+  // Local state for console and device frame visibility
+  // Initialize from user settings and sync changes back
+  const { settings, updatePreviewSettings } = useSettings();
+  const [showConsole, setShowConsole] = useState(false); // Start collapsed, will sync on mount
+  const [showDeviceFrame, setShowDeviceFrame] = useState(true);
+
+  // Sync showConsole with settings on mount (but start collapsed per user request)
+  // User can expand it and the preference will be remembered
+  useEffect(() => {
+    // We start collapsed, but if user has previously set showConsole to true in settings,
+    // we could honor that. For now, keeping collapsed as default per request.
+  }, [settings.preview.showConsole]);
+
+  // Toggle console panel and persist to settings
+  const handleToggleConsole = useCallback(() => {
+    setShowConsole((prev) => {
+      const newValue = !prev;
+      updatePreviewSettings({ showConsole: newValue });
+      return newValue;
+    });
+  }, [updatePreviewSettings]);
+
+  // Toggle device frame
+  const handleToggleDeviceFrame = useCallback(() => {
+    setShowDeviceFrame((prev) => !prev);
+  }, []);
+
+  // Handle device selection
+  const handleSelectDevice = useCallback(
+    (deviceId: string) => {
+      if (deviceId === 'none') {
+        resetToDefault();
+      } else {
+        selectDevicePreset(deviceId);
+      }
+    },
+    [selectDevicePreset, resetToDefault]
+  );
 
   // Handle capture function from PowerfulPreview
   const handleCaptureReady = useCallback((fn: () => Promise<string | null>) => {
@@ -185,6 +240,25 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
         </div>
       )}
 
+      {/* Device Toolbar for fullscreen mode */}
+      {activeTab === 'preview' && (
+        <DeviceToolbar
+          state={responsiveState}
+          devicePresets={devicePresets}
+          breakpoints={breakpoints}
+          currentBreakpointName={currentBreakpointName}
+          showConsole={showConsole}
+          showDeviceFrame={showDeviceFrame}
+          onSelectDevice={handleSelectDevice}
+          onToggleOrientation={toggleOrientation}
+          onSetScale={setScale}
+          onSetWidth={setWidth}
+          onResetToDefault={resetToDefault}
+          onToggleConsole={handleToggleConsole}
+          onToggleDeviceFrame={handleToggleDeviceFrame}
+        />
+      )}
+
       {/* Content area */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'preview' ? (
@@ -193,6 +267,15 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
               appDataJson={appDataJson}
               isFullscreen={true}
               onCaptureReady={handleCaptureReady}
+              devicePreset={responsiveState.devicePreset}
+              orientation={responsiveState.orientation}
+              scale={responsiveState.scale}
+              previewWidth={responsiveState.width}
+              previewHeight={responsiveState.height}
+              showDeviceFrame={showDeviceFrame}
+              enableTouchSimulation={true}
+              showConsole={showConsole}
+              onConsoleToggle={handleToggleConsole}
             />
           </div>
         ) : (
@@ -261,41 +344,72 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
 
   // Normal (non-fullscreen) content - shows the preview with a fullscreen button
   const normalContent = (
-    <div className="h-full w-full relative">
-      <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
-        {/* Capture for AI button */}
-        <button
-          onClick={handleCapture}
-          disabled={isCapturing}
-          className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20 disabled:opacity-50"
-          title="Capture for AI"
-        >
-          {isCapturing ? (
-            <span className="text-lg animate-spin">⟳</span>
-          ) : captureSuccess ? (
-            <span className="text-lg text-green-400">✓</span>
-          ) : (
-            <span className="text-lg">📷</span>
-          )}
-          <span className="text-sm font-medium">
-            {isCapturing ? 'Capturing...' : captureSuccess ? 'Captured!' : 'Capture'}
-          </span>
-        </button>
-        {/* Fullscreen button */}
-        <button
-          onClick={() => setIsFullscreen(true)}
-          className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
-          title="Enter Fullscreen"
-        >
-          <span className="text-lg">⤢</span>
-          <span className="text-sm font-medium">Fullscreen</span>
-        </button>
-      </div>
-      <PowerfulPreview
-        appDataJson={appDataJson}
-        isFullscreen={false}
-        onCaptureReady={handleCaptureReady}
+    <div className="h-full w-full flex flex-col relative">
+      {/* Device Toolbar */}
+      <DeviceToolbar
+        state={responsiveState}
+        devicePresets={devicePresets}
+        breakpoints={breakpoints}
+        currentBreakpointName={currentBreakpointName}
+        showConsole={showConsole}
+        showDeviceFrame={showDeviceFrame}
+        onSelectDevice={handleSelectDevice}
+        onToggleOrientation={toggleOrientation}
+        onSetScale={setScale}
+        onSetWidth={setWidth}
+        onResetToDefault={resetToDefault}
+        onToggleConsole={handleToggleConsole}
+        onToggleDeviceFrame={handleToggleDeviceFrame}
       />
+
+      {/* Preview area */}
+      <div className="flex-1 relative min-h-0">
+        {/* Floating action buttons */}
+        <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
+          {/* Capture for AI button */}
+          <button
+            onClick={handleCapture}
+            disabled={isCapturing}
+            className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20 disabled:opacity-50"
+            title="Capture for AI"
+          >
+            {isCapturing ? (
+              <span className="text-lg animate-spin">⟳</span>
+            ) : captureSuccess ? (
+              <span className="text-lg text-green-400">✓</span>
+            ) : (
+              <span className="text-lg">📷</span>
+            )}
+            <span className="text-sm font-medium">
+              {isCapturing ? 'Capturing...' : captureSuccess ? 'Captured!' : 'Capture'}
+            </span>
+          </button>
+          {/* Fullscreen button */}
+          <button
+            onClick={() => setIsFullscreen(true)}
+            className="px-4 py-2 rounded-lg bg-black/80 hover:bg-black text-white backdrop-blur-sm transition-all flex items-center gap-2 shadow-xl border border-white/20"
+            title="Enter Fullscreen"
+          >
+            <span className="text-lg">⤢</span>
+            <span className="text-sm font-medium">Fullscreen</span>
+          </button>
+        </div>
+
+        <PowerfulPreview
+          appDataJson={appDataJson}
+          isFullscreen={false}
+          onCaptureReady={handleCaptureReady}
+          devicePreset={responsiveState.devicePreset}
+          orientation={responsiveState.orientation}
+          scale={responsiveState.scale}
+          previewWidth={responsiveState.width}
+          previewHeight={responsiveState.height}
+          showDeviceFrame={showDeviceFrame}
+          enableTouchSimulation={true}
+          showConsole={showConsole}
+          onConsoleToggle={handleToggleConsole}
+        />
+      </div>
     </div>
   );
 
