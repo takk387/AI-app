@@ -231,7 +231,7 @@ h1, h2, h3, h4, h5, h6 {
       >
         {/* Main preview area - center only for mobile/tablet device frames, fill for everything else */}
         <div
-          className={`flex-1 flex bg-zinc-950 overflow-auto relative ${
+          className={`flex-1 flex flex-col bg-zinc-950 overflow-auto relative ${
             shouldCenterDevice
               ? 'items-center justify-center p-4' // Mobile/tablet device frames: centered
               : 'p-0' // Responsive, desktop, laptop: fill container
@@ -277,7 +277,7 @@ h1, h2, h3, h4, h5, h6 {
             </TouchSimulator>
           ) : (
             /* Responsive, Desktop, Laptop - fill entire container */
-            <div className="w-full h-full bg-white">
+            <div className="w-full flex-1 bg-white">
               <SandpackLayout
                 style={{
                   height: '100%',
