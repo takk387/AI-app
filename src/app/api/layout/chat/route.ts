@@ -29,6 +29,19 @@ import {
 } from '@/utils/designPatterns';
 import { parseDesignDescription } from '@/utils/designLanguageParser';
 import { DesignReplicator } from '@/services/designReplicator';
+// Context Compression (P0-P1 optimization)
+import {
+  compressConversation,
+  buildCompressedContext,
+  needsCompression,
+  getTruncationInfo,
+  buildTruncationNotice,
+  type CompressedContext,
+} from '@/utils/contextCompression';
+import type { ChatMessage } from '@/types/aiBuilderTypes';
+// Semantic Memory (P0-P1 Phase 7b)
+import { createSemanticMemory, extractDesignKeywords } from '@/utils/semanticMemory';
+import { createClient } from '@/utils/supabase/server';
 import { getDalleService, getImageCost } from '@/services/dalleService';
 import { getAnimationPreset, ANIMATION_PRESETS } from '@/data/animationPresets';
 import {
@@ -2385,6 +2398,7 @@ export async function POST(request: Request) {
       referenceImages,
       analysisMode = 'standard',
       requestedAnalysis,
+      memoriesContext: clientMemoriesContext, // Cross-session memories from client (P0-P1 Phase 7b)
     } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -2422,11 +2436,54 @@ export async function POST(request: Request) {
       }
     }
 
-    // Build Claude messages from conversation history
+    // Build Claude messages from conversation history with smart compression (P0-P1)
     const messages: Anthropic.MessageParam[] = [];
 
+    // Token budget for conversation context (matches AIBuilder settings)
+    const MAX_CONTEXT_TOKENS = 100000;
+    const PRESERVE_LAST_N = 20;
+
+    // Convert LayoutMessage to ChatMessage format for compression
+    const chatMessages: ChatMessage[] = conversationHistory.map((msg, index) => ({
+      id: msg.id || `layout-msg-${index}`,
+      role: msg.role,
+      content: msg.content,
+      timestamp: typeof msg.timestamp === 'string' ? msg.timestamp : msg.timestamp.toISOString(),
+    }));
+
+    // Apply smart compression if needed
+    let processedMessages: ChatMessage[];
+    let truncationNotice = '';
+
+    if (needsCompression(chatMessages, MAX_CONTEXT_TOKENS)) {
+      const compressed = compressConversation(chatMessages, {
+        maxTokens: MAX_CONTEXT_TOKENS,
+        preserveLastN: PRESERVE_LAST_N,
+      });
+
+      // Get truncation info with topic extraction
+      const truncationInfo = getTruncationInfo(chatMessages, compressed);
+      truncationNotice = buildTruncationNotice(truncationInfo);
+
+      processedMessages = compressed.recentMessages;
+    } else {
+      // No compression needed, but still limit to last 50 messages as safety
+      processedMessages = chatMessages.slice(-50);
+      if (chatMessages.length > 50) {
+        truncationNotice = `⚠️ CONTEXT NOTICE: This conversation has ${chatMessages.length} total messages. You are seeing the 50 most recent. If you need details about earlier design decisions, ask the user to clarify rather than assuming.`;
+      }
+    }
+
+    // Add truncation notice if history was limited
+    if (truncationNotice) {
+      messages.push({
+        role: 'user',
+        content: truncationNotice,
+      });
+    }
+
     // Add conversation history
-    for (const msg of conversationHistory) {
+    for (const msg of processedMessages) {
       messages.push({
         role: msg.role === 'system' ? 'user' : msg.role,
         content: msg.content,
@@ -2509,6 +2566,11 @@ export async function POST(request: Request) {
         !!previewScreenshot,
         referenceImages?.length || 0
       );
+    }
+
+    // Add cross-session memories context to system prompt (P0-P1 Phase 7b)
+    if (clientMemoriesContext) {
+      systemPrompt += `\n\n## User Design Preferences (from past sessions)\n${clientMemoriesContext}`;
     }
 
     // Call Claude API with tools enabled

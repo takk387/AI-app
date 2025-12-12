@@ -10,6 +10,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { captureLayoutPreview, containsVisualKeywords } from '@/utils/screenshotCapture';
 import { LAYOUT_BUILDER_GREETING } from '@/prompts/layoutBuilderSystemPrompt';
 import { defaultLayoutDesign } from '@/types/layoutDesign';
+import { useSmartContext } from './useSmartContext';
 import type {
   LayoutDesign,
   LayoutMessage,
@@ -21,6 +22,7 @@ import type {
   DetectedAnimation,
 } from '@/types/layoutDesign';
 import type { UIPreferences, AppConcept } from '@/types/appConcept';
+import type { ChatMessage } from '@/types/aiBuilderTypes';
 
 // ============================================================================
 // CONSTANTS
@@ -375,6 +377,14 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
     setAppConcept,
   } = useAppStore();
 
+  // Semantic memory integration (P0-P1 Phase 7b)
+  const {
+    storeConversationMemories,
+    searchMemories,
+    isMemoryEnabled,
+    isInitialized: isMemoryInitialized,
+  } = useSmartContext();
+
   // Local state
   const [messages, setMessages] = useState<LayoutMessage[]>([
     {
@@ -532,6 +542,16 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
       setIsLoading(true);
 
       try {
+        // Search for relevant memories from past sessions (P0-P1 Phase 7b)
+        let memoriesContext = '';
+        if (isMemoryEnabled && isMemoryInitialized) {
+          try {
+            memoriesContext = await searchMemories(text);
+          } catch (memError) {
+            console.warn('[useLayoutBuilder] Failed to search memories:', memError);
+          }
+        }
+
         const request: LayoutChatRequest = {
           message: text,
           conversationHistory: messages,
@@ -539,6 +559,7 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           selectedElement: selectedElement || undefined,
           previewScreenshot: screenshot || undefined,
           referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+          memoriesContext: memoriesContext || undefined, // Include cross-session memories
         };
 
         const response = await fetch('/api/layout/chat', {
@@ -679,7 +700,18 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
         abortControllerRef.current = null;
       }
     },
-    [messages, design, selectedElement, referenceImages, lastCapture, capturePreview, historyIndex]
+    [
+      messages,
+      design,
+      selectedElement,
+      referenceImages,
+      lastCapture,
+      capturePreview,
+      historyIndex,
+      isMemoryEnabled,
+      isMemoryInitialized,
+      searchMemories,
+    ]
   );
 
   /**
@@ -875,6 +907,20 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
       clearDraftFromStorage();
       setLastSavedChangeCount(changeCount);
 
+      // Store conversation memories for cross-session recall (P0-P1 Phase 7b)
+      if (isMemoryEnabled && isMemoryInitialized) {
+        // Convert LayoutMessage[] to ChatMessage[] format for memory storage
+        const chatMessages: ChatMessage[] = messages
+          .filter((m) => m.role !== 'system')
+          .map((m, index) => ({
+            id: m.id || `layout-msg-${index}`,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.timestamp.toISOString(),
+          }));
+        storeConversationMemories(chatMessages);
+      }
+
       // Create version snapshot
       const versionId = generateVersionId();
       const newVersion: DesignVersion = {
@@ -898,12 +944,15 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
     [
       design,
       referenceImages,
-      messages.length,
+      messages,
       recentChanges,
       setCurrentLayoutDesign,
       addSavedLayoutDesign,
       changeCount,
       versionHistory.length,
+      isMemoryEnabled,
+      isMemoryInitialized,
+      storeConversationMemories,
     ]
   );
 

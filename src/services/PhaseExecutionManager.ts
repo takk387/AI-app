@@ -485,8 +485,16 @@ function formatCodeContextSnapshot(snapshot: CodeContextSnapshot): string {
 export function buildPhaseExecutionPrompt(context: PhaseExecutionContext): string {
   const isFirstPhase = context.phaseNumber === 1;
 
+  // Start with truncation notice if context was truncated
+  let prompt = '';
+  if (context.truncationNotice) {
+    prompt += `${context.truncationNotice}
+
+`;
+  }
+
   // Base context about the app
-  let prompt = `# Phase ${context.phaseNumber} of ${context.totalPhases}: ${context.phaseName}
+  prompt += `# Phase ${context.phaseNumber} of ${context.totalPhases}: ${context.phaseName}
 
 ## App Overview
 **Name:** ${context.appName}

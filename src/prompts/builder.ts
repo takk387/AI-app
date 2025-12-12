@@ -27,6 +27,19 @@ const ACCURACY_GUIDELINES = `
 - Complete all code - never truncate or leave placeholders
 - Test logic mentally before generating (will this actually work?)
 - Be realistic about complexity - simpler is often better
+
+### ANTI-HALLUCINATION RULES
+
+**If context seems incomplete:**
+- DO NOT invent or assume missing requirements or design details
+- DO NOT guess at undisclosed file contents or structure
+- If you need to import from a file not shown in context, list it explicitly as a needed dependency
+- If critical details are unclear, implement the simplest working version and note assumptions
+
+**When referencing existing code:**
+- Only import from files you can see in the provided context
+- If a file path is mentioned but content not shown, do NOT assume its exports
+- Flag any assumptions you are making about missing context in code comments
 `.trim();
 
 /**

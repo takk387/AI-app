@@ -30,7 +30,13 @@ export type MemoryType =
   | 'project'
   | 'feature'
   | 'style'
-  | 'error_solution';
+  | 'error_solution'
+  // Enhanced types for complex app building
+  | 'data_model'
+  | 'workflow'
+  | 'integration'
+  | 'constraint'
+  | 'api_contract';
 
 /**
  * Hierarchical memory category for organizing memories
@@ -281,6 +287,122 @@ export function extractKeywords(text: string): string[] {
 }
 
 /**
+ * Design-specific keyword sets for memory extraction (P0-P1 Phase 7b)
+ */
+const DESIGN_KEYWORDS = new Set([
+  // Colors
+  'primary',
+  'secondary',
+  'accent',
+  'background',
+  'text',
+  'border',
+  'dark',
+  'light',
+  'color',
+  'palette',
+  'scheme',
+  'theme',
+  // Typography
+  'font',
+  'typography',
+  'heading',
+  'body',
+  'sans',
+  'serif',
+  'mono',
+  'bold',
+  'light',
+  'regular',
+  'medium',
+  'weight',
+  // Layout
+  'layout',
+  'grid',
+  'flex',
+  'container',
+  'responsive',
+  'mobile',
+  'desktop',
+  'header',
+  'footer',
+  'sidebar',
+  'navigation',
+  'nav',
+  // Effects
+  'shadow',
+  'border',
+  'rounded',
+  'radius',
+  'animation',
+  'transition',
+  'hover',
+  'focus',
+  'blur',
+  'gradient',
+  // Style
+  'minimal',
+  'modern',
+  'clean',
+  'bold',
+  'vibrant',
+  'elegant',
+  'professional',
+  'style',
+  'aesthetic',
+  'look',
+  'feel',
+  // Spacing
+  'spacing',
+  'padding',
+  'margin',
+  'gap',
+  'compact',
+  'relaxed',
+]);
+
+/**
+ * Extract design-specific keywords from design changes or updates
+ * Used for storing design memories with relevant search terms
+ *
+ * @param designChanges - Object containing design property changes
+ * @returns Array of design-relevant keywords
+ */
+export function extractDesignKeywords(designChanges: Record<string, unknown>): string[] {
+  const keywords: string[] = [];
+
+  function extractFromValue(value: unknown, prefix = ''): void {
+    if (typeof value === 'string') {
+      // Extract color hex codes
+      const hexMatches = value.match(/#[0-9A-Fa-f]{3,6}/g);
+      if (hexMatches) {
+        keywords.push(...hexMatches);
+      }
+      // Extract design-related words
+      const words = value.toLowerCase().split(/[\s,_-]+/);
+      for (const word of words) {
+        if (DESIGN_KEYWORDS.has(word) || word.length > 2) {
+          keywords.push(prefix ? `${prefix}-${word}` : word);
+        }
+      }
+    } else if (typeof value === 'object' && value !== null) {
+      for (const [key, val] of Object.entries(value)) {
+        // Add the key itself if it's design-related
+        if (DESIGN_KEYWORDS.has(key.toLowerCase())) {
+          keywords.push(key.toLowerCase());
+        }
+        extractFromValue(val, key.toLowerCase());
+      }
+    }
+  }
+
+  extractFromValue(designChanges);
+
+  // Deduplicate and return
+  return [...new Set(keywords)].slice(0, 20);
+}
+
+/**
  * Calculate keyword similarity between query and memory
  *
  * @param queryKeywords - Keywords from search query
@@ -342,11 +464,45 @@ const MEMORY_PATTERNS: Record<MemoryType, RegExp[]> = {
     /(?:using|use|with)\s+(tailwind|css|styled-components|sass|less)/gi,
     /(?:color|colors|theme)\s*:\s*(.{5,40}?)(?:\.|,|$)/gi,
     /(?:font|typography)\s*:\s*(.{5,40}?)(?:\.|,|$)/gi,
+    // Design-specific patterns (P0-P1 Phase 7b)
+    /(?:prefer|like|want)\s+(?:a\s+)?(\w+)\s+(?:style|look|feel|aesthetic)/gi,
+    /(?:make it|should be|want it)\s+(more\s+)?(minimal|modern|clean|bold|vibrant|elegant|professional)/gi,
+    /(?:primary|main|brand)\s+color\s+(?:is|should be|:)\s*(#[0-9A-Fa-f]{3,6}|\w+)/gi,
+    /(?:background|bg)\s+(?:color)?\s*(?:is|should be|:)\s*(#[0-9A-Fa-f]{3,6}|\w+)/gi,
+    /(?:use|prefer|like)\s+(?:the\s+)?(\w+)\s+(?:font|typeface)/gi,
+    /(?:rounded|border-radius|corners)\s+(?:should be|:)?\s*(none|sm|md|lg|xl|full|\d+px)/gi,
+    /(?:shadow|drop-shadow)\s+(?:should be|:)?\s*(none|sm|md|lg|xl)/gi,
+    /(?:spacing|padding|margin)\s+(?:should be|:)?\s*(compact|normal|relaxed|tight|loose)/gi,
+    /(?:dark|light)\s+(?:mode|theme)/gi,
   ],
   error_solution: [
     /(?:fixed|solved|resolved)\s+(?:the|a|an)?\s*(.{5,100}?)(?:\.|,|$)/gi,
     /(?:error|bug|issue|problem)\s+(?:was|is)\s+(.{5,80}?)(?:\.|,|$)/gi,
     /(?:solution|fix|workaround)\s*:\s*(.{5,80}?)(?:\.|,|$)/gi,
+  ],
+  // New types for complex app building
+  data_model: [
+    /(?:model|entity|schema|table)\s+(?:for|called|named)?\s*(.{5,60}?)(?:\.|,|$)/gi,
+    /(?:fields?|columns?|properties)\s*:\s*(.{10,100}?)(?:\.|,|$)/gi,
+    /(?:relationship|foreign key|references)\s+(.{5,60}?)(?:\.|,|$)/gi,
+  ],
+  workflow: [
+    /(?:user|admin|customer)\s+(?:can|will|should)\s+(.{10,100}?)(?:\.|,|$)/gi,
+    /(?:when|if|after)\s+(.{10,60})\s+(?:then|the system)/gi,
+    /(?:flow|process|workflow)\s*:\s*(.{10,80}?)(?:\.|,|$)/gi,
+  ],
+  integration: [
+    /(?:integrate|connect|use)\s+(?:with)?\s*(api|service|third-party)?\s*(.{5,60}?)(?:\.|,|$)/gi,
+    /(?:api|endpoint|webhook)\s+(?:for|at)\s+(.{5,60}?)(?:\.|,|$)/gi,
+  ],
+  constraint: [
+    /(?:must|should|needs to|has to)\s+(.{10,80}?)(?:\.|,|$)/gi,
+    /(?:cannot|shouldn't|must not|never)\s+(.{10,80}?)(?:\.|,|$)/gi,
+    /(?:limit|max|min|require)\s+(.{5,60}?)(?:\.|,|$)/gi,
+  ],
+  api_contract: [
+    /(?:endpoint|route|api)\s+(?:returns?|accepts?|expects?)\s+(.{10,80}?)(?:\.|,|$)/gi,
+    /(?:request|response)\s+(?:body|format|structure)\s*:\s*(.{10,80}?)(?:\.|,|$)/gi,
   ],
 };
 
@@ -549,11 +705,15 @@ export class SemanticMemoryManager {
       return;
     }
 
-    // Generate embedding if requested and not provided
+    // Generate embedding if requested OR if importance is high (> 0.6)
+    // This enables semantic search by default for important memories
     let embedding = options.embedding;
     let embeddingModel = options.embeddingModel;
+    const importance = options.importance ?? 0.5;
+    const shouldGenerateEmbedding =
+      options.generateEmbedding || (importance > 0.6 && !embedding && hasEmbeddingAPI());
 
-    if (options.generateEmbedding && !embedding) {
+    if (shouldGenerateEmbedding && !embedding) {
       try {
         const result = await generateEmbedding(options.content);
         embedding = result.embedding;
@@ -602,6 +762,12 @@ export class SemanticMemoryManager {
       feature: 'feature',
       style: 'ui',
       error_solution: 'technical',
+      // New types for complex app building
+      data_model: 'technical',
+      workflow: 'workflow',
+      integration: 'technical',
+      constraint: 'app',
+      api_contract: 'technical',
     };
     return typeToCategory[type] || 'app';
   }
@@ -676,8 +842,18 @@ export class SemanticMemoryManager {
    * @param query - User query to find relevant context for
    * @returns Formatted context string
    */
-  async getContextForPrompt(query: string): Promise<string> {
-    const memories = await this.search(query, 5);
+  async getContextForPrompt(query: string, limit: number = 10): Promise<string> {
+    // Use hybrid search for better semantic matching when embeddings are available
+    let memories: SemanticMemory[];
+
+    if (hasEmbeddingAPI()) {
+      // Hybrid search combines keyword and embedding scores
+      const hybridResults = await this.hybridSearch(query, limit);
+      memories = hybridResults;
+    } else {
+      // Fallback to keyword-only search
+      memories = await this.search(query, limit);
+    }
 
     if (memories.length === 0) {
       return '';
@@ -762,6 +938,11 @@ export class SemanticMemoryManager {
           feature: 0,
           style: 0,
           error_solution: 0,
+          data_model: 0,
+          workflow: 0,
+          integration: 0,
+          constraint: 0,
+          api_contract: 0,
         },
         averageImportance: 0,
         oldestMemory: null,
@@ -787,6 +968,11 @@ export class SemanticMemoryManager {
             feature: 0,
             style: 0,
             error_solution: 0,
+            data_model: 0,
+            workflow: 0,
+            integration: 0,
+            constraint: 0,
+            api_contract: 0,
           },
           averageImportance: 0,
           oldestMemory: null,
@@ -802,6 +988,12 @@ export class SemanticMemoryManager {
         feature: 0,
         style: 0,
         error_solution: 0,
+        // New types for complex app building
+        data_model: 0,
+        workflow: 0,
+        integration: 0,
+        constraint: 0,
+        api_contract: 0,
       };
 
       let totalImportance = 0;
@@ -839,6 +1031,11 @@ export class SemanticMemoryManager {
           feature: 0,
           style: 0,
           error_solution: 0,
+          data_model: 0,
+          workflow: 0,
+          integration: 0,
+          constraint: 0,
+          api_contract: 0,
         },
         averageImportance: 0,
         oldestMemory: null,

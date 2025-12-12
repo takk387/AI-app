@@ -1475,7 +1475,7 @@ export default function AIBuilder() {
 
       const requestBody: Record<string, unknown> = {
         prompt: userInput,
-        conversationHistory: chatMessages.slice(-30),
+        conversationHistory: chatMessages.slice(-50),
         mode: currentMode,
         currentAppState: parsedCurrentAppState,
       };
@@ -1515,7 +1515,7 @@ export default function AIBuilder() {
         if (needsCompression(filteredMessages, MAX_CONTEXT_TOKENS)) {
           const compressed = compressConversation(filteredMessages, {
             maxTokens: MAX_CONTEXT_TOKENS,
-            preserveLastN: 8,
+            preserveLastN: 20,
           });
 
           conversationHistory = compressed.recentMessages.map((m) => ({
@@ -1547,7 +1547,7 @@ export default function AIBuilder() {
         endpoint = '/api/builder/chat';
         fetchBody = JSON.stringify({
           message: userInput,
-          conversationHistory: chatMessages.slice(-30).map((m) => ({
+          conversationHistory: chatMessages.slice(-50).map((m) => ({
             role: m.role === 'user' ? 'user' : 'assistant',
             content: m.content,
           })),
@@ -1589,7 +1589,7 @@ export default function AIBuilder() {
         // The builder expert decided this needs a full build - call streaming generation
         const buildRequestBody: Record<string, unknown> = {
           prompt: userInput,
-          conversationHistory: chatMessages.slice(-30),
+          conversationHistory: chatMessages.slice(-50),
           isModification: false,
           image: uploadedImage || undefined,
           hasImage: !!uploadedImage,
@@ -1645,7 +1645,7 @@ export default function AIBuilder() {
       if (currentMode === 'ACT' && data?.shouldTriggerModify && currentComponent) {
         const modifyRequestBody: Record<string, unknown> = {
           prompt: userInput,
-          conversationHistory: chatMessages.slice(-30),
+          conversationHistory: chatMessages.slice(-50),
           isModification: true,
           currentAppName: currentComponent.name,
           currentAppState: JSON.parse(currentComponent.code),
@@ -1715,7 +1715,7 @@ export default function AIBuilder() {
 
         const designRequestBody = {
           message: userInput,
-          conversationHistory: chatMessages.slice(-20).map((m) => ({
+          conversationHistory: chatMessages.slice(-50).map((m) => ({
             role: m.role === 'user' ? 'user' : 'assistant',
             content: m.content,
           })),
@@ -2295,7 +2295,7 @@ export default function AIBuilder() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   prompt: pendingNewAppRequest,
-                  conversationHistory: chatMessages.slice(-20),
+                  conversationHistory: chatMessages.slice(-50),
                 }),
               });
 

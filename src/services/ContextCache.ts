@@ -48,8 +48,10 @@ export class ContextCache {
     ttlMs?: number;
   }) {
     this.maxAnalysisCacheSize = options?.maxAnalysisCacheSize ?? 500;
-    this.maxSnapshotCacheSize = options?.maxSnapshotCacheSize ?? 50;
-    this.ttlMs = options?.ttlMs ?? 5 * 60 * 1000; // 5 minutes default
+    // Increased from 50 to 200 for multi-phase builds with many files
+    this.maxSnapshotCacheSize = options?.maxSnapshotCacheSize ?? 200;
+    // Increased from 5 to 15 minutes to prevent cold starts between phases
+    this.ttlMs = options?.ttlMs ?? 15 * 60 * 1000; // 15 minutes default
   }
 
   // ==========================================================================

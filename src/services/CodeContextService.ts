@@ -201,7 +201,7 @@ export class CodeContextService {
   async getPhaseContext(
     phaseNumber: number,
     features: string[],
-    maxTokens: number = 16000
+    maxTokens: number = 32000
   ): Promise<CodeContextSnapshot> {
     // Get files from previous phases
     const previousPhaseFiles: string[] = [];
@@ -232,7 +232,7 @@ export class CodeContextService {
   async getModificationContext(
     targetFile: string,
     changeDescription: string,
-    maxTokens: number = 16000
+    maxTokens: number = 32000
   ): Promise<CodeContextSnapshot> {
     return this.getContextForRequest({
       intent: {

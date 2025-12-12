@@ -398,6 +398,9 @@ export interface PhaseExecutionContext {
 
   // Extracted context from conversation for this specific phase
   extractedPhaseContext?: SerializedPhaseContext;
+
+  // Context truncation notice (tells AI what conversation context was dropped)
+  truncationNotice?: string;
 }
 
 /**

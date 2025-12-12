@@ -153,3 +153,148 @@ Check `.claude/rules/` for domain-specific documentation:
 - `api-routes.md` - API patterns
 - `state-management.md` - State patterns
 - `testing.md` - Testing conventions
+- `services-layer.md` - Context/parsing services
+- `utilities.md` - Utility functions and AST
+
+---
+
+## How Claude Should Work With This Project
+
+### Before Making Changes
+
+1. **Read before editing** - Always read the full file before modifying. Understand existing patterns.
+2. **Check dependencies** - Use grep to find all usages of functions/types before changing signatures.
+3. **Understand the data flow** - Trace how data moves: AppConcept → PhaseGenerator → PhaseExecutionManager → Preview
+4. **Respect existing patterns** - Match the style of surrounding code. Don't introduce new patterns without reason.
+
+### When Modifying Code
+
+- **useAppStore** - Always use shallow comparison with selectors. Never chain selectors.
+- **Types** - Changes to `layoutDesign.ts` or `dynamicPhases.ts` affect many files. Check all usages first.
+- **Services** - Services are stateless. Side effects happen in hooks. Keep this separation.
+- **API Routes** - All AI routes use SSE streaming. Follow the existing pattern exactly.
+
+### After Making Changes
+
+1. Run `npm run typecheck` - Must pass with no errors
+2. Run `npm run lint` - Fix any lint issues
+3. Run `npm test` - All tests must pass
+4. Test in browser if UI changes - Verify the change works visually
+
+## Common Mistakes to Avoid
+
+### Zustand Store
+
+```typescript
+// WRONG - Creates new object every render, causes infinite re-renders
+const data = useAppStore((state) => ({ messages: state.messages }));
+
+// CORRECT - Use shallow comparison
+import { shallow } from 'zustand/shallow';
+const data = useAppStore((state) => ({ messages: state.messages }), shallow);
+
+// ALSO CORRECT - Select single value (no shallow needed)
+const messages = useAppStore((state) => state.messages);
+```
+
+### Import Paths
+
+```typescript
+// WRONG - Inconsistent imports cause bundling issues
+import { useAppStore } from '../store/useAppStore';
+import { useAppStore } from '../../store/useAppStore';
+
+// CORRECT - Always use @ alias
+import { useAppStore } from '@/store/useAppStore';
+```
+
+### Component State
+
+```typescript
+// WRONG - Local state for data that should be shared
+const [messages, setMessages] = useState([]);
+
+// CORRECT - Use Zustand for shared state
+const messages = useAppStore((state) => state.messages);
+const addMessage = useAppStore((state) => state.addMessage);
+```
+
+### Type Modifications
+
+```typescript
+// WRONG - Adding optional field without migration
+interface LayoutDesign {
+  newField: string; // Breaks existing data
+}
+
+// CORRECT - Optional with default handling
+interface LayoutDesign {
+  newField?: string; // Safe addition
+}
+// AND handle in code:
+const value = layoutDesign.newField ?? 'default';
+```
+
+### AST Modifications
+
+```typescript
+// WRONG - String manipulation for code changes
+code.replace('function old', 'function new');
+
+// CORRECT - Use astModifier.ts utilities
+import { modifyFunction } from '@/utils/astModifier';
+const result = modifyFunction(code, 'old', { rename: 'new' });
+```
+
+## Current Development Focus
+
+**Active Work Areas (check git status for latest):**
+
+- `src/services/CodeContextService.ts` - Context extraction and caching
+- `src/services/ContextCache.ts` - Cache management
+- `src/utils/contextCompression.ts` - Token compression
+- `src/utils/semanticMemory.ts` - Semantic caching
+- `src/services/DynamicPhaseGenerator.ts` - Phase planning
+- `src/types/dynamicPhases.ts` - Phase type definitions
+
+**Current Goals:**
+
+- Improve context compression for large apps
+- Reduce token usage during phase execution
+- Better cache invalidation strategies
+
+**When working on these files:**
+
+1. Check existing cache invalidation logic before adding new caches
+2. Verify token count accuracy after compression changes
+3. Run memory/performance tests after modifications
+
+## Success Criteria
+
+### For Any Code Change
+
+- [ ] `npm run typecheck` passes
+- [ ] `npm run lint` passes
+- [ ] `npm test` passes
+- [ ] No `@ts-ignore` or `any` types added
+- [ ] No console.log statements left in code
+- [ ] Code matches existing patterns in file
+
+### For Component Changes
+
+- [ ] UI renders correctly in browser
+- [ ] No React warnings in console
+- [ ] Responsive at all breakpoints
+- [ ] Zustand selectors use shallow comparison
+
+### For Service Changes
+
+- [ ] Service remains stateless
+- [ ] Error handling follows existing patterns
+- [ ] Cache invalidation tested if caching added
+
+### For Type Changes
+
+- [ ] All usages updated
+- [ ] Optional fields have default handling
+- [ ] No breaking changes to existing data

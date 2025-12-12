@@ -652,6 +652,8 @@ export interface LayoutChatRequest {
   analysisMode?: 'standard' | 'pixel-perfect' | 'video-replication';
   /** Type of analysis to perform */
   requestedAnalysis?: 'quick' | 'deep' | 'full';
+  /** Cross-session memories context from semantic memory (P0-P1 Phase 7b) */
+  memoriesContext?: string;
 }
 
 export interface DesignChange {

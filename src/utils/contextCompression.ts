@@ -40,10 +40,26 @@ export interface ConversationSummary {
 export interface CompressionOptions {
   /** Maximum total tokens (default: 6000) */
   maxTokens?: number;
-  /** Number of recent messages to preserve verbatim (default: 8) */
+  /** Number of recent messages to preserve verbatim (default: 20) */
   preserveLastN?: number;
   /** Whether to include timestamps in compressed context (default: false) */
   includeTimestamps?: boolean;
+}
+
+/**
+ * Information about what was dropped during compression
+ */
+export interface TruncationInfo {
+  /** Total messages before compression */
+  originalMessageCount: number;
+  /** Messages preserved after compression */
+  preservedMessageCount: number;
+  /** Number of messages summarized */
+  summarizedMessageCount: number;
+  /** Topics extracted from summarized messages */
+  summarizedTopics: string[];
+  /** Whether truncation occurred */
+  wasTruncated: boolean;
 }
 
 /**
@@ -319,7 +335,7 @@ export function compressConversation(
   messages: ChatMessage[],
   options: CompressionOptions = {}
 ): CompressedContext {
-  const { maxTokens = 6000, preserveLastN = 8 } = options;
+  const { maxTokens = 6000, preserveLastN = 20 } = options;
 
   const originalTokens = estimateMessagesTokens(messages);
 
@@ -438,4 +454,104 @@ export function getCompressionStats(compressed: CompressedContext): {
     compressionRatio: compressed.compressionRatio,
     percentReduction,
   };
+}
+
+// ============================================================================
+// TRUNCATION AWARENESS
+// ============================================================================
+
+/**
+ * Build truncation info from compressed context
+ * This helps the AI understand what context it's missing
+ *
+ * @param originalMessages - Original full message array
+ * @param compressed - Compressed context result
+ * @returns Truncation information
+ */
+export function getTruncationInfo(
+  originalMessages: ChatMessage[],
+  compressed: CompressedContext
+): TruncationInfo {
+  const summarizedTopics: string[] = [];
+
+  // Collect topics from summary
+  if (compressed.summary.projectDescription) {
+    summarizedTopics.push(`Project: ${compressed.summary.projectDescription.slice(0, 50)}`);
+  }
+  if (compressed.summary.featuresBuilt.length > 0) {
+    summarizedTopics.push(`Features: ${compressed.summary.featuresBuilt.slice(0, 5).join(', ')}`);
+  }
+  if (compressed.summary.userPreferences.length > 0) {
+    summarizedTopics.push(
+      `Preferences: ${compressed.summary.userPreferences.slice(0, 3).join(', ')}`
+    );
+  }
+  if (compressed.summary.keyDecisions.length > 0) {
+    summarizedTopics.push(`Decisions: ${compressed.summary.keyDecisions.slice(0, 3).join(', ')}`);
+  }
+
+  return {
+    originalMessageCount: originalMessages.length,
+    preservedMessageCount: compressed.recentMessages.length,
+    summarizedMessageCount: compressed.summary.messageCount,
+    summarizedTopics,
+    wasTruncated: compressed.summary.messageCount > 0,
+  };
+}
+
+/**
+ * Build a truncation notice string that can be included in AI prompts
+ * This explicitly tells the AI what context was dropped
+ *
+ * @param truncationInfo - Truncation information
+ * @returns Notice string for AI prompt
+ */
+export function buildTruncationNotice(truncationInfo: TruncationInfo): string {
+  if (!truncationInfo.wasTruncated) {
+    return '';
+  }
+
+  const lines: string[] = [
+    '⚠️ CONTEXT NOTICE:',
+    `This conversation has ${truncationInfo.originalMessageCount} total messages.`,
+    `You are seeing the ${truncationInfo.preservedMessageCount} most recent messages.`,
+    `${truncationInfo.summarizedMessageCount} earlier messages were summarized.`,
+  ];
+
+  if (truncationInfo.summarizedTopics.length > 0) {
+    lines.push('');
+    lines.push('Topics from earlier messages (summarized):');
+    for (const topic of truncationInfo.summarizedTopics) {
+      lines.push(`  - ${topic}`);
+    }
+  }
+
+  lines.push('');
+  lines.push('If you need details about earlier discussions, DO NOT assume or invent details.');
+  lines.push('Instead, ask the user to clarify or provide the specific information you need.');
+
+  return lines.join('\n');
+}
+
+/**
+ * Build compressed context with truncation awareness
+ * Combines the context string with explicit truncation notice
+ *
+ * @param originalMessages - Original full message array
+ * @param compressed - Compressed context result
+ * @returns Context string with truncation notice
+ */
+export function buildContextWithTruncationNotice(
+  originalMessages: ChatMessage[],
+  compressed: CompressedContext
+): string {
+  const truncationInfo = getTruncationInfo(originalMessages, compressed);
+  const truncationNotice = buildTruncationNotice(truncationInfo);
+  const conversationContext = buildCompressedContext(compressed);
+
+  if (truncationNotice) {
+    return `${truncationNotice}\n\n${conversationContext}`;
+  }
+
+  return conversationContext;
 }

@@ -45,6 +45,38 @@ export class CodeParser {
   }
 
   // ==========================================================================
+  // FILE EXCLUSION
+  // ==========================================================================
+
+  /**
+   * Patterns for files that should be excluded from analysis
+   * These files add noise without providing useful context
+   */
+  private static readonly EXCLUDED_PATTERNS = [
+    /\.test\.(ts|tsx|js|jsx)$/,
+    /\.spec\.(ts|tsx|js|jsx)$/,
+    /\.stories\.(ts|tsx|js|jsx)$/,
+    /__tests__\//,
+    /__mocks__\//,
+    /\.mock\.(ts|tsx|js|jsx)$/,
+    /\.e2e\.(ts|tsx|js|jsx)$/,
+    /\.snapshot$/,
+    /node_modules\//,
+    /\.d\.ts$/, // Declaration files (usually generated)
+    /\.min\.(js|css)$/,
+  ];
+
+  /**
+   * Check if a file should be analyzed based on exclusion patterns
+   * @param path File path to check
+   * @returns true if file should be analyzed, false if excluded
+   */
+  shouldAnalyze(path: string): boolean {
+    const normalizedPath = path.replace(/\\/g, '/');
+    return !CodeParser.EXCLUDED_PATTERNS.some((pattern) => pattern.test(normalizedPath));
+  }
+
+  // ==========================================================================
   // MAIN ANALYSIS METHOD
   // ==========================================================================
 

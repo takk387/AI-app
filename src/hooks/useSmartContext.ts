@@ -31,11 +31,11 @@ import {
  * Options for building smart context
  */
 export interface SmartContextOptions {
-  /** Maximum total tokens for context (default: 4000) */
+  /** Maximum total tokens for context (default: 12000) */
   maxTokens?: number;
-  /** Number of recent messages to preserve (default: 4) */
+  /** Number of recent messages to preserve (default: 10) */
   preserveLastN?: number;
-  /** Number of memories to include (default: 5) */
+  /** Number of memories to include (default: 10) */
   maxMemories?: number;
   /** Whether to include semantic memories (default: true) */
   includeMemories?: boolean;
@@ -171,7 +171,7 @@ export function useSmartContext(): UseSmartContextReturn {
       query: string,
       options: SmartContextOptions = {}
     ): Promise<SmartContextResult> => {
-      const { maxTokens = 4000, preserveLastN = 4, includeMemories = true } = options;
+      const { maxTokens = 12000, preserveLastN = 10, includeMemories = true } = options;
 
       // Get semantic memories if available
       let memoriesContext = '';
@@ -182,15 +182,15 @@ export function useSmartContext(): UseSmartContextReturn {
           memoriesContext = await memoryManagerRef.current.getContextForPrompt(query);
           // Count memories (each memory is a line starting with [)
           memoriesCount = (memoriesContext.match(/\[/g) || []).length;
-          // Limit memories by token budget
+          // Limit memories by token budget (40% allocation for cross-session context)
           const memoryTokens = estimateTokens(memoriesContext);
-          if (memoryTokens > maxTokens * 0.25) {
-            // Truncate memories to stay within budget
+          if (memoryTokens > maxTokens * 0.4) {
+            // Truncate memories to stay within budget (35% target)
             const lines = memoriesContext.split('\n');
             const truncated: string[] = [lines[0]]; // Keep header
             let tokens = estimateTokens(lines[0]);
 
-            for (let i = 1; i < lines.length && tokens < maxTokens * 0.2; i++) {
+            for (let i = 1; i < lines.length && tokens < maxTokens * 0.35; i++) {
               tokens += estimateTokens(lines[i]);
               truncated.push(lines[i]);
             }
@@ -326,6 +326,11 @@ export function useSmartContext(): UseSmartContextReturn {
           feature: 0,
           style: 0,
           error_solution: 0,
+          data_model: 0,
+          workflow: 0,
+          integration: 0,
+          constraint: 0,
+          api_contract: 0,
         },
         averageImportance: 0,
         oldestMemory: null,
@@ -346,6 +351,11 @@ export function useSmartContext(): UseSmartContextReturn {
           feature: 0,
           style: 0,
           error_solution: 0,
+          data_model: 0,
+          workflow: 0,
+          integration: 0,
+          constraint: 0,
+          api_contract: 0,
         },
         averageImportance: 0,
         oldestMemory: null,

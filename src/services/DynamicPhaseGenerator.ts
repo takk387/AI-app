@@ -1217,7 +1217,7 @@ export class DynamicPhaseGenerator {
       return { text: p, score };
     });
 
-    // Get top relevant paragraphs (max 2000 chars)
+    // Get top relevant paragraphs (max 4000 chars for large complex apps)
     const relevant = scored
       .filter((p) => p.score > 0)
       .sort((a, b) => b.score - a.score)
@@ -1225,7 +1225,7 @@ export class DynamicPhaseGenerator {
       .map((p) => p.text);
 
     const result = relevant.join('\n\n');
-    return result.slice(0, 2000);
+    return result.slice(0, 4000);
   }
 
   /**
@@ -1415,9 +1415,9 @@ export class DynamicPhaseGenerator {
   // ============================================================================
 
   /**
-   * Maximum code context size (increased to 48KB for complex apps)
+   * Maximum code context size (increased to 80KB for complex apps)
    */
-  private static readonly MAX_CODE_CONTEXT = 48000;
+  private static readonly MAX_CODE_CONTEXT = 80000;
 
   /**
    * Build smart code context from previous phases with importance scoring

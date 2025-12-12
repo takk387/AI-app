@@ -18,6 +18,14 @@ import { buildLayoutBuilderPrompt } from '@/prompts/layoutBuilderSystemPrompt';
 import type { LayoutDesign, DesignChange, DetectedAnimation } from '@/types/layoutDesign';
 import { matchDesignPattern, applyPatternToDesign } from '@/utils/designPatterns';
 import { parseDesignDescription } from '@/utils/designLanguageParser';
+// Context Compression (P0-P1 optimization)
+import {
+  compressConversation,
+  needsCompression,
+  getTruncationInfo,
+  buildTruncationNotice,
+} from '@/utils/contextCompression';
+import type { ChatMessage } from '@/types/aiBuilderTypes';
 import { getDalleService, getImageCost } from '@/services/dalleService';
 import { getAnimationPreset } from '@/data/animationPresets';
 import { getAdvancedEffectPreset, type AdvancedEffectPreset } from '@/data/advancedEffectsPresets';
@@ -70,6 +78,8 @@ interface DesignChatRequest {
   previewScreenshot?: string; // Base64 encoded screenshot
   currentLayoutDesign?: Partial<LayoutDesign>;
   selectedElement?: string;
+  /** Cross-session memories context from semantic memory (P0-P1 Phase 7b) */
+  memoriesContext?: string;
 }
 
 interface DesignChatResponse {
@@ -1041,18 +1051,65 @@ export async function POST(request: Request) {
       previewScreenshot,
       currentLayoutDesign,
       selectedElement,
+      memoriesContext, // Cross-session memories (P0-P1 Phase 7b)
     } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
     }
 
-    // Build Claude messages
+    // Build Claude messages with smart compression (P0-P1 optimization)
     const messages: Anthropic.MessageParam[] = [];
 
-    // Add conversation history (last 10 messages for context)
-    for (const msg of conversationHistory.slice(-10)) {
-      messages.push({ role: msg.role, content: msg.content });
+    // Token budget for conversation context (matches AIBuilder settings)
+    const MAX_CONTEXT_TOKENS = 100000;
+    const PRESERVE_LAST_N = 20;
+
+    // Convert BuilderMessage to ChatMessage format for compression
+    const chatMessages: ChatMessage[] = conversationHistory.map((msg, index) => ({
+      id: `design-msg-${index}`,
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Apply smart compression if needed
+    let processedMessages: ChatMessage[];
+    let truncationNotice = '';
+
+    if (needsCompression(chatMessages, MAX_CONTEXT_TOKENS)) {
+      const compressed = compressConversation(chatMessages, {
+        maxTokens: MAX_CONTEXT_TOKENS,
+        preserveLastN: PRESERVE_LAST_N,
+      });
+
+      // Get truncation info with topic extraction
+      const truncationInfo = getTruncationInfo(chatMessages, compressed);
+      truncationNotice = buildTruncationNotice(truncationInfo);
+
+      processedMessages = compressed.recentMessages;
+    } else {
+      // No compression needed, but still limit to last 50 messages as safety
+      processedMessages = chatMessages.slice(-50);
+      if (chatMessages.length > 50) {
+        truncationNotice = `⚠️ CONTEXT NOTICE: This conversation has ${chatMessages.length} total messages. You are seeing the 50 most recent. If you need details about earlier design decisions, ask the user to clarify rather than assuming.`;
+      }
+    }
+
+    // Add truncation notice if history was limited
+    if (truncationNotice) {
+      messages.push({
+        role: 'user',
+        content: truncationNotice,
+      });
+    }
+
+    // Add conversation history
+    for (const msg of processedMessages) {
+      messages.push({
+        role: msg.role === 'system' ? 'user' : msg.role,
+        content: msg.content,
+      });
     }
 
     // Build current message with screenshot
@@ -1086,12 +1143,17 @@ export async function POST(request: Request) {
     });
 
     // Build system prompt
-    const systemPrompt = buildLayoutBuilderPrompt(
+    let systemPrompt = buildLayoutBuilderPrompt(
       currentLayoutDesign || {},
       selectedElement || null,
       !!previewScreenshot,
       0 // No reference images in builder design chat
     );
+
+    // Add cross-session memories context to system prompt (P0-P1 Phase 7b)
+    if (memoriesContext) {
+      systemPrompt += `\n\n## User Design Preferences (from past sessions)\n${memoriesContext}`;
+    }
 
     // Call Claude with tools
     const response = await anthropic.messages.create({
