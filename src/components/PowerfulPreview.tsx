@@ -195,12 +195,28 @@ h1, h2, h3, h4, h5, h6 {
 </html>`,
   };
 
+  // Filter out incompatible dependencies for react-ts template
+  // Next.js and related packages don't work with Sandpack's React SPA template
+  const incompatiblePackages = [
+    'next',
+    'next-themes',
+    '@next/font',
+    '@next/mdx',
+    'eslint-config-next',
+  ];
+
+  const filteredUserDeps = Object.fromEntries(
+    Object.entries(appData.dependencies || {}).filter(
+      ([pkg]) => !incompatiblePackages.some((p) => pkg === p || pkg.startsWith(`${p}/`))
+    )
+  );
+
   // Merge user dependencies with required ones
   const dependencies = {
     react: '^18.0.0',
     'react-dom': '^18.0.0',
     'react-scripts': '^5.0.0',
-    ...appData.dependencies,
+    ...filteredUserDeps,
   };
 
   return (
@@ -225,46 +241,52 @@ h1, h2, h3, h4, h5, h6 {
           externalResources: ['https://cdn.tailwindcss.com'],
         }}
       >
-        {/* Main preview area - always centered */}
-        <div className="flex-1 flex flex-col bg-zinc-950 overflow-auto relative items-center justify-center p-4">
-          {/* Full-stack warning badge */}
-          {appData.appType === 'FULL_STACK' && (
-            <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
-              ⚠️ Preview mode: Backend features disabled
-            </div>
-          )}
+        {/* Flex wrapper - SandpackProvider adds wrapper divs that break outer flex layout */}
+        <div className="flex w-full h-full">
+          {/* Main preview area - always centered */}
+          <div className="flex-1 flex flex-col bg-zinc-950 overflow-auto relative items-center justify-center p-4">
+            {/* Full-stack warning badge */}
+            {appData.appType === 'FULL_STACK' && (
+              <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
+                ⚠️ Preview mode: Backend features disabled
+              </div>
+            )}
 
-          {/* All devices render through DeviceFrame */}
-          <TouchSimulator enabled={shouldEnableTouchSimulation} iframeSelector=".sp-preview-iframe">
-            <DeviceFrame
-              device={(devicePreset as DeviceType) || 'laptop'}
-              orientation={orientation}
-              width={previewWidth}
-              height={previewHeight === 'auto' ? 800 : previewHeight}
+            {/* All devices render through DeviceFrame */}
+            <TouchSimulator
+              enabled={shouldEnableTouchSimulation}
+              iframeSelector=".sp-preview-iframe"
             >
-              <SandpackLayout
-                style={{
-                  height: '100%',
-                  width: '100%',
-                  border: 'none',
-                  borderRadius: 0,
-                }}
+              <DeviceFrame
+                device={(devicePreset as DeviceType) || 'laptop'}
+                orientation={orientation}
+                width={previewWidth}
+                height={previewHeight === 'auto' ? 800 : previewHeight}
               >
-                <SandpackPreview
-                  showOpenInCodeSandbox={false}
-                  showRefreshButton={true}
+                <SandpackLayout
                   style={{
                     height: '100%',
                     width: '100%',
+                    border: 'none',
+                    borderRadius: 0,
                   }}
-                />
-              </SandpackLayout>
-            </DeviceFrame>
-          </TouchSimulator>
-        </div>
+                >
+                  <SandpackPreview
+                    showOpenInCodeSandbox={false}
+                    showRefreshButton={true}
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                    }}
+                  />
+                </SandpackLayout>
+              </DeviceFrame>
+            </TouchSimulator>
+          </div>
 
-        {/* Console side panel */}
-        <ConsolePanel isOpen={showConsole} onToggle={onConsoleToggle || (() => {})} />
+          {/* Console side panel */}
+          <ConsolePanel isOpen={showConsole} onToggle={onConsoleToggle || (() => {})} />
+        </div>
       </SandpackProvider>
     </div>
   );
