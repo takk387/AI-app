@@ -270,6 +270,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
               enableTouchSimulation={true}
               showConsole={showConsole}
               onConsoleToggle={handleToggleConsole}
+              showDeviceFrame={showDeviceFrame}
             />
           </div>
         ) : (
@@ -400,6 +401,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
           enableTouchSimulation={true}
           showConsole={showConsole}
           onConsoleToggle={handleToggleConsole}
+          showDeviceFrame={showDeviceFrame}
         />
       </div>
     </div>

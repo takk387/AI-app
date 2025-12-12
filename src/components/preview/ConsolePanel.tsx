@@ -286,7 +286,7 @@ export function ConsolePanel({
 
   return (
     <div
-      className={`relative flex flex-col bg-zinc-950 border-l border-zinc-800 ${className}`}
+      className={`relative flex flex-col h-full bg-zinc-950 border-l border-zinc-800 ${className}`}
       style={{ width }}
     >
       {/* Resize handle */}

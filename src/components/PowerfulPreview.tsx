@@ -32,6 +32,7 @@ interface PowerfulPreviewProps {
   enableTouchSimulation?: boolean;
   showConsole?: boolean;
   onConsoleToggle?: () => void;
+  showDeviceFrame?: boolean;
 }
 
 export default function PowerfulPreview({
@@ -46,6 +47,7 @@ export default function PowerfulPreview({
   enableTouchSimulation = true,
   showConsole = false,
   onConsoleToggle,
+  showDeviceFrame = true,
 }: PowerfulPreviewProps) {
   // Determine if touch simulation should be active (mobile/tablet devices only)
   const isMobileOrTablet =
@@ -252,23 +254,43 @@ h1, h2, h3, h4, h5, h6 {
               </div>
             )}
 
-            {/* All devices render through DeviceFrame */}
+            {/* All devices render through DeviceFrame when enabled */}
             <TouchSimulator
               enabled={shouldEnableTouchSimulation}
               iframeSelector=".sp-preview-iframe"
             >
-              <DeviceFrame
-                device={(devicePreset as DeviceType) || 'laptop'}
-                orientation={orientation}
-                width={previewWidth}
-                height={previewHeight === 'auto' ? 800 : previewHeight}
-              >
+              {showDeviceFrame ? (
+                <DeviceFrame
+                  device={(devicePreset as DeviceType) || 'laptop'}
+                  orientation={orientation}
+                  width={previewWidth}
+                  height={previewHeight === 'auto' ? 800 : previewHeight}
+                >
+                  <SandpackLayout
+                    style={{
+                      height: '100%',
+                      width: '100%',
+                      border: 'none',
+                      borderRadius: 0,
+                    }}
+                  >
+                    <SandpackPreview
+                      showOpenInCodeSandbox={false}
+                      showRefreshButton={true}
+                      style={{
+                        height: '100%',
+                        width: '100%',
+                      }}
+                    />
+                  </SandpackLayout>
+                </DeviceFrame>
+              ) : (
                 <SandpackLayout
                   style={{
-                    height: '100%',
-                    width: '100%',
+                    height: previewHeight === 'auto' ? 800 : previewHeight,
+                    width: previewWidth,
                     border: 'none',
-                    borderRadius: 0,
+                    borderRadius: 8,
                   }}
                 >
                   <SandpackPreview
@@ -280,7 +302,7 @@ h1, h2, h3, h4, h5, h6 {
                     }}
                   />
                 </SandpackLayout>
-              </DeviceFrame>
+              )}
             </TouchSimulator>
           </div>
 
