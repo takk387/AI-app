@@ -93,6 +93,27 @@ export interface UseDynamicBuildPhasesReturn {
   setAccumulatedCode: (code: string) => void;
   addGeneratedFiles: (files: string[]) => void;
   addImplementedFeatures: (features: string[]) => void;
+
+  // Quality enforcement
+  runPreGenerationChecks: (phaseNumber: number) => {
+    passed: boolean;
+    warnings: string[];
+    suggestions: string[];
+    requiredActions: string[];
+  } | null;
+  runPostGenerationValidations: (phaseNumber: number) => {
+    passed: boolean;
+    issues: Array<{ file: string; message: string; suggestion: string; line?: number }>;
+    summary: string;
+  } | null;
+  getQualityPromptAdditions: () => string;
+  validateBuildPlan: () => { isValid: boolean; warnings: string[]; recommendations: string[] } | null;
+  getFolderStructureRecommendations: () => {
+    description: string;
+    structure: string[];
+    requiredFiles: string[];
+    guidelines: string[];
+  } | null;
 }
 
 // ============================================================================
@@ -483,6 +504,54 @@ export function useDynamicBuildPhases(
     [manager]
   );
 
+  // ========== Quality Enforcement ==========
+
+  /**
+   * Run pre-generation checks before executing a phase
+   */
+  const runPreGenerationChecks = useCallback(
+    (phaseNumber: number) => {
+      if (!manager) return null;
+      return manager.runPreGenerationChecks(phaseNumber);
+    },
+    [manager]
+  );
+
+  /**
+   * Run post-generation validations after phase completion
+   */
+  const runPostGenerationValidations = useCallback(
+    (phaseNumber: number) => {
+      if (!manager) return null;
+      return manager.runPostGenerationValidations(phaseNumber);
+    },
+    [manager]
+  );
+
+  /**
+   * Get quality-enhanced prompt additions
+   */
+  const getQualityPromptAdditions = useCallback(() => {
+    if (!manager) return '';
+    return manager.getQualityPromptAdditions();
+  }, [manager]);
+
+  /**
+   * Validate the entire build plan
+   */
+  const validateBuildPlan = useCallback(() => {
+    if (!manager) return null;
+    return manager.validateBuildPlan();
+  }, [manager]);
+
+  /**
+   * Get folder structure recommendations
+   */
+  const getFolderStructureRecommendations = useCallback(() => {
+    if (!manager) return null;
+    return manager.getFolderStructureRecommendations();
+  }, [manager]);
+
   // ========== Return ==========
 
   return {
@@ -532,6 +601,13 @@ export function useDynamicBuildPhases(
     setAccumulatedCode,
     addGeneratedFiles,
     addImplementedFeatures,
+
+    // Quality enforcement
+    runPreGenerationChecks,
+    runPostGenerationValidations,
+    getQualityPromptAdditions,
+    validateBuildPlan,
+    getFolderStructureRecommendations,
   };
 }
 
