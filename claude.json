@@ -1,0 +1,167 @@
+{
+  "$schema": "https://storage.googleapis.com/claude-schemas/claude-config-schema.json",
+  "name": "AI App Builder",
+  "description": "Build complete web applications through natural conversation with AI. Plan, design, and generate production-ready React apps powered by Claude AI.",
+  "documentationUrls": [
+    "README.md",
+    "CLAUDE.md",
+    "docs/USER_GUIDE.md"
+  ],
+  "agents": [
+    {
+      "name": "typescript-react-editor",
+      "description": "Specialized TypeScript and React code editor with expertise in Next.js 15, React 19, and Zustand state management",
+      "path": ".github/agents/typescript-react-editor.md"
+    },
+    {
+      "name": "testing",
+      "description": "Testing specialist using Jest and React Testing Library for unit, integration, and hook tests",
+      "path": ".github/agents/testing.md"
+    },
+    {
+      "name": "nextjs-api-routes",
+      "description": "Expert in creating Next.js API routes with SSE streaming, Anthropic Claude SDK, and Supabase integration",
+      "path": ".github/agents/nextjs-api-routes.md"
+    },
+    {
+      "name": "supabase-integration",
+      "description": "Specialist in Supabase services: PostgreSQL, Authentication, File Storage, and Real-time subscriptions",
+      "path": ".github/agents/supabase-integration.md"
+    },
+    {
+      "name": "tailwind-styling",
+      "description": "Tailwind CSS styling expert with knowledge of project design patterns and dark mode configuration",
+      "path": ".github/agents/tailwind-styling.md"
+    },
+    {
+      "name": "app-functionality",
+      "description": "Deep knowledge of AI App Builder features including PLAN/ACT modes, dynamic phases, and layout builder",
+      "path": ".github/agents/app-functionality.md"
+    },
+    {
+      "name": "documentation",
+      "description": "Documentation specialist maintaining README, user guides, and deployment documentation",
+      "path": ".github/agents/documentation.md"
+    }
+  ],
+  "rules": [
+    {
+      "name": "AI Builder Core",
+      "description": "Core orchestration patterns for AIBuilder component and mode switching",
+      "path": ".claude/rules/ai-builder-core.md"
+    },
+    {
+      "name": "API Routes",
+      "description": "API route patterns with SSE streaming and error handling",
+      "path": ".claude/rules/api-routes.md"
+    },
+    {
+      "name": "Conversation Wizard",
+      "description": "Planning wizard flow and AppConcept creation patterns",
+      "path": ".claude/rules/conversation-wizard.md"
+    },
+    {
+      "name": "Layout Builder",
+      "description": "Layout builder patterns with visual design and AI vision",
+      "path": ".claude/rules/layout-builder.md"
+    },
+    {
+      "name": "Services Layer",
+      "description": "Service layer patterns for context extraction, phase generation, and parsing",
+      "path": ".claude/rules/services-layer.md"
+    },
+    {
+      "name": "State Management",
+      "description": "Zustand state patterns with Immer and shallow comparison",
+      "path": ".claude/rules/state-management.md"
+    },
+    {
+      "name": "Testing",
+      "description": "Testing conventions for unit, integration, and hook tests",
+      "path": ".claude/rules/testing.md"
+    },
+    {
+      "name": "Utilities",
+      "description": "Utility functions including AST modifications and code validation",
+      "path": ".claude/rules/utilities.md"
+    }
+  ],
+  "commands": {
+    "install": "npm install",
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "test": "npm run test:all",
+    "test:unit": "npm run test:unit",
+    "test:hooks": "npm run test:hooks",
+    "test:services": "npm run test:services",
+    "lint": "npm run lint",
+    "lint:fix": "npm run lint:fix",
+    "format": "npm run format",
+    "typecheck": "npm run typecheck"
+  },
+  "filePatterns": {
+    "components": "src/components/**/*.{ts,tsx}",
+    "hooks": "src/hooks/**/*.ts",
+    "services": "src/services/**/*.ts",
+    "api": "src/app/api/**/*.ts",
+    "types": "src/types/**/*.ts",
+    "utils": "src/utils/**/*.ts",
+    "stores": "src/store/**/*.ts",
+    "tests": "{tests,src}/**/*.test.{ts,tsx}"
+  },
+  "importantFiles": [
+    "src/components/AIBuilder.tsx",
+    "src/store/useAppStore.ts",
+    "src/components/NaturalConversationWizard.tsx",
+    "src/components/LayoutBuilderWizard.tsx",
+    "src/services/DynamicPhaseGenerator.ts",
+    "src/services/PhaseExecutionManager.ts",
+    "src/types/layoutDesign.ts",
+    "src/types/dynamicPhases.ts",
+    "src/middleware.ts"
+  ],
+  "environmentVariables": {
+    "required": [
+      "ANTHROPIC_API_KEY",
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ],
+    "optional": [
+      "OPENAI_API_KEY",
+      "NEXT_PUBLIC_APP_URL"
+    ]
+  },
+  "techStack": {
+    "frontend": [
+      "Next.js 15.5",
+      "React 19",
+      "TypeScript 5.2",
+      "Tailwind CSS",
+      "Zustand 4.5"
+    ],
+    "backend": [
+      "Next.js API Routes",
+      "Supabase PostgreSQL",
+      "Supabase Auth",
+      "Supabase Storage"
+    ],
+    "ai": [
+      "Anthropic Claude Sonnet 4.5",
+      "OpenAI DALL-E 3",
+      "js-tiktoken"
+    ],
+    "tools": [
+      "Tree-sitter AST parsing",
+      "Sandpack live preview",
+      "Jest testing",
+      "ESLint + Prettier"
+    ]
+  },
+  "workspace": {
+    "root": ".",
+    "sourceDir": "src",
+    "testDir": "tests",
+    "buildDir": ".next"
+  }
+}

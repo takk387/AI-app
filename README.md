@@ -335,6 +335,42 @@ npm run dev:mock
 
 ---
 
+## Claude Code Integration
+
+This repository is configured for use with [Claude Code](https://claude.ai/claude-code) cloud environment via the GitHub App.
+
+### Features Available
+
+- **Custom Agents**: Specialized agents for TypeScript/React, testing, API routes, Supabase, Tailwind CSS, and more
+- **Project Rules**: Automated code review rules for consistent patterns across components, services, and utilities
+- **Quick Commands**: Pre-configured npm scripts for common development tasks
+- **File Patterns**: Smart file organization and discovery
+
+### Configuration
+
+The GitHub App integration is configured in `claude.json` at the repository root. This file defines:
+
+- 7 specialized custom agents (`.github/agents/`)
+- 8 project-specific rules (`.claude/rules/`)
+- Development commands and file patterns
+- Tech stack and important files reference
+
+### Using Claude Code
+
+1. Install the Claude Code GitHub App on this repository
+2. Open the repository in Claude Code cloud environment
+3. Ask Claude to help with development - it will use the custom agents and rules automatically
+4. Custom agents available:
+   - `typescript-react-editor` - Component and hook development
+   - `testing` - Writing and maintaining tests
+   - `nextjs-api-routes` - API endpoint development
+   - `supabase-integration` - Database and auth integration
+   - `tailwind-styling` - Styling and design system
+   - `app-functionality` - Feature implementation
+   - `documentation` - Documentation updates
+
+---
+
 ## License
 
 Private repository. Contact the owner for licensing information.
