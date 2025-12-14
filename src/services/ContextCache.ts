@@ -182,6 +182,39 @@ export class ContextCache {
     this.snapshotCache.clear();
   }
 
+  /**
+   * Smart invalidation - only invalidate snapshots that contain specific files
+   * More efficient than clearing all snapshots when only a few files changed
+   *
+   * @param changedFiles - Array of file paths that were modified
+   * @returns Number of snapshots invalidated
+   */
+  invalidateSnapshotsForFiles(changedFiles: string[]): number {
+    if (changedFiles.length === 0) return 0;
+
+    // Normalize paths for comparison
+    const changedSet = new Set(changedFiles.map((f) => f.replace(/\\/g, '/')));
+
+    let invalidated = 0;
+
+    for (const [key, entry] of this.snapshotCache) {
+      const snapshot = entry.value;
+
+      // Check if any file in the snapshot was changed
+      const hasChangedFile = snapshot.context.some((file) => {
+        const normalizedPath = file.path.replace(/\\/g, '/');
+        return changedSet.has(normalizedPath);
+      });
+
+      if (hasChangedFile) {
+        this.snapshotCache.delete(key);
+        invalidated++;
+      }
+    }
+
+    return invalidated;
+  }
+
   // ==========================================================================
   // CACHE MANAGEMENT
   // ==========================================================================

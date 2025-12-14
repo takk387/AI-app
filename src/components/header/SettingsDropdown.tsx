@@ -23,6 +23,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     {
       id: 'settings',
       label: 'Settings',
+      description: 'Configure app preferences',
       icon: <SettingsIcon size={16} />,
       onClick: onSettings,
       dividerAfter: true,
@@ -30,6 +31,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     {
       id: 'theme',
       label: 'Theme',
+      description: 'Switch appearance mode',
       icon: theme === 'dark' ? <MoonIcon size={16} /> : <SunIcon size={16} />,
       subItems: [
         {
@@ -47,6 +49,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
         {
           id: 'theme-system',
           label: 'System',
+          description: 'Match OS setting',
           icon: <SettingsIcon size={16} />,
           onClick: () => onThemeChange?.('system'),
         },
@@ -56,6 +59,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     {
       id: 'help',
       label: 'Help & Shortcuts',
+      description: 'View keyboard shortcuts',
       icon: <HelpIcon size={16} />,
       shortcut: '?',
       onClick: onHelp,

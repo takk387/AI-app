@@ -1359,20 +1359,21 @@ export class SemanticMemoryManager {
     const keywordWeight = 1 - embeddingWeight;
 
     try {
-      // Get keyword-based results
-      const keywordResults = await this.search(query, limit * 2);
-      const keywordScores = new Map<string, number>();
+      // Run both searches in parallel for better performance
+      const [keywordResults, embeddingResults] = await Promise.all([
+        this.search(query, limit * 2),
+        this.searchByEmbedding(query, limit * 2, 0.2),
+      ]);
 
       // Normalize keyword scores (higher rank = higher score)
+      const keywordScores = new Map<string, number>();
       keywordResults.forEach((memory, index) => {
         const score = 1 - index / keywordResults.length;
         keywordScores.set(memory.id, score);
       });
 
-      // Get embedding-based results
-      const embeddingResults = await this.searchByEmbedding(query, limit * 2, 0.2);
+      // Map embedding similarity scores
       const embeddingScores = new Map<string, number>();
-
       embeddingResults.forEach((memory) => {
         embeddingScores.set(memory.id, memory.similarity);
       });
@@ -1431,11 +1432,16 @@ export class SemanticMemoryManager {
    * Generate and store embeddings for all memories without embeddings
    *
    * Useful for batch processing existing memories.
+   * Uses parallel processing with controlled concurrency for better performance.
    *
    * @param batchSize - Number of memories to process at once (default: 10)
+   * @param concurrency - Number of parallel embedding generations (default: 3)
    * @returns Number of memories processed
    */
-  async generateMissingEmbeddings(batchSize: number = 10): Promise<number> {
+  async generateMissingEmbeddings(
+    batchSize: number = 10,
+    concurrency: number = 3
+  ): Promise<number> {
     if (!this.isReady()) return 0;
 
     try {
@@ -1453,34 +1459,50 @@ export class SemanticMemoryManager {
       }
 
       // Filter to only memories without embeddings
-      // Note: This is a simple check; actual filtering may need adjustment
-      // based on how nulls are handled in your Supabase setup
-      const memoriesNeedingEmbeddings = memories.filter(
-        (m: { id: string; content: string; embedding?: number[] }) => !m.embedding
-      );
+      const memoriesNeedingEmbeddings = memories
+        .filter((m: { id: string; content: string; embedding?: number[] }) => !m.embedding)
+        .slice(0, batchSize);
 
-      let processed = 0;
+      if (memoriesNeedingEmbeddings.length === 0) return 0;
 
-      for (const memory of memoriesNeedingEmbeddings.slice(0, batchSize)) {
+      // Process embeddings in parallel with controlled concurrency
+      const processMemory = async (memory: { id: string; content: string }) => {
         try {
           const result = await generateEmbedding(memory.content);
-
-          const { error: updateError } = await this.supabase
-            .from('semantic_memories')
-            .update({
-              embedding: result.embedding,
-              embedding_model: result.model,
-            })
-            .eq('id', memory.id)
-            .eq('user_id', this.userId!);
-
-          if (!updateError) {
-            processed++;
-          }
+          return { id: memory.id, embedding: result.embedding, model: result.model };
         } catch {
-          // Skip this memory and continue
+          return null;
         }
+      };
+
+      // Process in batches of 'concurrency' at a time
+      const results: Array<{ id: string; embedding: number[]; model: string } | null> = [];
+      for (let i = 0; i < memoriesNeedingEmbeddings.length; i += concurrency) {
+        const batch = memoriesNeedingEmbeddings.slice(i, i + concurrency);
+        const batchResults = await Promise.all(batch.map(processMemory));
+        results.push(...batchResults);
       }
+
+      // Filter successful results and batch update
+      const successfulResults = results.filter(
+        (r): r is { id: string; embedding: number[]; model: string } => r !== null
+      );
+
+      // Update all at once using individual updates (Supabase doesn't support bulk update with different values)
+      // But we can at least run them in parallel
+      const updatePromises = successfulResults.map((result) =>
+        this.supabase
+          .from('semantic_memories')
+          .update({
+            embedding: result.embedding,
+            embedding_model: result.model,
+          })
+          .eq('id', result.id)
+          .eq('user_id', this.userId!)
+      );
+
+      const updateResults = await Promise.all(updatePromises);
+      const processed = updateResults.filter((r) => !r.error).length;
 
       return processed;
     } catch (error) {

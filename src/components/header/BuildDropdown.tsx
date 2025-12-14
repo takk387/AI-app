@@ -37,6 +37,7 @@ export const BuildDropdown: React.FC<BuildDropdownProps> = ({
     items.push({
       id: 'phased-build',
       label: 'Phased Build',
+      description: 'Build app in sequential phases',
       icon: <LayersIcon size={16} />,
       onClick: onPhasedBuild,
     });
@@ -47,6 +48,7 @@ export const BuildDropdown: React.FC<BuildDropdownProps> = ({
     items.push({
       id: 'phases-toggle',
       label: isPhasedMode ? 'Hide Phases' : 'Show Phases',
+      description: 'Toggle phase panel visibility',
       icon: isPhasedMode ? <ToggleRightIcon size={16} /> : <ToggleLeftIcon size={16} />,
       onClick: onTogglePhases,
       dividerAfter: showVersionHistory,
@@ -58,6 +60,7 @@ export const BuildDropdown: React.FC<BuildDropdownProps> = ({
     items.push({
       id: 'version-history',
       label: 'Version History',
+      description: 'Browse and restore versions',
       icon: <HistoryIcon size={16} />,
       onClick: onVersionHistory,
       badge: versionCount > 0 ? versionCount : undefined,

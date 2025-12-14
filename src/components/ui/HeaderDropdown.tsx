@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronRightIcon } from './Icons';
 export interface DropdownItem {
   id: string;
   label: string;
+  description?: string; // Helper text shown below label
   icon?: React.ReactNode;
   shortcut?: string;
   onClick?: () => void;
@@ -113,11 +114,18 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
           aria-disabled={item.disabled}
         >
           {item.icon && (
-            <span className="w-4 h-4 flex items-center justify-center text-zinc-500">
+            <span className="w-4 h-4 flex items-center justify-center text-zinc-500 shrink-0">
               {item.icon}
             </span>
           )}
-          <span className="flex-1 text-left">{item.label}</span>
+          <span className="flex-1 text-left">
+            <span className="block">{item.label}</span>
+            {item.description && (
+              <span className="block text-xs text-zinc-500 font-normal mt-0.5">
+                {item.description}
+              </span>
+            )}
+          </span>
           {item.badge !== undefined && (
             <span className="px-1.5 py-0.5 text-xs bg-zinc-700 text-zinc-300 rounded">
               {item.badge}

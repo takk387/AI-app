@@ -141,12 +141,6 @@ function MobileMenu({
   if (!isOpen) return null;
 
   const viewModes: ViewType[] = ['chat', 'code', 'preview', 'split'];
-  const exportFormats: { format: ExportFormat; label: string }[] = [
-    { format: 'html', label: 'Export as HTML' },
-    { format: 'react', label: 'Export as React' },
-    { format: 'zip', label: 'Export as ZIP' },
-    { format: 'clipboard', label: 'Copy to Clipboard' },
-  ];
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 md:hidden" onClick={onClose}>
@@ -256,17 +250,15 @@ function MobileMenu({
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-zinc-500">Project</h4>
           <div className="space-y-2">
-            {onNewApp && (
-              <button
-                onClick={() => {
-                  onNewApp();
-                  onClose();
-                }}
-                className="w-full linear-btn-secondary justify-start"
-              >
-                New App
-              </button>
-            )}
+            <button
+              onClick={() => {
+                (onNewApp || onNewProject)();
+                onClose();
+              }}
+              className="w-full linear-btn-secondary justify-start"
+            >
+              New App
+            </button>
             {onShowLibrary && (
               <button
                 onClick={() => {
@@ -285,15 +277,6 @@ function MobileMenu({
             )}
             <button
               onClick={() => {
-                onNewProject();
-                onClose();
-              }}
-              className="w-full linear-btn-secondary justify-start"
-            >
-              New App
-            </button>
-            <button
-              onClick={() => {
                 onSave();
                 onClose();
               }}
@@ -303,25 +286,16 @@ function MobileMenu({
               <SaveIcon size={16} />
               {isSaving ? 'Saving...' : 'Save'}
             </button>
-          </div>
-        </div>
-
-        {/* Export Options */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-zinc-500">Export</h4>
-          <div className="space-y-2">
-            {exportFormats.map((option) => (
-              <button
-                key={option.format}
-                onClick={() => {
-                  onExport(option.format);
-                  onClose();
-                }}
-                className="w-full linear-btn-secondary justify-start"
-              >
-                {option.label}
-              </button>
-            ))}
+            {/* Primary export action - ZIP is most useful on mobile */}
+            <button
+              onClick={() => {
+                onExport('zip');
+                onClose();
+              }}
+              className="w-full linear-btn-secondary justify-start"
+            >
+              Export as ZIP
+            </button>
           </div>
         </div>
 

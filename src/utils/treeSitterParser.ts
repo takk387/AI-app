@@ -22,11 +22,33 @@ import type {
  *
  * @version 2.0.0 - Comprehensive rewrite (Nov 2025)
  */
+// Simple hash function for cache keys
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
+
+// Cache entry for parsed trees
+interface TreeCacheEntry {
+  tree: Parser.Tree;
+  timestamp: number;
+}
+
 export class CodeParser {
   private parser: Parser;
   private language: 'javascript' | 'typescript';
   private initialized: boolean = false;
   private options: ParserOptions;
+
+  // Tree cache for repeated parsing of same code
+  private treeCache: Map<string, TreeCacheEntry> = new Map();
+  private readonly maxCacheSize: number = 50;
+  private readonly cacheTTLMs: number = 5 * 60 * 1000; // 5 minutes
 
   constructor(language: 'javascript' | 'typescript' = 'typescript', options: ParserOptions = {}) {
     this.parser = new Parser();
@@ -97,6 +119,7 @@ export class CodeParser {
   /**
    * Parse code into a syntax tree
    * Now async due to lazy initialization
+   * Uses caching to avoid re-parsing identical code
    */
   async parse(code: string): Promise<Parser.Tree | null> {
     if (!code || typeof code !== 'string') {
@@ -104,6 +127,13 @@ export class CodeParser {
         console.error('parse() requires a non-empty string');
       }
       return null;
+    }
+
+    // Check cache first
+    const cacheKey = simpleHash(code);
+    const cached = this.treeCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTTLMs) {
+      return cached.tree;
     }
 
     await this.ensureInitialized();
@@ -125,6 +155,9 @@ export class CodeParser {
         // Still return tree - error-tolerant!
       }
 
+      // Cache the tree
+      this.cacheTree(cacheKey, tree);
+
       return tree;
     } catch (error) {
       if (this.options.logErrors) {
@@ -132,6 +165,37 @@ export class CodeParser {
       }
       return null;
     }
+  }
+
+  /**
+   * Cache a parsed tree with LRU eviction
+   */
+  private cacheTree(key: string, tree: Parser.Tree): void {
+    // Evict oldest entries if at capacity
+    if (this.treeCache.size >= this.maxCacheSize) {
+      let oldestKey: string | null = null;
+      let oldestTime = Infinity;
+
+      for (const [k, entry] of this.treeCache) {
+        if (entry.timestamp < oldestTime) {
+          oldestTime = entry.timestamp;
+          oldestKey = k;
+        }
+      }
+
+      if (oldestKey) {
+        this.treeCache.delete(oldestKey);
+      }
+    }
+
+    this.treeCache.set(key, { tree, timestamp: Date.now() });
+  }
+
+  /**
+   * Clear the tree cache
+   */
+  clearCache(): void {
+    this.treeCache.clear();
   }
 
   /**

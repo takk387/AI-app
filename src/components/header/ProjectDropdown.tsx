@@ -41,6 +41,7 @@ export const ProjectDropdown: React.FC<ProjectDropdownProps> = ({
     {
       id: 'new-app',
       label: 'New App',
+      description: 'Start fresh with a new project',
       icon: <PlusIcon size={16} />,
       shortcut: 'Ctrl+N',
       onClick: onNewProject,
@@ -48,6 +49,7 @@ export const ProjectDropdown: React.FC<ProjectDropdownProps> = ({
     {
       id: 'my-apps',
       label: 'My Apps',
+      description: 'Browse saved projects',
       icon: <AppsIcon size={16} />,
       onClick: onMyApps,
       badge: appCount > 0 ? appCount : undefined,
@@ -56,29 +58,34 @@ export const ProjectDropdown: React.FC<ProjectDropdownProps> = ({
     {
       id: 'export',
       label: 'Export',
+      description: 'Download or share your app',
       icon: <DownloadIcon size={16} />,
       subItems: [
         {
           id: 'export-html',
           label: 'Export as HTML',
+          description: 'Single file preview',
           icon: <FileIcon size={16} />,
           onClick: onExportHTML,
         },
         {
           id: 'export-react',
           label: 'Export as React',
+          description: 'Full component code',
           icon: <CodeIcon size={16} />,
           onClick: onExportReact,
         },
         {
           id: 'export-zip',
           label: 'Export as ZIP',
+          description: 'Complete project bundle',
           icon: <ArchiveIcon size={16} />,
           onClick: onExportZip,
         },
         {
           id: 'copy-clipboard',
           label: 'Copy to Clipboard',
+          description: 'Quick code copy',
           icon: <ClipboardIcon size={16} />,
           onClick: onCopyToClipboard,
         },
@@ -91,6 +98,7 @@ export const ProjectDropdown: React.FC<ProjectDropdownProps> = ({
     items.push({
       id: 'share',
       label: 'Share',
+      description: 'Generate shareable link',
       icon: <ShareIcon size={16} />,
       onClick: onShare,
     });
