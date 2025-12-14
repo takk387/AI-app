@@ -19,6 +19,63 @@ interface BuildInput {
   dependencies?: Record<string, string>;
 }
 
+// ============================================================================
+// BUNDLE CACHING
+// ============================================================================
+
+interface CacheEntry {
+  html: string;
+  timestamp: number;
+}
+
+// Cache for bundled HTML - keyed by content hash
+const bundleCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 50; // Limit cache size to prevent memory bloat
+
+/**
+ * Simple hash function for cache key generation
+ * Uses DJB2 algorithm - fast and good distribution
+ */
+function hashContent(content: string): string {
+  let hash = 5381;
+  for (let i = 0; i < content.length; i++) {
+    hash = (hash * 33) ^ content.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
+ * Generate a cache key from build input
+ */
+function generateCacheKey(input: BuildInput): string {
+  const filesContent = input.files
+    .map((f) => `${f.path}:${f.content}`)
+    .sort()
+    .join('|');
+  const depsContent = JSON.stringify(input.dependencies || {});
+  return hashContent(`${input.name || ''}:${filesContent}:${depsContent}`);
+}
+
+/**
+ * Clean up expired cache entries
+ */
+function cleanupCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of bundleCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      bundleCache.delete(key);
+    }
+  }
+  // If still over limit, remove oldest entries
+  if (bundleCache.size > MAX_CACHE_ENTRIES) {
+    const entries = Array.from(bundleCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toRemove = entries.slice(0, entries.length - MAX_CACHE_ENTRIES);
+    toRemove.forEach(([key]) => bundleCache.delete(key));
+  }
+}
+
 /**
  * Shim modules that map CDN globals to ES module exports
  * These allow esbuild to bundle code that imports from react/react-dom
@@ -191,8 +248,16 @@ function createVirtualFsPlugin(files: AppFile[], hasDependencies: Record<string,
 /**
  * Build a complete HTML document from app files
  * Bundles all files using esbuild and injects into HTML with CDN dependencies
+ * Results are cached to avoid redundant bundling for identical inputs
  */
 export async function buildPreviewHtml(input: BuildInput): Promise<string> {
+  // Check cache first
+  const cacheKey = generateCacheKey(input);
+  const cached = bundleCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.html;
+  }
+
   // Use require() to ensure this only loads on the server
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const esbuild = require('esbuild');
@@ -258,7 +323,7 @@ export async function buildPreviewHtml(input: BuildInput): Promise<string> {
   // Check for common dependencies
   const hasLucide = 'lucide-react' in dependencies;
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -322,4 +387,10 @@ export async function buildPreviewHtml(input: BuildInput): Promise<string> {
   </script>
 </body>
 </html>`;
+
+  // Store in cache and cleanup old entries
+  bundleCache.set(cacheKey, { html, timestamp: Date.now() });
+  cleanupCache();
+
+  return html;
 }

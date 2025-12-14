@@ -135,11 +135,17 @@ const DEFAULT_CONFIG: DeviceFrameConfig = {
 };
 
 // ============================================================================
-// SVG COMPONENTS
+// SVG COMPONENTS (Memoized to prevent unnecessary re-renders)
 // ============================================================================
 
 // iPhone Notch SVG
-function IPhoneNotch({ width, height }: { width: number; height: number }) {
+const IPhoneNotch = React.memo(function IPhoneNotch({
+  width,
+  height,
+}: {
+  width: number;
+  height: number;
+}) {
   return (
     <svg
       width={width}
@@ -176,10 +182,10 @@ function IPhoneNotch({ width, height }: { width: number; height: number }) {
       <circle cx={width * 0.32} cy={height * 0.5} r={4} fill="#0a0a1a" />
     </svg>
   );
-}
+});
 
 // Dynamic Island SVG
-function DynamicIsland() {
+const DynamicIsland = React.memo(function DynamicIsland() {
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
       <div
@@ -191,10 +197,10 @@ function DynamicIsland() {
       </div>
     </div>
   );
-}
+});
 
 // Punch Hole Camera
-function PunchHole({ position }: { position: 'center' | 'left' }) {
+const PunchHole = React.memo(function PunchHole({ position }: { position: 'center' | 'left' }) {
   return (
     <div
       className={`absolute top-3 z-10 ${position === 'center' ? 'left-1/2 -translate-x-1/2' : 'left-6'}`}
@@ -202,10 +208,10 @@ function PunchHole({ position }: { position: 'center' | 'left' }) {
       <div className="w-4 h-4 rounded-full bg-zinc-900 border border-zinc-800 shadow-inner" />
     </div>
   );
-}
+});
 
 // Home Button (iPhone SE style)
-function HomeButton() {
+const HomeButton = React.memo(function HomeButton() {
   return (
     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10">
       <div
@@ -214,10 +220,14 @@ function HomeButton() {
       />
     </div>
   );
-}
+});
 
 // Front Camera (for tablets)
-function FrontCamera({ position }: { position: 'top' | 'top-left' }) {
+const FrontCamera = React.memo(function FrontCamera({
+  position,
+}: {
+  position: 'top' | 'top-left';
+}) {
   return (
     <div
       className={`absolute top-2 z-10 ${position === 'top' ? 'left-1/2 -translate-x-1/2' : 'left-4'}`}
@@ -225,10 +235,16 @@ function FrontCamera({ position }: { position: 'top' | 'top-left' }) {
       <div className="w-2 h-2 rounded-full bg-zinc-700" />
     </div>
   );
-}
+});
 
 // Side Buttons (power, volume)
-function SideButtons({ height, side }: { height: number; side: 'left' | 'right' }) {
+const SideButtons = React.memo(function SideButtons({
+  height,
+  side,
+}: {
+  height: number;
+  side: 'left' | 'right';
+}) {
   return (
     <div
       className={`absolute top-1/4 ${side === 'left' ? '-left-1' : '-right-1'} flex flex-col gap-4`}
@@ -254,7 +270,7 @@ function SideButtons({ height, side }: { height: number; side: 'left' | 'right' 
       )}
     </div>
   );
-}
+});
 
 // ============================================================================
 // MAIN COMPONENT

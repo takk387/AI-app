@@ -98,72 +98,66 @@ export default function PowerfulPreview({
     onCaptureReady?.(capturePreview);
   }, [capturePreview, onCaptureReady]);
 
-  // Handle parse error or missing files
-  if (!appData || !appData.files || !Array.isArray(appData.files) || appData.files.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-slate-900">
-        <div className="text-center p-6">
-          <p className="text-red-400 mb-2">Failed to load preview</p>
-          <p className="text-slate-500 text-sm">
-            {!appData ? 'Invalid app data format' : 'No files found in app data'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Convert files to Sandpack format - React template needs / prefix
-  const sandpackFiles: Record<string, { code: string }> = {};
-
-  appData.files.forEach((file) => {
-    // Map file paths to Sandpack structure
-    let sandpackPath = file.path;
-
-    // Handle different file structures - remove src/ prefix
-    if (sandpackPath.startsWith('src/')) {
-      sandpackPath = sandpackPath.substring(4); // Remove 'src/' (4 characters)
+  // Memoize file conversion and dependencies to prevent recalculation on every render
+  // Must be called before early return to satisfy React hooks rules
+  const { sandpackFiles, dependencies } = useMemo(() => {
+    // Return empty values if appData is invalid - will be caught by early return below
+    if (!appData || !appData.files || !Array.isArray(appData.files) || appData.files.length === 0) {
+      return { sandpackFiles: {}, dependencies: {} };
     }
 
-    // Keep as App.tsx for TypeScript support
-    if (
-      sandpackPath === 'App.tsx' ||
-      sandpackPath === 'app/page.tsx' ||
-      sandpackPath === 'page.tsx'
-    ) {
-      sandpackPath = 'App.tsx';
+    // Convert files to Sandpack format - React template needs / prefix
+    const files: Record<string, { code: string }> = {};
+
+    appData.files.forEach((file) => {
+      // Map file paths to Sandpack structure
+      let sandpackPath = file.path;
+
+      // Handle different file structures - remove src/ prefix
+      if (sandpackPath.startsWith('src/')) {
+        sandpackPath = sandpackPath.substring(4); // Remove 'src/' (4 characters)
+      }
+
+      // Keep as App.tsx for TypeScript support
+      if (
+        sandpackPath === 'App.tsx' ||
+        sandpackPath === 'app/page.tsx' ||
+        sandpackPath === 'page.tsx'
+      ) {
+        sandpackPath = 'App.tsx';
+      }
+
+      // Add leading / for Sandpack react template
+      if (!sandpackPath.startsWith('/') && !sandpackPath.startsWith('public/')) {
+        sandpackPath = '/' + sandpackPath;
+      }
+
+      // Sandpack file format uses objects with 'code' property
+      files[sandpackPath] = { code: file.content };
+    });
+
+    // Ensure we have /App.tsx
+    if (!files['/App.tsx']) {
+      console.error('No /App.tsx found in files:', Object.keys(files));
     }
 
-    // Add leading / for Sandpack react template
-    if (!sandpackPath.startsWith('/') && !sandpackPath.startsWith('public/')) {
-      sandpackPath = '/' + sandpackPath;
-    }
-
-    // Sandpack file format uses objects with 'code' property
-    sandpackFiles[sandpackPath] = { code: file.content };
-  });
-
-  // Ensure we have /App.tsx
-  if (!sandpackFiles['/App.tsx']) {
-    console.error('No /App.tsx found in files:', Object.keys(sandpackFiles));
-  }
-
-  // Add index.tsx for TypeScript support
-  if (!sandpackFiles['/index.tsx'] && !sandpackFiles['/index.js']) {
-    sandpackFiles['/index.tsx'] = {
-      code: `import React from "react";
+    // Add index.tsx for TypeScript support
+    if (!files['/index.tsx'] && !files['/index.js']) {
+      files['/index.tsx'] = {
+        code: `import React from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import App from "./App";
 
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);`,
-    };
-  }
+      };
+    }
 
-  // Add styles.css - Sandpack format
-  if (!sandpackFiles['/styles.css']) {
-    sandpackFiles['/styles.css'] = {
-      code: `* {
+    // Add styles.css - Sandpack format
+    if (!files['/styles.css']) {
+      files['/styles.css'] = {
+        code: `* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -178,12 +172,12 @@ body {
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }`,
-    };
-  }
+      };
+    }
 
-  // Add public/index.html with Tailwind CDN
-  sandpackFiles['/public/index.html'] = {
-    code: `<!DOCTYPE html>
+    // Add public/index.html with Tailwind CDN
+    files['/public/index.html'] = {
+      code: `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
@@ -195,31 +189,48 @@ h1, h2, h3, h4, h5, h6 {
     <div id="root"></div>
   </body>
 </html>`,
-  };
+    };
 
-  // Filter out incompatible dependencies for react-ts template
-  // Next.js and related packages don't work with Sandpack's React SPA template
-  const incompatiblePackages = [
-    'next',
-    'next-themes',
-    '@next/font',
-    '@next/mdx',
-    'eslint-config-next',
-  ];
+    // Filter out incompatible dependencies for react-ts template
+    // Next.js and related packages don't work with Sandpack's React SPA template
+    const incompatiblePackages = [
+      'next',
+      'next-themes',
+      '@next/font',
+      '@next/mdx',
+      'eslint-config-next',
+    ];
 
-  const filteredUserDeps = Object.fromEntries(
-    Object.entries(appData.dependencies || {}).filter(
-      ([pkg]) => !incompatiblePackages.some((p) => pkg === p || pkg.startsWith(`${p}/`))
-    )
-  );
+    const filteredUserDeps = Object.fromEntries(
+      Object.entries(appData.dependencies || {}).filter(
+        ([pkg]) => !incompatiblePackages.some((p) => pkg === p || pkg.startsWith(`${p}/`))
+      )
+    );
 
-  // Merge user dependencies with required ones
-  const dependencies = {
-    react: '^18.0.0',
-    'react-dom': '^18.0.0',
-    'react-scripts': '^5.0.0',
-    ...filteredUserDeps,
-  };
+    // Merge user dependencies with required ones
+    const deps = {
+      react: '^18.0.0',
+      'react-dom': '^18.0.0',
+      'react-scripts': '^5.0.0',
+      ...filteredUserDeps,
+    };
+
+    return { sandpackFiles: files, dependencies: deps };
+  }, [appData]);
+
+  // Handle parse error or missing files (after hooks to satisfy React rules)
+  if (!appData || !appData.files || !Array.isArray(appData.files) || appData.files.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-slate-900">
+        <div className="text-center p-6">
+          <p className="text-red-400 mb-2">Failed to load preview</p>
+          <p className="text-slate-500 text-sm">
+            {!appData ? 'Invalid app data format' : 'No files found in app data'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

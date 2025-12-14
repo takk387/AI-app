@@ -116,6 +116,12 @@ interface VersionControlSlice {
 export type MainView = 'main' | 'wizard' | 'layout' | 'build';
 
 /**
+ * Preview mode type for WebContainers integration
+ */
+type PreviewMode = 'sandpack' | 'webcontainer';
+type WebContainerStatus = 'idle' | 'booting' | 'ready' | 'error';
+
+/**
  * UI state slice
  */
 interface UISlice {
@@ -137,6 +143,9 @@ interface UISlice {
   showPerformanceReport: boolean;
   // Search
   searchQuery: string;
+  // Preview mode (WebContainers support)
+  previewMode: PreviewMode;
+  webContainerStatus: WebContainerStatus;
   // Actions
   setIsClient: (isClient: boolean) => void;
   setActiveTab: (tab: ActiveTab) => void;
@@ -154,6 +163,8 @@ interface UISlice {
   setShowQualityReport: (show: boolean) => void;
   setShowPerformanceReport: (show: boolean) => void;
   setSearchQuery: (query: string) => void;
+  setPreviewMode: (mode: PreviewMode) => void;
+  setWebContainerStatus: (status: WebContainerStatus) => void;
 }
 
 /**
@@ -364,6 +375,9 @@ export const useAppStore = create<AppState>()(
       showQualityReport: false,
       showPerformanceReport: false,
       searchQuery: '',
+      // Preview mode (WebContainers support)
+      previewMode: 'sandpack',
+      webContainerStatus: 'idle',
 
       setIsClient: (isClient) => set({ isClient }),
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -381,6 +395,8 @@ export const useAppStore = create<AppState>()(
       setShowQualityReport: (show) => set({ showQualityReport: show }),
       setShowPerformanceReport: (show) => set({ showPerformanceReport: show }),
       setSearchQuery: (query) => set({ searchQuery: query }),
+      setPreviewMode: (mode) => set({ previewMode: mode }),
+      setWebContainerStatus: (status) => set({ webContainerStatus: status }),
 
       // ========================================================================
       // DATA SLICE

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import PowerfulPreview from './PowerfulPreview';
+import PreviewContainer from './PreviewContainer';
 import { useToast } from './Toast';
 import { DeviceToolbar } from './preview';
 import { useResponsivePreview } from '@/hooks/useResponsivePreview';
@@ -231,8 +231,9 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
       <div className="flex-1 overflow-hidden">
         {activeTab === 'preview' ? (
           <div className="h-full w-full">
-            <PowerfulPreview
+            <PreviewContainer
               appDataJson={appDataJson}
+              appType={appData.appType}
               isFullscreen={true}
               onCaptureReady={handleCaptureReady}
               devicePreset={responsiveState.devicePreset}
@@ -243,6 +244,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
               showConsole={showConsole}
               onConsoleToggle={handleToggleConsole}
               showDeviceFrame={showDeviceFrame}
+              showModeSelector={true}
             />
           </div>
         ) : (
@@ -336,8 +338,9 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
 
       {/* Preview area */}
       <div className="flex-1 relative min-h-0 overflow-hidden">
-        <PowerfulPreview
+        <PreviewContainer
           appDataJson={appDataJson}
+          appType={appData.appType}
           isFullscreen={false}
           onCaptureReady={handleCaptureReady}
           devicePreset={responsiveState.devicePreset}
@@ -348,6 +351,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
           showConsole={showConsole}
           onConsoleToggle={handleToggleConsole}
           showDeviceFrame={showDeviceFrame}
+          showModeSelector={true}
         />
       </div>
     </div>

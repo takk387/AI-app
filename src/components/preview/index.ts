@@ -9,3 +9,8 @@ export { DeviceFrame, type DeviceFrameProps, type DeviceType } from './DeviceFra
 export { DeviceToolbar, type DeviceToolbarProps } from './DeviceToolbar';
 export { TouchSimulator, type TouchSimulatorProps } from './TouchSimulator';
 export { ConsolePanel, type ConsolePanelProps } from './ConsolePanel';
+
+// WebContainer preview components
+export { WebContainerPreview } from './WebContainerPreview';
+export { WebContainerTerminal } from './WebContainerTerminal';
+export { PreviewModeSelector, type PreviewMode } from './PreviewModeSelector';

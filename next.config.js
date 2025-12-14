@@ -15,6 +15,26 @@ module.exports = {
     serverMinification: false,
   },
 
+  // COOP/COEP headers required for WebContainers (SharedArrayBuffer)
+  // Using 'credentialless' for better compatibility with external resources
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'credentialless',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+        ],
+      },
+    ];
+  },
+
   // NOTE: Turbopack is disabled by default in production builds
   // For development, Turbopack can be enabled with `next dev --turbo`
   // but is not required for tree-sitter compatibility
