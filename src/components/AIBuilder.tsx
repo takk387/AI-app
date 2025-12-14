@@ -521,7 +521,41 @@ export default function AIBuilder() {
     [smartContext.isInitialized, smartContext.isMemoryEnabled, compressForACTMode]
   );
 
-  // Keyboard shortcuts
+  // Handle escape to close open modals/panels in priority order
+  const handleEscapeKey = useCallback(() => {
+    if (showSettings) {
+      setShowSettings(false);
+    } else if (showLibrary) {
+      setShowLibrary(false);
+    } else if (showVersionHistory) {
+      setShowVersionHistory(false);
+    } else if (showDiffPreview) {
+      setShowDiffPreview(false);
+    } else if (showApprovalModal) {
+      setShowApprovalModal(false);
+    } else if (showDeploymentModal) {
+      setShowDeploymentModal(false);
+    } else if (showCompareModal) {
+      setShowCompareModal(false);
+    }
+  }, [
+    showSettings,
+    showLibrary,
+    showVersionHistory,
+    showDiffPreview,
+    showApprovalModal,
+    showDeploymentModal,
+    showCompareModal,
+    setShowSettings,
+    setShowLibrary,
+    setShowVersionHistory,
+    setShowDiffPreview,
+    setShowApprovalModal,
+    setShowDeploymentModal,
+    setShowCompareModal,
+  ]);
+
+  // Keyboard shortcuts - comprehensive handling
   useKeyboardShortcuts({
     onUndo: versionControl.undo,
     onRedo: versionControl.redo,
@@ -530,7 +564,9 @@ export default function AIBuilder() {
         saveComponentToDb(currentComponent);
       }
     },
+    onEscape: handleEscapeKey,
     enabled: !!currentComponent,
+    context: 'builder',
   });
 
   // ============================================================================

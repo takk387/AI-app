@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { FocusTrap } from './ui/FocusTrap';
 
 // ============================================================================
 // TYPES
@@ -350,98 +351,100 @@ export function KeyboardShortcutsPanel({ isOpen, onClose }: KeyboardShortcutsPan
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-2xl max-h-[80vh] bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-slate-900 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <svg
-                className="w-5 h-5 text-blue-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+      <FocusTrap onEscape={onClose}>
+        <div className="relative w-full max-w-2xl max-h-[80vh] bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-slate-900 border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <svg
+                  className="w-5 h-5 text-blue-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Keyboard Shortcuts</h2>
+                <p className="text-xs text-slate-500">
+                  {isMac ? 'macOS' : 'Windows/Linux'} shortcuts
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-white">Keyboard Shortcuts</h2>
-              <p className="text-xs text-slate-500">
-                {isMac ? 'macOS' : 'Windows/Linux'} shortcuts
-              </p>
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="px-6 py-3 bg-slate-900/50 border-b border-slate-700/50">
+            <SearchInput value={searchQuery} onChange={setSearchQuery} />
+          </div>
+
+          {/* Content */}
+          <div className="overflow-y-auto max-h-[calc(80vh-180px)] p-6">
+            {filteredCategories.length > 0 ? (
+              filteredCategories.map((category) => (
+                <CategorySection key={category.id} category={category} />
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <svg
+                  className="w-12 h-12 mx-auto text-slate-600 mb-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p className="text-slate-400">No shortcuts found for &quot;{searchQuery}&quot;</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="sticky bottom-0 px-6 py-3 bg-slate-800/80 border-t border-slate-700 backdrop-blur-sm">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>
+                Press <Key>?</Key> to toggle this panel
+              </span>
+              <span>
+                Press <Key>Esc</Key> to close
+              </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
         </div>
-
-        {/* Search */}
-        <div className="px-6 py-3 bg-slate-900/50 border-b border-slate-700/50">
-          <SearchInput value={searchQuery} onChange={setSearchQuery} />
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(80vh-180px)] p-6">
-          {filteredCategories.length > 0 ? (
-            filteredCategories.map((category) => (
-              <CategorySection key={category.id} category={category} />
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <svg
-                className="w-12 h-12 mx-auto text-slate-600 mb-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-slate-400">No shortcuts found for &quot;{searchQuery}&quot;</p>
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="mt-2 text-sm text-blue-400 hover:text-blue-300"
-              >
-                Clear search
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 px-6 py-3 bg-slate-800/80 border-t border-slate-700 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Press <Key>?</Key> to toggle this panel
-            </span>
-            <span>
-              Press <Key>Esc</Key> to close
-            </span>
-          </div>
-        </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

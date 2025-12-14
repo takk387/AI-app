@@ -11,6 +11,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useLayoutBuilder } from '@/hooks/useLayoutBuilder';
 import { useToast } from '@/hooks/useToast';
 import { useAnalysisProgress } from '@/hooks/useAnalysisProgress';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { LayoutPreview } from '@/components/LayoutPreview';
 import { AnalysisProgressIndicator } from '@/components/AnalysisProgressIndicator';
 import { DesignComparison } from '@/components/DesignComparison';
@@ -480,45 +481,61 @@ export function LayoutBuilderWizard({
     }
   }, [capturePreview, success, error]);
 
-  // Keyboard shortcuts for undo/redo and other actions
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in input fields
-      const target = e.target as HTMLElement;
-      const isInputField =
-        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        if (e.shiftKey) {
-          e.preventDefault();
-          redo();
-        } else {
-          e.preventDefault();
-          undo();
-        }
-      }
-
-      // '?' to toggle keyboard shortcuts (Shift + /)
-      if (e.key === '?' && !isInputField) {
-        e.preventDefault();
-        setShowKeyboardShortcuts(!showKeyboardShortcuts);
-      }
-
-      // 'Escape' to close panels
-      if (e.key === 'Escape') {
-        if (showKeyboardShortcuts) {
-          setShowKeyboardShortcuts(false);
-        } else if (showCodePreview) {
-          setShowCodePreview(false);
-        }
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+  // Comprehensive keyboard shortcuts using the hook
+  // Handles all shortcuts documented in KeyboardShortcutsPanel
+  const handleEscape = useCallback(() => {
+    if (showKeyboardShortcuts) {
+      setShowKeyboardShortcuts(false);
+    } else if (showCodePreview) {
+      setShowCodePreview(false);
+    } else if (showGridOverlay) {
+      setShowGridOverlay(false);
+    } else if (showVersionHistory) {
+      setShowVersionHistory(false);
+    } else if (showComponentLibrary) {
+      setPanel('componentLibrary', false);
+    } else if (showArchitectureTemplates) {
+      setPanel('architectureTemplates', false);
     }
-  }, [isOpen, undo, redo, showKeyboardShortcuts, showCodePreview]);
+  }, [
+    showKeyboardShortcuts,
+    showCodePreview,
+    showGridOverlay,
+    showVersionHistory,
+    showComponentLibrary,
+    showArchitectureTemplates,
+    setShowKeyboardShortcuts,
+    setShowCodePreview,
+    setShowGridOverlay,
+    setShowVersionHistory,
+    setPanel,
+  ]);
+
+  useKeyboardShortcuts({
+    // General shortcuts
+    onUndo: undo,
+    onRedo: redo,
+    onSave: saveDesign,
+    onExport: () => setShowExportMenu(true),
+    onShowShortcuts: () => setShowKeyboardShortcuts(!showKeyboardShortcuts),
+    onEscape: handleEscape,
+
+    // View shortcuts - breakpoints
+    onMobileView: () => setPreviewWidth(breakpoints.sm), // 640px
+    onTabletView: () => setPreviewWidth(breakpoints.md), // 768px
+    onDesktopView: () => setPreviewWidth(breakpoints.lg), // 1024px
+    onLargeDesktopView: () => setPreviewWidth(breakpoints.xl), // 1280px
+    onExtraLargeView: () => setPreviewWidth(breakpoints['2xl']), // 1536px
+    onCustomBreakpoint: () => setShowBreakpointEditor(true),
+
+    // View shortcuts - toggles
+    onToggleGrid: () => setShowGridOverlay(!showGridOverlay),
+    onCodePreview: () => setShowCodePreview(!showCodePreview),
+
+    // Only enabled when layout builder is open
+    enabled: isOpen,
+    context: 'layout',
+  });
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
