@@ -1825,6 +1825,17 @@ export default function AIBuilder() {
 
           const files = streamResult.files as Array<{ path: string; content: string }>;
           if (files && files.length > 0) {
+            // Push current state to undo stack before modification
+            versionControl.pushToUndoStack({
+              id: generateId(),
+              versionNumber: (currentComponent.versions?.length || 0) + 1,
+              code: currentComponent.code,
+              description: currentComponent.description,
+              timestamp: currentComponent.timestamp,
+              changeType: 'MINOR_CHANGE',
+            });
+            versionControl.clearRedoStack();
+
             let updatedComponent: GeneratedComponent = {
               ...currentComponent,
               code: JSON.stringify(streamResult, null, 2),
@@ -2016,6 +2027,19 @@ export default function AIBuilder() {
 
         const files = data.files as Array<{ path: string; content: string }>;
         if (files && files.length > 0) {
+          // Push to undo stack if modifying existing component
+          if (isModification && currentComponent) {
+            versionControl.pushToUndoStack({
+              id: generateId(),
+              versionNumber: (currentComponent.versions?.length || 0) + 1,
+              code: currentComponent.code,
+              description: currentComponent.description,
+              timestamp: currentComponent.timestamp,
+              changeType: 'MINOR_CHANGE',
+            });
+            versionControl.clearRedoStack();
+          }
+
           let newComponent: GeneratedComponent = {
             id: isModification && currentComponent ? currentComponent.id : generateId(),
             name: (data.name as string) || extractComponentName(userInput),
@@ -2029,7 +2053,7 @@ export default function AIBuilder() {
 
           newComponent = saveVersion(
             newComponent,
-            'NEW_APP',
+            isModification ? 'MAJOR_CHANGE' : 'NEW_APP',
             (data.description as string) || userInput
           );
 
@@ -2202,6 +2226,10 @@ export default function AIBuilder() {
                         console.error('Failed to capture preview:', err);
                       }
                     }}
+                    canUndo={versionControl.canUndo}
+                    canRedo={versionControl.canRedo}
+                    onUndo={versionControl.undo}
+                    onRedo={versionControl.redo}
                   />
                 </div>
               </ResizablePanel>

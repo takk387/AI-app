@@ -17,6 +17,8 @@ import {
   LayersIcon,
   EyeIcon,
   CameraIcon,
+  UndoIcon,
+  RedoIcon,
 } from './ui/Icons';
 
 // ============================================================================
@@ -135,6 +137,12 @@ export interface ChatPanelProps {
   // Design mode capture (optional)
   hasLayoutDesign?: boolean;
   onCapturePreview?: () => Promise<void>;
+
+  // Undo/Redo (optional)
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -156,6 +164,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   isStreamingActive,
   hasLayoutDesign,
   onCapturePreview,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }) => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -275,6 +287,31 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Floating Undo/Redo Bar - appears after modifications */}
+      {(canUndo || canRedo) && (
+        <div className="px-4 py-2 border-t border-zinc-800 bg-zinc-800/50 flex items-center justify-center gap-2">
+          <span className="text-xs text-zinc-500 mr-2">Recent change:</span>
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-zinc-700 hover:bg-zinc-600 text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Undo (Ctrl+Z)"
+          >
+            <UndoIcon size={14} />
+            Undo
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-zinc-700 hover:bg-zinc-600 text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <RedoIcon size={14} />
+            Redo
+          </button>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
