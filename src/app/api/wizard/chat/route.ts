@@ -10,8 +10,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { WIZARD_SYSTEM_PROMPT } from '@/prompts/wizardSystemPrompt';
 import type { Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 
-// Railway serverless function config
-export const maxDuration = 60;
+// Vercel serverless function config
+export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
 const anthropic = new Anthropic({

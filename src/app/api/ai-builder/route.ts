@@ -11,7 +11,7 @@ import { isMockAIEnabled, mockComponentResponse } from '@/utils/mockAI';
 import { logAPI } from '@/utils/debug';
 
 // Vercel serverless function config
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const anthropic = new Anthropic({

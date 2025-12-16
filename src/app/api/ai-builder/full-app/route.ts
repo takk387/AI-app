@@ -19,7 +19,7 @@ import { logAPI } from '@/utils/debug';
 import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
 
 // Vercel serverless function config
-export const maxDuration = 60; // 60 seconds max
+export const maxDuration = 300; // 5 minutes max
 export const dynamic = 'force-dynamic';
 
 const anthropic = new Anthropic({

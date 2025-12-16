@@ -292,6 +292,23 @@ Does this look good? You can:
           timestamp: new Date(),
         };
         onAddMessage(planMessage);
+      } else if (data.success && !data.plan) {
+        // API returned success but no plan - this is a bug, show error
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          role: 'system',
+          content:
+            '❌ **Phase generation failed**\n\nThe server returned success but no plan was generated. Please try again.',
+          timestamp: new Date(),
+        };
+        onAddMessage(errorMessage);
+        onShowToast({
+          type: 'error',
+          message: 'Phase plan generation failed - no plan returned. Please try again.',
+        });
+      } else if (!data.success) {
+        // API returned failure
+        throw new Error(data.error || 'Phase generation failed');
       }
     } catch (err) {
       console.error('Phase generation error:', err);

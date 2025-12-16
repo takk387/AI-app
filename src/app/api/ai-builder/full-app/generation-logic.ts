@@ -363,19 +363,19 @@ const TOKEN_BUDGETS = {
   foundation: {
     max_tokens: 32000, // 16000 thinking + 16000 response
     thinking_budget: 16000,
-    timeout: 120000, // 2 minutes
+    timeout: 240000, // 4 minutes
   },
   // Later phases need less (additive changes)
   additive: {
     max_tokens: 20000, // 10000 thinking + 10000 response
     thinking_budget: 10000,
-    timeout: 90000, // 1.5 minutes
+    timeout: 180000, // 3 minutes
   },
   // Small modifications
   small: {
     max_tokens: 16000, // 8000 thinking + 8000 response
     thinking_budget: 8000,
-    timeout: 60000, // 1 minute
+    timeout: 120000, // 2 minutes
   },
 };
 

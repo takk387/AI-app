@@ -25,7 +25,7 @@ import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
 import type { LayoutDesign } from '@/types/layoutDesign';
 
 // Vercel serverless function config
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const anthropic = new Anthropic({

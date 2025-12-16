@@ -232,6 +232,27 @@ export function useDynamicBuildPhases(
           setAccumulatedCodeState(result.generatedCode);
         }
 
+        // Auto-run quality review after successful phase (fire-and-forget)
+        if (result.success) {
+          (async () => {
+            try {
+              setIsReviewing(true);
+              setPipelineState(await getCodeReviewPipelineState());
+              const reviewResult = await manager.runPhaseQualityReview(result.phaseNumber);
+              if (reviewResult && mountedRef.current) {
+                setQualityReport(reviewResult.report);
+                setPipelineState(await getCodeReviewPipelineState());
+              }
+            } catch (err) {
+              console.error('Auto quality review failed:', err);
+            } finally {
+              if (mountedRef.current) {
+                setIsReviewing(false);
+              }
+            }
+          })();
+        }
+
         // Check if build is complete
         if (manager.isComplete()) {
           setIsBuilding(false);

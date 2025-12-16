@@ -20,7 +20,7 @@ import type {
 import { extractContextForAllPhases, type PhaseContext } from '@/utils/phaseContextExtractor';
 
 // Vercel serverless function config
-export const maxDuration = 30;
+export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
 interface GeneratePhasesRequest {
@@ -115,6 +115,18 @@ export async function POST(request: Request) {
           analysisDetails: result.analysisDetails,
         },
         { status: 400 }
+      );
+    }
+
+    // Validate that plan exists (defensive check)
+    if (!result.plan) {
+      console.error('Phase generation succeeded but no plan was created');
+      return NextResponse.json(
+        {
+          error: 'Phase generation succeeded but no plan was created',
+          suggestion: 'This may be a bug. Please try again with a simpler app description.',
+        },
+        { status: 500 }
       );
     }
 

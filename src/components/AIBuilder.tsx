@@ -75,7 +75,7 @@ import type {
   PendingDiff,
 } from '../types/aiBuilderTypes';
 import type { PhaseId } from '../types/buildPhases';
-import type { DynamicPhasePlan } from '../types/dynamicPhases';
+import type { DynamicPhasePlan, PhaseExecutionResult } from '../types/dynamicPhases';
 import { buildPhaseExecutionPrompt } from '../services/PhaseExecutionManager';
 
 // Utils
@@ -743,6 +743,31 @@ export default function AIBuilder() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, showLibrary, contentTab]); // fileStorage.loadFiles is stable
+
+  // Sync StagePlan with dynamicBuildPhases state changes
+  // This keeps newAppStagePlan in sync with the hook's internal plan state
+  useEffect(() => {
+    if (dynamicBuildPhases.plan) {
+      setNewAppStagePlan({
+        totalPhases: dynamicBuildPhases.plan.totalPhases,
+        currentPhase: dynamicBuildPhases.plan.currentPhaseNumber || 0,
+        phases: dynamicBuildPhases.plan.phases.map((p) => ({
+          number: p.number,
+          name: p.name,
+          description: p.description,
+          features: p.features,
+          // Map dynamic phase status to StagePlan PhaseStatus
+          // StagePlan only supports: 'pending' | 'building' | 'complete'
+          status:
+            p.status === 'completed'
+              ? ('complete' as const)
+              : p.status === 'in-progress'
+                ? ('building' as const)
+                : ('pending' as const), // failed/skipped/pending all map to pending
+        })),
+      });
+    }
+  }, [dynamicBuildPhases.plan, dynamicBuildPhases.phases, setNewAppStagePlan]);
 
   // ============================================================================
   // HANDLERS
@@ -1851,6 +1876,21 @@ export default function AIBuilder() {
             );
             saveComponentToDb(updatedComponent);
             setActiveTab('preview');
+
+            // Complete phase tracking if a phase was in progress
+            if (dynamicBuildPhases.currentPhase) {
+              const phaseResult: PhaseExecutionResult = {
+                phaseNumber: dynamicBuildPhases.currentPhase.number,
+                phaseName: dynamicBuildPhases.currentPhase.name,
+                success: true,
+                generatedCode: JSON.stringify(streamResult, null, 2),
+                generatedFiles: files.map((f) => f.path),
+                implementedFeatures: dynamicBuildPhases.currentPhase.features,
+                duration: 0,
+                tokensUsed: { input: 0, output: 0 },
+              };
+              dynamicBuildPhases.completePhase(phaseResult);
+            }
           }
         }
         return;
@@ -2069,6 +2109,36 @@ export default function AIBuilder() {
 
           saveComponentToDb(newComponent);
           setActiveTab('preview');
+
+          // Complete phase tracking if a phase was in progress
+          if (dynamicBuildPhases.currentPhase) {
+            const phaseResult: PhaseExecutionResult = {
+              phaseNumber: dynamicBuildPhases.currentPhase.number,
+              phaseName: dynamicBuildPhases.currentPhase.name,
+              success: true,
+              generatedCode: JSON.stringify(data, null, 2),
+              generatedFiles: files.map((f) => f.path),
+              implementedFeatures: dynamicBuildPhases.currentPhase.features,
+              duration: 0,
+              tokensUsed: { input: 0, output: 0 },
+            };
+            dynamicBuildPhases.completePhase(phaseResult);
+
+            // Sync StagePlan with completed phase status
+            setNewAppStagePlan((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentPhase: phaseResult.phaseNumber,
+                    phases: prev.phases.map((p) =>
+                      p.number === phaseResult.phaseNumber
+                        ? { ...p, status: 'complete' as const }
+                        : p
+                    ),
+                  }
+                : null
+            );
+          }
         }
       }
     } catch (error) {
@@ -2336,6 +2406,12 @@ export default function AIBuilder() {
               }}
               dynamicPlan={dynamicPhasePlan}
               isFullPage
+              qualityReport={dynamicBuildPhases.qualityReport}
+              pipelineState={dynamicBuildPhases.pipelineState}
+              isReviewing={dynamicBuildPhases.isReviewing}
+              strictness={dynamicBuildPhases.reviewStrictness}
+              onRunReview={dynamicBuildPhases.runFinalQualityCheck}
+              onStrictnessChange={dynamicBuildPhases.setReviewStrictness}
             />
           </div>
         )}
@@ -2589,6 +2665,12 @@ export default function AIBuilder() {
               }
             }}
             dynamicPlan={dynamicPhasePlan}
+            qualityReport={dynamicBuildPhases.qualityReport}
+            pipelineState={dynamicBuildPhases.pipelineState}
+            isReviewing={dynamicBuildPhases.isReviewing}
+            strictness={dynamicBuildPhases.reviewStrictness}
+            onRunReview={dynamicBuildPhases.runFinalQualityCheck}
+            onStrictnessChange={dynamicBuildPhases.setReviewStrictness}
           />
         )}
 
