@@ -13,6 +13,7 @@ export { DiffPreviewModal } from './DiffPreviewModal';
 export { StagingConsentModal } from './StagingConsentModal';
 export { CompareVersionsModal } from './CompareVersionsModal';
 export { PhasedBuildPanel } from './PhasedBuildPanel';
+export { NameAppModal } from './NameAppModal';
 
 // Re-export types
 export type { LibraryModalProps } from './LibraryModal';
@@ -23,3 +24,4 @@ export type { DiffPreviewModalProps } from './DiffPreviewModal';
 export type { StagingConsentModalProps } from './StagingConsentModal';
 export type { CompareVersionsModalProps } from './CompareVersionsModal';
 export type { PhasedBuildPanelProps } from './PhasedBuildPanel';
+export type { NameAppModalProps } from './NameAppModal';

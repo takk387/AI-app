@@ -141,6 +141,7 @@ interface UISlice {
   showAdvancedPhasedBuild: boolean;
   showQualityReport: boolean;
   showPerformanceReport: boolean;
+  showNameAppModal: boolean;
   // Search
   searchQuery: string;
   // Preview mode (WebContainers support)
@@ -162,6 +163,7 @@ interface UISlice {
   setShowAdvancedPhasedBuild: (show: boolean) => void;
   setShowQualityReport: (show: boolean) => void;
   setShowPerformanceReport: (show: boolean) => void;
+  setShowNameAppModal: (show: boolean) => void;
   setSearchQuery: (query: string) => void;
   setPreviewMode: (mode: PreviewMode) => void;
   setWebContainerStatus: (status: WebContainerStatus) => void;
@@ -374,6 +376,7 @@ export const useAppStore = create<AppState>()(
       showAdvancedPhasedBuild: false,
       showQualityReport: false,
       showPerformanceReport: false,
+      showNameAppModal: false,
       searchQuery: '',
       // Preview mode (WebContainers support)
       previewMode: 'sandpack',
@@ -394,6 +397,7 @@ export const useAppStore = create<AppState>()(
       setShowAdvancedPhasedBuild: (show) => set({ showAdvancedPhasedBuild: show }),
       setShowQualityReport: (show) => set({ showQualityReport: show }),
       setShowPerformanceReport: (show) => set({ showPerformanceReport: show }),
+      setShowNameAppModal: (show) => set({ showNameAppModal: show }),
       setSearchQuery: (query) => set({ searchQuery: query }),
       setPreviewMode: (mode) => set({ previewMode: mode }),
       setWebContainerStatus: (status) => set({ webContainerStatus: status }),
@@ -567,6 +571,7 @@ export const useUIState = () =>
       showAdvancedPhasedBuild: state.showAdvancedPhasedBuild,
       showQualityReport: state.showQualityReport,
       showPerformanceReport: state.showPerformanceReport,
+      showNameAppModal: state.showNameAppModal,
       searchQuery: state.searchQuery,
     }))
   );

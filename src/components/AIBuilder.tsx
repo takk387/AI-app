@@ -40,6 +40,7 @@ import {
   StagingConsentModal,
   CompareVersionsModal,
   PhasedBuildPanel,
+  NameAppModal,
 } from './modals';
 
 // Build system components
@@ -196,6 +197,7 @@ export default function AIBuilder() {
     setComponents,
     currentComponent,
     setCurrentComponent,
+    addComponent,
     setLoadingApps,
     setDbSyncError,
 
@@ -226,6 +228,8 @@ export default function AIBuilder() {
     setShowLayoutBuilder,
     showAdvancedPhasedBuild,
     setShowAdvancedPhasedBuild,
+    showNameAppModal,
+    setShowNameAppModal,
     activeView,
     setActiveView,
     searchQuery,
@@ -1149,19 +1153,44 @@ export default function AIBuilder() {
     }
   }, [dynamicBuildPhases, setIsValidating, setChatMessages]);
 
-  // Handle new app creation
+  // Handle new app button - show name modal
   const handleNewApp = useCallback(() => {
-    setCurrentComponent(null);
-    setChatMessages([getWelcomeMessage()]);
-    setActiveTab('chat');
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('current_app_id');
-      } catch {
-        // Failed to clear current app ID from localStorage
+    setShowNameAppModal(true);
+  }, [setShowNameAppModal]);
+
+  // Handle name submission from modal - create new app with name
+  const handleNameAppSubmit = useCallback(
+    (name: string) => {
+      // Create new GeneratedComponent with the given name
+      const newComponent: GeneratedComponent = {
+        id: generateId(),
+        name: name,
+        code: '',
+        description: '',
+        timestamp: new Date().toISOString(),
+        isFavorite: false,
+        conversationHistory: [],
+        versions: [],
+      };
+
+      // Set as current component and add to library
+      setCurrentComponent(newComponent);
+      addComponent(newComponent);
+      setChatMessages([getWelcomeMessage()]);
+      setActiveTab('chat');
+      setShowNameAppModal(false);
+
+      // Store ID for persistence
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('current_app_id', newComponent.id);
+        } catch {
+          // Failed to save current app ID to localStorage
+        }
       }
-    }
-  }, [setCurrentComponent, setChatMessages, setActiveTab]);
+    },
+    [setCurrentComponent, addComponent, setChatMessages, setActiveTab, setShowNameAppModal]
+  );
 
   // Save version helper
   const saveVersion = useCallback(
@@ -2491,6 +2520,12 @@ export default function AIBuilder() {
           pendingChange={pendingChange}
           onApprove={approveChange}
           onReject={rejectChange}
+        />
+
+        <NameAppModal
+          isOpen={showNameAppModal}
+          onClose={() => setShowNameAppModal(false)}
+          onSubmit={handleNameAppSubmit}
         />
 
         <VersionHistoryModal
