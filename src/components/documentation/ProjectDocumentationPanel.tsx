@@ -158,11 +158,15 @@ export function ProjectDocumentationPanel() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-end">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-end"
+      onClick={handleClose}
+    >
       <div
         className="bg-zinc-900 border-l border-zinc-800 w-full max-w-xl h-full overflow-hidden flex flex-col shadow-2xl"
         role="dialog"
         aria-label="Project Documentation"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">

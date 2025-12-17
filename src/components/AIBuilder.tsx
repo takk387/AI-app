@@ -2898,38 +2898,42 @@ export default function AIBuilder() {
           />
         )}
 
-        {selectedPhaseId && dynamicBuildPhases.uiPhases.length > 0 && (
-          <PhaseDetailView
-            phase={
+        {selectedPhaseId &&
+          dynamicBuildPhases.uiPhases.length > 0 &&
+          (() => {
+            const uiPhase =
               dynamicBuildPhases.uiPhases.find((p) => p.id === selectedPhaseId) ||
-              dynamicBuildPhases.uiPhases[0]
-            }
-            isOpen={!!selectedPhaseId}
-            onClose={() => setSelectedPhaseId(null)}
-            onBuildPhase={async () => {
-              const phase = dynamicBuildPhases.uiPhases.find((p) => p.id === selectedPhaseId);
-              if (phase) {
-                startDynamicPhasedBuild(phase.order);
-              }
-              setSelectedPhaseId(null);
-            }}
-            onSkipPhase={async () => {
-              const phase = dynamicBuildPhases.uiPhases.find((p) => p.id === selectedPhaseId);
-              if (phase) {
-                dynamicBuildPhases.skipPhase(phase.order);
-              }
-              setSelectedPhaseId(null);
-            }}
-            onRetryPhase={async () => {
-              const phase = dynamicBuildPhases.uiPhases.find((p) => p.id === selectedPhaseId);
-              if (phase) {
-                dynamicBuildPhases.retryPhase(phase.order);
-              }
-              setSelectedPhaseId(null);
-            }}
-            generatedCode={dynamicBuildPhases.accumulatedCode}
-          />
-        )}
+              dynamicBuildPhases.uiPhases[0];
+            // Find matching DynamicPhase for Phase Comparison
+            const dynamicPhase = dynamicBuildPhases.phases.find((p) => p.number === uiPhase.order);
+            return (
+              <PhaseDetailView
+                phase={uiPhase}
+                isOpen={!!selectedPhaseId}
+                onClose={() => setSelectedPhaseId(null)}
+                onBuildPhase={async () => {
+                  if (uiPhase) {
+                    startDynamicPhasedBuild(uiPhase.order);
+                  }
+                  setSelectedPhaseId(null);
+                }}
+                onSkipPhase={async () => {
+                  if (uiPhase) {
+                    dynamicBuildPhases.skipPhase(uiPhase.order);
+                  }
+                  setSelectedPhaseId(null);
+                }}
+                onRetryPhase={async () => {
+                  if (uiPhase) {
+                    dynamicBuildPhases.retryPhase(uiPhase.order);
+                  }
+                  setSelectedPhaseId(null);
+                }}
+                generatedCode={dynamicBuildPhases.accumulatedCode}
+                dynamicPhase={dynamicPhase}
+              />
+            );
+          })()}
 
         {/* Project Documentation Panel */}
         <ProjectDocumentationPanel />

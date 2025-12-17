@@ -125,6 +125,7 @@ export function PhasedBuildPanel({
             onSkipPhase={onSkipPhase}
             onRetryPhase={onRetryPhase}
             onViewPhaseDetails={onViewPhaseDetails}
+            dynamicPhases={dynamicPlan?.phases}
           />
 
           {/* Quality Panel (Validation + Code Review) */}

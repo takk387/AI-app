@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { BuildPhase, PhaseId, BuildProgress } from '../../types/buildPhases';
+import type { DynamicPhase } from '../../types/dynamicPhases';
 
 interface PhaseControlPanelProps {
   phases: BuildPhase[];
@@ -15,6 +16,8 @@ interface PhaseControlPanelProps {
   onRetryPhase: (phaseId: PhaseId) => void;
   onViewPhaseDetails: (phaseId: PhaseId) => void;
   className?: string;
+  /** Dynamic phases for showing built summary */
+  dynamicPhases?: DynamicPhase[];
 }
 
 /**
@@ -32,11 +35,16 @@ export function PhaseControlPanel({
   onRetryPhase,
   onViewPhaseDetails,
   className = '',
+  dynamicPhases,
 }: PhaseControlPanelProps) {
   const currentPhase = phases.find((p) => p.id === progress.currentPhaseId);
   const hasFailedTasks = currentPhase?.tasks.some((t) => t.status === 'failed');
   const canSkip = currentPhase && currentPhase.status === 'in-progress';
   const canRetry = hasFailedTasks;
+
+  // Find matching dynamic phase for the current phase (by order/index)
+  const currentPhaseIndex = phases.findIndex((p) => p.id === progress.currentPhaseId);
+  const currentDynamicPhase = dynamicPhases?.[currentPhaseIndex];
 
   return (
     <div
@@ -123,6 +131,34 @@ export function PhaseControlPanel({
               {currentPhase.tasks.length}
             </div>
           </div>
+
+          {/* Built Summary - shows after phase completion */}
+          {currentDynamicPhase &&
+            (currentDynamicPhase.status === 'completed' ||
+              currentDynamicPhase.builtSummary ||
+              (currentDynamicPhase.implementedFeatures &&
+                currentDynamicPhase.implementedFeatures.length > 0)) && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <div className="text-xs font-medium text-green-400 mb-1 flex items-center gap-1">
+                  <span>✅</span>
+                  <span>Built:</span>
+                </div>
+                {currentDynamicPhase.builtSummary ? (
+                  <div className="text-xs text-slate-300">{currentDynamicPhase.builtSummary}</div>
+                ) : currentDynamicPhase.implementedFeatures &&
+                  currentDynamicPhase.implementedFeatures.length > 0 ? (
+                  <div className="text-xs text-slate-300">
+                    {currentDynamicPhase.implementedFeatures.slice(0, 3).join(', ')}
+                    {currentDynamicPhase.implementedFeatures.length > 3 && (
+                      <span className="text-slate-500">
+                        {' '}
+                        +{currentDynamicPhase.implementedFeatures.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
         </div>
       )}
 

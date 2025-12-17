@@ -169,6 +169,11 @@ export interface DynamicPhase {
   completedAt?: string;
   errors?: string[];
 
+  // Phase Comparison: What was actually built (populated after execution)
+  implementedFeatures?: string[]; // Features actually implemented
+  builtSummary?: string; // Concise summary of what was built
+  builtFiles?: string[]; // Files created/modified in this phase
+
   // Rich concept context for phase execution (preserves detail)
   conceptContext?: PhaseConceptContext;
 
@@ -425,6 +430,8 @@ export interface PhaseExecutionResult {
     passed: boolean;
     details: string[];
   };
+  // Phase Comparison: Summary of what was built
+  builtSummary?: string;
 }
 
 // ============================================================================

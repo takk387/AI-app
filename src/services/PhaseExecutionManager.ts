@@ -1025,6 +1025,10 @@ export class PhaseExecutionManager {
         phase.status = 'completed';
         phase.completedAt = new Date().toISOString();
         phase.generatedCode = result.generatedCode;
+        // Phase Comparison: Track what was actually built
+        phase.implementedFeatures = result.implementedFeatures;
+        phase.builtFiles = result.generatedFiles;
+        phase.builtSummary = result.builtSummary || this.generateBuiltSummary(result);
       }
 
       // Update both legacy and enhanced tracking in plan
@@ -1066,6 +1070,32 @@ export class PhaseExecutionManager {
     }
 
     return files;
+  }
+
+  /**
+   * Generate a concise summary of what was built from execution result
+   * Used for Phase Comparison display when no explicit summary provided
+   */
+  private generateBuiltSummary(result: PhaseExecutionResult): string {
+    const parts: string[] = [];
+
+    // Add implemented features (max 3)
+    if (result.implementedFeatures.length > 0) {
+      const features = result.implementedFeatures.slice(0, 3);
+      parts.push(features.join(', '));
+      if (result.implementedFeatures.length > 3) {
+        parts.push(`+${result.implementedFeatures.length - 3} more features`);
+      }
+    }
+
+    // Add file count
+    if (result.generatedFiles.length > 0) {
+      parts.push(
+        `${result.generatedFiles.length} file${result.generatedFiles.length > 1 ? 's' : ''} created`
+      );
+    }
+
+    return parts.join(' • ') || 'Phase completed';
   }
 
   /**
