@@ -16,6 +16,21 @@ import {
   LoaderIcon,
 } from './ui/Icons';
 
+/**
+ * Check if a component has valid JSON code to preview
+ */
+function hasValidCode(component: GeneratedComponent | null): boolean {
+  if (!component || !component.code || component.code.trim() === '') {
+    return false;
+  }
+  try {
+    const parsed = JSON.parse(component.code);
+    return parsed && parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 // ============================================================================
 // PREVIEW PANEL PROPS
 // ============================================================================
@@ -155,15 +170,19 @@ export function PreviewPanel({
 
       {/* Preview Content */}
       <div className="flex-1 p-6 overflow-auto min-h-0">
-        {!currentComponent ? (
-          // Empty State
+        {!currentComponent || !hasValidCode(currentComponent) ? (
+          // Empty State - shown when no component or component has no valid code
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
             <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mb-4">
               <MessageSquareIcon size={32} className="text-zinc-600" />
             </div>
-            <h3 className="text-lg font-medium text-zinc-100 mb-2">Start Building</h3>
+            <h3 className="text-lg font-medium text-zinc-100 mb-2">
+              {currentComponent ? 'Building Your App' : 'Start Building'}
+            </h3>
             <p className="text-sm text-zinc-400 max-w-sm">
-              Describe what you want to build in the chat panel, and your app will appear here.
+              {currentComponent
+                ? 'Describe your app in the chat panel to generate the preview.'
+                : 'Describe what you want to build in the chat panel, and your app will appear here.'}
             </p>
           </div>
         ) : (
