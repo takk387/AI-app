@@ -115,8 +115,26 @@ export async function applyDiff(
         continue;
       }
 
-      // Apply each change in sequence
-      for (const change of fileDiff.changes) {
+      // Optimization: Batch ADD_IMPORT operations to avoid repeated file splitting
+      const importChanges = fileDiff.changes.filter((c) => c.type === 'ADD_IMPORT');
+      const otherChanges = fileDiff.changes.filter((c) => c.type !== 'ADD_IMPORT');
+
+      // Apply all imports in a single pass
+      if (importChanges.length > 0) {
+        try {
+          fileContent = addImportsBatched(
+            fileContent,
+            importChanges.map((c) => c.content || '')
+          );
+        } catch (error) {
+          const errorMsg = `Failed to apply imports to ${fileDiff.path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          result.errors.push(errorMsg);
+          result.success = false;
+        }
+      }
+
+      // Apply other changes in sequence
+      for (const change of otherChanges) {
         try {
           fileContent = await applyChange(fileContent, change);
         } catch (error) {
@@ -238,6 +256,48 @@ function addImport(content: string, importStatement: string): string {
   // Insert after last import, or at the beginning if no imports
   const insertIndex = lastImportIndex !== -1 ? lastImportIndex + 1 : 0;
   lines.splice(insertIndex, 0, importStatement);
+
+  return lines.join('\n');
+}
+
+/**
+ * Add multiple import statements in a single pass (optimized)
+ * Avoids splitting the file multiple times for multiple imports
+ */
+function addImportsBatched(content: string, importStatements: string[]): string {
+  if (importStatements.length === 0) return content;
+
+  // Use Set for O(1) duplicate checking
+  const existingImports = new Set<string>();
+  const lines = content.split('\n');
+
+  // Collect existing imports for deduplication
+  for (const line of lines) {
+    if (line.trim().startsWith('import ')) {
+      existingImports.add(line.trim());
+    }
+  }
+
+  // Filter out imports that already exist
+  const newImports = importStatements.filter(
+    (imp) => imp.trim() && !existingImports.has(imp.trim()) && !content.includes(imp.trim())
+  );
+
+  if (newImports.length === 0) return content;
+
+  // Find the last import statement
+  let lastImportIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim().startsWith('import ')) {
+      lastImportIndex = i;
+    } else if (lastImportIndex !== -1 && lines[i].trim() !== '') {
+      break;
+    }
+  }
+
+  // Insert all new imports at once
+  const insertIndex = lastImportIndex !== -1 ? lastImportIndex + 1 : 0;
+  lines.splice(insertIndex, 0, ...newImports);
 
   return lines.join('\n');
 }

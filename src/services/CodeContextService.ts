@@ -147,8 +147,9 @@ export class CodeContextService {
       this.state.version++;
       this.state.lastFullAnalysis = Date.now();
 
-      // Invalidate snapshot cache when files change
-      this.cache.invalidateSnapshots();
+      // Smart invalidation - only clear snapshots that contain changed files
+      const changedPaths = changedFiles.map((f) => f.path);
+      this.cache.invalidateSnapshotsForFiles(changedPaths);
     }
   }
 
@@ -165,7 +166,9 @@ export class CodeContextService {
     const allAnalyses = Array.from(this.state.analysis.values());
     this.state.dependencyGraph = this.graphBuilder.buildGraph(allAnalyses);
     this.state.version++;
-    this.cache.invalidateSnapshots();
+
+    // Smart invalidation - only clear snapshots that contain removed files
+    this.cache.invalidateSnapshotsForFiles(paths);
   }
 
   // ==========================================================================
