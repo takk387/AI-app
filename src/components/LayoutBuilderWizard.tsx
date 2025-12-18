@@ -304,8 +304,10 @@ export function LayoutBuilderWizard({
     showDarkModeEditor,
     showLayerPanel,
     showPerformanceReport,
+    isAdvancedMode,
     setPanel,
     initTemplatePicker,
+    toggleAdvancedMode,
   } = useLayoutPanelStore();
 
   // Convenience setters using store actions
@@ -350,7 +352,7 @@ export function LayoutBuilderWizard({
 
   // Reference media panel state
   const [showReferenceMediaPanel, _setShowReferenceMediaPanel] = useState(true);
-  const [showDesignSidePanel, setShowDesignSidePanel] = useState(true);
+  const [showDesignSidePanel, setShowDesignSidePanel] = useState(isAdvancedMode);
 
   // Data states for advanced features
   const [customAnimation, setCustomAnimation] = useState<CustomAnimation | null>(null);
@@ -399,6 +401,11 @@ export function LayoutBuilderWizard({
   useEffect(() => {
     initTemplatePicker(messages.length <= 1);
   }, [messages.length, initTemplatePicker]);
+
+  // Sync DesignSidePanel visibility with advanced mode
+  useEffect(() => {
+    setShowDesignSidePanel(isAdvancedMode);
+  }, [isAdvancedMode]);
 
   // Handle close with confirmation
   const handleClose = useCallback(() => {
@@ -1144,32 +1151,37 @@ export function LayoutBuilderWizard({
           )}
         </div>
         <div className="flex items-center gap-3">
-          {/* Templates Dropdown Menu */}
-          <TemplatesMenu
-            onOpenTemplates={() => setShowTemplatePicker(true)}
-            onOpenBlueprints={() => setShowArchitectureTemplates(true)}
-            onOpenHistory={() => setShowVersionHistory(true)}
-            historyCount={versionHistory.length}
-          />
+          {/* Advanced Mode Tools */}
+          {isAdvancedMode && (
+            <>
+              {/* Templates Dropdown Menu */}
+              <TemplatesMenu
+                onOpenTemplates={() => setShowTemplatePicker(true)}
+                onOpenBlueprints={() => setShowArchitectureTemplates(true)}
+                onOpenHistory={() => setShowVersionHistory(true)}
+                historyCount={versionHistory.length}
+              />
 
-          {/* Tools Dropdown Menu */}
-          <ToolsMenu
-            onExportJSON={handleExportJSON}
-            onExportCSS={handleExportCSS}
-            onExportTailwind={handleExportTailwind}
-            onExportReact={handleExportReact}
-            onExportTokens={handleExportTokens}
-            onExportShadcn={handleExportShadcn}
-            onExportDocsMarkdown={handleExportDocsMarkdown}
-            onExportDocsHtml={handleExportDocsHtml}
-            onCopyCSS={handleCopyCSS}
-            onImport={() => importInputRef.current?.click()}
-            onOpenCodePreview={() => setShowCodePreview(true)}
-            onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
-            onOpenAnimationTimeline={() => setShowAnimationTimeline(true)}
-            onOpenLayerPanel={() => setShowLayerPanel(true)}
-            onOpenDarkModeEditor={() => setShowDarkModeEditor(true)}
-          />
+              {/* Tools Dropdown Menu */}
+              <ToolsMenu
+                onExportJSON={handleExportJSON}
+                onExportCSS={handleExportCSS}
+                onExportTailwind={handleExportTailwind}
+                onExportReact={handleExportReact}
+                onExportTokens={handleExportTokens}
+                onExportShadcn={handleExportShadcn}
+                onExportDocsMarkdown={handleExportDocsMarkdown}
+                onExportDocsHtml={handleExportDocsHtml}
+                onCopyCSS={handleCopyCSS}
+                onImport={() => importInputRef.current?.click()}
+                onOpenCodePreview={() => setShowCodePreview(true)}
+                onOpenShortcuts={() => setShowKeyboardShortcuts(true)}
+                onOpenAnimationTimeline={() => setShowAnimationTimeline(true)}
+                onOpenLayerPanel={() => setShowLayerPanel(true)}
+                onOpenDarkModeEditor={() => setShowDarkModeEditor(true)}
+              />
+            </>
+          )}
 
           {/* Hidden file inputs */}
           <input
@@ -1180,8 +1192,8 @@ export function LayoutBuilderWizard({
             className="hidden"
           />
 
-          {/* Comparison View Toggle (only in pixel-perfect mode with reference) */}
-          {analysisMode === 'pixel-perfect' && referenceImages.length > 0 && (
+          {/* Comparison View Toggle (only in advanced + pixel-perfect mode with reference) */}
+          {isAdvancedMode && analysisMode === 'pixel-perfect' && referenceImages.length > 0 && (
             <button
               onClick={() => setShowComparisonView(!showComparisonView)}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-2 ${
@@ -1203,26 +1215,28 @@ export function LayoutBuilderWizard({
             </button>
           )}
 
-          {/* Design Panel Toggle */}
-          <button
-            onClick={() => setShowDesignSidePanel(!showDesignSidePanel)}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-2 ${
-              showDesignSidePanel
-                ? 'bg-slate-700 text-white'
-                : 'text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700'
-            }`}
-            title="Toggle design panel"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 5a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zm0 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
-              />
-            </svg>
-            Design
-          </button>
+          {/* Design Panel Toggle (advanced mode only) */}
+          {isAdvancedMode && (
+            <button
+              onClick={() => setShowDesignSidePanel(!showDesignSidePanel)}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-2 ${
+                showDesignSidePanel
+                  ? 'bg-slate-700 text-white'
+                  : 'text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700'
+              }`}
+              title="Toggle design panel"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 5a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zm0 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                />
+              </svg>
+              Design
+            </button>
+          )}
 
           {/* Hidden import file input - accepts JSON, CSS, JS/TS configs */}
           <input
@@ -1266,6 +1280,27 @@ export function LayoutBuilderWizard({
               </svg>
             </button>
           </div>
+
+          {/* Advanced Mode Toggle */}
+          <button
+            onClick={toggleAdvancedMode}
+            className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-2 ${
+              isAdvancedMode
+                ? 'bg-purple-600 text-white'
+                : 'text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700'
+            }`}
+            title={isAdvancedMode ? 'Switch to Basic Mode' : 'Show Advanced Tools'}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+              />
+            </svg>
+            {isAdvancedMode ? 'Basic' : 'Advanced'}
+          </button>
 
           <button
             onClick={handleSave}

@@ -48,6 +48,9 @@ interface LayoutPanelState {
   showLayerPanel: boolean;
   showPerformanceReport: boolean;
 
+  // Advanced mode toggle (persisted to localStorage)
+  isAdvancedMode: boolean;
+
   // Actions
   setPanel: (panel: PanelName, value: boolean) => void;
   togglePanel: (panel: PanelName) => void;
@@ -55,6 +58,7 @@ interface LayoutPanelState {
   closePanel: (panel: PanelName) => void;
   closeAllPanels: () => void;
   initTemplatePicker: (shouldShow: boolean) => void;
+  toggleAdvancedMode: () => void;
 }
 
 // Map panel names to state keys
@@ -68,6 +72,8 @@ const panelKeyMap: Record<
     | 'closePanel'
     | 'closeAllPanels'
     | 'initTemplatePicker'
+    | 'toggleAdvancedMode'
+    | 'isAdvancedMode'
   >
 > = {
   closeConfirm: 'showCloseConfirm',
@@ -91,6 +97,17 @@ const panelKeyMap: Record<
   performanceReport: 'showPerformanceReport',
 };
 
+// Helper to get initial advanced mode from localStorage
+const getInitialAdvancedMode = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const stored = localStorage.getItem('layoutBuilder_advancedMode');
+    return stored ? JSON.parse(stored) : false;
+  } catch {
+    return false;
+  }
+};
+
 const initialState = {
   showCloseConfirm: false,
   showApplyConfirm: false,
@@ -111,6 +128,7 @@ const initialState = {
   showDarkModeEditor: false,
   showLayerPanel: false,
   showPerformanceReport: false,
+  isAdvancedMode: getInitialAdvancedMode(),
 };
 
 export const useLayoutPanelStore = create<LayoutPanelState>((set) => ({
@@ -127,6 +145,17 @@ export const useLayoutPanelStore = create<LayoutPanelState>((set) => ({
   closeAllPanels: () => set(initialState),
 
   initTemplatePicker: (shouldShow) => set({ showTemplatePicker: shouldShow }),
+
+  toggleAdvancedMode: () =>
+    set((state) => {
+      const newValue = !state.isAdvancedMode;
+      try {
+        localStorage.setItem('layoutBuilder_advancedMode', JSON.stringify(newValue));
+      } catch {
+        // Ignore localStorage errors
+      }
+      return { isAdvancedMode: newValue };
+    }),
 }));
 
 // Selector hooks for better performance (only re-render when specific panel changes)
@@ -150,6 +179,7 @@ export const useBreakpointEditor = () => useLayoutPanelStore((s) => s.showBreakp
 export const useDarkModeEditor = () => useLayoutPanelStore((s) => s.showDarkModeEditor);
 export const useLayerPanel = () => useLayoutPanelStore((s) => s.showLayerPanel);
 export const usePerformanceReport = () => useLayoutPanelStore((s) => s.showPerformanceReport);
+export const useAdvancedMode = () => useLayoutPanelStore((s) => s.isAdvancedMode);
 
 // Action hooks
 export const usePanelActions = () =>
