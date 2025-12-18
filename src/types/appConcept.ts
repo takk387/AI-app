@@ -74,6 +74,13 @@ export interface TechnicalRequirements {
   apiEndpoints?: string[];
   needsFileUpload: boolean;
   needsRealtime: boolean;
+
+  // State Management & Memory Requirements
+  stateComplexity?: 'simple' | 'moderate' | 'complex';
+  needsStateHistory?: boolean; // Undo/redo, action history, draft autosave
+  needsContextPersistence?: boolean; // Cross-session memory, conversation history, user preferences
+  needsCaching?: boolean; // Performance caching layer, memoization
+  needsOfflineSupport?: boolean; // Offline-first, service workers, local sync
 }
 
 export interface DataModel {
