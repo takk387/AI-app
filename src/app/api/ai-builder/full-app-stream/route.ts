@@ -204,6 +204,13 @@ Your code will be automatically reviewed for:
 - Incomplete error handling (MEDIUM)
 
 Generate code that passes ALL checks. Do NOT rely on post-generation fixes.
+
+## PRODUCTION FEATURES (REQUIRED IN ALL APPS)
+1. ErrorBoundary: Wrap main App component in ErrorBoundary with fallback UI and retry button
+2. Accessibility: Semantic HTML (nav, main, section, footer), ARIA labels, keyboard navigation
+3. SEO: Include <title> and <meta name="description"> tags
+4. Loading States: Show spinner or skeleton while fetching data
+5. Error States: Handle errors gracefully with user-friendly messages and retry options
 ${currentAppContext ? '\nIMPORTANT: The user has an existing app loaded. See CURRENT APP CONTEXT at the end of this prompt. When adding features, integrate with the existing code structure.' : ''}
 
 APPLICATION TYPE DETECTION:

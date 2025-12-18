@@ -52,6 +52,16 @@ Generate production-ready code that follows these standards. Violations will be 
 - AVOID redundant state - derive values when possible
 - USE controlled components for form inputs
 - CLEAN UP side effects (subscriptions, timers) in useEffect return functions
+
+### Production Features (REQUIRED)
+- WRAP main App component in ErrorBoundary with fallback UI and retry button
+- USE semantic HTML elements: nav, main, section, article, aside, footer (not just divs)
+- ADD aria-label to icon-only buttons and interactive elements without visible text
+- ENSURE all interactive elements are keyboard accessible (Tab, Enter, Escape)
+- INCLUDE visible focus indicators on focusable elements (focus:ring-2 or equivalent)
+- ADD <title> and <meta name="description"> for SEO
+- SHOW loading states (spinner or skeleton) for all async operations
+- HANDLE errors gracefully with user-friendly messages and retry options
 `.trim();
 
 /**

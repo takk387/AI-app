@@ -12,6 +12,7 @@ import { FULLSTACK_RULES_COMPRESSED } from './full-app/fullstack-rules-compresse
 import { FULLAPP_EXAMPLES_COMPRESSED } from './full-app/examples-compressed';
 import { buildDesignTokenPrompt } from './designTokenPrompt';
 import { CODE_QUALITY_STANDARDS } from './quality-standards';
+import { PRODUCTION_STANDARDS_COMPRESSED } from './production-standards';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
 import type { LayoutDesign } from '@/types/layoutDesign';
 
@@ -114,6 +115,8 @@ ${modificationContext ? '\n' + modificationContext + '\n' : ''}
 ${designTokenContext}
 
 ${CODE_QUALITY_STANDARDS}
+
+${PRODUCTION_STANDARDS_COMPRESSED}
 
 ${ACCURACY_GUIDELINES}
 

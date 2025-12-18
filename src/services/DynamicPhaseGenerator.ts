@@ -36,7 +36,36 @@ import {
  * Keywords for extracting phase-relevant context
  */
 const PHASE_KEYWORDS: Record<FeatureDomain, string[]> = {
-  setup: ['setup', 'config', 'initialize', 'project', 'structure', 'dependencies', 'folder'],
+  setup: [
+    'setup',
+    'config',
+    'initialize',
+    'project',
+    'structure',
+    'dependencies',
+    'folder',
+    // State management keywords
+    'state',
+    'store',
+    'zustand',
+    'redux',
+    'context',
+    'provider',
+    'global state',
+    // Memory/persistence keywords
+    'persistence',
+    'memory',
+    'remember',
+    'history',
+    'undo',
+    'redo',
+    'draft',
+    'autosave',
+    'session',
+    'cross-session',
+    'preferences',
+    'settings store',
+  ],
   database: [
     'database',
     'schema',
@@ -65,15 +94,146 @@ const PHASE_KEYWORDS: Record<FeatureDomain, string[]> = {
   'ui-component': ['button', 'form', 'modal', 'component', 'ui', 'design', 'layout', 'responsive'],
   integration: ['api', 'integration', 'webhook', 'external', 'service', 'third-party', 'endpoint'],
   'real-time': ['real-time', 'websocket', 'live', 'sync', 'push', 'instant', 'notification'],
-  storage: ['upload', 'file', 'image', 'storage', 'media', 'attachment', 'document'],
+  storage: [
+    'upload',
+    'file',
+    'image',
+    'storage',
+    'media',
+    'attachment',
+    'document',
+    // Context/memory storage keywords
+    'conversation history',
+    'chat history',
+    'message history',
+    'context storage',
+    'semantic memory',
+    'long-term memory',
+    'user context',
+  ],
   notification: ['notification', 'alert', 'email', 'push', 'message', 'notify'],
-  offline: ['offline', 'sync', 'local', 'cache', 'service worker', 'pwa'],
+  offline: [
+    'offline',
+    'sync',
+    'local',
+    'cache',
+    'service worker',
+    'pwa',
+    // Caching keywords
+    'memoization',
+    'cached',
+    'local storage',
+    'indexed db',
+    'persistent cache',
+  ],
   search: ['search', 'filter', 'query', 'find', 'autocomplete', 'index'],
   analytics: ['analytics', 'dashboard', 'chart', 'metric', 'report', 'visualization'],
   admin: ['admin', 'manage', 'moderate', 'settings', 'configuration', 'control'],
   'ui-role': ['dashboard', 'view', 'role', 'access', 'permission', 'portal'],
   testing: ['test', 'mock', 'fixture', 'assertion', 'coverage'],
   polish: ['animation', 'transition', 'loading', 'error', 'empty state', 'ux', 'feedback'],
+};
+
+/**
+ * Keywords for detecting memory/persistence infrastructure needs.
+ * Used by detectMemoryNeeds() for auto-detection during phase generation.
+ * Organized by the type of infrastructure they indicate.
+ */
+const MEMORY_DETECTION_KEYWORDS = {
+  // Context persistence: cross-session memory, user preferences, learning
+  contextPersistence: [
+    'remember',
+    'remembers',
+    'memory',
+    'memories',
+    'recall',
+    'forget',
+    'learns',
+    'adapts',
+    'personalize',
+    'personalized',
+    'preferences',
+    'habits',
+    'conversation',
+    'context',
+    'previous',
+    'past',
+    'earlier',
+    'before',
+    'save',
+    'persist',
+    'store',
+    'keep',
+    'maintain',
+    'retain',
+    'previous session',
+    'conversation history',
+  ],
+  // State history: undo/redo, drafts, versioning
+  stateHistory: [
+    'undo',
+    'redo',
+    'revert',
+    'draft',
+    'autosave',
+    'version',
+    'snapshot',
+    'history',
+    'restore',
+    'track',
+    'tracks',
+    'log',
+    'logs',
+    'record',
+    'records',
+  ],
+  // Caching: performance optimization, data caching
+  caching: [
+    'performance',
+    'fast',
+    'instant',
+    'cached',
+    'optimize',
+    'responsive',
+    'large dataset',
+    'pagination',
+  ],
+};
+
+const STATE_COMPLEXITY_KEYWORDS = {
+  complex: [
+    'workflow',
+    'multi-step',
+    'wizard',
+    'cart',
+    'checkout',
+    'collaboration',
+    'real-time',
+    'editor',
+    'undo',
+    'redo',
+    'draft',
+    'autosave',
+    'version control',
+    'ai assistant',
+    'chatbot',
+    'conversation',
+    'learns',
+    'adapts',
+    'personalized',
+  ],
+  moderate: [
+    'form',
+    'dashboard',
+    'settings',
+    'preferences',
+    'filter',
+    'sort',
+    'pagination',
+    'tabs',
+    'modal',
+    'sidebar',
+  ],
 };
 
 // ============================================================================
@@ -307,7 +467,146 @@ export class DynamicPhaseGenerator {
       });
     }
 
+    // State Management Infrastructure (for complex state needs)
+    if (tech.stateComplexity === 'complex' || tech.needsStateHistory) {
+      implicit.push({
+        originalFeature: {
+          id: 'implicit-state-management',
+          name: 'State Management Infrastructure',
+          description:
+            'Zustand store setup with slices, persistence middleware, history tracking, and undo/redo capabilities',
+          priority: 'high',
+        },
+        domain: 'setup',
+        complexity: 'complex',
+        estimatedTokens: 4000,
+        requiresOwnPhase: true,
+        suggestedPhaseName: 'State Management Setup',
+        dependencies: [],
+        keywords: ['state', 'store', 'zustand', 'persistence', 'history', 'undo', 'redo'],
+      });
+    }
+
+    // Context Memory System (for apps that need to remember across sessions)
+    if (tech.needsContextPersistence) {
+      implicit.push({
+        originalFeature: {
+          id: 'implicit-context-memory',
+          name: 'Context Memory System',
+          description:
+            'Cross-session context persistence, semantic memory storage, conversation/interaction history, and user preference tracking',
+          priority: 'high',
+        },
+        domain: 'storage',
+        complexity: 'complex',
+        estimatedTokens: 4500,
+        requiresOwnPhase: true,
+        suggestedPhaseName: 'Memory & Context System',
+        dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+        keywords: ['memory', 'context', 'persistence', 'history', 'preferences', 'semantic'],
+      });
+    }
+
+    // Caching Layer (for performance optimization)
+    if (tech.needsCaching) {
+      implicit.push({
+        originalFeature: {
+          id: 'implicit-caching',
+          name: 'Caching Infrastructure',
+          description:
+            'Performance caching layer with memoization, request deduplication, and smart cache invalidation',
+          priority: 'medium',
+        },
+        domain: 'setup',
+        complexity: 'moderate',
+        estimatedTokens: 2500,
+        requiresOwnPhase: false,
+        suggestedPhaseName: 'Caching Layer',
+        dependencies: [],
+        keywords: ['cache', 'memoization', 'performance', 'optimization'],
+      });
+    }
+
+    // Offline Support (service workers, local sync)
+    if (tech.needsOfflineSupport) {
+      implicit.push({
+        originalFeature: {
+          id: 'implicit-offline',
+          name: 'Offline Support',
+          description:
+            'Service worker setup, IndexedDB storage, background sync, and offline-first architecture',
+          priority: 'medium',
+        },
+        domain: 'offline',
+        complexity: 'complex',
+        estimatedTokens: 4000,
+        requiresOwnPhase: true,
+        suggestedPhaseName: 'Offline Support',
+        dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+        keywords: ['offline', 'service worker', 'sync', 'pwa', 'indexeddb'],
+      });
+    }
+
     return implicit;
+  }
+
+  /**
+   * Infer state complexity from features (auto-detection)
+   * Called during concept extraction to set stateComplexity automatically
+   */
+  static inferStateComplexity(features: Feature[]): 'simple' | 'moderate' | 'complex' {
+    const allText = features
+      .map((f) => `${f.name.toLowerCase()} ${f.description.toLowerCase()}`)
+      .join(' ');
+
+    // Check for complex indicators
+    const complexMatches = STATE_COMPLEXITY_KEYWORDS.complex.filter((kw) =>
+      allText.includes(kw.toLowerCase())
+    ).length;
+
+    if (complexMatches >= 2) return 'complex';
+
+    // Check for moderate indicators
+    const moderateMatches = STATE_COMPLEXITY_KEYWORDS.moderate.filter((kw) =>
+      allText.includes(kw.toLowerCase())
+    ).length;
+
+    if (complexMatches >= 1 || moderateMatches >= 3) return 'moderate';
+
+    return 'simple';
+  }
+
+  /**
+   * Detect if features indicate need for context persistence (auto-detection)
+   * Called during concept extraction to set needsContextPersistence automatically
+   */
+  static detectMemoryNeeds(
+    features: Feature[],
+    description: string
+  ): {
+    needsContextPersistence: boolean;
+    needsStateHistory: boolean;
+    needsCaching: boolean;
+  } {
+    const allText = [
+      description.toLowerCase(),
+      ...features.map((f) => `${f.name.toLowerCase()} ${f.description.toLowerCase()}`),
+    ].join(' ');
+
+    // Use centralized MEMORY_DETECTION_KEYWORDS for consistent detection
+    const needsContextPersistence = MEMORY_DETECTION_KEYWORDS.contextPersistence.some((kw) =>
+      allText.includes(kw)
+    );
+
+    const needsStateHistory = MEMORY_DETECTION_KEYWORDS.stateHistory.some((kw) =>
+      allText.includes(kw)
+    );
+
+    // Caching requires 2+ keyword matches to avoid false positives
+    const needsCaching =
+      MEMORY_DETECTION_KEYWORDS.caching.filter((kw) => allText.includes(kw)).length >= 2;
+
+    return { needsContextPersistence, needsStateHistory, needsCaching };
   }
 
   /**
@@ -659,10 +958,16 @@ export class DynamicPhaseGenerator {
         'Core layout components',
         'Routing configuration',
         ...(concept.uiPreferences.layout === 'dashboard' ? ['Dashboard layout skeleton'] : []),
+        // Production features - always included
+        'ErrorBoundary component wrapping App with fallback UI and retry button',
+        'Semantic HTML structure (nav, main, section, footer)',
+        'Accessibility foundation (ARIA labels, keyboard navigation, focus indicators)',
+        'SEO meta tags (title, description, Open Graph)',
       ],
       featureDetails: [],
-      estimatedTokens: this.config.baseTokenEstimates.setupPhase,
-      estimatedTime: '2-3 min',
+      // Add ~800 tokens for production features
+      estimatedTokens: this.config.baseTokenEstimates.setupPhase + 800,
+      estimatedTime: '3-4 min',
       dependencies: [],
       dependencyNames: [],
       testCriteria: [
@@ -671,6 +976,11 @@ export class DynamicPhaseGenerator {
         `Theme matches ${concept.uiPreferences.style} style with ${concept.uiPreferences.colorScheme} colors`,
         'Navigation works between routes',
         'No console errors',
+        // Production test criteria
+        'ErrorBoundary catches errors and displays fallback UI',
+        'All interactive elements are keyboard accessible',
+        'Semantic HTML elements are used (nav, main, footer, not just divs)',
+        'Page has proper title and meta description',
       ],
       status: 'pending',
       // Include concept context for execution (including layoutDesign for design-aware styling)
