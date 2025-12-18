@@ -14,6 +14,8 @@ import { generateMockContent } from '../utils/mockContentGenerator';
 import { DragDropCanvas, useSectionOrder, type LayoutSection } from './layout/DragDropCanvas';
 import { imageAssets, getFallbackImage } from '../utils/imageAssets';
 import { imageCache } from '../utils/imageCache';
+import { ViewOptionsMenu } from './layout-builder/ViewOptionsMenu';
+import { ColorPickerMenu } from './layout-builder/ColorPickerMenu';
 
 // ============================================================================
 // Image Generation Types
@@ -1376,6 +1378,8 @@ export function LayoutPreview({
   const [animationDemoIndex, setAnimationDemoIndex] = useState(0);
   const [showSectionPanel, setShowSectionPanel] = useState(false);
   const [internalShowGridOverlay, setInternalShowGridOverlay] = useState(false);
+  const [secondaryColor, setSecondaryColor] = useState('#6366F1');
+  const [accentColor, setAccentColor] = useState('#F59E0B');
 
   // Use external grid overlay state if provided, otherwise use internal
   const showGridOverlay = externalShowGridOverlay ?? internalShowGridOverlay;
@@ -1712,171 +1716,31 @@ export function LayoutPreview({
               {preferences.colorScheme === 'dark' ? '🌙' : '☀️'}
             </button>
 
-            {/* Primary Color Picker */}
-            <label className="relative cursor-pointer" title="Change primary color">
-              <span className="sr-only">Choose primary color</span>
-              <input
-                type="color"
-                value={primaryColor}
-                onChange={(e) => onPreferenceChange({ primaryColor: e.target.value })}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                aria-label="Choose primary color"
-              />
-              <div
-                className="w-8 h-8 rounded-lg border-2 border-white/20"
-                style={{ backgroundColor: primaryColor }}
-                aria-hidden="true"
-              />
-            </label>
+            {/* Color Picker Menu */}
+            <ColorPickerMenu
+              primaryColor={primaryColor}
+              secondaryColor={secondaryColor}
+              accentColor={accentColor}
+              onColorChange={(colors) => {
+                if (colors.primaryColor) onPreferenceChange({ primaryColor: colors.primaryColor });
+                if (colors.secondaryColor) setSecondaryColor(colors.secondaryColor);
+                if (colors.accentColor) setAccentColor(colors.accentColor);
+              }}
+            />
 
-            {/* Animation Preview Button */}
-            <button
-              type="button"
-              onClick={isAnimationDemo ? stopAnimationDemo : startAnimationDemo}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                isAnimationDemo
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-              title={isAnimationDemo ? 'Stop animation preview' : 'Preview element animations'}
-            >
-              {isAnimationDemo ? (
-                <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-300 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-200"></span>
-                  </span>
-                  Stop
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Demo
-                </>
-              )}
-            </button>
-
-            {/* Generate Images Button */}
-            <button
-              type="button"
-              onClick={generatedImages.hero ? handleClearImages : handleGenerateImages}
-              disabled={imageGenState.isGenerating}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                imageGenState.isGenerating
-                  ? 'bg-amber-600 text-white cursor-wait'
-                  : generatedImages.hero
-                    ? 'bg-green-600 text-white hover:bg-red-600'
-                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-purple-600'
-              }`}
-              title={
-                imageGenState.isGenerating
-                  ? 'Generating images...'
-                  : generatedImages.hero
-                    ? 'Clear generated images'
-                    : 'Generate AI images for preview'
-              }
-            >
-              {imageGenState.isGenerating ? (
-                <>
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  {imageGenState.progress}%
-                </>
-              ) : generatedImages.hero ? (
-                <>
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                  Clear
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Images
-                </>
-              )}
-            </button>
-
-            {/* Grid Overlay Toggle */}
-            <button
-              type="button"
-              onClick={toggleGridOverlay}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                showGridOverlay
-                  ? 'bg-cyan-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-              title={showGridOverlay ? 'Hide grid overlay (G)' : 'Show grid overlay (G)'}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 9h16M4 15h16M9 4v16M15 4v16"
-                />
-              </svg>
-              Grid
-            </button>
+            {/* View Options Menu (Demo, Images, Grid) */}
+            <ViewOptionsMenu
+              isAnimationDemo={isAnimationDemo}
+              onStartDemo={startAnimationDemo}
+              onStopDemo={stopAnimationDemo}
+              hasGeneratedImages={!!generatedImages.hero}
+              isGeneratingImages={imageGenState.isGenerating}
+              imageProgress={imageGenState.progress}
+              onGenerateImages={handleGenerateImages}
+              onClearImages={handleClearImages}
+              showGridOverlay={showGridOverlay}
+              onToggleGrid={toggleGridOverlay}
+            />
 
             {/* Section Order Panel Toggle */}
             {enableDragDrop && (
@@ -1903,23 +1767,6 @@ export function LayoutPreview({
             )}
           </div>
         )}
-      </div>
-
-      {/* Breakpoint Indicator */}
-      <div className="mb-2 px-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-500">Breakpoint:</span>
-            <span className="text-xs font-medium text-slate-300">
-              {BREAKPOINTS[viewMode].label}
-            </span>
-          </div>
-          <span className="text-xs text-slate-600">•</span>
-          <span className="text-xs text-slate-500">
-            {viewMode === 'desktop' ? 'Full width' : `${BREAKPOINTS[viewMode].numericWidth}px`}
-          </span>
-        </div>
-        <span className="text-xs text-slate-600 italic">{BREAKPOINTS[viewMode].description}</span>
       </div>
 
       {/* Section Ordering Panel */}

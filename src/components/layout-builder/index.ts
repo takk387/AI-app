@@ -15,3 +15,5 @@ export { DesignSidePanel } from './DesignSidePanel';
 export { MediaUploadZone } from './MediaUploadZone';
 export { LintPanel } from './LintPanel';
 export { ShadcnPreview } from './ShadcnPreview';
+export { ViewOptionsMenu } from './ViewOptionsMenu';
+export { ColorPickerMenu } from './ColorPickerMenu';
