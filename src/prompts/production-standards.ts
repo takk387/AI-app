@@ -173,6 +173,124 @@ export const PRODUCTION_STANDARDS_MINIMAL = `
 `.trim();
 
 /**
+ * Performance and resilience standards for generated apps.
+ * Ensures apps are fast, handle network issues gracefully, and work offline.
+ */
+export const PERFORMANCE_RESILIENCE_STANDARDS = `
+## PERFORMANCE & RESILIENCE
+
+### Image Optimization
+- For full-stack Next.js: Use next/image with width, height, alt props
+- For Sandpack preview: Use <img> with loading="lazy"
+- Always include descriptive alt text for accessibility
+- Use appropriate image formats (WebP when possible)
+
+### Loading Skeletons Pattern
+\`\`\`tsx
+// Skeleton component for loading states:
+const Skeleton = ({ className = '' }: { className?: string }) => (
+  <div className={\`animate-pulse bg-gray-200 rounded \${className}\`} aria-hidden="true" />
+);
+
+// Usage in lists:
+{loading ? (
+  <div className="space-y-4" aria-label="Loading content">
+    {[1, 2, 3].map((i) => (
+      <Skeleton key={i} className="h-20 w-full" />
+    ))}
+  </div>
+) : (
+  <ul>
+    {items.map((item) => <ItemCard key={item.id} item={item} />)}
+  </ul>
+)}
+\`\`\`
+
+### Network Resilience - Retry Pattern
+\`\`\`tsx
+// Automatic retry with exponential backoff:
+async function fetchWithRetry<T>(
+  fn: () => Promise<T>,
+  retries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === retries - 1) throw error;
+      await new Promise((r) => setTimeout(r, baseDelay * Math.pow(2, attempt)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+// Usage:
+const data = await fetchWithRetry(() => fetch('/api/data').then(r => r.json()));
+\`\`\`
+
+### Offline Detection Pattern
+\`\`\`tsx
+// Hook for offline detection:
+function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
+// Offline banner component:
+function OfflineBanner() {
+  const isOnline = useOnlineStatus();
+  if (isOnline) return null;
+
+  return (
+    <div
+      className="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-2 z-50"
+      role="alert"
+      aria-live="assertive"
+    >
+      You're offline. Some features may be unavailable.
+    </div>
+  );
+}
+\`\`\`
+
+### Code Splitting (Full-stack apps)
+- Use dynamic imports for heavy components:
+  const Chart = dynamic(() => import('./Chart'), { loading: () => <Skeleton /> })
+- Lazy load modals and dialogs not immediately visible
+- Split routes using Next.js app router automatic code splitting
+
+### Empty State Pattern
+\`\`\`tsx
+// Always handle empty data gracefully:
+{items.length === 0 ? (
+  <div className="text-center py-12 text-gray-500">
+    <p className="text-lg">No items yet</p>
+    <p className="text-sm mt-2">Add your first item to get started</p>
+  </div>
+) : (
+  <ItemList items={items} />
+)}
+\`\`\`
+`.trim();
+
+/**
  * Get production standards appropriate for the context.
  * @param includeTemplate Whether to include the full ErrorBoundary template
  * @param minimal Whether to use minimal version for token constraints

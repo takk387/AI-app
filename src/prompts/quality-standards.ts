@@ -65,6 +65,168 @@ Generate production-ready code that follows these standards. Violations will be 
 `.trim();
 
 /**
+ * Form UX standards for polished form handling.
+ * Ensures forms have proper validation, feedback, and user experience.
+ */
+export const FORM_UX_STANDARDS = `
+## FORM UX REQUIREMENTS
+
+### Real-time Validation
+- Validate on blur (first touch) then on change (subsequent edits)
+- Show inline errors below fields immediately
+- Use aria-invalid and aria-describedby for accessibility
+
+### Form Field Pattern
+\`\`\`tsx
+const [value, setValue] = useState('');
+const [error, setError] = useState<string | null>(null);
+const [touched, setTouched] = useState(false);
+
+const validate = (val: string) => {
+  if (!val.trim()) { setError('This field is required'); return false; }
+  setError(null); return true;
+};
+
+<div>
+  <label htmlFor="email" className="block text-sm font-medium">
+    Email <span className="text-red-500" aria-hidden="true">*</span>
+  </label>
+  <input
+    id="email"
+    type="email"
+    value={value}
+    onChange={(e) => { setValue(e.target.value); if (touched) validate(e.target.value); }}
+    onBlur={() => { setTouched(true); validate(value); }}
+    aria-invalid={!!error}
+    aria-describedby={error ? "email-error" : undefined}
+    aria-required="true"
+    className={\`border rounded px-3 py-2 w-full \${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'} focus:outline-none focus:ring-2\`}
+  />
+  {error && <p id="email-error" className="text-red-500 text-sm mt-1" role="alert">{error}</p>}
+</div>
+\`\`\`
+
+### Submit Button States
+- Disable during submission: disabled={isSubmitting}
+- Show spinner during submit: {isSubmitting ? <Spinner /> : 'Submit'}
+- Prevent double-submit with form onSubmit handler
+
+### Toast Feedback Pattern
+\`\`\`tsx
+const [toast, setToast] = useState<{type: 'success'|'error', message: string} | null>(null);
+
+// Show toast after action:
+setToast({ type: 'success', message: 'Saved successfully!' });
+setTimeout(() => setToast(null), 3000);
+
+// Render toast (add to component JSX):
+{toast && (
+  <div
+    className={\`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 \${
+      toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white\`}
+    role="alert"
+    aria-live="polite"
+  >
+    {toast.message}
+  </div>
+)}
+\`\`\`
+
+### Error Recovery
+- Show retry button on failed submissions
+- Preserve form data on errors (don't clear fields)
+- Clear form only on successful submission
+`.trim();
+
+/**
+ * Security hardening standards for generated apps.
+ * Ensures apps have proper input sanitization, CSRF protection, and secure defaults.
+ */
+export const SECURITY_HARDENING_STANDARDS = `
+## SECURITY HARDENING
+
+### Input Sanitization
+\`\`\`tsx
+// For displaying user-generated content safely:
+const sanitizeForDisplay = (input: string): string =>
+  input.replace(/[<>&"']/g, (c) => ({
+    '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;'
+  }[c] || c));
+
+// For URLs (validate before using in href/src):
+const isSafeUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url);
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+};
+
+// Usage: <a href={isSafeUrl(userUrl) ? userUrl : '#'}>Link</a>
+\`\`\`
+
+### CSRF Protection (Full-stack apps)
+- Include CSRF token in forms that mutate data
+- Validate tokens server-side before processing
+- Use SameSite=Strict for session cookies
+
+### Rate Limiting Pattern (API Routes)
+\`\`\`tsx
+// Simple rate limiter for API routes (use Redis in production):
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+export function checkRateLimit(
+  identifier: string,
+  limit: number = 10,
+  windowMs: number = 60000
+): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(identifier);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (record.count >= limit) return false;
+  record.count++;
+  return true;
+}
+
+// Usage in API route:
+// if (!checkRateLimit(request.ip)) {
+//   return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+// }
+\`\`\`
+
+### Secure Headers (next.config.js for full-stack)
+\`\`\`js
+// Add to next.config.js:
+const nextConfig = {
+  async headers() {
+    return [{
+      source: '/:path*',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-XSS-Protection', value: '1; mode=block' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      ],
+    }];
+  },
+};
+\`\`\`
+
+### Secure Defaults
+- Use httpOnly cookies for sensitive tokens
+- Set Secure flag on cookies in production
+- Never log sensitive data (passwords, tokens, API keys)
+- Validate and sanitize all user inputs on both client and server
+`.trim();
+
+/**
  * Critical-only quality rules for token-constrained contexts.
  * Use when full standards would exceed token budget.
  */

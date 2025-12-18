@@ -60,6 +60,9 @@ function TodoItem({ todo, onToggle, onDelete }) {
 function TodoApp() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('todos');
@@ -68,11 +71,18 @@ function TodoApp() {
 
   const addTodo = (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    const newTodos = [...todos, { id: Date.now(), text: input, completed: false }];
+    const trimmed = input.trim();
+    if (!trimmed) { setError('Task cannot be empty'); return; }
+    if (trimmed.length < 2) { setError('Task must be at least 2 characters'); return; }
+    setError(null);
+    setIsSubmitting(true);
+    const newTodos = [...todos, { id: Date.now(), text: trimmed, completed: false }];
     setTodos(newTodos);
     localStorage.setItem('todos', JSON.stringify(newTodos));
     setInput('');
+    setIsSubmitting(false);
+    setToast({ type: 'success', message: 'Task added!' });
+    setTimeout(() => setToast(null), 3000);
   };
 
   return (
@@ -80,14 +90,27 @@ function TodoApp() {
       <div className="max-w-2xl mx-auto">
         <header><h1 className="text-4xl font-bold text-white mb-8">Task Manager</h1></header>
         <form onSubmit={addTodo} className="mb-6">
-          <label htmlFor="task-input" className="sr-only">Add a new task</label>
-          <input id="task-input" value={input} onChange={(e) => setInput(e.target.value)}
-                 className="w-full bg-slate-800 text-white px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Add task..." />
+          <label htmlFor="task-input" className="block text-sm text-slate-400 mb-1">Add a new task <span className="text-red-400">*</span></label>
+          <input id="task-input" value={input} onChange={(e) => { setInput(e.target.value); if (error) setError(null); }}
+                 aria-invalid={!!error} aria-describedby={error ? "task-error" : undefined}
+                 className={\`w-full bg-slate-800 text-white px-4 py-3 rounded-lg focus:ring-2 \${error ? 'border border-red-500 focus:ring-red-500' : 'focus:ring-blue-500'}\`} placeholder="What needs to be done?" />
+          {error && <p id="task-error" className="text-red-400 text-sm mt-1" role="alert">{error}</p>}
+          <button type="submit" disabled={isSubmitting}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 focus:ring-2 focus:ring-blue-500">
+            {isSubmitting ? 'Adding...' : 'Add Task'}
+          </button>
         </form>
         <section aria-label="Task list" className="space-y-2">
-          {todos.map(todo => <TodoItem key={todo.id} todo={todo} onToggle={() => {}} onDelete={() => {}} />)}
+          {todos.length === 0 ? (
+            <p className="text-slate-400 text-center py-8">No tasks yet. Add one above!</p>
+          ) : todos.map(todo => <TodoItem key={todo.id} todo={todo} onToggle={() => {}} onDelete={() => {}} />)}
         </section>
       </div>
+      {toast && (
+        <div className={\`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg \${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white\`} role="alert" aria-live="polite">
+          {toast.message}
+        </div>
+      )}
     </main>
   );
 }
@@ -152,38 +175,70 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ===FILE:app/page.tsx===
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+const Skeleton = ({ className = '' }: { className?: string }) => (
+  <div className={\`animate-pulse bg-slate-700 rounded \${className}\`} aria-hidden="true" />
+);
 
 export default function HomePage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Mock for preview
-    setPosts([
-      { id: '1', title: 'Getting Started', excerpt: 'Learn basics...', createdAt: new Date() },
-      { id: '2', title: 'Full-Stack Apps', excerpt: 'Complete guide...', createdAt: new Date() }
-    ]);
-    setLoading(false);
-    // For local: fetch('/api/posts').then(r => r.json()).then(setPosts).catch(e => setError(e.message)).finally(() => setLoading(false));
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Mock for preview
+      await new Promise(r => setTimeout(r, 500));
+      setPosts([
+        { id: '1', title: 'Getting Started', excerpt: 'Learn basics...', createdAt: new Date() },
+        { id: '2', title: 'Full-Stack Apps', excerpt: 'Complete guide...', createdAt: new Date() }
+      ]);
+      // For local: const res = await fetch('/api/posts'); setPosts(await res.json());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load posts');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (loading) return <main className="min-h-screen bg-slate-900 p-8 flex items-center justify-center"><div className="text-white">Loading...</div></main>;
-  if (error) return <main className="min-h-screen bg-slate-900 p-8 flex items-center justify-center"><div className="text-red-400">{error}</div></main>;
+  useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
   return (
     <main className="min-h-screen bg-slate-900 p-8">
       <div className="container mx-auto max-w-4xl">
         <header><h1 className="text-4xl font-bold text-white mb-8">Blog Posts</h1></header>
-        <section aria-label="Blog posts" className="grid gap-6">
-          {posts.map(post => (
-            <article key={post.id} className="bg-slate-800 p-6 rounded-lg">
-              <h2 className="text-2xl font-bold text-white">{post.title}</h2>
-              <p className="text-slate-400 mt-2">{post.excerpt}</p>
-            </article>
-          ))}
-        </section>
+        {error ? (
+          <div className="bg-red-900/50 border border-red-500 p-6 rounded-lg text-center" role="alert">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button onClick={fetchPosts} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:ring-2 focus:ring-red-500">
+              Try Again
+            </button>
+          </div>
+        ) : loading ? (
+          <section aria-label="Loading posts" className="grid gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-slate-800 p-6 rounded-lg">
+                <Skeleton className="h-8 w-3/4 mb-4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3 mt-2" />
+              </div>
+            ))}
+          </section>
+        ) : posts.length === 0 ? (
+          <p className="text-slate-400 text-center py-12">No posts yet. Create your first post!</p>
+        ) : (
+          <section aria-label="Blog posts" className="grid gap-6">
+            {posts.map(post => (
+              <article key={post.id} className="bg-slate-800 p-6 rounded-lg">
+                <h2 className="text-2xl font-bold text-white">{post.title}</h2>
+                <p className="text-slate-400 mt-2">{post.excerpt}</p>
+              </article>
+            ))}
+          </section>
+        )}
       </div>
     </main>
   );

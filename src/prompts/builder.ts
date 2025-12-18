@@ -11,10 +11,19 @@ import { FRONTEND_RULES_COMPRESSED } from './full-app/frontend-rules-compressed'
 import { FULLSTACK_RULES_COMPRESSED } from './full-app/fullstack-rules-compressed';
 import { FULLAPP_EXAMPLES_COMPRESSED } from './full-app/examples-compressed';
 import { buildDesignTokenPrompt } from './designTokenPrompt';
-import { CODE_QUALITY_STANDARDS } from './quality-standards';
-import { PRODUCTION_STANDARDS_COMPRESSED } from './production-standards';
+import {
+  CODE_QUALITY_STANDARDS,
+  FORM_UX_STANDARDS,
+  SECURITY_HARDENING_STANDARDS,
+} from './quality-standards';
+import {
+  PRODUCTION_STANDARDS_COMPRESSED,
+  PERFORMANCE_RESILIENCE_STANDARDS,
+} from './production-standards';
+import { getBackendTemplates } from './full-app/backend-templates';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
 import type { LayoutDesign } from '@/types/layoutDesign';
+import type { TechnicalRequirements } from '@/types/appConcept';
 
 /**
  * Accuracy guidelines included in all builder prompts
@@ -76,7 +85,8 @@ export function buildFullAppPrompt(
   baseInstructions: string,
   includeImageContext: boolean = false,
   isModification: boolean = false,
-  layoutDesign?: LayoutDesign
+  layoutDesign?: LayoutDesign,
+  techStack?: TechnicalRequirements
 ): string {
   const imageContext = includeImageContext
     ? `
@@ -109,6 +119,9 @@ ${buildDesignTokenPrompt(layoutDesign)}
 `
     : '';
 
+  // Build backend feature templates if techStack requires them
+  const backendTemplatesContext = techStack ? getBackendTemplates(techStack) : '';
+
   return `${baseInstructions}
 ${imageContext}
 ${modificationContext ? '\n' + modificationContext + '\n' : ''}
@@ -116,8 +129,14 @@ ${designTokenContext}
 
 ${CODE_QUALITY_STANDARDS}
 
+${FORM_UX_STANDARDS}
+
+${SECURITY_HARDENING_STANDARDS}
+
 ${PRODUCTION_STANDARDS_COMPRESSED}
 
+${PERFORMANCE_RESILIENCE_STANDARDS}
+${backendTemplatesContext ? '\n' + backendTemplatesContext + '\n' : ''}
 ${ACCURACY_GUIDELINES}
 
 ${COMPONENT_SYNTAX_RULES}
