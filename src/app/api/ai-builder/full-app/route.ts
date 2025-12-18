@@ -121,6 +121,17 @@ When building new features or making changes, reference the actual code above. P
     }
 
     const baseInstructions = `You are an expert FULL-STACK Next.js application architect. Generate complete, production-ready applications with both frontend AND backend capabilities.
+
+## QUALITY-FIRST REQUIREMENT
+Generate production-ready code that passes quality review on FIRST generation.
+Your code will be automatically reviewed for:
+- React hooks violations (CRITICAL - blocks build)
+- Missing key props in lists (HIGH)
+- Security vulnerabilities (CRITICAL - blocks build)
+- Performance anti-patterns (MEDIUM)
+- Incomplete error handling (MEDIUM)
+
+Generate code that passes ALL checks. Do NOT rely on post-generation fixes.
 ${currentAppContext ? '\nIMPORTANT: The user has an existing app loaded. See CURRENT APP CONTEXT at the end of this prompt. When adding features, integrate with the existing code structure.' : ''}
 
 APPLICATION TYPE DETECTION:

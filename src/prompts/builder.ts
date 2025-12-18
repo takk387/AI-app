@@ -11,6 +11,7 @@ import { FRONTEND_RULES_COMPRESSED } from './full-app/frontend-rules-compressed'
 import { FULLSTACK_RULES_COMPRESSED } from './full-app/fullstack-rules-compressed';
 import { FULLAPP_EXAMPLES_COMPRESSED } from './full-app/examples-compressed';
 import { buildDesignTokenPrompt } from './designTokenPrompt';
+import { CODE_QUALITY_STANDARDS } from './quality-standards';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
 import type { LayoutDesign } from '@/types/layoutDesign';
 
@@ -111,6 +112,8 @@ ${buildDesignTokenPrompt(layoutDesign)}
 ${imageContext}
 ${modificationContext ? '\n' + modificationContext + '\n' : ''}
 ${designTokenContext}
+
+${CODE_QUALITY_STANDARDS}
 
 ${ACCURACY_GUIDELINES}
 

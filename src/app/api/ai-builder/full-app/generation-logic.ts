@@ -361,21 +361,21 @@ const TOKEN_BUDGETS = {
   // Phase 1 needs more tokens (building foundation)
   // max_tokens must be > thinking_budget to leave room for response
   foundation: {
-    max_tokens: 32000, // 16000 thinking + 16000 response
-    thinking_budget: 16000,
-    timeout: 240000, // 4 minutes
+    max_tokens: 48000, // 24000 thinking + 24000 response
+    thinking_budget: 24000,
+    timeout: 360000, // 6 minutes
   },
   // Later phases need less (additive changes)
   additive: {
-    max_tokens: 20000, // 10000 thinking + 10000 response
-    thinking_budget: 10000,
-    timeout: 180000, // 3 minutes
+    max_tokens: 32000, // 16000 thinking + 16000 response
+    thinking_budget: 16000,
+    timeout: 300000, // 5 minutes
   },
   // Small modifications
   small: {
-    max_tokens: 16000, // 8000 thinking + 8000 response
-    thinking_budget: 8000,
-    timeout: 120000, // 2 minutes
+    max_tokens: 24000, // 12000 thinking + 12000 response
+    thinking_budget: 12000,
+    timeout: 180000, // 3 minutes
   },
 };
 
