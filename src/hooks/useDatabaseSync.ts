@@ -76,7 +76,7 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
       timestamp: component.timestamp,
       stagePlan: component.stagePlan || null,
     } as unknown as Database['public']['Tables']['generated_apps']['Row']['metadata'],
-    is_public: false,
+    is_public: component.isPublic ?? false,
     preview_slug: component.previewSlug || null,
     preview_enabled: component.previewEnabled ?? true,
     version: (component.versions?.length || 0) + 1,
@@ -100,6 +100,7 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
     stagePlan: metadata.stagePlan ?? null,
     previewSlug: dbApp.preview_slug || null,
     previewEnabled: dbApp.preview_enabled ?? true,
+    isPublic: dbApp.is_public ?? false,
   };
 }
 

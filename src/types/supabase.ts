@@ -261,6 +261,52 @@ export interface Database {
           },
         ];
       };
+      user_integrations: {
+        Row: {
+          id: string;
+          user_id: string;
+          provider: string;
+          access_token_encrypted: string;
+          refresh_token_encrypted: string | null;
+          token_expires_at: string | null;
+          account_id: string | null;
+          account_name: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          provider: string;
+          access_token_encrypted: string;
+          refresh_token_encrypted?: string | null;
+          token_expires_at?: string | null;
+          account_id?: string | null;
+          account_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          provider?: string;
+          access_token_encrypted?: string;
+          refresh_token_encrypted?: string | null;
+          token_expires_at?: string | null;
+          account_id?: string | null;
+          account_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_integrations_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['user_id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

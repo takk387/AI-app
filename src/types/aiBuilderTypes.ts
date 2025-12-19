@@ -86,6 +86,8 @@ export interface GeneratedComponent {
   previewSlug?: string | null;
   /** Preview sharing - whether preview is enabled */
   previewEnabled?: boolean;
+  /** Preview sharing - whether the app is publicly accessible */
+  isPublic?: boolean;
 }
 
 // ============================================================================

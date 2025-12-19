@@ -1838,6 +1838,10 @@ export default function AIBuilder() {
             onClose={() => setShowShareModal(false)}
             appId={currentComponent.id}
             appTitle={currentComponent.name}
+            initialShareState={{
+              isPublic: currentComponent.isPublic ?? false,
+              previewSlug: currentComponent.previewSlug ?? null,
+            }}
           />
         )}
 

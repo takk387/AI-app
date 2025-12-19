@@ -89,7 +89,25 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify ownership and disable sharing
+    // First verify the app exists and user owns it
+    const { data: app, error: fetchError } = await supabase
+      .from('generated_apps')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !app) {
+      return NextResponse.json({ success: false, error: 'App not found' }, { status: 404 });
+    }
+
+    if (app.user_id !== user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Not authorized to modify this app' },
+        { status: 403 }
+      );
+    }
+
+    // Disable sharing
     const { error: updateError } = await supabase
       .from('generated_apps')
       .update({
@@ -97,8 +115,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         preview_enabled: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .eq('user_id', user.id);
+      .eq('id', id);
 
     if (updateError) {
       return NextResponse.json(

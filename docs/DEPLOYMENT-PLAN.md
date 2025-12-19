@@ -5,9 +5,9 @@
 | Phase       | Feature                 | Status       |
 | ----------- | ----------------------- | ------------ |
 | **Phase 1** | Instant Preview URLs    | **COMPLETE** |
-| **Phase 2** | One-Click Vercel Deploy | Pending      |
+| **Phase 2** | One-Click Vercel Deploy | **COMPLETE** |
 
-**Last Updated:** 2025-12-18
+**Last Updated:** 2025-12-19
 
 ---
 
@@ -16,7 +16,7 @@
 Implement **Phase 1 + Phase 2**:
 
 1. **Phase 1:** Instant Preview URLs - shareable links like `/preview/abc123` **[COMPLETE]**
-2. **Phase 2:** One-Click Deploy to Vercel - OAuth-based deployment
+2. **Phase 2:** One-Click Deploy to Vercel - OAuth-based deployment **[COMPLETE]**
 
 **Scope:** Phase 1 + Phase 2 (Phase 3 mobile deployment deferred)
 
@@ -24,20 +24,28 @@ Implement **Phase 1 + Phase 2**:
 
 ## What Already Exists
 
-| Component            | Status       | Location                                                   |
-| -------------------- | ------------ | ---------------------------------------------------------- |
-| Share button UI      | **Complete** | `src/components/ProjectDropdown.tsx` (wired to ShareModal) |
-| ShareModal           | **Complete** | `src/components/modals/ShareModal.tsx`                     |
-| Preview page         | **Complete** | `src/app/preview/[slug]/page.tsx`                          |
-| Preview API          | **Complete** | `src/app/api/preview/[slug]/route.ts`                      |
-| Share API            | **Complete** | `src/app/api/apps/[id]/share/route.ts`                     |
-| Deployment types     | **Complete** | `src/types/deployment.ts`                                  |
-| Supabase types       | **Complete** | `src/types/supabase.ts` (preview fields added)             |
-| Database sync        | **Complete** | `src/hooks/useDatabaseSync.ts` (preview fields handled)    |
-| Deployment modal     | Ready        | `src/components/modals/DeploymentModal.tsx`                |
-| Export functionality | Ready        | `src/utils/exportApp.ts`                                   |
+| Component              | Status       | Location                                                   |
+| ---------------------- | ------------ | ---------------------------------------------------------- |
+| Share button UI        | **Complete** | `src/components/ProjectDropdown.tsx` (wired to ShareModal) |
+| ShareModal             | **Complete** | `src/components/modals/ShareModal.tsx`                     |
+| Preview page           | **Complete** | `src/app/preview/[slug]/page.tsx`                          |
+| Preview API            | **Complete** | `src/app/api/preview/[slug]/route.ts`                      |
+| Share API              | **Complete** | `src/app/api/apps/[id]/share/route.ts`                     |
+| Deployment types       | **Complete** | `src/types/deployment.ts`                                  |
+| Supabase types         | **Complete** | `src/types/supabase.ts` (incl. user_integrations)          |
+| Database sync          | **Complete** | `src/hooks/useDatabaseSync.ts` (preview fields handled)    |
+| Deployment modal       | **Complete** | `src/components/modals/DeploymentModal.tsx` (with Vercel)  |
+| Export functionality   | **Complete** | `src/utils/exportApp.ts`                                   |
+| Token encryption       | **Complete** | `src/services/TokenEncryption.ts`                          |
+| Deployment service     | **Complete** | `src/services/DeploymentService.ts`                        |
+| useDeployment hook     | **Complete** | `src/hooks/useDeployment.ts`                               |
+| Vercel OAuth authorize | **Complete** | `src/app/api/integrations/vercel/authorize/route.ts`       |
+| Vercel OAuth callback  | **Complete** | `src/app/api/integrations/vercel/callback/route.ts`        |
+| Vercel disconnect      | **Complete** | `src/app/api/integrations/vercel/disconnect/route.ts`      |
+| Integration status API | **Complete** | `src/app/api/integrations/status/route.ts`                 |
+| Vercel deploy API      | **Complete** | `src/app/api/deploy/vercel/route.ts`                       |
 
-> **Note:** Database migration has been applied to Supabase.
+> **Note:** Database migrations have been applied to Supabase for both Phase 1 and Phase 2.
 
 ---
 
