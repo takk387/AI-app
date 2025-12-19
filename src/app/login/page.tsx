@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -36,36 +37,155 @@ export default function LoginPage() {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 100,
+        damping: 15,
+      },
+    },
+  };
+
+  const glowVariants = {
+    idle: {
+      boxShadow: '0 0 20px rgba(99, 102, 241, 0.15), 0 0 40px rgba(139, 92, 246, 0.1)',
+    },
+    hover: {
+      boxShadow: '0 0 30px rgba(99, 102, 241, 0.25), 0 0 60px rgba(139, 92, 246, 0.15)',
+    },
+  };
+
+  const inputFocusVariants = {
+    idle: {
+      boxShadow: '0 0 0 0 rgba(99, 102, 241, 0)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    focus: {
+      boxShadow: '0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(139, 92, 246, 0.1)',
+      borderColor: 'rgba(99, 102, 241, 0.5)',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-100 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4">
-        <ThemeToggle size="md" showDropdown={true} />
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4 overflow-hidden relative">
+      {/* Animated background gradients */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-indigo-600/20 blur-[120px]"
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-purple-600/20 blur-[120px]"
+          animate={{
+            x: [0, -30, 0],
+            y: [0, -50, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-violet-600/10 blur-[100px]"
+          animate={{
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
       </div>
 
-      <div className="max-w-md w-full">
-        <div className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/10 p-8 shadow-2xl transition-colors duration-300">
+      {/* Grid pattern overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: '50px 50px',
+        }}
+      />
+
+      {/* Theme Toggle */}
+      <motion.div
+        className="absolute top-6 right-6 z-10"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, type: 'spring' }}
+      >
+        <ThemeToggle size="md" showDropdown={true} />
+      </motion.div>
+
+      {/* Main card */}
+      <motion.div
+        className="max-w-md w-full relative z-10"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <motion.div
+          className="relative bg-[#12121a]/80 backdrop-blur-2xl rounded-3xl border border-white/[0.08] p-10"
+          variants={glowVariants}
+          initial="idle"
+          whileHover="hover"
+          transition={{ duration: 0.3 }}
+        >
+          {/* Subtle top border glow */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+
           {/* Logo/Title */}
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🤖</div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
-              AI App Builder
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 transition-colors duration-300">
-              Sign in to your account
-            </p>
-          </div>
+          <motion.div className="text-center mb-10" variants={itemVariants}>
+            <motion.div
+              className="text-6xl mb-4 inline-block"
+              animate={{
+                rotate: [0, -5, 5, 0],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              <span className="drop-shadow-[0_0_20px_rgba(99,102,241,0.5)]">🤖</span>
+            </motion.div>
+            <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">AI App Builder</h1>
+            <p className="text-slate-400 text-sm">Sign in to your account</p>
+          </motion.div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors duration-300"
-              >
+            <motion.div variants={itemVariants}>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
                 Email Address
               </label>
-              <input
+              <motion.input
                 id="email"
                 type="email"
                 value={email}
@@ -73,20 +193,20 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 disabled={loading}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 transition-colors duration-300"
+                className="w-full px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-slate-500 focus:outline-none transition-colors duration-200"
+                variants={inputFocusVariants}
+                initial="idle"
+                whileFocus="focus"
                 autoFocus
               />
-            </div>
+            </motion.div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 transition-colors duration-300"
-              >
+            <motion.div variants={itemVariants}>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
                 Password
               </label>
               <div className="relative">
-                <input
+                <motion.input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -94,12 +214,17 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   disabled={loading}
                   required
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 transition-colors duration-300"
+                  className="w-full px-4 py-3.5 pr-12 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-slate-500 focus:outline-none transition-colors duration-200"
+                  variants={inputFocusVariants}
+                  initial="idle"
+                  whileFocus="focus"
                 />
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                   tabIndex={-1}
                 >
                   {showPassword ? (
@@ -138,44 +263,118 @@ export default function LoginPage() {
                       />
                     </svg>
                   )}
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
 
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-red-600 dark:text-red-400 text-sm transition-colors duration-300">
-                {error}
-              </div>
-            )}
+            {/* Error message */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto' }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {error}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <button
-              type="submit"
-              disabled={loading || !email || !password}
-              className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            {/* Submit button */}
+            <motion.div variants={itemVariants}>
+              <motion.button
+                type="submit"
+                disabled={loading || !email || !password}
+                className="w-full relative px-6 py-4 rounded-xl font-medium text-white overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {/* Button gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]" />
+
+                {/* Animated shine effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  animate={{
+                    x: ['-100%', '100%'],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                    ease: 'easeInOut',
+                  }}
+                />
+
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 blur-xl opacity-50 -z-10" />
+
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {loading ? (
+                    <>
+                      <motion.div
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: 'linear',
+                        }}
+                      />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </span>
+              </motion.button>
+            </motion.div>
           </form>
 
           {/* Sign Up Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-300">
+          <motion.div className="mt-8 text-center" variants={itemVariants}>
+            <p className="text-sm text-slate-400">
               Don&apos;t have an account?{' '}
               <Link
                 href="/signup"
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium transition-colors"
+                className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
               >
                 Sign up
               </Link>
             </p>
-          </div>
+          </motion.div>
 
           {/* Footer */}
-          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-500 transition-colors duration-300">
-            🔒 Secure authentication with Supabase
-          </div>
-        </div>
-      </div>
+          <motion.div
+            className="mt-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2"
+            variants={itemVariants}
+          >
+            <motion.span
+              animate={{
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              🔒
+            </motion.span>
+            Secure authentication with Supabase
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
