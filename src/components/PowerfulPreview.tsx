@@ -64,44 +64,50 @@ function SandpackErrorMonitor({
 }) {
   const { sandpack } = useSandpack();
   const { status, error } = sandpack;
-  const autoRetryCountRef = useRef(0);
-  const lastErrorTimeRef = useRef(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isAutoRetrying, setIsAutoRetrying] = useState(false);
+  const hasTriedRef = useRef(false);
 
-  // Auto-retry logic with exponential backoff
+  const hasError = status === 'timeout' || !!error;
+
+  // Reset on successful load
   useEffect(() => {
-    const hasError = status === 'timeout' || error;
+    if (status === 'running') {
+      setRetryCount(0);
+      setIsRetrying(false);
+      hasTriedRef.current = false;
+    }
+  }, [status]);
 
-    if (hasError && autoRetryCountRef.current < maxAutoRetries) {
-      const now = Date.now();
-      const timeSinceLastError = now - lastErrorTimeRef.current;
-
-      // Exponential backoff: 1s, 2s, 4s
-      const backoffMs = Math.pow(2, autoRetryCountRef.current) * 1000;
-
-      // Only auto-retry if enough time has passed
-      if (timeSinceLastError >= backoffMs || lastErrorTimeRef.current === 0) {
-        lastErrorTimeRef.current = now;
-        autoRetryCountRef.current++;
-        setIsAutoRetrying(true);
-
-        retryTimeoutRef.current = setTimeout(() => {
-          try {
-            sandpack.runSandpack();
-          } catch (e) {
-            logger.error('Auto-retry failed', e);
-          }
-          setIsAutoRetrying(false);
-        }, backoffMs);
-      }
+  // Auto-retry logic
+  useEffect(() => {
+    // Clear any pending timeout
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
     }
 
-    // Reset counter on successful load
-    if (status === 'running') {
-      autoRetryCountRef.current = 0;
-      lastErrorTimeRef.current = 0;
-      setIsAutoRetrying(false);
+    // Only retry if there's an error, we haven't exhausted retries, and we're not already retrying
+    if (hasError && retryCount < maxAutoRetries && !isRetrying && !hasTriedRef.current) {
+      hasTriedRef.current = true;
+      setIsRetrying(true);
+
+      // Exponential backoff: 1s, 2s, 4s
+      const backoffMs = Math.pow(2, retryCount) * 1000;
+
+      retryTimeoutRef.current = setTimeout(() => {
+        try {
+          sandpack.runSandpack();
+        } catch (e) {
+          logger.error('Auto-retry failed', e);
+        }
+
+        // After retry attempt, increment count and allow next retry
+        setRetryCount((c) => c + 1);
+        setIsRetrying(false);
+        hasTriedRef.current = false;
+      }, backoffMs);
     }
 
     return () => {
@@ -109,19 +115,16 @@ function SandpackErrorMonitor({
         clearTimeout(retryTimeoutRef.current);
       }
     };
-  }, [status, error, sandpack, maxAutoRetries]);
+  }, [hasError, retryCount, maxAutoRetries, isRetrying, sandpack]);
 
   // Show loading during auto-retry
-  if (
-    isAutoRetrying ||
-    ((status === 'timeout' || error) && autoRetryCountRef.current < maxAutoRetries)
-  ) {
+  if (hasError && retryCount < maxAutoRetries) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-zinc-900">
         <div className="text-center p-6">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-zinc-400 text-sm">
-            Recovering preview... (attempt {autoRetryCountRef.current}/{maxAutoRetries})
+            Recovering preview... (attempt {retryCount + 1}/{maxAutoRetries})
           </p>
         </div>
       </div>
@@ -155,7 +158,8 @@ function SandpackErrorMonitor({
           </p>
           <button
             onClick={() => {
-              autoRetryCountRef.current = 0;
+              setRetryCount(0);
+              hasTriedRef.current = false;
               onRetry();
             }}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
