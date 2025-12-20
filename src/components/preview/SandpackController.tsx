@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSandpack, SandpackState } from '@codesandbox/sandpack-react';
 
 export type SandpackFiles = Record<string, { code: string }>;
