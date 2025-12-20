@@ -392,28 +392,25 @@ h1, h2, h3, h4, h5, h6 {
                       </SandpackLayout>
                     </DeviceFrame>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <SandpackLayout
-                        key={`no-frame-${previewWidth}-${previewHeight}`}
+                    <SandpackLayout
+                      key={`no-frame-${previewWidth}-${previewHeight}`}
+                      style={{
+                        height: previewHeight === 'auto' ? 600 : previewHeight,
+                        width: previewWidth,
+                        maxWidth: 'calc(100% - 2rem)',
+                        border: 'none',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <SandpackPreview
+                        showOpenInCodeSandbox={false}
+                        showRefreshButton={true}
                         style={{
                           height: '100%',
                           width: '100%',
-                          maxHeight: previewHeight === 'auto' ? undefined : previewHeight,
-                          maxWidth: previewWidth,
-                          border: 'none',
-                          borderRadius: 8,
                         }}
-                      >
-                        <SandpackPreview
-                          showOpenInCodeSandbox={false}
-                          showRefreshButton={true}
-                          style={{
-                            height: '100%',
-                            width: '100%',
-                          }}
-                        />
-                      </SandpackLayout>
-                    </div>
+                      />
+                    </SandpackLayout>
                   )}
                 </TouchSimulator>
               </div>
