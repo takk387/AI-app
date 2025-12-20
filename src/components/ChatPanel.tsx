@@ -145,7 +145,7 @@ export interface ChatPanelProps {
   onRedo?: () => void;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({
+export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel({
   messages,
   isGenerating,
   generationProgress,
@@ -168,7 +168,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   canRedo,
   onUndo,
   onRedo,
-}) => {
+}) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -384,6 +384,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default ChatPanel;

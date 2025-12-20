@@ -28,6 +28,9 @@ import type { LayoutDesign } from '@/types/layoutDesign';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
+// Global timeout for entire SSE operation (10 minutes for large apps)
+const GLOBAL_TIMEOUT_MS = 10 * 60 * 1000;
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -76,6 +79,11 @@ export async function POST(request: Request) {
   (async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let requestBody: any;
+
+    // Global timeout - abort if entire operation takes too long
+    const globalTimeoutId = setTimeout(() => {
+      abortController.abort('Global timeout exceeded');
+    }, GLOBAL_TIMEOUT_MS);
 
     try {
       // Parse request body with error handling
@@ -753,6 +761,7 @@ MODIFICATION MODE for "${currentAppName}":
         recoverable: false,
       });
     } finally {
+      clearTimeout(globalTimeoutId);
       await closeWriter();
     }
   })();

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Panel visibility state for LayoutBuilderWizard
@@ -181,13 +182,15 @@ export const useLayerPanel = () => useLayoutPanelStore((s) => s.showLayerPanel);
 export const usePerformanceReport = () => useLayoutPanelStore((s) => s.showPerformanceReport);
 export const useAdvancedMode = () => useLayoutPanelStore((s) => s.isAdvancedMode);
 
-// Action hooks
+// Action hooks - uses useShallow to prevent unnecessary re-renders
 export const usePanelActions = () =>
-  useLayoutPanelStore((s) => ({
-    setPanel: s.setPanel,
-    togglePanel: s.togglePanel,
-    openPanel: s.openPanel,
-    closePanel: s.closePanel,
-    closeAllPanels: s.closeAllPanels,
-    initTemplatePicker: s.initTemplatePicker,
-  }));
+  useLayoutPanelStore(
+    useShallow((s) => ({
+      setPanel: s.setPanel,
+      togglePanel: s.togglePanel,
+      openPanel: s.openPanel,
+      closePanel: s.closePanel,
+      closeAllPanels: s.closeAllPanels,
+      initTemplatePicker: s.initTemplatePicker,
+    }))
+  );

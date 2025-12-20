@@ -6,7 +6,7 @@
  * React hook for managing code review state and triggering reviews.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   ReviewFile,
   ReviewIssue,
@@ -119,6 +119,15 @@ export function useCodeReview(options: UseCodeReviewOptions = {}): UseCodeReview
 
   // Abort controller for cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup: abort any in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   /**
    * Perform light review

@@ -2,7 +2,19 @@
 
 > **Audit Date:** December 20, 2025
 > **Codebase:** AI App Builder (Personal Development Tool)
-> **Total Issues:** 78
+> **Total Issues:** 78 (4 fixed)
+
+---
+
+## Recent Fixes (December 20, 2025)
+
+| Issue   | Status           | Notes                                              |
+| ------- | ---------------- | -------------------------------------------------- |
+| CRIT-03 | ✅ Already Fixed | Event listener cleanup was already present in code |
+| CRIT-04 | ✅ Fixed         | Added 10-minute global timeout to SSE streaming    |
+| HIGH-01 | ✅ Fixed         | Added `useShallow` to `usePanelActions` selector   |
+| HIGH-04 | ✅ Fixed         | Wrapped `ChatPanel` in `React.memo`                |
+| HIGH-06 | ✅ Fixed         | Added `useEffect` cleanup for AbortController      |
 
 ---
 
@@ -88,46 +100,46 @@ class ContextCache {
 
 ---
 
-### CRIT-03: Missing Event Listener Cleanup
+### ~~CRIT-03: Missing Event Listener Cleanup~~ ✅ ALREADY FIXED
 
-**Location:** `src/components/NaturalConversationWizard.tsx:208-218`
+**Location:** `src/components/NaturalConversationWizard.tsx:212-222`
 
-**Problem:**
+**Status:** The cleanup function was already present in the codebase:
 
 ```typescript
 useEffect(() => {
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') onCancel();
+  };
   document.addEventListener('keydown', handleEscape);
-  // Missing: return () => document.removeEventListener(...)
+  return () => document.removeEventListener('keydown', handleEscape); // ✅ Present
 }, [onCancel]);
 ```
 
-**Impact:** Each open/close of wizard adds another listener. Escape key fires multiple times. Memory leak.
-
-**Fix:** Add cleanup return function.
-
-**Effort:** 10 minutes
+**No action needed.**
 
 ---
 
-### CRIT-04: SSE Streaming Has No Timeout
+### ~~CRIT-04: SSE Streaming Has No Timeout~~ ✅ FIXED
 
-**Location:** `src/app/api/ai-builder/full-app-stream/route.ts:41-73`
+**Location:** `src/app/api/ai-builder/full-app-stream/route.ts:31-32, 83-86, 764`
 
-**Problem:** Background AI generation task has no timeout. If Claude API hangs, the stream runs forever.
-
-**Impact:** Orphaned processes, resource exhaustion, no error feedback to user.
-
-**Fix:**
+**Status:** Fixed with 10-minute global timeout:
 
 ```typescript
-const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const timeoutId = setTimeout(() => abortController.abort('Timeout'), TIMEOUT_MS);
+// Line 31-32
+const GLOBAL_TIMEOUT_MS = 10 * 60 * 1000;
 
-// In finally block:
-clearTimeout(timeoutId);
+// Line 83-86 (inside async IIFE, before try block)
+const globalTimeoutId = setTimeout(() => {
+  abortController.abort('Global timeout exceeded');
+}, GLOBAL_TIMEOUT_MS);
+
+// Line 764 (in finally block)
+clearTimeout(globalTimeoutId);
 ```
 
-**Effort:** 1 hour
+**Verified:** TypeScript compiles, lint passes.
 
 ---
 
@@ -250,23 +262,32 @@ function sanitizePath(userPath: string, baseDir: string): string | null {
 
 Performance problems and cleanup issues that affect development experience.
 
-### HIGH-01: Missing Shallow Comparison in Zustand Selectors
+### ~~HIGH-01: Missing Shallow Comparison in Zustand Selectors~~ ✅ PARTIALLY FIXED
 
 **Locations:**
 
-- `src/stores/useLayoutPanelStore.ts:185-193` (usePanelActions)
-- `src/hooks/useProjectDocumentation.ts:107-112` (6 separate subscriptions)
+- `src/stores/useLayoutPanelStore.ts:185-196` (usePanelActions) - ✅ FIXED
+- `src/hooks/useProjectDocumentation.ts:107-112` (6 separate subscriptions) - Still needs fix
 
-**Problem:** Selectors return new objects on every render, causing unnecessary re-renders.
-
-**Fix:**
+**Status:** Fixed `usePanelActions`:
 
 ```typescript
 import { useShallow } from 'zustand/react/shallow';
-const actions = useLayoutPanelStore(useShallow(s => ({ ... })));
+
+export const usePanelActions = () =>
+  useLayoutPanelStore(
+    useShallow((s) => ({
+      setPanel: s.setPanel,
+      togglePanel: s.togglePanel,
+      openPanel: s.openPanel,
+      closePanel: s.closePanel,
+      closeAllPanels: s.closeAllPanels,
+      initTemplatePicker: s.initTemplatePicker,
+    }))
+  );
 ```
 
-**Effort:** 1 hour total
+**Remaining:** Apply same pattern to `useProjectDocumentation.ts`
 
 ---
 
@@ -297,15 +318,23 @@ const actions = useLayoutPanelStore(useShallow(s => ({ ... })));
 
 ---
 
-### HIGH-04: Missing React.memo on Message Lists
+### ~~HIGH-04: Missing React.memo on Message Lists~~ ✅ PARTIALLY FIXED
 
 **Location:** `src/components/ChatPanel.tsx`, `src/components/PreviewPanel.tsx`
 
-**Problem:** Frequently-changing props cause full component tree re-renders.
+**Status:** Fixed `ChatPanel`:
 
-**Fix:** Wrap components in `React.memo`.
+```typescript
+export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel(
+  {
+    // props
+  }
+) {
+  // component body
+});
+```
 
-**Effort:** 30 minutes
+**Remaining:** Apply same pattern to `PreviewPanel.tsx`
 
 ---
 
@@ -321,15 +350,24 @@ const actions = useLayoutPanelStore(useShallow(s => ({ ... })));
 
 ---
 
-### HIGH-06: AbortController Not Cleaned
+### ~~HIGH-06: AbortController Not Cleaned~~ ✅ FIXED
 
-**Location:** `src/hooks/useCodeReview.ts:134-137`
+**Location:** `src/hooks/useCodeReview.ts:123-130`
 
-**Problem:** AbortController created but not aborted on unmount.
+**Status:** Added cleanup effect:
 
-**Fix:** Add cleanup effect that calls `abort()`.
+```typescript
+// Cleanup: abort any in-flight requests on unmount
+useEffect(() => {
+  return () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+}, []);
+```
 
-**Effort:** 15 minutes
+**Verified:** TypeScript compiles, lint passes.
 
 ---
 
@@ -479,14 +517,22 @@ Nice-to-have improvements for when you have time.
 
 ## Recommended Fix Order
 
-### Immediate (Next Session) - 4-6 hours
+### ~~Immediate (Next Session)~~ ✅ DONE
 
-Fix things that cause crashes or data loss:
+Quick wins completed:
+
+1. ~~**CRIT-03:** Add event listener cleanup~~ ✅ Was already fixed
+2. ~~**CRIT-04:** Add SSE timeout~~ ✅ Fixed (10-minute timeout)
+3. ~~**HIGH-01:** Zustand shallow comparison~~ ✅ Fixed (usePanelActions)
+4. ~~**HIGH-04:** React.memo on ChatPanel~~ ✅ Fixed
+5. ~~**HIGH-06:** AbortController cleanup~~ ✅ Fixed
+
+### Next Session - 4-6 hours
+
+Fix remaining critical stability issues:
 
 1. **CRIT-01 & CRIT-02:** Add cache eviction (4 hours)
-2. **CRIT-03:** Add event listener cleanup (10 min)
-3. **CRIT-04:** Add SSE timeout (1 hour)
-4. **CRIT-05:** Fix useLayoutBuilder dependency (30 min)
+2. **CRIT-05:** Fix useLayoutBuilder dependency (30 min)
 
 ### Short Term (This Week) - 8-12 hours
 
@@ -495,7 +541,6 @@ Fix remaining critical and high-impact issues:
 1. **CRIT-06 & CRIT-07:** Input sanitization (2 hours)
 2. **CRIT-08 & CRIT-09:** Error propagation (5 hours)
 3. **CRIT-10 & CRIT-11:** Request validation (4 hours)
-4. **HIGH-01:** Zustand shallow comparison (1 hour)
 
 ### When You Notice Problems
 
@@ -516,25 +561,30 @@ Fix as they affect your workflow:
 
 ## Files Most Needing Attention
 
-| File                     | Issues | Priority                                |
-| ------------------------ | ------ | --------------------------------------- |
-| AIBuilder.tsx            | 8      | HIGH - large file, several hooks issues |
-| useLayoutBuilder.ts      | 6      | CRITICAL - stale closure bug            |
-| full-app-stream/route.ts | 5      | CRITICAL - SSE timeout needed           |
-| ContextCache.ts          | 3      | CRITICAL - memory leak                  |
-| astModifier.ts           | 4      | HIGH - O(n²) algorithms                 |
-| useAppStore.ts           | 4      | HIGH - Zustand patterns                 |
-| PhaseExecutionManager.ts | 3      | CRITICAL - error propagation            |
+| File                     | Issues | Priority                                     |
+| ------------------------ | ------ | -------------------------------------------- |
+| AIBuilder.tsx            | 8      | HIGH - large file, several hooks issues      |
+| useLayoutBuilder.ts      | 6      | CRITICAL - stale closure bug                 |
+| full-app-stream/route.ts | 4      | ~~5~~ → 4 (SSE timeout ✅ fixed)             |
+| ContextCache.ts          | 3      | CRITICAL - memory leak                       |
+| astModifier.ts           | 4      | HIGH - O(n²) algorithms                      |
+| useAppStore.ts           | 4      | HIGH - Zustand patterns                      |
+| PhaseExecutionManager.ts | 3      | CRITICAL - error propagation                 |
+| useLayoutPanelStore.ts   | 0      | ~~1~~ → 0 (useShallow ✅ fixed)              |
+| ChatPanel.tsx            | 0      | ~~1~~ → 0 (React.memo ✅ fixed)              |
+| useCodeReview.ts         | 0      | ~~1~~ → 0 (AbortController cleanup ✅ fixed) |
 
 ---
 
 ## Quick Wins (Under 30 Minutes Each)
 
-1. Add useEffect cleanup for event listeners (CRIT-03)
-2. Add useShallow to usePanelActions (HIGH-01)
-3. Wrap ChatPanel in React.memo (HIGH-04)
-4. Add AbortController cleanup (HIGH-06)
-5. Add SSE timeout constant and setTimeout (CRIT-04)
+All quick wins have been addressed:
+
+1. ~~Add useEffect cleanup for event listeners (CRIT-03)~~ ✅ Was already fixed
+2. ~~Add useShallow to usePanelActions (HIGH-01)~~ ✅ Fixed
+3. ~~Wrap ChatPanel in React.memo (HIGH-04)~~ ✅ Fixed
+4. ~~Add AbortController cleanup (HIGH-06)~~ ✅ Fixed
+5. ~~Add SSE timeout constant and setTimeout (CRIT-04)~~ ✅ Fixed
 
 ---
 
