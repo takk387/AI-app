@@ -42,7 +42,10 @@ async function railwayQuery(query: string, variables?: Record<string, unknown>) 
 /**
  * Get deployment status from Railway
  */
-async function getDeploymentStatus(serviceId: string): Promise<{
+async function getDeploymentStatus(
+  serviceId: string,
+  cachedPreviewUrl: string | null
+): Promise<{
   status: string;
   previewUrl: string | null;
   buildLogs: string[];
@@ -50,6 +53,7 @@ async function getDeploymentStatus(serviceId: string): Promise<{
 }> {
   try {
     // Get service details including deployments
+    // Using a simpler query that's more reliable
     const data = await railwayQuery(
       `query GetService($serviceId: String!) {
         service(id: $serviceId) {
@@ -60,20 +64,7 @@ async function getDeploymentStatus(serviceId: string): Promise<{
               node {
                 id
                 status
-                staticUrl
                 createdAt
-              }
-            }
-          }
-          serviceInstances {
-            edges {
-              node {
-                id
-                domains {
-                  serviceDomains {
-                    domain
-                  }
-                }
               }
             }
           }
@@ -93,13 +84,13 @@ async function getDeploymentStatus(serviceId: string): Promise<{
     }
 
     // Get latest deployment
-    const deployments = service.deployments?.edges || [];
-    const latestDeployment = deployments[0]?.node;
+    const railwayDeployments = service.deployments?.edges || [];
+    const latestDeployment = railwayDeployments[0]?.node;
 
     if (!latestDeployment) {
       return {
         status: 'building',
-        previewUrl: null,
+        previewUrl: cachedPreviewUrl,
         buildLogs: ['Waiting for deployment to start...'],
       };
     }
@@ -125,23 +116,13 @@ async function getDeploymentStatus(serviceId: string): Promise<{
         status = 'deploying';
         break;
       default:
+        log.debug('Unknown Railway status', { railwayStatus });
         status = 'building';
-    }
-
-    // Get preview URL from domains or static URL
-    let previewUrl = latestDeployment.staticUrl || null;
-
-    const serviceInstances = service.serviceInstances?.edges || [];
-    if (serviceInstances.length > 0) {
-      const domains = serviceInstances[0]?.node?.domains?.serviceDomains || [];
-      if (domains.length > 0) {
-        previewUrl = `https://${domains[0].domain}`;
-      }
     }
 
     return {
       status,
-      previewUrl,
+      previewUrl: cachedPreviewUrl, // Use the URL we created during deploy
       buildLogs: [`Deployment status: ${railwayStatus}`],
       error: status === 'error' ? 'Deployment failed' : undefined,
     };
@@ -181,7 +162,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid deployment ID format' }, { status: 400 });
     }
 
-    // Check user ownership
+    // Check user ownership and get cached data
     const deployment = deployments.get(id);
     if (deployment && deployment.userId !== user.id) {
       return NextResponse.json(
@@ -190,7 +171,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    const status = await getDeploymentStatus(id);
+    // Get cached preview URL from our in-memory store
+    const cachedPreviewUrl = deployment?.previewUrl || null;
+
+    const status = await getDeploymentStatus(id, cachedPreviewUrl);
+
+    // Update our cached deployment record with the latest status
+    if (deployment) {
+      deployment.status = status.status as typeof deployment.status;
+      if (status.previewUrl) {
+        deployment.previewUrl = status.previewUrl;
+      }
+    }
 
     return NextResponse.json({
       id,

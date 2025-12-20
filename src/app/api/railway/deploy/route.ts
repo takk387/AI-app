@@ -423,6 +423,27 @@ function buildFileTree(
 }
 
 /**
+ * Create a public domain for the service
+ */
+async function createServiceDomain(serviceId: string, environmentId: string): Promise<string> {
+  const data = await railwayQuery(
+    `mutation ServiceDomainCreate($input: ServiceDomainCreateInput!) {
+      serviceDomainCreate(input: $input) {
+        domain
+      }
+    }`,
+    {
+      input: {
+        serviceId,
+        environmentId,
+      },
+    }
+  );
+
+  return data.serviceDomainCreate.domain;
+}
+
+/**
  * Deploy files to Railway service using the template deployment method
  */
 async function deployToService(
@@ -430,7 +451,7 @@ async function deployToService(
   serviceId: string,
   environmentId: string,
   files: Record<string, string>
-): Promise<{ deploymentId: string }> {
+): Promise<{ deploymentId: string; domain: string }> {
   // For Railway, we need to use their GitHub integration or template deployment
   // Since we're doing dynamic file uploads, we'll use the service variables
   // to store file contents and use a buildpack that extracts them
@@ -494,8 +515,12 @@ async function deployToService(
     }
   );
 
+  // Create a public domain for the service
+  const domain = await createServiceDomain(serviceId, environmentId);
+  railwayLog.debug('Created service domain', { domain });
+
   // Use serviceId as deployment identifier (Railway doesn't return a deployment ID here)
-  return { deploymentId: serviceId };
+  return { deploymentId: serviceId, domain };
 }
 
 // ============================================================================
@@ -555,9 +580,12 @@ export async function POST(request: NextRequest) {
     // Build file tree
     const fileTree = buildFileTree(files, appName, dependencies);
 
-    // Deploy files
+    // Deploy files and create domain
     const deployment = await deployToService(project.id, service.id, environment.id, fileTree);
-    railwayLog.info('Started deployment', { deploymentId: deployment.deploymentId });
+    railwayLog.info('Started deployment', {
+      deploymentId: deployment.deploymentId,
+      domain: deployment.domain,
+    });
 
     // Create deployment record with user ownership
     const deploymentRecord: RailwayDeployment = {
@@ -566,7 +594,7 @@ export async function POST(request: NextRequest) {
       serviceId: service.id,
       userId: user.id, // Track ownership for authorization
       status: 'building',
-      previewUrl: null,
+      previewUrl: `https://${deployment.domain}`,
       buildLogs: ['Deployment started...'],
       createdAt: new Date().toISOString(),
     };
