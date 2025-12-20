@@ -103,25 +103,47 @@ export function useSandpackStability(
 
       // Schedule processing of remaining updates
       if (pendingUpdatesRef.current.length > 0) {
-        setTimeout(processPendingUpdates, 500);
+        setTimeout(processPendingUpdates, 300);
       }
     } else {
       // Rate limited - try again later
-      setTimeout(processPendingUpdates, 500);
+      setTimeout(processPendingUpdates, 300);
     }
   }, []); // No dependencies - uses refs and functional updates
 
   // Track previous rawFilesKey to detect actual changes
   const prevRawFilesKeyRef = useRef<string>(rawFilesKey);
 
-  // Debounced update effect
+  // Track if we've ever had meaningful content
+  const hasHadContentRef = useRef<boolean>(Object.keys(rawFiles).length > 0);
+
+  // Sync stableFiles immediately when rawFiles changes from empty to non-empty
+  // This handles the initial data load case
+  useEffect(() => {
+    const hasContent = Object.keys(rawFiles).length > 0;
+    const stableHasContent = Object.keys(stableFiles).length > 0;
+
+    // If we're going from empty to having content, update immediately
+    if (hasContent && !stableHasContent && !hasHadContentRef.current) {
+      hasHadContentRef.current = true;
+      setStableFiles(rawFiles);
+      prevRawFilesKeyRef.current = rawFilesKey;
+    }
+  }, [rawFiles, rawFilesKey, stableFiles]);
+
+  // Debounced update effect for subsequent changes
   useEffect(() => {
     // Skip if files haven't actually changed
     if (rawFilesKey === prevRawFilesKeyRef.current) {
       return;
     }
-    prevRawFilesKeyRef.current = rawFilesKey;
 
+    // Skip debounce logic if we haven't had content yet (handled by effect above)
+    if (!hasHadContentRef.current) {
+      return;
+    }
+
+    prevRawFilesKeyRef.current = rawFilesKey;
     setIsUpdating(true);
 
     // Clear existing timeout

@@ -374,9 +374,10 @@ h1, h2, h3, h4, h5, h6 {
   }, [appData]);
 
   // Apply stability layer with debouncing and rate limiting
+  // Use shorter debounce (150ms) for responsive feel while still preventing rapid recompiles
   const { stableFiles: sandpackFiles, isUpdating } = useSandpackStability(rawSandpackFiles, {
-    debounceMs: 500,
-    maxUpdatesPerSecond: 2,
+    debounceMs: 150,
+    maxUpdatesPerSecond: 3,
     onError: (error) => logger.error('Sandpack stability error', error),
   });
 
