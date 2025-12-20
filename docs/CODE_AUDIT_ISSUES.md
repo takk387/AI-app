@@ -2,19 +2,22 @@
 
 > **Audit Date:** December 20, 2025
 > **Codebase:** AI App Builder (Personal Development Tool)
-> **Total Issues:** 78 (4 fixed)
+> **Total Issues:** 78 (8 fixed, 3 already fixed)
 
 ---
 
 ## Recent Fixes (December 20, 2025)
 
-| Issue   | Status           | Notes                                              |
-| ------- | ---------------- | -------------------------------------------------- |
-| CRIT-03 | ✅ Already Fixed | Event listener cleanup was already present in code |
-| CRIT-04 | ✅ Fixed         | Added 10-minute global timeout to SSE streaming    |
-| HIGH-01 | ✅ Fixed         | Added `useShallow` to `usePanelActions` selector   |
-| HIGH-04 | ✅ Fixed         | Wrapped `ChatPanel` in `React.memo`                |
-| HIGH-06 | ✅ Fixed         | Added `useEffect` cleanup for AbortController      |
+| Issue   | Status           | Notes                                                      |
+| ------- | ---------------- | ---------------------------------------------------------- |
+| CRIT-01 | ✅ Already Fixed | Cache eviction was already implemented in ContextCache     |
+| CRIT-02 | ✅ Already Fixed | Cache eviction was already implemented in TreeSitterParser |
+| CRIT-03 | ✅ Already Fixed | Event listener cleanup was already present in code         |
+| CRIT-04 | ✅ Fixed         | Added 10-minute global timeout to SSE streaming            |
+| CRIT-05 | ✅ Fixed         | Added missing deps to useLayoutBuilder sendMessage         |
+| HIGH-01 | ✅ Fixed         | Added `useShallow` to `usePanelActions` selector           |
+| HIGH-04 | ✅ Fixed         | Wrapped `ChatPanel` in `React.memo`                        |
+| HIGH-06 | ✅ Fixed         | Added `useEffect` cleanup for AbortController              |
 
 ---
 
@@ -55,48 +58,62 @@ This is a **personal AI app builder tool** used by a single developer. The audit
 
 These issues cause crashes, memory leaks, or data loss during development sessions.
 
-### CRIT-01: Cache Memory Leak in ContextCache
+### ~~CRIT-01: Cache Memory Leak in ContextCache~~ ✅ ALREADY FIXED
 
-**Location:** `src/services/ContextCache.ts:50-54`
+**Location:** `src/services/ContextCache.ts:88-100, 164-176`
 
-**Problem:** `maxSnapshotCacheSize` limit is defined but never enforced. Cache grows unbounded during long build sessions.
-
-**Impact:** Memory exhaustion during multi-phase builds. Server slows down, then crashes.
-
-**Fix:**
+**Status:** Cache eviction was already implemented in the current code:
 
 ```typescript
-class ContextCache {
-  private enforceLimit(): void {
-    if (this.snapshotCache.size <= this.maxSize) return;
-
-    // Remove oldest entries
-    const entries = [...this.snapshotCache.entries()].sort(
-      (a, b) => a[1].lastAccessed - b[1].lastAccessed
-    );
-
-    for (const [key] of entries.slice(0, entries.length - this.maxSize)) {
-      this.snapshotCache.delete(key);
-    }
+// setAnalysis (lines 88-92)
+setAnalysis(path: string, analysis: FileAnalysis): void {
+  if (this.analysisCache.size >= this.maxAnalysisCacheSize) {
+    this.evictLRU(this.analysisCache); // ✅ Eviction implemented
   }
+  // ...
+}
+
+// setSnapshot (lines 164-168)
+setSnapshot(cacheKey: string, snapshot: CodeContextSnapshot): void {
+  if (this.snapshotCache.size >= this.maxSnapshotCacheSize) {
+    this.evictLRU(this.snapshotCache); // ✅ Eviction implemented
+  }
+  // ...
 }
 ```
 
-**Effort:** 2 hours
+**No action needed.** The audit was based on an older version of the code.
 
 ---
 
-### CRIT-02: Unbounded Tree Cache in TreeSitterParser
+### ~~CRIT-02: Unbounded Tree Cache in TreeSitterParser~~ ✅ ALREADY FIXED
 
-**Location:** `src/utils/treeSitterParser.ts:48-51`
+**Location:** `src/utils/treeSitterParser.ts:173-192`
 
-**Problem:** Same issue - `maxCacheSize` and `cacheTTLMs` are defined but never used. Each parsed file adds 1-5MB to cache.
+**Status:** LRU eviction was already implemented in the current code:
 
-**Impact:** 100 files = 100-500MB of cached ASTs. Causes OOM in long sessions.
+```typescript
+// cacheTree method (lines 173-192)
+private cacheTree(key: string, tree: Parser.Tree): void {
+  if (this.treeCache.size >= this.maxCacheSize) {
+    // Find and remove oldest entry
+    let oldestKey: string | null = null;
+    let oldestTime = Infinity;
+    for (const [k, entry] of this.treeCache) {
+      if (entry.timestamp < oldestTime) {
+        oldestTime = entry.timestamp;
+        oldestKey = k;
+      }
+    }
+    if (oldestKey) {
+      this.treeCache.delete(oldestKey); // ✅ Eviction implemented
+    }
+  }
+  this.treeCache.set(key, { tree, timestamp: Date.now() });
+}
+```
 
-**Fix:** Implement LRU eviction with TTL checking (same pattern as CRIT-01).
-
-**Effort:** 2 hours
+**No action needed.** The audit was based on an older version of the code.
 
 ---
 
@@ -143,17 +160,28 @@ clearTimeout(globalTimeoutId);
 
 ---
 
-### CRIT-05: Missing Dependency in useLayoutBuilder
+### ~~CRIT-05: Missing Dependency in useLayoutBuilder~~ ✅ FIXED
 
-**Location:** `src/hooks/useLayoutBuilder.ts:713-724`
+**Location:** `src/hooks/useLayoutBuilder.ts:718-733`
 
-**Problem:** `sendMessage` callback uses `workflowState` but doesn't include it in dependency array. Creates stale closure.
+**Status:** Added missing dependencies to the `sendMessage` callback:
 
-**Impact:** Multi-step workflows break. User sees wrong workflow step. Actions taken on stale state.
+```typescript
+// Before: Missing workflowState, onAnimationsReceived, onBackgroundsGenerated, onToolsUsed
+[
+  messages, design, selectedElement, referenceImages, lastCapture,
+  capturePreview, historyIndex, isMemoryEnabled, isMemoryInitialized, searchMemories,
+]
 
-**Fix:** Add `workflowState` to dependency array, or use ref pattern.
+// After: All dependencies included
+[
+  messages, design, selectedElement, referenceImages, lastCapture,
+  capturePreview, historyIndex, isMemoryEnabled, isMemoryInitialized, searchMemories,
+  workflowState, onAnimationsReceived, onBackgroundsGenerated, onToolsUsed,
+]
+```
 
-**Effort:** 30 minutes
+**Verified:** TypeScript compiles, ESLint warning resolved.
 
 ---
 
@@ -527,12 +555,12 @@ Quick wins completed:
 4. ~~**HIGH-04:** React.memo on ChatPanel~~ ✅ Fixed
 5. ~~**HIGH-06:** AbortController cleanup~~ ✅ Fixed
 
-### Next Session - 4-6 hours
+### ~~Next Session~~ ✅ DONE
 
-Fix remaining critical stability issues:
+Critical stability issues resolved:
 
-1. **CRIT-01 & CRIT-02:** Add cache eviction (4 hours)
-2. **CRIT-05:** Fix useLayoutBuilder dependency (30 min)
+1. ~~**CRIT-01 & CRIT-02:** Add cache eviction~~ ✅ Already implemented
+2. ~~**CRIT-05:** Fix useLayoutBuilder dependency~~ ✅ Fixed
 
 ### Short Term (This Week) - 8-12 hours
 
@@ -561,18 +589,19 @@ Fix as they affect your workflow:
 
 ## Files Most Needing Attention
 
-| File                     | Issues | Priority                                     |
-| ------------------------ | ------ | -------------------------------------------- |
-| AIBuilder.tsx            | 8      | HIGH - large file, several hooks issues      |
-| useLayoutBuilder.ts      | 6      | CRITICAL - stale closure bug                 |
-| full-app-stream/route.ts | 4      | ~~5~~ → 4 (SSE timeout ✅ fixed)             |
-| ContextCache.ts          | 3      | CRITICAL - memory leak                       |
-| astModifier.ts           | 4      | HIGH - O(n²) algorithms                      |
-| useAppStore.ts           | 4      | HIGH - Zustand patterns                      |
-| PhaseExecutionManager.ts | 3      | CRITICAL - error propagation                 |
-| useLayoutPanelStore.ts   | 0      | ~~1~~ → 0 (useShallow ✅ fixed)              |
-| ChatPanel.tsx            | 0      | ~~1~~ → 0 (React.memo ✅ fixed)              |
-| useCodeReview.ts         | 0      | ~~1~~ → 0 (AbortController cleanup ✅ fixed) |
+| File                     | Issues | Priority                                      |
+| ------------------------ | ------ | --------------------------------------------- |
+| AIBuilder.tsx            | 8      | HIGH - large file, several hooks issues       |
+| useLayoutBuilder.ts      | 5      | ~~6~~ → 5 (stale closure ✅ fixed)            |
+| full-app-stream/route.ts | 4      | ~~5~~ → 4 (SSE timeout ✅ fixed)              |
+| ContextCache.ts          | 0      | ~~3~~ → 0 (cache eviction ✅ already present) |
+| treeSitterParser.ts      | 0      | ~~3~~ → 0 (cache eviction ✅ already present) |
+| astModifier.ts           | 4      | HIGH - O(n²) algorithms                       |
+| useAppStore.ts           | 4      | HIGH - Zustand patterns                       |
+| PhaseExecutionManager.ts | 3      | CRITICAL - error propagation                  |
+| useLayoutPanelStore.ts   | 0      | ~~1~~ → 0 (useShallow ✅ fixed)               |
+| ChatPanel.tsx            | 0      | ~~1~~ → 0 (React.memo ✅ fixed)               |
+| useCodeReview.ts         | 0      | ~~1~~ → 0 (AbortController cleanup ✅ fixed)  |
 
 ---
 

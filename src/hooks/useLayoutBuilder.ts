@@ -726,6 +726,10 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
       isMemoryEnabled,
       isMemoryInitialized,
       searchMemories,
+      workflowState,
+      onAnimationsReceived,
+      onBackgroundsGenerated,
+      onToolsUsed,
     ]
   );
 
