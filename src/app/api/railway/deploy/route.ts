@@ -529,10 +529,15 @@ Object.entries(f).forEach(([p,c])=>{
 console.log('Files extracted:',Object.keys(f).length);
 `.replace(/\n/g, '');
 
+  // Escape single quotes for use in single-quoted shell string
+  // In shell, single quotes cannot be nested - they always terminate the string
+  // The '\'' pattern works by: ending quote, adding escaped quote (outside quotes), starting new quote
+  // Example: require('fs') becomes require('\''fs'\'')
+  const escapedScript = extractScript.replace(/'/g, "'\\''");
+
   // Wrap in /bin/sh -c for proper shell execution
   // Railway Docker image deployments run in exec form which doesn't support && without a shell
-  // Note: Single quotes in the JS code are inside double quotes, inside shell single quotes - no escaping needed
-  const startCommand = `/bin/sh -c 'node -e "${extractScript}" && npm install && npm run build && npm start'`;
+  const startCommand = `/bin/sh -c 'node -e "${escapedScript}" && npm install && npm run build && npm start'`;
 
   railwayLog.debug('Start command', { length: startCommand.length });
 
