@@ -351,7 +351,7 @@ h1, h2, h3, h4, h5, h6 {
             {/* Flex wrapper - SandpackProvider adds wrapper divs that break outer flex layout */}
             <div className="flex w-full h-full">
               {/* Main preview area - always centered */}
-              <div className="flex-1 flex flex-col bg-zinc-950 overflow-auto relative items-center justify-center p-4">
+              <div className="flex-1 min-h-0 flex flex-col bg-zinc-950 overflow-auto relative items-center justify-center p-4">
                 {/* Full-stack warning badge */}
                 {appData.appType === 'FULL_STACK' && (
                   <div className="absolute top-4 left-4 bg-yellow-500/90 text-yellow-900 px-4 py-2 rounded-lg text-sm font-medium shadow-lg z-50">
@@ -392,24 +392,28 @@ h1, h2, h3, h4, h5, h6 {
                       </SandpackLayout>
                     </DeviceFrame>
                   ) : (
-                    <SandpackLayout
-                      key={`no-frame-${previewWidth}-${previewHeight}`}
-                      style={{
-                        height: previewHeight === 'auto' ? 800 : previewHeight,
-                        width: previewWidth,
-                        border: 'none',
-                        borderRadius: 8,
-                      }}
-                    >
-                      <SandpackPreview
-                        showOpenInCodeSandbox={false}
-                        showRefreshButton={true}
+                    <div className="w-full h-full flex items-center justify-center">
+                      <SandpackLayout
+                        key={`no-frame-${previewWidth}-${previewHeight}`}
                         style={{
                           height: '100%',
                           width: '100%',
+                          maxHeight: previewHeight === 'auto' ? undefined : previewHeight,
+                          maxWidth: previewWidth,
+                          border: 'none',
+                          borderRadius: 8,
                         }}
-                      />
-                    </SandpackLayout>
+                      >
+                        <SandpackPreview
+                          showOpenInCodeSandbox={false}
+                          showRefreshButton={true}
+                          style={{
+                            height: '100%',
+                            width: '100%',
+                          }}
+                        />
+                      </SandpackLayout>
+                    </div>
                   )}
                 </TouchSimulator>
               </div>

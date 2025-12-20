@@ -215,7 +215,7 @@ export function PreviewContainer({
   }
 
   return (
-    <div className={`flex flex-col ${className}`}>
+    <div className={`flex flex-col h-full min-h-0 ${className}`}>
       {/* Mode selector */}
       {showModeSelector && (
         <div className="flex items-center justify-between mb-2 px-1">
@@ -252,7 +252,7 @@ export function PreviewContainer({
       )}
 
       {/* Preview content */}
-      <div className="flex-1">
+      <div className="flex-1 min-h-0">
         {previewMode === 'railway' ? (
           <RailwayPreview
             files={appData.files}
