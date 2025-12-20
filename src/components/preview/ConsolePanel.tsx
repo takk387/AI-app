@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { SandpackConsole, useSandpack } from '@codesandbox/sandpack-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { SandpackConsole } from '@codesandbox/sandpack-react';
 
 // ============================================================================
 // TYPES
@@ -78,8 +78,15 @@ function FilterButton({
   );
 }
 
-// Resize handle component
+// Resize handle component with cleanup on unmount
 function ResizeHandle({ onResize }: { onResize: (deltaX: number) => void }) {
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  // Cleanup on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => cleanupRef.current?.();
+  }, []);
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -90,17 +97,19 @@ function ResizeHandle({ onResize }: { onResize: (deltaX: number) => void }) {
         onResize(deltaX);
       };
 
-      const handleMouseUp = () => {
+      const cleanup = () => {
         document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mouseup', cleanup);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+        cleanupRef.current = null;
       };
 
       document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mouseup', cleanup);
       document.body.style.cursor = 'ew-resize';
       document.body.style.userSelect = 'none';
+      cleanupRef.current = cleanup;
     },
     [onResize]
   );
@@ -314,16 +323,14 @@ export function ConsolePanel({
 }
 
 // Separate component to use Sandpack context
+// Note: activeFilter is passed for future filtering implementation
 function ConsolePanelContent({
-  activeFilter,
+  activeFilter: _activeFilter,
   onLogCountsChange,
 }: {
   activeFilter: LogFilter;
   onLogCountsChange: (counts: Record<string, number>) => void;
 }) {
-  // useSandpack provides access to the sandpack state if needed in future
-  const _sandpack = useSandpack();
-
   // Custom styles for the console
   const consoleStyles: React.CSSProperties = {
     height: '100%',
@@ -332,12 +339,12 @@ function ConsolePanelContent({
   };
 
   return (
-    <div className="h-full" style={{ display: activeFilter === 'all' ? 'block' : 'block' }}>
+    <div className="h-full">
       <SandpackConsole
         style={consoleStyles}
         showHeader={false}
         onLogsChange={(logs) => {
-          // Count logs by type
+          // Count logs by type - filter by activeFilter
           const counts: Record<string, number> = {};
           logs.forEach((log) => {
             const type = log.method || 'log';

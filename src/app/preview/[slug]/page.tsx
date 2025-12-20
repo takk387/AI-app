@@ -33,7 +33,8 @@ interface PreviewApp {
 
 export default function PreviewPage() {
   const params = useParams();
-  const slug = params.slug as string;
+  // Handle both string and string[] cases from Next.js
+  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   const [app, setApp] = useState<PreviewApp | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +42,23 @@ export default function PreviewPage() {
 
   useEffect(() => {
     async function fetchPreview() {
+      if (!slug) {
+        setError('Invalid preview URL');
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch(`/api/preview/${slug}`);
-        const data = await response.json();
+
+        // Safe JSON parsing
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          setError('Invalid response from server');
+          return;
+        }
 
         if (!data.success) {
           setError(data.error || 'Preview not found');
@@ -58,9 +73,7 @@ export default function PreviewPage() {
       }
     }
 
-    if (slug) {
-      fetchPreview();
-    }
+    fetchPreview();
   }, [slug]);
 
   if (loading) {

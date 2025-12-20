@@ -10,6 +10,11 @@ import {
 import { DeviceFrame, TouchSimulator, ConsolePanel } from './preview';
 import type { DeviceType } from './preview/DeviceFrame';
 import ErrorBoundary from './ErrorBoundary';
+import { escapeHtml } from '@/utils/escapeHtml';
+import { logger } from '@/utils/logger';
+
+// Stable no-op function to avoid recreating on every render
+const noop = () => {};
 
 interface AppFile {
   path: string;
@@ -120,7 +125,7 @@ export default function PowerfulPreview({
     try {
       return JSON.parse(appDataJson) as FullAppData;
     } catch (error) {
-      console.error('PowerfulPreview: Failed to parse appDataJson:', error);
+      logger.error('PowerfulPreview: Failed to parse appDataJson', error);
       return null;
     }
   }, [appDataJson]);
@@ -143,14 +148,27 @@ export default function PowerfulPreview({
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Screenshot failed');
+        let errorMessage = 'Screenshot failed';
+        try {
+          const err = await response.json();
+          errorMessage = err.error || errorMessage;
+        } catch {
+          // Response wasn't JSON
+        }
+        throw new Error(errorMessage);
       }
 
-      const { image } = await response.json();
-      return image;
+      // Safe JSON parsing for successful response
+      let result;
+      try {
+        result = await response.json();
+      } catch {
+        logger.error('Capture failed: Invalid JSON response');
+        return null;
+      }
+      return result.image;
     } catch (error) {
-      console.error('Capture failed:', error);
+      logger.error('Capture failed', error);
       return null;
     }
   }, [appData]);
@@ -200,7 +218,7 @@ export default function PowerfulPreview({
 
     // Ensure we have /App.tsx
     if (!files['/App.tsx']) {
-      console.error('No /App.tsx found in files:', Object.keys(files));
+      logger.warn('No /App.tsx found in files', { files: Object.keys(files) });
     }
 
     // Add index.tsx for TypeScript support
@@ -244,7 +262,7 @@ h1, h2, h3, h4, h5, h6 {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${appData.name || 'App'}</title>
+    <title>${escapeHtml(appData.name || 'App')}</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
@@ -269,12 +287,12 @@ h1, h2, h3, h4, h5, h6 {
       )
     );
 
-    // Merge user dependencies with required ones
+    // Merge user dependencies with required ones (required versions last to prevent override)
     const deps = {
+      ...filteredUserDeps,
       react: '^18.0.0',
       'react-dom': '^18.0.0',
       'react-scripts': '^5.0.0',
-      ...filteredUserDeps,
     };
 
     return { sandpackFiles: files, dependencies: deps };
@@ -397,7 +415,7 @@ h1, h2, h3, h4, h5, h6 {
               </div>
 
               {/* Console side panel */}
-              <ConsolePanel isOpen={showConsole} onToggle={onConsoleToggle || (() => {})} />
+              <ConsolePanel isOpen={showConsole} onToggle={onConsoleToggle || noop} />
             </div>
           </SandpackErrorMonitor>
         </SandpackProvider>

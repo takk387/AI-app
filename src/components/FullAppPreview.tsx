@@ -7,6 +7,7 @@ import { useToast } from './Toast';
 import { DeviceToolbar } from './preview';
 import { useResponsivePreview } from '@/hooks/useResponsivePreview';
 import { useSettings } from '@/hooks/useSettings';
+import { logger } from '@/utils/logger';
 
 interface AppFile {
   path: string;
@@ -51,16 +52,12 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
 
   // Local state for console and device frame visibility
   // Initialize from user settings and sync changes back
-  const { settings, updatePreviewSettings } = useSettings();
+  const { updatePreviewSettings } = useSettings();
   const [showConsole, setShowConsole] = useState(false); // Start collapsed, will sync on mount
   const [showDeviceFrame, setShowDeviceFrame] = useState(true);
 
-  // Sync showConsole with settings on mount (but start collapsed per user request)
-  // User can expand it and the preference will be remembered
-  useEffect(() => {
-    // We start collapsed, but if user has previously set showConsole to true in settings,
-    // we could honor that. For now, keeping collapsed as default per request.
-  }, [settings.preview.showConsole]);
+  // Note: showConsole starts collapsed by default. User can expand it and the preference
+  // will be remembered via handleToggleConsole which calls updatePreviewSettings.
 
   // Toggle console panel and persist to settings
   const handleToggleConsole = useCallback(() => {
@@ -141,7 +138,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
     try {
       return JSON.parse(appDataJson) as FullAppData;
     } catch (error) {
-      console.error('Parse error:', error);
+      logger.error('FullAppPreview: Failed to parse appDataJson', error);
       return null;
     }
   }, [appDataJson]);
@@ -287,8 +284,13 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
                   <div className="sticky top-0 bg-black/40 backdrop-blur-sm px-4 py-2 border-b border-white/10 flex items-center justify-between">
                     <span className="text-sm text-slate-300 font-mono">{currentFile.path}</span>
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(currentFile.content);
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(currentFile.content);
+                          showToast({ type: 'success', message: 'Copied to clipboard!' });
+                        } catch {
+                          showToast({ type: 'error', message: 'Failed to copy to clipboard' });
+                        }
                       }}
                       className="px-3 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition-colors"
                     >
