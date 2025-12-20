@@ -423,6 +423,24 @@ function buildFileTree(
 }
 
 /**
+ * Trigger a deployment for the service
+ * This is required after serviceInstanceUpdate to actually start the build
+ */
+async function triggerDeployment(serviceId: string, environmentId: string): Promise<boolean> {
+  const data = await railwayQuery(
+    `mutation ServiceInstanceRedeploy($serviceId: String!, $environmentId: String!) {
+      serviceInstanceRedeploy(serviceId: $serviceId, environmentId: $environmentId)
+    }`,
+    {
+      serviceId,
+      environmentId,
+    }
+  );
+
+  return data.serviceInstanceRedeploy;
+}
+
+/**
  * Create a public domain for the service
  */
 async function createServiceDomain(serviceId: string, environmentId: string): Promise<string> {
@@ -480,8 +498,24 @@ async function deployToService(
     }
   );
 
-  // Trigger a deployment using a Nixpacks build with custom start command
-  // that extracts files from APP_FILES env var and runs the app
+  // Build the extraction script as a single-line command
+  // This script: 1) extracts files from APP_FILES env var, 2) installs deps, 3) builds, 4) serves
+  const extractScript = `
+const fs=require('fs');
+const f=JSON.parse(Buffer.from(process.env.APP_FILES,'base64').toString());
+Object.entries(f).forEach(([p,c])=>{
+  const d=p.split('/').slice(0,-1).join('/');
+  if(d)fs.mkdirSync(d,{recursive:true});
+  fs.writeFileSync(p,c);
+});
+console.log('Files extracted:',Object.keys(f).length);
+`.replace(/\n/g, '');
+
+  const startCommand = `node -e "${extractScript}" && npm install && npm run build && npm start`;
+
+  railwayLog.debug('Start command', { length: startCommand.length });
+
+  // Configure the service with a Docker image and start command
   // Note: serviceInstanceUpdate returns Boolean, not an object
   await railwayQuery(
     `mutation ServiceInstanceUpdate($serviceId: String!, $input: ServiceInstanceUpdateInput!) {
@@ -493,24 +527,7 @@ async function deployToService(
         source: {
           image: 'node:20-alpine',
         },
-        startCommand: `
-          echo "Extracting app files..." &&
-          echo $APP_FILES | base64 -d > /tmp/files.json &&
-          node -e "
-            const fs = require('fs');
-            const files = JSON.parse(fs.readFileSync('/tmp/files.json'));
-            for (const [path, content] of Object.entries(files)) {
-              const dir = path.split('/').slice(0, -1).join('/');
-              if (dir) fs.mkdirSync(dir, { recursive: true });
-              fs.writeFileSync(path, content);
-            }
-          " &&
-          npm install &&
-          npm run build &&
-          npm start
-        `
-          .replace(/\s+/g, ' ')
-          .trim(),
+        startCommand,
       },
     }
   );
@@ -518,6 +535,10 @@ async function deployToService(
   // Create a public domain for the service
   const domain = await createServiceDomain(serviceId, environmentId);
   railwayLog.debug('Created service domain', { domain });
+
+  // Trigger the actual deployment (serviceInstanceUpdate only configures, doesn't deploy)
+  const triggered = await triggerDeployment(serviceId, environmentId);
+  railwayLog.info('Triggered deployment', { serviceId, triggered });
 
   // Use serviceId as deployment identifier (Railway doesn't return a deployment ID here)
   return { deploymentId: serviceId, domain };

@@ -52,6 +52,8 @@ async function getDeploymentStatus(
   error?: string;
 }> {
   try {
+    log.debug('Fetching deployment status', { serviceId });
+
     // Get service details including deployments
     // Using a simpler query that's more reliable
     const data = await railwayQuery(
@@ -59,7 +61,7 @@ async function getDeploymentStatus(
         service(id: $serviceId) {
           id
           name
-          deployments(first: 1) {
+          deployments(first: 1, orderBy: { createdAt: DESC }) {
             edges {
               node {
                 id
@@ -73,8 +75,11 @@ async function getDeploymentStatus(
       { serviceId }
     );
 
+    log.debug('Railway API response', { data: JSON.stringify(data) });
+
     const service = data.service;
     if (!service) {
+      log.warn('Service not found', { serviceId });
       return {
         status: 'error',
         previewUrl: null,
@@ -87,6 +92,12 @@ async function getDeploymentStatus(
     const railwayDeployments = service.deployments?.edges || [];
     const latestDeployment = railwayDeployments[0]?.node;
 
+    log.debug('Deployment info', {
+      hasDeployment: !!latestDeployment,
+      deploymentCount: railwayDeployments.length,
+      latestStatus: latestDeployment?.status,
+    });
+
     if (!latestDeployment) {
       return {
         status: 'building',
@@ -96,38 +107,44 @@ async function getDeploymentStatus(
     }
 
     // Map Railway status to our status
-    const railwayStatus = latestDeployment.status?.toUpperCase() || 'BUILDING';
+    // Railway uses lowercase status values like "BUILDING", "SUCCESS", etc.
+    const railwayStatus = (latestDeployment.status || 'BUILDING').toUpperCase();
     let status: string;
 
     switch (railwayStatus) {
       case 'SUCCESS':
-      case 'DEPLOYED':
         status = 'ready';
         break;
       case 'FAILED':
       case 'CRASHED':
+      case 'REMOVED':
         status = 'error';
         break;
       case 'BUILDING':
       case 'INITIALIZING':
+      case 'WAITING':
+      case 'QUEUED':
         status = 'building';
         break;
       case 'DEPLOYING':
+      case 'SLEEPING':
         status = 'deploying';
         break;
       default:
-        log.debug('Unknown Railway status', { railwayStatus });
+        log.debug('Unknown Railway status, treating as building', { railwayStatus });
         status = 'building';
     }
+
+    log.debug('Mapped status', { railwayStatus, mappedStatus: status });
 
     return {
       status,
       previewUrl: cachedPreviewUrl, // Use the URL we created during deploy
       buildLogs: [`Deployment status: ${railwayStatus}`],
-      error: status === 'error' ? 'Deployment failed' : undefined,
+      error: status === 'error' ? `Deployment failed with status: ${railwayStatus}` : undefined,
     };
   } catch (error) {
-    log.error('Error fetching Railway status', error);
+    log.error('Error fetching Railway status', error, { serviceId });
     return {
       status: 'error',
       previewUrl: null,
