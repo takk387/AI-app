@@ -108,9 +108,32 @@ async function railwayQuery(query: string, variables?: Record<string, unknown>) 
 }
 
 /**
+ * Sanitize project name for Railway
+ * Railway requires: lowercase, letters/numbers/hyphens only, 3-32 chars
+ */
+function sanitizeProjectName(name: string): string {
+  const sanitized = name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-') // Replace invalid chars with hyphens
+    .replace(/-+/g, '-') // Collapse multiple hyphens
+    .replace(/^-|-$/g, '') // Trim leading/trailing hyphens
+    .slice(0, 32); // Max 32 chars
+
+  // Ensure minimum 3 chars
+  if (sanitized.length < 3) {
+    return `app-${sanitized || 'preview'}`.slice(0, 32);
+  }
+
+  return sanitized;
+}
+
+/**
  * Create a new Railway project
  */
 async function createProject(name: string): Promise<{ id: string }> {
+  const projectName = sanitizeProjectName(name);
+  railwayLog.debug('Sanitized project name', { original: name, sanitized: projectName });
+
   const data = await railwayQuery(
     `mutation ProjectCreate($input: ProjectCreateInput!) {
       projectCreate(input: $input) {
@@ -119,7 +142,7 @@ async function createProject(name: string): Promise<{ id: string }> {
     }`,
     {
       input: {
-        name,
+        name: projectName,
         description: 'AI App Builder preview deployment',
         isPublic: false,
       },
