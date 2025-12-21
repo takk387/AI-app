@@ -55,7 +55,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
     });
   }, [updatePreviewSettings]);
 
-  // Handle capture function from PowerfulPreview
+  // Handle capture function from PreviewContainer
   const handleCaptureReady = useCallback((fn: () => Promise<string | null>) => {
     captureFunc.current = fn;
   }, []);

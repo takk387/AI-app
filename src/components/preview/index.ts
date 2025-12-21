@@ -13,7 +13,4 @@ export { ConsolePanel, type ConsolePanelProps } from './ConsolePanel';
 // Preview mode components
 export { PreviewModeSelector, type PreviewMode } from './PreviewModeSelector';
 export { RailwayPreview } from './RailwayPreview';
-
-// Legacy WebContainer components (deprecated - use Railway instead)
-export { WebContainerPreview } from './WebContainerPreview';
-export { WebContainerTerminal } from './WebContainerTerminal';
+export { BrowserPreview } from './BrowserPreview';

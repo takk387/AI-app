@@ -11,6 +11,7 @@ import type { AppFile } from '@/types/railway';
 interface RailwayPreviewProps {
   files: AppFile[];
   dependencies?: Record<string, string>;
+  appId: string; // Required - unique identifier for project reuse
   appName?: string;
   showLogs?: boolean;
   onReady?: (url: string) => void;
@@ -44,6 +45,7 @@ function hashDependencies(deps: Record<string, string>): string {
 export function RailwayPreview({
   files,
   dependencies = {},
+  appId,
   appName,
   showLogs = true,
   onReady,
@@ -167,7 +169,7 @@ export function RailwayPreview({
         startTimer();
         appendLog('Creating Railway deployment...');
 
-        await service.deploy(files, dependencies, appName);
+        await service.deploy(files, dependencies, appId, appName);
 
         if (!mountedRef.current) return;
         appendLog('Deployment created, waiting for build...');
@@ -192,7 +194,7 @@ export function RailwayPreview({
       // Cleanup happens via auto-timeout or explicit call
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Using hashes for stable dependencies
-  }, [filesHash, depsHash, appName]);
+  }, [filesHash, depsHash, appId, appName]);
 
   // Format elapsed time
   const formatTime = (seconds: number): string => {

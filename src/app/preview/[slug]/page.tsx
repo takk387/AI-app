@@ -6,7 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import PreviewBanner from '@/components/preview/PreviewBanner';
 
-// Dynamic import to avoid SSR issues with Sandpack
+// Dynamic import to avoid SSR issues with preview components
 const FullAppPreview = dynamic(() => import('@/components/FullAppPreview'), {
   ssr: false,
   loading: () => <PreviewLoading />,

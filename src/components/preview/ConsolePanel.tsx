@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { SandpackConsole } from '@codesandbox/sandpack-react';
 
 // ============================================================================
 // TYPES
@@ -322,37 +321,91 @@ export function ConsolePanel({
   );
 }
 
-// Separate component to use Sandpack context
-// Note: activeFilter is passed for future filtering implementation
+// Console log entry type
+interface ConsoleLogEntry {
+  id: string;
+  type: 'log' | 'error' | 'warn' | 'info';
+  message: string;
+  timestamp: Date;
+}
+
+// Console content component - captures browser console messages
 function ConsolePanelContent({
-  activeFilter: _activeFilter,
+  activeFilter,
   onLogCountsChange,
 }: {
   activeFilter: LogFilter;
   onLogCountsChange: (counts: Record<string, number>) => void;
 }) {
-  // Custom styles for the console
-  const consoleStyles: React.CSSProperties = {
-    height: '100%',
-    backgroundColor: 'transparent',
-    fontSize: '12px',
+  const [logs, setLogs] = useState<ConsoleLogEntry[]>([]);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Listen for console messages from preview iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'console') {
+        const newLog: ConsoleLogEntry = {
+          id: `${Date.now()}-${Math.random()}`,
+          type: event.data.method || 'log',
+          message: event.data.message || '',
+          timestamp: new Date(),
+        };
+        setLogs((prev) => [...prev, newLog]);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Update log counts when logs change
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+    logs.forEach((log) => {
+      counts[log.type] = (counts[log.type] || 0) + 1;
+    });
+    onLogCountsChange(counts);
+  }, [logs, onLogCountsChange]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
+
+  // Filter logs
+  const filteredLogs =
+    activeFilter === 'all' ? logs : logs.filter((log) => log.type === activeFilter);
+
+  const getLogColor = (type: string) => {
+    switch (type) {
+      case 'error':
+        return 'text-red-400 bg-red-500/10';
+      case 'warn':
+        return 'text-yellow-400 bg-yellow-500/10';
+      case 'info':
+        return 'text-blue-400';
+      default:
+        return 'text-zinc-300';
+    }
   };
 
+  if (filteredLogs.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+        No console output yet
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full">
-      <SandpackConsole
-        style={consoleStyles}
-        showHeader={false}
-        onLogsChange={(logs) => {
-          // Count logs by type - filter by activeFilter
-          const counts: Record<string, number> = {};
-          logs.forEach((log) => {
-            const type = log.method || 'log';
-            counts[type] = (counts[type] || 0) + 1;
-          });
-          onLogCountsChange(counts);
-        }}
-      />
+    <div className="h-full overflow-auto p-2 font-mono text-xs">
+      {filteredLogs.map((log) => (
+        <div key={log.id} className={`py-1 px-2 rounded ${getLogColor(log.type)}`}>
+          <span className="text-zinc-500 mr-2">{log.timestamp.toLocaleTimeString()}</span>
+          <span>{log.message}</span>
+        </div>
+      ))}
+      <div ref={logsEndRef} />
     </div>
   );
 }

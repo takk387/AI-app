@@ -142,6 +142,8 @@ interface UISlice {
   showPerformanceReport: boolean;
   showNameAppModal: boolean;
   showShareModal: boolean;
+  showExportModal: boolean;
+  exportModalComponent: GeneratedComponent | null;
   // Search
   searchQuery: string;
   // Preview mode (WebContainers support)
@@ -165,6 +167,8 @@ interface UISlice {
   setShowPerformanceReport: (show: boolean) => void;
   setShowNameAppModal: (show: boolean) => void;
   setShowShareModal: (show: boolean) => void;
+  setShowExportModal: (show: boolean) => void;
+  setExportModalComponent: (component: GeneratedComponent | null) => void;
   setSearchQuery: (query: string) => void;
   setPreviewMode: (mode: PreviewMode) => void;
   setWebContainerStatus: (status: WebContainerStatus) => void;
@@ -402,9 +406,11 @@ export const useAppStore = create<AppState>()(
       showPerformanceReport: false,
       showNameAppModal: false,
       showShareModal: false,
+      showExportModal: false,
+      exportModalComponent: null as GeneratedComponent | null,
       searchQuery: '',
-      // Preview mode (WebContainers support)
-      previewMode: 'sandpack',
+      // Preview mode (browser = esbuild-wasm, railway = full-stack)
+      previewMode: 'browser',
       webContainerStatus: 'idle',
 
       setIsClient: (isClient) => set({ isClient }),
@@ -424,6 +430,8 @@ export const useAppStore = create<AppState>()(
       setShowPerformanceReport: (show) => set({ showPerformanceReport: show }),
       setShowNameAppModal: (show) => set({ showNameAppModal: show }),
       setShowShareModal: (show) => set({ showShareModal: show }),
+      setShowExportModal: (show) => set({ showExportModal: show }),
+      setExportModalComponent: (component) => set({ exportModalComponent: component }),
       setSearchQuery: (query) => set({ searchQuery: query }),
       setPreviewMode: (mode) => set({ previewMode: mode }),
       setWebContainerStatus: (status) => set({ webContainerStatus: status }),

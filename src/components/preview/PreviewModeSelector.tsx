@@ -22,8 +22,8 @@ interface PreviewModeSelectorProps {
 // ============================================================================
 
 /**
- * Toggle between Sandpack (frontend-only) and Railway (full-stack) preview modes.
- * Sandpack is instant but frontend-only.
+ * Toggle between Browser (frontend-only) and Railway (full-stack) preview modes.
+ * Browser uses esbuild-wasm for instant in-browser bundling.
  * Railway deploys to real infrastructure for full-stack support.
  */
 export function PreviewModeSelector({
@@ -37,14 +37,14 @@ export function PreviewModeSelector({
       <span className="text-zinc-400 text-xs">Preview:</span>
 
       <div className="flex bg-zinc-800 rounded-lg p-0.5">
-        {/* Sandpack option - Frontend only */}
+        {/* Browser option - Frontend only */}
         <button
-          onClick={() => onModeChange('sandpack')}
+          onClick={() => onModeChange('browser')}
           disabled={disabled}
           className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${
-            mode === 'sandpack' ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+            mode === 'browser' ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title="Frontend-only preview (instant, runs in browser)"
+          title="Frontend-only preview (instant, runs in browser via esbuild-wasm)"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path

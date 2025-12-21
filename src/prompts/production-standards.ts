@@ -181,7 +181,7 @@ export const PERFORMANCE_RESILIENCE_STANDARDS = `
 
 ### Image Optimization
 - For full-stack Next.js: Use next/image with width, height, alt props
-- For Sandpack preview: Use <img> with loading="lazy"
+- For browser preview: Use <img> with loading="lazy"
 - Always include descriptive alt text for accessibility
 - Use appropriate image formats (WebP when possible)
 

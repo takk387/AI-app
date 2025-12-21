@@ -43,6 +43,7 @@ import {
   NameAppModal,
 } from './modals';
 import ShareModal from './modals/ShareModal';
+import { ExportModal } from './modals/ExportModal';
 
 // Build system components
 import { PhaseDetailView } from './build';
@@ -241,6 +242,10 @@ export default function AIBuilder() {
     setShowNameAppModal,
     showShareModal,
     setShowShareModal,
+    showExportModal,
+    setShowExportModal,
+    exportModalComponent,
+    setExportModalComponent,
     activeView,
     setActiveView,
     searchQuery,
@@ -1404,34 +1409,20 @@ export default function AIBuilder() {
       getWelcomeMessage,
     });
 
-  // Export app
+  // Export app - opens the ExportModal
   const handleExportApp = useCallback(
-    async (comp: GeneratedComponent) => {
-      setExportingApp(comp);
-
-      try {
-        const appData = JSON.parse(comp.code);
-        const files = parseAppFiles(appData);
-
-        const zipBlob = await exportAppAsZip({
-          appName: comp.name,
-          files: files,
-        });
-
-        const filename = `${comp.name.toLowerCase().replace(/\s+/g, '-')}.zip`;
-        downloadBlob(zipBlob, filename);
-
-        setDeploymentInstructions(getDeploymentInstructions('vercel', comp.name));
-        setShowDeploymentModal(true);
-      } catch (error) {
-        console.error('Error exporting app:', error);
-        alert('Failed to export app. Please try again.');
-      } finally {
-        setExportingApp(null);
-      }
+    (comp: GeneratedComponent) => {
+      setExportModalComponent(comp);
+      setShowExportModal(true);
     },
-    [setExportingApp, setDeploymentInstructions, setShowDeploymentModal]
+    [setExportModalComponent, setShowExportModal]
   );
+
+  // Close export modal
+  const handleCloseExportModal = useCallback(() => {
+    setShowExportModal(false);
+    setExportModalComponent(null);
+  }, [setShowExportModal, setExportModalComponent]);
 
   // Download code
   const downloadCode = useCallback(() => {
@@ -1842,6 +1833,31 @@ export default function AIBuilder() {
               isPublic: currentComponent.isPublic ?? false,
               previewSlug: currentComponent.previewSlug ?? null,
             }}
+          />
+        )}
+
+        {/* Export Modal */}
+        {exportModalComponent && (
+          <ExportModal
+            isOpen={showExportModal}
+            onClose={handleCloseExportModal}
+            appName={exportModalComponent.name}
+            files={(() => {
+              try {
+                const appData = JSON.parse(exportModalComponent.code);
+                return appData.files || [];
+              } catch {
+                return [];
+              }
+            })()}
+            dependencies={(() => {
+              try {
+                const appData = JSON.parse(exportModalComponent.code);
+                return appData.dependencies || {};
+              } catch {
+                return {};
+              }
+            })()}
           />
         )}
 

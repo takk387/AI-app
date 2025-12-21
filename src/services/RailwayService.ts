@@ -97,31 +97,36 @@ class RailwayService {
 
   /**
    * Deploy app files to Railway
+   * @param files - App files to deploy
+   * @param dependencies - npm dependencies
+   * @param appId - Unique app identifier (GeneratedComponent.id) for project reuse
+   * @param appName - Display name for the app
    */
   async deploy(
     files: AppFile[],
     dependencies: Record<string, string>,
+    appId: string,
     appName?: string
   ): Promise<RailwayDeployment> {
-    // Clean up any existing deployment first
+    // Stop any existing polling but DON'T cleanup/delete the project
+    // We want to reuse the same Railway project for the same app
     if (this.currentDeployment) {
-      await this.cleanup();
+      this.stopStatusPolling();
+      this.clearCleanupTimeout();
     }
-
-    // Clear any existing cleanup timeout
-    this.clearCleanupTimeout();
 
     // Update status
     this.updateStatus('creating');
 
     try {
-      // Call our backend API to create the deployment
+      // Call our backend API to create/update the deployment
       const response = await fetch('/api/railway/deploy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           files,
           dependencies,
+          appId,
           appName: appName || `preview-${Date.now()}`,
         }),
       });

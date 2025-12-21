@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import path from 'path';
 import { DeployRequestSchema, type RailwayDeployment, type AppFile } from '@/types/railway';
 
@@ -617,6 +618,122 @@ console.log('Files extracted:',Object.keys(f).length);
 }
 
 // ============================================================================
+// PROJECT REUSE HELPERS
+// ============================================================================
+
+/**
+ * Verify that a Railway project still exists
+ */
+async function verifyRailwayProject(projectId: string): Promise<boolean> {
+  try {
+    const data = await railwayQuery(
+      `query GetProject($projectId: String!) {
+        project(id: $projectId) {
+          id
+        }
+      }`,
+      { projectId }
+    );
+    return !!data?.project?.id;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get existing Railway project or create a new one
+ * Enables project reuse for faster subsequent deploys
+ */
+async function getOrCreateProject(
+  supabase: SupabaseClient,
+  userId: string,
+  appId: string,
+  appName: string
+): Promise<{
+  projectId: string;
+  serviceId: string;
+  environmentId: string;
+  previewUrl: string | null;
+  isNew: boolean;
+}> {
+  // Check for existing project mapping
+  const { data: existing } = await supabase
+    .from('railway_projects')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('app_id', appId)
+    .single();
+
+  if (existing) {
+    // Verify the project still exists on Railway
+    const valid = await verifyRailwayProject(existing.railway_project_id);
+    if (valid) {
+      railwayLog.info('Reusing existing Railway project', {
+        projectId: existing.railway_project_id,
+        appId,
+      });
+      return {
+        projectId: existing.railway_project_id,
+        serviceId: existing.railway_service_id,
+        environmentId: existing.railway_environment_id,
+        previewUrl: existing.preview_url,
+        isNew: false,
+      };
+    }
+    // Stale record - delete it
+    railwayLog.info('Removing stale Railway project mapping', {
+      projectId: existing.railway_project_id,
+      appId,
+    });
+    await supabase.from('railway_projects').delete().eq('id', existing.id);
+  }
+
+  // Create new project
+  const project = await createProject(appName);
+  const environment = await getDefaultEnvironment(project.id);
+  const service = await createService(project.id, environment.id, 'app');
+
+  railwayLog.info('Created new Railway project', {
+    projectId: project.id,
+    serviceId: service.id,
+    appId,
+  });
+
+  // Save mapping to database
+  await supabase.from('railway_projects').insert({
+    user_id: userId,
+    app_id: appId,
+    railway_project_id: project.id,
+    railway_service_id: service.id,
+    railway_environment_id: environment.id,
+  });
+
+  return {
+    projectId: project.id,
+    serviceId: service.id,
+    environmentId: environment.id,
+    previewUrl: null,
+    isNew: true,
+  };
+}
+
+/**
+ * Update the preview URL in the database after deployment
+ */
+async function updatePreviewUrl(
+  supabase: SupabaseClient,
+  userId: string,
+  appId: string,
+  previewUrl: string
+): Promise<void> {
+  await supabase
+    .from('railway_projects')
+    .update({ preview_url: previewUrl })
+    .eq('user_id', userId)
+    .eq('app_id', appId);
+}
+
+// ============================================================================
 // ROUTE HANDLER
 // ============================================================================
 
@@ -643,7 +760,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Validation failed: ${errorMessage}` }, { status: 400 });
     }
 
-    const { files, dependencies, appName } = body;
+    const { files, dependencies, appName, appId } = body;
 
     // Calculate total size in bytes (not just character count)
     const totalSize = files.reduce((sum, f) => {
@@ -658,37 +775,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Railway project
-    const project = await createProject(appName);
-    railwayLog.info('Created Railway project', { projectId: project.id });
-
-    // Get default environment
-    const environment = await getDefaultEnvironment(project.id);
-    railwayLog.debug('Using environment', { environmentId: environment.id });
-
-    // Create service
-    const service = await createService(project.id, environment.id, 'app');
-    railwayLog.debug('Created service', { serviceId: service.id });
+    // Get or create Railway project (enables project reuse)
+    const { projectId, serviceId, environmentId, isNew } = await getOrCreateProject(
+      supabase,
+      user.id,
+      appId,
+      appName
+    );
 
     // Build file tree
     const fileTree = buildFileTree(files, appName, dependencies);
 
-    // Deploy files and create domain
-    const deployment = await deployToService(project.id, service.id, environment.id, fileTree);
+    // Deploy files to the service
+    const deployment = await deployToService(projectId, serviceId, environmentId, fileTree);
     railwayLog.info('Started deployment', {
       deploymentId: deployment.deploymentId,
       domain: deployment.domain,
+      isNewProject: isNew,
     });
+
+    // Update the preview URL in the database
+    const previewUrl = `https://${deployment.domain}`;
+    await updatePreviewUrl(supabase, user.id, appId, previewUrl);
 
     // Create deployment record with user ownership
     const deploymentRecord: RailwayDeployment = {
       id: deployment.deploymentId,
-      projectId: project.id,
-      serviceId: service.id,
+      projectId,
+      serviceId,
       userId: user.id, // Track ownership for authorization
       status: 'building',
-      previewUrl: `https://${deployment.domain}`,
-      buildLogs: ['Deployment started...'],
+      previewUrl,
+      buildLogs: [isNew ? 'Creating new project...' : 'Redeploying to existing project...'],
       createdAt: new Date().toISOString(),
     };
 

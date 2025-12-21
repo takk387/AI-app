@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import PowerfulPreview from './PowerfulPreview';
 import { RailwayPreview } from './preview/RailwayPreview';
+import { BrowserPreview } from './preview/BrowserPreview';
 import { PreviewModeSelector } from './preview/PreviewModeSelector';
 import type { PreviewMode, AppFile } from '@/types/railway';
 import { logger } from '@/utils/logger';
@@ -19,7 +19,7 @@ interface PreviewAppFile extends AppFile {
 interface PreviewContainerProps {
   appDataJson: string;
   appType?: 'FRONTEND_ONLY' | 'FULL_STACK';
-  // Pass-through props for PowerfulPreview
+  // Pass-through props for preview settings
   isFullscreen?: boolean;
   onCaptureReady?: (captureFunc: () => Promise<string | null>) => void;
   devicePreset?: string | null;
@@ -143,29 +143,35 @@ function detectAppType(files: PreviewAppFile[]): 'FRONTEND_ONLY' | 'FULL_STACK' 
 // ============================================================================
 
 /**
- * Orchestrates preview mode selection between Sandpack and Railway.
+ * Orchestrates preview mode selection between Browser (esbuild-wasm) and Railway.
  * Auto-selects based on app type:
- * - FRONTEND_ONLY → Sandpack (instant, in-browser)
+ * - FRONTEND_ONLY → Browser (instant, in-browser via esbuild-wasm)
  * - FULL_STACK → Railway (deployed with real backend)
  */
 export function PreviewContainer({
   appDataJson,
   appType: explicitAppType,
-  isFullscreen = false,
-  onCaptureReady,
-  devicePreset = null,
-  orientation = 'portrait',
-  previewWidth = 1280,
-  previewHeight = 'auto',
-  enableTouchSimulation = true,
-  showConsole = false,
-  onConsoleToggle,
+  // These props are passed from FullAppPreview but not yet used in BrowserPreview
+  // TODO: Add responsive preview support to BrowserPreview
+  isFullscreen: _isFullscreen = false,
+  onCaptureReady: _onCaptureReady,
+  devicePreset: _devicePreset = null,
+  orientation: _orientation = 'portrait',
+  previewWidth: _previewWidth = 1280,
+  previewHeight: _previewHeight = 'auto',
+  enableTouchSimulation: _enableTouchSimulation = true,
+  showConsole: _showConsole = false,
+  onConsoleToggle: _onConsoleToggle,
   showModeSelector = true,
   className = '',
 }: PreviewContainerProps) {
-  // Store state - cast to new PreviewMode type
+  // Store state
   const previewMode = useAppStore((s) => s.previewMode) as PreviewMode;
   const setPreviewMode = useAppStore((s) => s.setPreviewMode);
+  const currentComponent = useAppStore((s) => s.currentComponent);
+
+  // Get appId from currentComponent or generate a default
+  const appId = currentComponent?.id || `preview-${Date.now()}`;
 
   // Parse app data
   const appData = useMemo(() => {
@@ -189,11 +195,11 @@ export function PreviewContainer({
   useEffect(() => {
     if (hasAutoSelected) return;
 
-    // Auto-select Railway for full-stack apps, Sandpack for frontend-only
+    // Auto-select Railway for full-stack apps, Browser for frontend-only
     if (detectedAppType === 'FULL_STACK') {
       setPreviewMode('railway');
     } else {
-      setPreviewMode('sandpack');
+      setPreviewMode('browser');
     }
 
     setHasAutoSelected(true);
@@ -204,8 +210,8 @@ export function PreviewContainer({
     setPreviewMode(mode);
   };
 
-  // Show warning banner for full-stack apps in Sandpack mode
-  const showFullStackWarning = detectedAppType === 'FULL_STACK' && previewMode === 'sandpack';
+  // Show warning banner for full-stack apps in Browser mode
+  const showFullStackWarning = detectedAppType === 'FULL_STACK' && previewMode === 'browser';
 
   if (!appData) {
     return (
@@ -237,11 +243,12 @@ export function PreviewContainer({
         </div>
       )}
 
-      {/* Warning banner for full-stack in Sandpack */}
+      {/* Info banner for full-stack in Browser mode */}
       {showFullStackWarning && (
-        <div className="mb-2 px-3 py-2 bg-yellow-900/30 border border-yellow-700/50 rounded-lg text-yellow-300 text-xs flex items-center justify-between">
+        <div className="mb-2 px-3 py-2 bg-blue-900/30 border border-blue-700/50 rounded-lg text-blue-300 text-xs flex items-center justify-between">
           <span>
-            <span className="font-medium">Note:</span> Backend code won&apos;t run in Frontend mode.
+            <span className="font-medium">Note:</span> API routes are mocked in-browser. For real
+            database, switch to Full-Stack.
           </span>
           <button
             onClick={() => handleModeChange('railway')}
@@ -253,11 +260,12 @@ export function PreviewContainer({
       )}
 
       {/* Preview content */}
-      <div className="flex-1 min-h-0">
+      <div id="sandpack-preview" className="flex-1 min-h-0">
         {previewMode === 'railway' ? (
           <RailwayPreview
             files={appData.files}
             dependencies={appData.dependencies || {}}
+            appId={appId}
             appName={appData.name}
             showLogs={true}
             onReady={(url) => log.info('Railway preview ready', { url })}
@@ -265,17 +273,12 @@ export function PreviewContainer({
             className="h-full"
           />
         ) : (
-          <PowerfulPreview
-            appDataJson={appDataJson}
-            isFullscreen={isFullscreen}
-            onCaptureReady={onCaptureReady}
-            devicePreset={devicePreset}
-            orientation={orientation}
-            previewWidth={previewWidth}
-            previewHeight={previewHeight}
-            enableTouchSimulation={enableTouchSimulation}
-            showConsole={showConsole}
-            onConsoleToggle={onConsoleToggle}
+          <BrowserPreview
+            files={appData.files}
+            entryPoint="App.tsx"
+            onReady={() => log.info('Browser preview ready')}
+            onError={(error) => log.error('Browser preview error', error)}
+            className="h-full"
           />
         )}
       </div>

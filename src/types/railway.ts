@@ -113,6 +113,11 @@ export const DeployRequestSchema = z.object({
       'App name must start with letter/number and contain only letters, numbers, hyphens, underscores, and spaces'
     )
     .default('preview-app'),
+  appId: z
+    .string()
+    .min(1, 'App ID required')
+    .max(100, 'App ID too long')
+    .regex(/^[a-zA-Z0-9-_]+$/, 'Invalid app ID format'),
 });
 
 export type DeployRequest = z.infer<typeof DeployRequestSchema>;
@@ -132,5 +137,27 @@ export const DeploymentIdSchema = z
 
 /**
  * Preview mode - centralized type
+ * - 'browser': Fast in-browser preview using esbuild-wasm (frontend-only)
+ * - 'railway': Full-stack preview with real backend via Railway
  */
-export type PreviewMode = 'sandpack' | 'railway';
+export type PreviewMode = 'browser' | 'railway';
+
+// ============================================================================
+// RAILWAY PROJECT MAPPING
+// ============================================================================
+
+/**
+ * Railway project mapping stored in Supabase
+ * Links a user's app to a Railway project for reuse
+ */
+export interface RailwayProject {
+  id: string;
+  user_id: string;
+  app_id: string;
+  railway_project_id: string;
+  railway_service_id: string;
+  railway_environment_id: string;
+  preview_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
