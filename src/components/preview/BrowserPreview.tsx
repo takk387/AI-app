@@ -19,10 +19,26 @@ interface BrowserPreviewProps {
 type PreviewStatus = 'initializing' | 'bundling' | 'ready' | 'error';
 
 /**
+ * Simple string hash for content comparison
+ */
+function simpleHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+}
+
+/**
  * Create a stable hash of files array for dependency comparison
+ * Uses content hash instead of length for accurate change detection
  */
 function hashFiles(files: AppFile[]): string {
-  return files.map((f) => `${f.path}:${f.content.length}`).join('|');
+  return files
+    .map((f) => `${f.path}:${simpleHash(f.content)}`)
+    .sort()
+    .join('|');
 }
 
 // ============================================================================
@@ -121,9 +137,15 @@ export function BrowserPreview({
 
   // Handle iframe messages (console logs, errors)
   useEffect(() => {
+    const MAX_ERRORS = 10; // Limit error accumulation to prevent memory issues
+
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'error') {
-        setErrors((prev) => [...prev, event.data.message]);
+        setErrors((prev) => {
+          const newErrors = [...prev, event.data.message];
+          // Keep only the last MAX_ERRORS to prevent unbounded growth
+          return newErrors.slice(-MAX_ERRORS);
+        });
       }
     };
 

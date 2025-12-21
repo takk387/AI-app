@@ -275,7 +275,6 @@ export function PreviewContainer({
         ) : (
           <BrowserPreview
             files={appData.files}
-            entryPoint="App.tsx"
             onReady={() => log.info('Browser preview ready')}
             onError={(error) => log.error('Browser preview error', error)}
             className="h-full"

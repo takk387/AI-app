@@ -13,6 +13,15 @@ let esbuild: typeof esbuildTypes | null = null;
 
 const log = logger.child({ route: 'browser-preview-service' });
 
+// Pin critical packages to specific versions to prevent breakages from CDN updates
+const PINNED_VERSIONS: Record<string, string> = {
+  react: 'react@18.2.0',
+  'react-dom': 'react-dom@18.2.0',
+  'react-dom/client': 'react-dom@18.2.0/client',
+  'react/jsx-runtime': 'react@18.2.0/jsx-runtime',
+  'react/jsx-dev-runtime': 'react@18.2.0/jsx-dev-runtime',
+};
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -71,13 +80,30 @@ class BrowserPreviewService {
     }
 
     this.initPromise = (async () => {
+      const INIT_TIMEOUT_MS = 30000; // 30 second timeout
+
       try {
         log.info('Initializing esbuild-wasm...');
+
+        // Create timeout promise
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('esbuild-wasm initialization timed out after 30 seconds')),
+            INIT_TIMEOUT_MS
+          )
+        );
+
         // Dynamic import for browser compatibility
         const esbuildModule = await import('esbuild-wasm');
-        await esbuildModule.initialize({
-          wasmURL: 'https://unpkg.com/esbuild-wasm@0.24.2/esbuild.wasm',
-        });
+
+        // Race between initialization and timeout
+        await Promise.race([
+          esbuildModule.initialize({
+            wasmURL: 'https://unpkg.com/esbuild-wasm@0.24.2/esbuild.wasm',
+          }),
+          timeoutPromise,
+        ]);
+
         esbuild = esbuildModule;
         this.initialized = true;
         log.info('esbuild-wasm initialized successfully');
@@ -263,9 +289,10 @@ class BrowserPreviewService {
           // If not found in virtual fs and doesn't look like a relative path,
           // treat as external npm package
           if (!args.path.startsWith('.') && !args.path.startsWith('/')) {
-            // External packages loaded from CDN
+            // Use pinned version if available, otherwise use latest
+            const pinnedPackage = PINNED_VERSIONS[args.path] || args.path;
             return {
-              path: `https://esm.sh/${args.path}`,
+              path: `https://esm.sh/${pinnedPackage}`,
               external: true,
             };
           }
@@ -370,8 +397,18 @@ class BrowserPreviewService {
     const mainComponentFile = files.find((f) => {
       const content = f.content;
       const path = f.path.toLowerCase();
+
       // Look for files that export a default function/component
-      const hasDefaultExport = /export\s+default\s+(function|class|const)/.test(content);
+      // Handle various ESM export patterns:
+      // - export default function App() {}
+      // - export default App
+      // - export default memo(App)
+      // - export { App as default }
+      // - export const App = () => {}
+      const hasDefaultExport =
+        /export\s+default\s+(?:function|class|const|memo\(|forwardRef\()?\s*\w+/.test(content) ||
+        /export\s+\{\s*\w+\s+as\s+default\s*\}/.test(content);
+
       const isReactComponent =
         /import\s+.*React/.test(content) || /from\s+['"]react['"]/.test(content);
       const isNotApiRoute = !path.includes('/api/');
@@ -435,8 +472,8 @@ class BrowserPreviewService {
   ${databaseScript}
   ${fetchInterceptionScript}
   <script type="module">
-    import React from 'https://esm.sh/react@18';
-    import ReactDOM from 'https://esm.sh/react-dom@18/client';
+    import React from 'https://esm.sh/react@18.2.0';
+    import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
 
     // Make React available globally for the bundle
     window.React = React;
@@ -481,12 +518,18 @@ class BrowserPreviewService {
       }
     }
 
+    // Escape script-breaking sequences to prevent XSS
+    const safeJsonRoutes = JSON.stringify(Object.keys(routeHandlers)).replace(
+      /<\/(script)/gi,
+      '<\\/$1'
+    );
+
     return `
   <script>
     // API Route Mocking - Intercept fetch calls to /api/*
     (function() {
       const originalFetch = window.fetch;
-      const mockRoutes = ${JSON.stringify(Object.keys(routeHandlers))};
+      const mockRoutes = ${safeJsonRoutes};
 
       // Simple in-memory database for mock data
       window.__mockDb = window.__mockDb || {
@@ -621,11 +664,14 @@ class BrowserPreviewService {
     // Extract models from Prisma schema for seeding
     const models = this.extractPrismaModels(prismaFile.content);
 
+    // Escape script-breaking sequences to prevent XSS
+    const safeJsonModels = JSON.stringify(models).replace(/<\/(script)/gi, '<\\/$1');
+
     return `
   <script>
     // Initialize mock database with Prisma schema models
     (function() {
-      const models = ${JSON.stringify(models)};
+      const models = ${safeJsonModels};
 
       // Pre-populate collections based on Prisma models
       models.forEach(model => {
