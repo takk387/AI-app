@@ -235,7 +235,33 @@ class BrowserPreviewService {
       setup(build: esbuildTypes.PluginBuild) {
         // Handle virtual files
         build.onResolve({ filter: /.*/ }, (args: esbuildTypes.OnResolveArgs) => {
-          // Handle bare imports (npm packages)
+          let resolvedPath = args.path;
+
+          // Resolve relative paths
+          if (args.path.startsWith('./') || args.path.startsWith('../')) {
+            const dir = args.importer ? args.importer.replace(/\/[^/]+$/, '') : '';
+            resolvedPath = resolvePath(dir, args.path);
+          }
+
+          // Remove leading slash for lookup
+          const lookupPath = resolvedPath.startsWith('/') ? resolvedPath.slice(1) : resolvedPath;
+
+          // Check if it's a virtual file (including entry points like src/App.tsx)
+          const extensions = ['', '.tsx', '.ts', '.jsx', '.js', '.json', '.css'];
+          for (const ext of extensions) {
+            const fullPath = lookupPath + ext;
+            if (virtualFs[fullPath]) {
+              return { path: fullPath, namespace: 'virtual' };
+            }
+            // Try index files
+            const indexPath = `${lookupPath}/index${ext}`;
+            if (virtualFs[indexPath]) {
+              return { path: indexPath, namespace: 'virtual' };
+            }
+          }
+
+          // If not found in virtual fs and doesn't look like a relative path,
+          // treat as external npm package
           if (!args.path.startsWith('.') && !args.path.startsWith('/')) {
             // External packages loaded from CDN
             return {
@@ -244,31 +270,8 @@ class BrowserPreviewService {
             };
           }
 
-          // Resolve relative paths
-          let resolvedPath = args.path;
-          if (args.path.startsWith('./') || args.path.startsWith('../')) {
-            const dir = args.importer ? args.importer.replace(/\/[^/]+$/, '') : '';
-            resolvedPath = resolvePath(dir, args.path);
-          }
-
-          // Remove leading slash
-          resolvedPath = resolvedPath.startsWith('/') ? resolvedPath.slice(1) : resolvedPath;
-
-          // Try to resolve with extensions
-          const extensions = ['', '.tsx', '.ts', '.jsx', '.js', '.json', '.css'];
-          for (const ext of extensions) {
-            const fullPath = resolvedPath + ext;
-            if (virtualFs[fullPath]) {
-              return { path: fullPath, namespace: 'virtual' };
-            }
-            // Try index files
-            const indexPath = `${resolvedPath}/index${ext}`;
-            if (virtualFs[indexPath]) {
-              return { path: indexPath, namespace: 'virtual' };
-            }
-          }
-
-          return { path: resolvedPath, namespace: 'virtual' };
+          // For relative paths not found in virtual fs, return as virtual (will error in onLoad)
+          return { path: lookupPath, namespace: 'virtual' };
         });
 
         // Load virtual files
