@@ -23,6 +23,17 @@ import { ContextSelector, getContextSelector } from './ContextSelector';
 import { ContextCache, getContextCache } from './ContextCache';
 
 // ============================================================================
+// RESULT TYPES
+// ============================================================================
+
+export interface UpdateContextResult {
+  success: boolean;
+  filesProcessed: number;
+  filesSkipped: number;
+  failures: Array<{ path: string; error: string }>;
+}
+
+// ============================================================================
 // CODE CONTEXT SERVICE CLASS
 // ============================================================================
 
@@ -79,13 +90,16 @@ export class CodeContextService {
 
   /**
    * Update context with new or changed files
+   * Returns a result object with success status and any failures
    */
   async updateContext(
     files: Array<{ path: string; content: string }>,
     options?: { incremental?: boolean; phaseNumber?: number }
-  ): Promise<void> {
+  ): Promise<UpdateContextResult> {
     const incremental = options?.incremental ?? true;
     const changedFiles: FileAnalysis[] = [];
+    const failures: Array<{ path: string; error: string }> = [];
+    let filesSkipped = 0;
 
     for (const file of files) {
       const hash = this.hashContent(file.content);
@@ -93,6 +107,7 @@ export class CodeContextService {
 
       // Skip unchanged files in incremental mode
       if (incremental && existing?.hash === hash) {
+        filesSkipped++;
         continue;
       }
 
@@ -117,7 +132,9 @@ export class CodeContextService {
           analysis = this.parser.analyzeFile(file.path, file.content);
           this.cache.setAnalysis(file.path, analysis);
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           console.warn(`Failed to analyze ${file.path}:`, error);
+          failures.push({ path: file.path, error: errorMessage });
           continue;
         }
       }
@@ -151,6 +168,13 @@ export class CodeContextService {
       const changedPaths = changedFiles.map((f) => f.path);
       this.cache.invalidateSnapshotsForFiles(changedPaths);
     }
+
+    return {
+      success: failures.length === 0,
+      filesProcessed: changedFiles.length,
+      filesSkipped,
+      failures,
+    };
   }
 
   /**

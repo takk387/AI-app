@@ -254,9 +254,11 @@ export function useDynamicBuildPhases(
               setIsReviewing(true);
               setPipelineState(await getCodeReviewPipelineState());
               const reviewResult = await manager.runPhaseQualityReview(result.phaseNumber);
-              if (reviewResult && mountedRef.current) {
-                setQualityReport(reviewResult.report);
+              if (reviewResult.status === 'success' && mountedRef.current) {
+                setQualityReport(reviewResult.data.report);
                 setPipelineState(await getCodeReviewPipelineState());
+              } else if (reviewResult.status === 'error') {
+                console.error('Quality review error:', reviewResult.error);
               }
             } catch (err) {
               console.error('Auto quality review failed:', err);
@@ -466,9 +468,11 @@ export function useDynamicBuildPhases(
 
       try {
         const result = await manager.runPhaseQualityReview(phaseNumber);
-        if (result && mountedRef.current) {
-          setQualityReport(result.report);
+        if (result.status === 'success' && mountedRef.current) {
+          setQualityReport(result.data.report);
           setPipelineState(await getCodeReviewPipelineState());
+        } else if (result.status === 'error') {
+          onError?.(new Error(result.error));
         }
       } catch (error) {
         onError?.(error as Error);
@@ -492,9 +496,11 @@ export function useDynamicBuildPhases(
 
     try {
       const result = await manager.runFinalQualityReview();
-      if (result && mountedRef.current) {
-        setQualityReport(result.report);
+      if (result.status === 'success' && mountedRef.current) {
+        setQualityReport(result.data.report);
         setPipelineState(await getCodeReviewPipelineState());
+      } else if (result.status === 'error') {
+        onError?.(new Error(result.error));
       }
     } catch (error) {
       onError?.(error as Error);

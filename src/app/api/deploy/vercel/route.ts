@@ -18,6 +18,19 @@ import {
   generateEnvExample,
 } from '@/utils/exportApp';
 
+/**
+ * Escape user input for safe interpolation in template literals
+ * Prevents code injection via ${ }, backticks, and quote breaking
+ */
+function escapeForTemplate(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/'/g, "\\'") // Escape single quotes
+    .replace(/`/g, '\\`') // Escape backticks
+    .replace(/\$/g, '\\$'); // Escape $ to prevent ${} interpolation
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -89,13 +102,13 @@ export default function Page() {
   return <App />;
 }`,
 
-      // Layout with Tailwind
+      // Layout with Tailwind - escape user input to prevent code injection
       'src/app/layout.tsx': `import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '${app.title}',
-  description: '${app.description || 'Generated with AI App Builder'}',
+  title: '${escapeForTemplate(app.title)}',
+  description: '${escapeForTemplate(app.description || 'Generated with AI App Builder')}',
 };
 
 export default function RootLayout({

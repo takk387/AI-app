@@ -19,6 +19,40 @@ import type {
 } from '@/types/dynamicPhases';
 import type { QualityReport, ReviewFile, ReviewStrictness } from '@/types/codeReview';
 
+// ============================================================================
+// RESULT TYPES FOR EXPLICIT ERROR HANDLING
+// ============================================================================
+
+/**
+ * Result type for operations that can fail or be intentionally skipped
+ * Distinguishes between: success, intentional skip, and actual error
+ */
+export type OperationResult<T> =
+  | { status: 'success'; data: T }
+  | { status: 'skipped'; reason: string }
+  | { status: 'error'; error: string; details?: unknown };
+
+/**
+ * Helper to create success result
+ */
+function success<T>(data: T): OperationResult<T> {
+  return { status: 'success', data };
+}
+
+/**
+ * Helper to create skipped result
+ */
+function skipped<T>(reason: string): OperationResult<T> {
+  return { status: 'skipped', reason };
+}
+
+/**
+ * Helper to create error result
+ */
+function error<T>(message: string, details?: unknown): OperationResult<T> {
+  return { status: 'error', error: message, details };
+}
+
 // Dynamic import for CodeReviewService to avoid bundling tree-sitter in client
 // This is imported lazily only when quality review methods are called (server-side only)
 // Using webpackIgnore to prevent webpack from analyzing this import at build time
@@ -952,7 +986,14 @@ export class PhaseExecutionManager {
     }
 
     // Pre-fetch smart context (populates cache)
-    await this.getOptimizedPhaseContext(phaseNumber, maxTokens);
+    const contextResult = await this.getOptimizedPhaseContext(phaseNumber, maxTokens);
+
+    // Log if context was skipped (not an error, just informational)
+    if (contextResult.status === 'skipped') {
+      console.log(`[PhaseExecutionManager] Smart context skipped: ${contextResult.reason}`);
+    } else if (contextResult.status === 'error') {
+      console.error(`[PhaseExecutionManager] Smart context error: ${contextResult.error}`);
+    }
 
     // Return context with cached smart snapshot
     return this.getExecutionContext(phaseNumber);
@@ -1224,26 +1265,40 @@ export class PhaseExecutionManager {
    * Get optimized context for a phase using CodeContextService
    * Falls back to legacy getSmartCodeContext if service not initialized
    * Caches result for synchronous access via getExecutionContext
+   *
+   * @returns OperationResult with:
+   *   - success: CodeContextSnapshot data
+   *   - skipped: Service not initialized or no files to process
+   *   - error: Phase not found or context update failed
    */
   async getOptimizedPhaseContext(
     phaseNumber: number,
     maxTokens: number = 16000
-  ): Promise<CodeContextSnapshot | null> {
+  ): Promise<OperationResult<CodeContextSnapshot>> {
     if (!this.codeContextService) {
-      return null;
+      return skipped('CodeContextService not initialized - using legacy context');
     }
 
     const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (!phase) {
-      return null;
+      return error(`Phase ${phaseNumber} not found in plan`);
     }
 
     // Update context with latest files
     if (this.rawGeneratedFiles.length > 0) {
-      await this.codeContextService.updateContext(this.rawGeneratedFiles, {
+      const updateResult = await this.codeContextService.updateContext(this.rawGeneratedFiles, {
         incremental: true,
         phaseNumber: phaseNumber, // Mark files as from current phase
       });
+
+      // Check if any files failed to parse
+      if (updateResult.failures.length > 0) {
+        console.warn(
+          `[PhaseExecutionManager] ${updateResult.failures.length} files failed to parse:`,
+          updateResult.failures.map((f) => f.path)
+        );
+        // Continue anyway - some context is better than none
+      }
     }
 
     // Get optimized context for this phase
@@ -1256,7 +1311,7 @@ export class PhaseExecutionManager {
     // Cache for synchronous access
     this.cachedSmartContextSnapshot = snapshot;
 
-    return snapshot;
+    return success(snapshot);
   }
 
   /**
@@ -1306,20 +1361,27 @@ export class PhaseExecutionManager {
   /**
    * Run a light quality review on files from a specific phase
    * This should be called after recordPhaseResult()
+   *
+   * @returns OperationResult with:
+   *   - success: Quality report and modified files
+   *   - skipped: No files to review
+   *   - error: Phase not found or review service failed
    */
-  async runPhaseQualityReview(phaseNumber: number): Promise<{
-    report: QualityReport;
-    modifiedFiles: ReviewFile[];
-  } | null> {
+  async runPhaseQualityReview(phaseNumber: number): Promise<
+    OperationResult<{
+      report: QualityReport;
+      modifiedFiles: ReviewFile[];
+    }>
+  > {
     const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (!phase) {
-      return null;
+      return error(`Phase ${phaseNumber} not found in plan`);
     }
 
     // Get files generated in this phase
     const phaseFiles = this.getPhaseFiles(phaseNumber);
     if (phaseFiles.length === 0) {
-      return null;
+      return skipped(`No files generated in phase ${phaseNumber}`);
     }
 
     // Convert to ReviewFile format
@@ -1329,42 +1391,54 @@ export class PhaseExecutionManager {
       language: this.getFileLanguage(f.path),
     }));
 
-    // Run light review (dynamic import to avoid bundling tree-sitter in client)
-    const { performLightReview } = await getCodeReviewService();
-    const result = await performLightReview(
-      reviewFiles,
-      {
-        phaseNumber,
-        phaseName: phase.name,
-        features: phase.features,
-      },
-      { strictness: this.reviewStrictness }
-    );
+    try {
+      // Run light review (dynamic import to avoid bundling tree-sitter in client)
+      const { performLightReview } = await getCodeReviewService();
+      const result = await performLightReview(
+        reviewFiles,
+        {
+          phaseNumber,
+          phaseName: phase.name,
+          features: phase.features,
+        },
+        { strictness: this.reviewStrictness }
+      );
 
-    // Store the report
-    this.qualityReports.set(phaseNumber, result.report);
+      // Store the report
+      this.qualityReports.set(phaseNumber, result.report);
 
-    // Update raw files with fixed content
-    if (result.modifiedFiles.length > 0) {
-      this.updateFilesWithFixes(result.modifiedFiles);
+      // Update raw files with fixed content
+      if (result.modifiedFiles.length > 0) {
+        this.updateFilesWithFixes(result.modifiedFiles);
+      }
+
+      return success({
+        report: result.report,
+        modifiedFiles: result.modifiedFiles,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return error(`Quality review failed: ${message}`, err);
     }
-
-    return {
-      report: result.report,
-      modifiedFiles: result.modifiedFiles,
-    };
   }
 
   /**
    * Run a comprehensive quality review at the end of the build
    * This includes semantic analysis with Claude AI
+   *
+   * @returns OperationResult with:
+   *   - success: Quality report and modified files
+   *   - skipped: No files to review
+   *   - error: Review service failed
    */
-  async runFinalQualityReview(): Promise<{
-    report: QualityReport;
-    modifiedFiles: ReviewFile[];
-  } | null> {
+  async runFinalQualityReview(): Promise<
+    OperationResult<{
+      report: QualityReport;
+      modifiedFiles: ReviewFile[];
+    }>
+  > {
     if (this.rawGeneratedFiles.length === 0) {
-      return null;
+      return skipped('No generated files to review');
     }
 
     // Convert all files to ReviewFile format
@@ -1387,24 +1461,29 @@ export class PhaseExecutionManager {
       technicalRequirements: this.plan.concept.technical,
     };
 
-    // Run comprehensive review (dynamic import to avoid bundling tree-sitter in client)
-    const { performComprehensiveReview } = await getCodeReviewService();
-    const result = await performComprehensiveReview(reviewFiles, requirements, {
-      strictness: this.reviewStrictness,
-    });
+    try {
+      // Run comprehensive review (dynamic import to avoid bundling tree-sitter in client)
+      const { performComprehensiveReview } = await getCodeReviewService();
+      const result = await performComprehensiveReview(reviewFiles, requirements, {
+        strictness: this.reviewStrictness,
+      });
 
-    // Store the final report
-    this.qualityReports.set(-1, result.report); // -1 indicates final review
+      // Store the final report
+      this.qualityReports.set(-1, result.report); // -1 indicates final review
 
-    // Update files with fixes
-    if (result.modifiedFiles.length > 0) {
-      this.updateFilesWithFixes(result.modifiedFiles);
+      // Update files with fixes
+      if (result.modifiedFiles.length > 0) {
+        this.updateFilesWithFixes(result.modifiedFiles);
+      }
+
+      return success({
+        report: result.report,
+        modifiedFiles: result.modifiedFiles,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return error(`Comprehensive review failed: ${message}`, err);
     }
-
-    return {
-      report: result.report,
-      modifiedFiles: result.modifiedFiles,
-    };
   }
 
   /**

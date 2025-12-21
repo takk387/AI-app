@@ -132,17 +132,42 @@ class WebContainerService {
   }
 
   /**
+   * Sanitize file path to prevent path traversal
+   * WebContainer is sandboxed, but we sanitize anyway for defense-in-depth
+   */
+  private sanitizePath(filePath: string): string | null {
+    // Remove leading prefixes
+    let path = filePath;
+    if (path.startsWith('src/')) path = path.slice(4);
+    if (path.startsWith('./')) path = path.slice(2);
+    if (path.startsWith('/')) path = path.slice(1);
+
+    // Reject paths containing .. (path traversal attempt)
+    if (path.includes('..')) {
+      console.warn(`[WebContainerService] Rejected path traversal attempt: ${filePath}`);
+      return null;
+    }
+
+    // Reject empty paths or paths that are just dots
+    if (!path || path === '.' || path === '..') {
+      return null;
+    }
+
+    return path;
+  }
+
+  /**
    * Convert flat file list to WebContainer FileSystemTree
    */
   private buildFileSystemTree(files: AppFile[]): FileSystemTree {
     const tree: FileSystemTree = {};
 
     for (const file of files) {
-      // Normalize path - remove leading src/ or ./ if present
-      let path = file.path;
-      if (path.startsWith('src/')) path = path.slice(4);
-      if (path.startsWith('./')) path = path.slice(2);
-      if (path.startsWith('/')) path = path.slice(1);
+      // Sanitize path - prevent traversal and normalize
+      const path = this.sanitizePath(file.path);
+      if (!path) {
+        continue; // Skip invalid paths
+      }
 
       const parts = path.split('/');
       let current: FileSystemTree = tree;
