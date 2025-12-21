@@ -105,7 +105,7 @@ class BrowserPreviewService {
     }
 
     const {
-      entryPoint = 'App.tsx',
+      entryPoint: providedEntryPoint,
       target = ['es2020'],
       minify = false,
       enableDatabase = true,
@@ -153,19 +153,21 @@ class BrowserPreviewService {
       virtualFs[normalizedPath] = file.content;
     }
 
-    // Find entry point
-    const entryFile = files.find(
-      (f) =>
-        f.path === entryPoint || f.path === `/${entryPoint}` || f.path.endsWith(`/${entryPoint}`)
-    );
+    // Auto-detect entry point if not provided or not found
+    const entryPoint = this.findEntryPoint(files, virtualFs, providedEntryPoint);
 
-    if (!entryFile) {
+    if (!entryPoint) {
+      const fileList = files.map((f) => f.path).join(', ');
       return {
         html: '',
-        errors: [`Entry point "${entryPoint}" not found`],
+        errors: [
+          `No valid entry point found. Looked for: app/page.tsx, pages/index.tsx, src/App.tsx, App.tsx, index.tsx, main.tsx. Available files: ${fileList}`,
+        ],
         warnings: [],
       };
     }
+
+    log.info('Using entry point', { entryPoint });
 
     try {
       const result = await esbuild.build({
@@ -283,6 +285,105 @@ class BrowserPreviewService {
         });
       },
     };
+  }
+
+  /**
+   * Find the best entry point from available files
+   * Supports Next.js (App Router & Pages Router), Create React App, Vite, and simple React projects
+   */
+  private findEntryPoint(
+    files: AppFile[],
+    virtualFs: Record<string, string>,
+    providedEntryPoint?: string
+  ): string | null {
+    // Helper to find matching file
+    const findFile = (pattern: string): string | null => {
+      const normalized = pattern.startsWith('/') ? pattern.slice(1) : pattern;
+      if (virtualFs[normalized]) return normalized;
+
+      // Try with leading slash removed from files
+      for (const file of files) {
+        const filePath = file.path.startsWith('/') ? file.path.slice(1) : file.path;
+        if (filePath === normalized || filePath.endsWith(`/${normalized}`)) {
+          return filePath;
+        }
+      }
+      return null;
+    };
+
+    // If provided entry point exists, use it
+    if (providedEntryPoint) {
+      const found = findFile(providedEntryPoint);
+      if (found) return found;
+    }
+
+    // Common entry points in order of priority
+    const entryPointCandidates = [
+      // Next.js App Router
+      'app/page.tsx',
+      'app/page.jsx',
+      'src/app/page.tsx',
+      'src/app/page.jsx',
+      // Next.js Pages Router
+      'pages/index.tsx',
+      'pages/index.jsx',
+      'src/pages/index.tsx',
+      'src/pages/index.jsx',
+      // Create React App / Standard React
+      'src/App.tsx',
+      'src/App.jsx',
+      'src/App.ts',
+      'src/App.js',
+      'App.tsx',
+      'App.jsx',
+      'App.ts',
+      'App.js',
+      // Vite style
+      'src/main.tsx',
+      'src/main.jsx',
+      'src/main.ts',
+      'src/main.js',
+      'main.tsx',
+      'main.jsx',
+      // Generic index
+      'src/index.tsx',
+      'src/index.jsx',
+      'src/index.ts',
+      'src/index.js',
+      'index.tsx',
+      'index.jsx',
+      'index.ts',
+      'index.js',
+    ];
+
+    for (const candidate of entryPointCandidates) {
+      const found = findFile(candidate);
+      if (found) {
+        return found;
+      }
+    }
+
+    // Last resort: find any .tsx or .jsx file that looks like a main component
+    const mainComponentFile = files.find((f) => {
+      const content = f.content;
+      const path = f.path.toLowerCase();
+      // Look for files that export a default function/component
+      const hasDefaultExport = /export\s+default\s+(function|class|const)/.test(content);
+      const isReactComponent =
+        /import\s+.*React/.test(content) || /from\s+['"]react['"]/.test(content);
+      const isNotApiRoute = !path.includes('/api/');
+      const isNotTest = !path.includes('.test.') && !path.includes('.spec.');
+      return hasDefaultExport && isReactComponent && isNotApiRoute && isNotTest;
+    });
+
+    if (mainComponentFile) {
+      const normalized = mainComponentFile.path.startsWith('/')
+        ? mainComponentFile.path.slice(1)
+        : mainComponentFile.path;
+      return normalized;
+    }
+
+    return null;
   }
 
   /**
