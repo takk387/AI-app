@@ -3,7 +3,7 @@
 import type { AppFile } from '@/types/railway';
 import { logger } from '@/utils/logger';
 
-// sql.js types
+// sql.js types (loaded from CDN at runtime)
 interface SqlJsDatabase {
   run(sql: string, params?: unknown[]): void;
   exec(sql: string): { columns: string[]; values: unknown[][] }[];
@@ -15,7 +15,17 @@ interface SqlJsStatic {
   Database: new (data?: ArrayLike<number>) => SqlJsDatabase;
 }
 
+// Global type for sql.js loaded from CDN
+declare global {
+  interface Window {
+    initSqlJs?: (config?: { locateFile?: (file: string) => string }) => Promise<SqlJsStatic>;
+  }
+}
+
 const log = logger.child({ route: 'in-browser-database' });
+
+// CDN URL for sql.js
+const SQL_JS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js';
 
 // ============================================================================
 // TYPES
@@ -62,6 +72,7 @@ class InBrowserDatabaseService {
 
   /**
    * Initialize sql.js (lazy, only when needed)
+   * Loads sql.js from CDN to avoid webpack bundling issues
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -72,14 +83,26 @@ class InBrowserDatabaseService {
 
     this.initPromise = (async () => {
       try {
-        log.info('Initializing sql.js...');
+        // Check if we're in browser environment
+        if (typeof window === 'undefined') {
+          throw new Error('InBrowserDatabaseService can only be used in browser environment');
+        }
 
-        // Dynamic import for browser compatibility
-        const initSqlJs = (await import('sql.js')).default;
+        log.info('Initializing sql.js from CDN...');
+
+        // Load sql.js from CDN if not already loaded
+        if (!window.initSqlJs) {
+          await this.loadSqlJsFromCDN();
+        }
+
+        if (!window.initSqlJs) {
+          throw new Error('Failed to load sql.js from CDN');
+        }
 
         // Initialize sql.js with WASM from CDN
-        this.SQL = await initSqlJs({
-          locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
+        this.SQL = await window.initSqlJs({
+          locateFile: (file: string) =>
+            `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`,
         });
 
         // Create a new database
@@ -97,6 +120,34 @@ class InBrowserDatabaseService {
     })();
 
     return this.initPromise;
+  }
+
+  /**
+   * Load sql.js library from CDN via script tag
+   */
+  private loadSqlJsFromCDN(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Check if already loaded
+      if (window.initSqlJs) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = SQL_JS_CDN;
+      script.async = true;
+
+      script.onload = () => {
+        log.info('sql.js script loaded from CDN');
+        resolve();
+      };
+
+      script.onerror = () => {
+        reject(new Error('Failed to load sql.js from CDN'));
+      };
+
+      document.head.appendChild(script);
+    });
   }
 
   /**
