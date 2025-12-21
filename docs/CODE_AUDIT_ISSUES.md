@@ -2,28 +2,28 @@
 
 > **Audit Date:** December 20, 2025
 > **Codebase:** AI App Builder (Personal Development Tool)
-> **Total Issues:** 78 (14 fixed, 3 already fixed)
+> **Total Issues:** 78 (16 fixed, 3 already fixed)
 
 ---
 
 ## Recent Fixes (December 20, 2025)
 
-| Issue   | Status           | Notes                                                      |
-| ------- | ---------------- | ---------------------------------------------------------- |
-| CRIT-01 | ✅ Already Fixed | Cache eviction was already implemented in ContextCache     |
-| CRIT-02 | ✅ Already Fixed | Cache eviction was already implemented in TreeSitterParser |
-| CRIT-03 | ✅ Already Fixed | Event listener cleanup was already present in code         |
-| CRIT-04 | ✅ Fixed         | Added 10-minute global timeout to SSE streaming            |
-| CRIT-05 | ✅ Fixed         | Added missing deps to useLayoutBuilder sendMessage         |
-| CRIT-06 | ✅ Fixed         | Added `escapeForTemplate()` to prevent code injection      |
-| CRIT-07 | ✅ Fixed         | Added `sanitizePath()` for path traversal protection       |
-| CRIT-08 | ✅ Fixed         | Added `UpdateContextResult` type for failure reporting     |
-| CRIT-09 | ✅ Fixed         | Added `OperationResult<T>` type for error propagation      |
-| CRIT-10 | ✅ Fixed         | Added request size limits (10MB/100k/50)                   |
-| CRIT-11 | ✅ Fixed         | Added `validateBase64Image()` with 5MB limit               |
-| HIGH-01 | ✅ Fixed         | Added `useShallow` to `usePanelActions` selector           |
-| HIGH-04 | ✅ Fixed         | Wrapped `ChatPanel` in `React.memo`                        |
-| HIGH-06 | ✅ Fixed         | Added `useEffect` cleanup for AbortController              |
+| Issue   | Status           | Notes                                                                      |
+| ------- | ---------------- | -------------------------------------------------------------------------- |
+| CRIT-01 | ✅ Already Fixed | Cache eviction was already implemented in ContextCache                     |
+| CRIT-02 | ✅ Already Fixed | Cache eviction was already implemented in TreeSitterParser                 |
+| CRIT-03 | ✅ Already Fixed | Event listener cleanup was already present in code                         |
+| CRIT-04 | ✅ Fixed         | Added 10-minute global timeout to SSE streaming                            |
+| CRIT-05 | ✅ Fixed         | Added missing deps to useLayoutBuilder sendMessage                         |
+| CRIT-06 | ✅ Fixed         | Added `escapeForTemplate()` to prevent code injection                      |
+| CRIT-07 | ✅ Fixed         | Added `sanitizePath()` for path traversal protection                       |
+| CRIT-08 | ✅ Fixed         | Added `UpdateContextResult` type for failure reporting                     |
+| CRIT-09 | ✅ Fixed         | Added `OperationResult<T>` type for error propagation                      |
+| CRIT-10 | ✅ Fixed         | Added request size limits (10MB/100k/50)                                   |
+| CRIT-11 | ✅ Fixed         | Added `validateBase64Image()` with 5MB limit                               |
+| HIGH-01 | ✅ Fixed         | Added `useShallow` to both `usePanelActions` and `useProjectDocumentation` |
+| HIGH-04 | ✅ Fixed         | Wrapped both `ChatPanel` and `PreviewPanel` in `React.memo`                |
+| HIGH-06 | ✅ Fixed         | Added `useEffect` cleanup for AbortController                              |
 
 ---
 
@@ -360,32 +360,37 @@ function validateBase64Image(
 
 Performance problems and cleanup issues that affect development experience.
 
-### ~~HIGH-01: Missing Shallow Comparison in Zustand Selectors~~ ✅ PARTIALLY FIXED
+### ~~HIGH-01: Missing Shallow Comparison in Zustand Selectors~~ ✅ FIXED
 
 **Locations:**
 
 - `src/stores/useLayoutPanelStore.ts:185-196` (usePanelActions) - ✅ FIXED
-- `src/hooks/useProjectDocumentation.ts:107-112` (6 separate subscriptions) - Still needs fix
+- `src/hooks/useProjectDocumentation.ts:107-124` (6 subscriptions) - ✅ FIXED
 
-**Status:** Fixed `usePanelActions`:
+**Status:** Both locations now use `useShallow`:
 
 ```typescript
-import { useShallow } from 'zustand/react/shallow';
-
-export const usePanelActions = () =>
-  useLayoutPanelStore(
-    useShallow((s) => ({
-      setPanel: s.setPanel,
-      togglePanel: s.togglePanel,
-      openPanel: s.openPanel,
-      closePanel: s.closePanel,
-      closeAllPanels: s.closeAllPanels,
-      initTemplatePicker: s.initTemplatePicker,
-    }))
-  );
+// useProjectDocumentation.ts
+const {
+  currentDocumentation,
+  isLoadingDocumentation,
+  isSavingDocumentation,
+  setCurrentDocumentation,
+  setIsLoadingDocumentation,
+  setIsSavingDocumentation,
+} = useAppStore(
+  useShallow((state) => ({
+    currentDocumentation: state.currentDocumentation,
+    isLoadingDocumentation: state.isLoadingDocumentation,
+    isSavingDocumentation: state.isSavingDocumentation,
+    setCurrentDocumentation: state.setCurrentDocumentation,
+    setIsLoadingDocumentation: state.setIsLoadingDocumentation,
+    setIsSavingDocumentation: state.setIsSavingDocumentation,
+  }))
+);
 ```
 
-**Remaining:** Apply same pattern to `useProjectDocumentation.ts`
+**Verified:** TypeScript compiles, lint passes.
 
 ---
 
@@ -416,23 +421,25 @@ export const usePanelActions = () =>
 
 ---
 
-### ~~HIGH-04: Missing React.memo on Message Lists~~ ✅ PARTIALLY FIXED
+### ~~HIGH-04: Missing React.memo on Message Lists~~ ✅ FIXED
 
 **Location:** `src/components/ChatPanel.tsx`, `src/components/PreviewPanel.tsx`
 
-**Status:** Fixed `ChatPanel`:
+**Status:** Both components now wrapped in `React.memo`:
 
 ```typescript
-export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel(
-  {
-    // props
-  }
-) {
+// ChatPanel.tsx
+export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel({...}) {
+  // component body
+});
+
+// PreviewPanel.tsx
+export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function PreviewPanel({...}) {
   // component body
 });
 ```
 
-**Remaining:** Apply same pattern to `PreviewPanel.tsx`
+**Verified:** TypeScript compiles, lint passes.
 
 ---
 
@@ -675,6 +682,8 @@ Fix as they affect your workflow:
 | useLayoutPanelStore.ts   | 0      | ~~1~~ → 0 (useShallow ✅ fixed)                       |
 | ChatPanel.tsx            | 0      | ~~1~~ → 0 (React.memo ✅ fixed)                       |
 | useCodeReview.ts         | 0      | ~~1~~ → 0 (AbortController cleanup ✅ fixed)          |
+| PreviewPanel.tsx         | 0      | (React.memo ✅ fixed)                                 |
+| useProjectDocumentation  | 0      | (useShallow ✅ fixed)                                 |
 
 ---
 
@@ -684,9 +693,11 @@ All quick wins have been addressed:
 
 1. ~~Add useEffect cleanup for event listeners (CRIT-03)~~ ✅ Was already fixed
 2. ~~Add useShallow to usePanelActions (HIGH-01)~~ ✅ Fixed
-3. ~~Wrap ChatPanel in React.memo (HIGH-04)~~ ✅ Fixed
-4. ~~Add AbortController cleanup (HIGH-06)~~ ✅ Fixed
-5. ~~Add SSE timeout constant and setTimeout (CRIT-04)~~ ✅ Fixed
+3. ~~Add useShallow to useProjectDocumentation (HIGH-01)~~ ✅ Fixed
+4. ~~Wrap ChatPanel in React.memo (HIGH-04)~~ ✅ Fixed
+5. ~~Wrap PreviewPanel in React.memo (HIGH-04)~~ ✅ Fixed
+6. ~~Add AbortController cleanup (HIGH-06)~~ ✅ Fixed
+7. ~~Add SSE timeout constant and setTimeout (CRIT-04)~~ ✅ Fixed
 
 ---
 
