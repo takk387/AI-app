@@ -279,7 +279,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
   const normalContent = (
     <div className="h-full w-full flex flex-col relative">
       {/* Device Toolbar - Desktop/Phone toggle */}
-      <div className="relative z-[150] flex-shrink-0">
+      <div className="relative z-10 flex-shrink-0">
         <DeviceToolbar
           state={responsiveState}
           showConsole={showConsole}
