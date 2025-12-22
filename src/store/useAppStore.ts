@@ -149,6 +149,9 @@ interface UISlice {
   // Preview mode (WebContainers support)
   previewMode: PreviewMode;
   webContainerStatus: WebContainerStatus;
+  // Concept Panel state
+  isConceptPanelCollapsed: boolean;
+  conceptPanelEditMode: boolean;
   // Actions
   setIsClient: (isClient: boolean) => void;
   setActiveTab: (tab: ActiveTab) => void;
@@ -172,6 +175,8 @@ interface UISlice {
   setSearchQuery: (query: string) => void;
   setPreviewMode: (mode: PreviewMode) => void;
   setWebContainerStatus: (status: WebContainerStatus) => void;
+  setConceptPanelCollapsed: (collapsed: boolean) => void;
+  setConceptPanelEditMode: (editMode: boolean) => void;
 }
 
 /**
@@ -221,6 +226,8 @@ interface DataSlice {
   setSavedLayoutDesigns: (designs: LayoutDesign[]) => void;
   addSavedLayoutDesign: (design: LayoutDesign) => void;
   removeSavedLayoutDesign: (id: string) => void;
+  // App Concept field updates
+  updateAppConceptField: (path: string, value: unknown) => void;
 }
 
 /**
@@ -415,6 +422,9 @@ export const useAppStore = create<AppState>()(
       // Preview mode (browser = esbuild-wasm, railway = full-stack)
       previewMode: 'browser',
       webContainerStatus: 'idle',
+      // Concept Panel state
+      isConceptPanelCollapsed: false,
+      conceptPanelEditMode: false,
 
       setIsClient: (isClient) => set({ isClient }),
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -438,6 +448,8 @@ export const useAppStore = create<AppState>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
       setPreviewMode: (mode) => set({ previewMode: mode }),
       setWebContainerStatus: (status) => set({ webContainerStatus: status }),
+      setConceptPanelCollapsed: (collapsed) => set({ isConceptPanelCollapsed: collapsed }),
+      setConceptPanelEditMode: (editMode) => set({ conceptPanelEditMode: editMode }),
 
       // ========================================================================
       // DATA SLICE
@@ -488,6 +500,20 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           savedLayoutDesigns: state.savedLayoutDesigns.filter((d) => d.id !== id),
         })),
+      updateAppConceptField: (path, value) =>
+        set((state) => {
+          if (!state.appConcept) return state;
+          const keys = path.split('.');
+          const updated = { ...state.appConcept };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let current: any = updated;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current[keys[i]] = { ...current[keys[i]] };
+            current = current[keys[i]];
+          }
+          current[keys[keys.length - 1]] = value;
+          return { appConcept: updated };
+        }),
 
       // ========================================================================
       // DOCUMENTATION SLICE
@@ -673,6 +699,19 @@ export const useDocumentationState = () =>
       isSavingDocumentation: state.isSavingDocumentation,
       showDocumentationPanel: state.showDocumentationPanel,
       documentationPanelTab: state.documentationPanelTab,
+    }))
+  );
+
+/**
+ * Select concept panel state
+ */
+export const useConceptPanelState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      appConcept: state.appConcept,
+      isConceptPanelCollapsed: state.isConceptPanelCollapsed,
+      conceptPanelEditMode: state.conceptPanelEditMode,
+      currentMode: state.currentMode,
     }))
   );
 

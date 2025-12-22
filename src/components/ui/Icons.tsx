@@ -581,3 +581,64 @@ export const PaletteIcon: React.FC<IconProps> = (props) => (
     <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z" />
   </Icon>
 );
+
+// ============================================
+// Additional icons for Concept Panel
+// ============================================
+
+// Pencil/Edit - for inline editing
+export const PencilIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+  </Icon>
+);
+
+// Chevron Left - for collapse
+export const ChevronLeftIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <polyline points="15 18 9 12 15 6" />
+  </Icon>
+);
+
+// Users - for roles
+export const UsersIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </Icon>
+);
+
+// Workflow/GitMerge - for workflows
+export const WorkflowIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <circle cx="18" cy="18" r="3" />
+    <circle cx="6" cy="6" r="3" />
+    <path d="M6 21V9a9 9 0 0 0 9 9" />
+  </Icon>
+);
+
+// Grip Vertical - for drag handles
+export const GripVerticalIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <circle cx="9" cy="5" r="1" fill="currentColor" />
+    <circle cx="9" cy="12" r="1" fill="currentColor" />
+    <circle cx="9" cy="19" r="1" fill="currentColor" />
+    <circle cx="15" cy="5" r="1" fill="currentColor" />
+    <circle cx="15" cy="12" r="1" fill="currentColor" />
+    <circle cx="15" cy="19" r="1" fill="currentColor" />
+  </Icon>
+);
+
+// List Checks - for phase plan
+export const ListChecksIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M10 6h11" />
+    <path d="M10 12h11" />
+    <path d="M10 18h11" />
+    <polyline points="3 6 4 7 6 5" />
+    <polyline points="3 12 4 13 6 11" />
+    <polyline points="3 18 4 19 6 17" />
+  </Icon>
+);

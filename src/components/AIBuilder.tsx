@@ -26,6 +26,7 @@ import LayoutBuilderWizard from './LayoutBuilderWizard';
 import SettingsPage from './SettingsPage';
 import BuilderHeader from './BuilderHeader';
 import TabNavigation from './TabNavigation';
+import { AppConceptPanel } from './concept-panel';
 
 // UI components
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui';
@@ -279,6 +280,11 @@ export default function AIBuilder() {
     // File storage
     contentTab,
     setContentTab,
+
+    // Concept Panel
+    isConceptPanelCollapsed,
+    setConceptPanelCollapsed,
+    updateAppConceptField,
   } = useAppStore();
 
   // ============================================================================
@@ -1566,11 +1572,15 @@ export default function AIBuilder() {
           <div className="max-w-[1800px] mx-auto px-4 py-4 h-[calc(100vh-120px)]">
             <ResizablePanelGroup
               direction="horizontal"
-              persistenceKey="ai-builder-layout"
+              persistenceKey="ai-builder-layout-v2"
               className="h-full"
             >
               {/* Chat Panel */}
-              <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
+              <ResizablePanel
+                defaultSize={isConceptPanelCollapsed ? 35 : 30}
+                minSize={15}
+                maxSize={50}
+              >
                 <div className="h-full flex flex-col relative">
                   <ChatPanel
                     messages={chatMessages}
@@ -1610,8 +1620,48 @@ export default function AIBuilder() {
 
               <ResizableHandle />
 
+              {/* App Concept Panel - Collapsible middle panel */}
+              <ResizablePanel
+                defaultSize={isConceptPanelCollapsed ? 2 : 25}
+                minSize={isConceptPanelCollapsed ? 2 : 15}
+                maxSize={isConceptPanelCollapsed ? 2 : 40}
+              >
+                <AppConceptPanel
+                  appConcept={appConcept}
+                  phasePlan={dynamicPhasePlan}
+                  mode={currentMode === 'PLAN' ? 'plan' : 'act'}
+                  isCollapsed={isConceptPanelCollapsed}
+                  onToggleCollapse={() => setConceptPanelCollapsed(!isConceptPanelCollapsed)}
+                  onConceptUpdate={updateAppConceptField}
+                  onStartBuilding={() => {
+                    // Switch to ACT mode and start building
+                    setCurrentMode('ACT');
+                  }}
+                  // Build state from useDynamicBuildPhases
+                  buildState={{
+                    uiPhases: dynamicBuildPhases.uiPhases,
+                    dynamicPhases: dynamicBuildPhases.phases,
+                    progress: dynamicBuildPhases.progress,
+                    isBuilding: dynamicBuildPhases.isBuilding,
+                    isPaused: dynamicBuildPhases.isPaused,
+                    currentPhase: dynamicBuildPhases.currentPhase,
+                  }}
+                  // Build action callbacks
+                  onPauseBuild={dynamicBuildPhases.pauseBuild}
+                  onResumeBuild={dynamicBuildPhases.resumeBuild}
+                  onSkipPhase={(phaseNumber) => dynamicBuildPhases.skipPhase(phaseNumber)}
+                  onRetryPhase={(phaseNumber) => dynamicBuildPhases.retryPhase(phaseNumber)}
+                />
+              </ResizablePanel>
+
+              <ResizableHandle />
+
               {/* Preview Panel */}
-              <ResizablePanel defaultSize={65} minSize={30} maxSize={80}>
+              <ResizablePanel
+                defaultSize={isConceptPanelCollapsed ? 63 : 45}
+                minSize={25}
+                maxSize={75}
+              >
                 <PreviewPanel
                   currentComponent={currentComponent}
                   activeTab={activeTab}
