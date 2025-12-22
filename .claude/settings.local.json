@@ -81,7 +81,8 @@
       "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\status\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\status\")",
       "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\status\\\\[id]\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\status\\\\[id]\")",
       "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\")",
-      "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\\\\[id]\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\\\\[id]\")"
+      "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\\\\[id]\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\\\\[id]\")",
+      "Bash(git grep:*)"
     ],
     "deny": [],
     "ask": []

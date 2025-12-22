@@ -13,7 +13,9 @@ import type {
   ChatMessage,
   AppVersion,
   StagePlan,
+  AppBranch,
 } from '@/types/aiBuilderTypes';
+import { migrateToBranchFormat } from '@/utils/branchMigration';
 
 type DbGeneratedApp = Database['public']['Tables']['generated_apps']['Row'];
 type DbGeneratedAppInsert = Database['public']['Tables']['generated_apps']['Insert'];
@@ -27,6 +29,8 @@ interface DbMetadata {
   versions?: AppVersion[];
   timestamp?: string;
   stagePlan?: StagePlan | null;
+  branches?: AppBranch[];
+  activeBranchId?: string;
 }
 
 /**
@@ -75,6 +79,8 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
       versions: component.versions || [],
       timestamp: component.timestamp,
       stagePlan: component.stagePlan || null,
+      branches: component.branches || [],
+      activeBranchId: component.activeBranchId,
     } as unknown as Database['public']['Tables']['generated_apps']['Row']['metadata'],
     is_public: component.isPublic ?? false,
     preview_slug: component.previewSlug || null,
@@ -85,10 +91,12 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
 
 /**
  * Convert a database row to GeneratedComponent format
+ * Applies branch migration for legacy apps without branches
  */
 function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
   const metadata = (dbApp.metadata as DbMetadata) || {};
-  return {
+
+  const component: GeneratedComponent = {
     id: dbApp.id,
     name: dbApp.title,
     code: dbApp.code,
@@ -101,7 +109,12 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
     previewSlug: dbApp.preview_slug || null,
     previewEnabled: dbApp.preview_enabled ?? true,
     isPublic: dbApp.is_public ?? false,
+    branches: metadata.branches,
+    activeBranchId: metadata.activeBranchId,
   };
+
+  // Migrate to branch format if no branches exist
+  return migrateToBranchFormat(component);
 }
 
 /**

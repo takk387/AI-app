@@ -35,6 +35,32 @@ export interface AppVersion {
   changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE';
 }
 
+/**
+ * Source information for a branch (where it was created from)
+ */
+export interface BranchSource {
+  branchId: string;
+  branchName: string;
+  versionNumber?: number;
+}
+
+/**
+ * A branch within an app - allows multiple development paths
+ * that share the same app_id and Railway project
+ */
+export interface AppBranch {
+  id: string;
+  name: string;
+  description?: string;
+  code: string;
+  versions: AppVersion[];
+  conversationHistory: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+  createdFrom: BranchSource | null;
+  isDefault: boolean;
+}
+
 // ============================================================================
 // PHASE BUILD TYPES (inline version used in AIBuilder)
 // ============================================================================
@@ -88,6 +114,10 @@ export interface GeneratedComponent {
   previewEnabled?: boolean;
   /** Preview sharing - whether the app is publicly accessible */
   isPublic?: boolean;
+  /** All branches for this app (optional for backward compatibility) */
+  branches?: AppBranch[];
+  /** Currently active branch ID */
+  activeBranchId?: string;
 }
 
 // ============================================================================

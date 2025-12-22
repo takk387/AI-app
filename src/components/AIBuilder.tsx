@@ -45,6 +45,7 @@ import {
 } from './modals';
 import ShareModal from './modals/ShareModal';
 import { ExportModal } from './modals/ExportModal';
+import { CreateBranchModal } from './modals/CreateBranchModal';
 
 // Build system components
 import { PhaseDetailView } from './build';
@@ -60,6 +61,7 @@ import {
   useVersionHandlers,
   useAppCrud,
 } from '@/hooks';
+import { useBranchManagement } from '@/hooks/useBranchManagement';
 import type { WizardState } from '@/hooks';
 import { useDynamicBuildPhases } from '@/hooks/useDynamicBuildPhases';
 import { useStreamingGeneration } from '@/hooks/useStreamingGeneration';
@@ -247,6 +249,8 @@ export default function AIBuilder() {
     setShowExportModal,
     exportModalComponent,
     setExportModalComponent,
+    showCreateBranchModal,
+    setShowCreateBranchModal,
     activeView,
     setActiveView,
     searchQuery,
@@ -341,6 +345,23 @@ export default function AIBuilder() {
       setComponents((prev) =>
         prev.map((comp) => (comp.id === currentComponent?.id ? updated : comp))
       );
+    },
+  });
+
+  // Branch management hook
+  const branchManagement = useBranchManagement({
+    currentComponent,
+    onComponentUpdate: (updated) => {
+      setCurrentComponent(updated);
+      setComponents((prev) =>
+        prev.map((comp) => (comp.id === currentComponent?.id ? updated : comp))
+      );
+      // Save to database
+      saveComponentToDb(updated);
+    },
+    onClearUndoRedo: () => {
+      versionControl.setUndoStack([]);
+      versionControl.setRedoStack([]);
     },
   });
 
@@ -1679,6 +1700,9 @@ export default function AIBuilder() {
                   onScreenshot={(image) => {
                     setUploadedImage(image);
                   }}
+                  onBranchSwitch={branchManagement.switchBranch}
+                  onCreateBranch={() => setShowCreateBranchModal(true)}
+                  onDeleteBranch={branchManagement.deleteBranch}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -1914,6 +1938,18 @@ export default function AIBuilder() {
             })()}
           />
         )}
+
+        {/* Create Branch Modal */}
+        <CreateBranchModal
+          isOpen={showCreateBranchModal}
+          onClose={() => setShowCreateBranchModal(false)}
+          onCreateBranch={(name, description) => {
+            branchManagement.createBranch(name, description);
+            setShowCreateBranchModal(false);
+          }}
+          existingBranches={currentComponent?.branches || []}
+          sourceBranch={branchManagement.activeBranch}
+        />
 
         <DiffPreviewModal
           isOpen={showDiffPreview}

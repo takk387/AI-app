@@ -3,6 +3,7 @@
 import React from 'react';
 import CodePreview from './CodePreview';
 import FullAppPreview from './FullAppPreview';
+import BranchSelector from './BranchSelector';
 import type { GeneratedComponent, ActiveTab } from '../types/aiBuilderTypes';
 import {
   EyeIcon,
@@ -56,6 +57,11 @@ export interface PreviewPanelProps {
   onExport: (component: GeneratedComponent) => void;
   onDownload: () => void;
 
+  // Branch management
+  onBranchSwitch?: (branchId: string) => void;
+  onCreateBranch?: () => void;
+  onDeleteBranch?: (branchId: string) => void;
+
   // Loading states
   isExporting?: boolean;
 
@@ -80,9 +86,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
   onFork,
   onExport,
   onDownload,
+  onBranchSwitch,
+  onCreateBranch,
+  onDeleteBranch,
   isExporting = false,
   onScreenshot,
 }) {
+  // Check if component has branches
+  const hasBranches = Boolean(currentComponent?.branches && currentComponent.branches.length > 0);
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden h-full flex flex-col">
       {/* Tabs Header */}
@@ -134,15 +145,25 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
               </button>
             </div>
 
-            {/* Fork Button */}
-            <button
-              onClick={() => onFork(currentComponent)}
-              className="btn-secondary"
-              title="Fork this app"
-            >
-              <ForkIcon size={16} />
-              <span className="hidden lg:inline">Fork</span>
-            </button>
+            {/* Branch Selector or Fork Button */}
+            {hasBranches && onBranchSwitch && onCreateBranch ? (
+              <BranchSelector
+                branches={currentComponent.branches || []}
+                activeBranchId={currentComponent.activeBranchId || 'main'}
+                onBranchSwitch={onBranchSwitch}
+                onCreateBranch={onCreateBranch}
+                onDeleteBranch={onDeleteBranch}
+              />
+            ) : (
+              <button
+                onClick={() => onFork(currentComponent)}
+                className="btn-secondary"
+                title="Fork this app"
+              >
+                <ForkIcon size={16} />
+                <span className="hidden lg:inline">Fork</span>
+              </button>
+            )}
           </>
         )}
 

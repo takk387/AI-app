@@ -144,6 +144,7 @@ interface UISlice {
   showShareModal: boolean;
   showExportModal: boolean;
   exportModalComponent: GeneratedComponent | null;
+  showCreateBranchModal: boolean;
   // Search
   searchQuery: string;
   // Preview mode (WebContainers support)
@@ -172,6 +173,7 @@ interface UISlice {
   setShowShareModal: (show: boolean) => void;
   setShowExportModal: (show: boolean) => void;
   setExportModalComponent: (component: GeneratedComponent | null) => void;
+  setShowCreateBranchModal: (show: boolean) => void;
   setSearchQuery: (query: string) => void;
   setPreviewMode: (mode: PreviewMode) => void;
   setWebContainerStatus: (status: WebContainerStatus) => void;
@@ -418,6 +420,7 @@ export const useAppStore = create<AppState>()(
       showShareModal: false,
       showExportModal: false,
       exportModalComponent: null as GeneratedComponent | null,
+      showCreateBranchModal: false,
       searchQuery: '',
       // Preview mode (browser = esbuild-wasm, railway = full-stack)
       previewMode: 'browser',
@@ -445,6 +448,7 @@ export const useAppStore = create<AppState>()(
       setShowShareModal: (show) => set({ showShareModal: show }),
       setShowExportModal: (show) => set({ showExportModal: show }),
       setExportModalComponent: (component) => set({ exportModalComponent: component }),
+      setShowCreateBranchModal: (show) => set({ showCreateBranchModal: show }),
       setSearchQuery: (query) => set({ searchQuery: query }),
       setPreviewMode: (mode) => set({ previewMode: mode }),
       setWebContainerStatus: (status) => set({ webContainerStatus: status }),
