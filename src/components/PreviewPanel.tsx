@@ -10,7 +10,6 @@ import {
   CodeIcon,
   UndoIcon,
   RedoIcon,
-  ForkIcon,
   PackageIcon,
   DownloadIcon,
   MessageSquareIcon,
@@ -53,7 +52,6 @@ export interface PreviewPanelProps {
   redoCount?: number;
 
   // Actions
-  onFork: (component: GeneratedComponent) => void;
   onExport: (component: GeneratedComponent) => void;
   onDownload: () => void;
 
@@ -83,7 +81,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
   onRedo,
   undoCount = 0,
   redoCount = 0,
-  onFork,
   onExport,
   onDownload,
   onBranchSwitch,
@@ -92,8 +89,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
   isExporting = false,
   onScreenshot,
 }) {
-  // Check if component has branches
-  const hasBranches = Boolean(currentComponent?.branches && currentComponent.branches.length > 0);
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden h-full flex flex-col">
       {/* Tabs Header */}
@@ -145,8 +140,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
               </button>
             </div>
 
-            {/* Branch Selector or Fork Button */}
-            {hasBranches && onBranchSwitch && onCreateBranch ? (
+            {/* Branch Selector Dropdown - always shows */}
+            {onBranchSwitch && onCreateBranch && (
               <BranchSelector
                 branches={currentComponent.branches || []}
                 activeBranchId={currentComponent.activeBranchId || 'main'}
@@ -154,15 +149,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
                 onCreateBranch={onCreateBranch}
                 onDeleteBranch={onDeleteBranch}
               />
-            ) : (
-              <button
-                onClick={() => onFork(currentComponent)}
-                className="btn-secondary"
-                title="Fork this app"
-              >
-                <ForkIcon size={16} />
-                <span className="hidden lg:inline">Fork</span>
-              </button>
             )}
           </>
         )}

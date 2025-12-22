@@ -42,8 +42,27 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Find active branch
-  const activeBranch = branches.find((b) => b.id === activeBranchId);
+  // When no branches exist, show a virtual "main" branch as the current state
+  const displayBranches: AppBranch[] =
+    branches.length > 0
+      ? branches
+      : [
+          {
+            id: 'main',
+            name: 'main',
+            description: 'Default branch',
+            code: '',
+            versions: [],
+            conversationHistory: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdFrom: null,
+            isDefault: true,
+          },
+        ];
+
+  // Find active branch from display branches
+  const activeBranch = displayBranches.find((b) => b.id === activeBranchId);
   const activeBranchName = activeBranch?.name || 'main';
 
   // Close dropdown when clicking outside
@@ -99,11 +118,6 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
     }
   };
 
-  // Don't render if no branches
-  if (branches.length === 0) {
-    return null;
-  }
-
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
       {/* Trigger Button */}
@@ -149,7 +163,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
 
           {/* Branch List */}
           <div className="max-h-[240px] overflow-y-auto">
-            {branches.map((branch) => {
+            {displayBranches.map((branch) => {
               const isActive = branch.id === activeBranchId;
               const canDelete = !branch.isDefault && onDeleteBranch;
 

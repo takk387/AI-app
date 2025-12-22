@@ -1693,7 +1693,6 @@ export default function AIBuilder() {
                   onRedo={versionControl.redo}
                   undoCount={versionControl.undoStack.length}
                   redoCount={versionControl.redoStack.length}
-                  onFork={handleForkApp}
                   onExport={handleExportApp}
                   onDownload={downloadCode}
                   isExporting={!!exportingApp}
