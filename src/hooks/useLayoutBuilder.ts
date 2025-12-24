@@ -11,6 +11,13 @@ import { captureLayoutPreview, containsVisualKeywords } from '@/utils/screenshot
 import { LAYOUT_BUILDER_GREETING } from '@/prompts/layoutBuilderSystemPrompt';
 import { defaultLayoutDesign } from '@/types/layoutDesign';
 import { useSmartContext } from './useSmartContext';
+import {
+  determineModelRouting,
+  getApiEndpoint,
+  type ModelRouting,
+  type RoutingDecision,
+} from '@/utils/modelRouter';
+import type { VisualAnalysis } from '@/services/GeminiLayoutService';
 import type {
   LayoutDesign,
   LayoutMessage,
@@ -78,6 +85,8 @@ export interface UseLayoutBuilderOptions {
   onBackgroundsGenerated?: (backgrounds: GeneratedBackground[]) => void;
   /** Callback when tools are used by the AI */
   onToolsUsed?: (toolNames: string[]) => void;
+  /** Callback when Gemini visual analysis is received (dual-model mode) */
+  onGeminiAnalysis?: (analysis: VisualAnalysis) => void;
   /** Enable automatic design analysis after screenshot capture */
   autoAnalyze?: boolean;
 }
@@ -95,6 +104,11 @@ interface UseLayoutBuilderReturn {
   hasDraftToRecover: boolean;
   canUndo: boolean;
   canRedo: boolean;
+
+  // Dual-Model State
+  modelRouting: RoutingDecision | null;
+  geminiAnalysis: VisualAnalysis | null;
+  lastModelUsed: ModelRouting | null;
 
   // Version History State
   versionHistory: DesignVersion[];
@@ -369,7 +383,7 @@ function categorizeError(error: unknown, statusCode?: number): MessageError {
 // ============================================================================
 
 export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayoutBuilderReturn {
-  const { onAnimationsReceived, onBackgroundsGenerated, onToolsUsed } = options;
+  const { onAnimationsReceived, onBackgroundsGenerated, onToolsUsed, onGeminiAnalysis } = options;
 
   // Store state
   const {
@@ -407,6 +421,11 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [workflowState, setWorkflowState] = useState<LayoutWorkflowState | undefined>(undefined);
   const [recentChanges, setRecentChanges] = useState<DesignChange[]>([]);
+
+  // Dual-model state
+  const [modelRouting, setModelRouting] = useState<RoutingDecision | null>(null);
+  const [geminiAnalysis, setGeminiAnalysis] = useState<VisualAnalysis | null>(null);
+  const [lastModelUsed, setLastModelUsed] = useState<ModelRouting | null>(null);
 
   // Draft recovery state
   const [hasDraftToRecover, setHasDraftToRecover] = useState(false);
@@ -556,6 +575,18 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           }
         }
 
+        // Determine intelligent model routing
+        const hasImages = !!(screenshot || (referenceImages && referenceImages.length > 0));
+        const routingDecision = determineModelRouting({
+          message: text,
+          hasImages,
+          currentDesign: design as Record<string, unknown>,
+        });
+        setModelRouting(routingDecision);
+
+        // Get the appropriate API endpoint based on routing
+        const apiEndpoint = getApiEndpoint(routingDecision.route);
+
         const request: LayoutChatRequest = {
           message: text,
           conversationHistory: messages,
@@ -567,7 +598,7 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           workflowState: workflowState, // Include workflow state for multi-step workflows
         };
 
-        const response = await fetch('/api/layout/chat', {
+        const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(request),
@@ -578,7 +609,26 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           throw new Error(`API error: ${response.status}`);
         }
 
-        const data: LayoutChatResponse = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: LayoutChatResponse & {
+          geminiAnalysis?: VisualAnalysis;
+          modelUsed?: ModelRouting;
+        } = await response.json();
+
+        // Track which model was used
+        if (data.modelUsed) {
+          setLastModelUsed(data.modelUsed);
+        } else {
+          setLastModelUsed(routingDecision.route);
+        }
+
+        // Handle Gemini analysis from dual-model pipeline
+        if (data.geminiAnalysis) {
+          setGeminiAnalysis(data.geminiAnalysis);
+          if (onGeminiAnalysis) {
+            onGeminiAnalysis(data.geminiAnalysis);
+          }
+        }
 
         // Add assistant message
         const assistantMessage: LayoutMessage = {
@@ -730,6 +780,7 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
       onAnimationsReceived,
       onBackgroundsGenerated,
       onToolsUsed,
+      onGeminiAnalysis,
     ]
   );
 
@@ -1266,6 +1317,11 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
     hasDraftToRecover,
     canUndo,
     canRedo,
+
+    // Dual-Model State
+    modelRouting,
+    geminiAnalysis,
+    lastModelUsed,
 
     // Version History State
     versionHistory,

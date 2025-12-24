@@ -85,6 +85,7 @@ import {
   DesignSidePanel,
   MediaUploadZone,
 } from '@/components/layout-builder';
+import { GeminiAnalysisPanel } from '@/components/layout-builder/GeminiAnalysisPanel';
 import { useLayoutPanelStore } from '@/stores/useLayoutPanelStore';
 
 // ============================================================================
@@ -259,6 +260,10 @@ export function LayoutBuilderWizard({
     canRedo,
     versionHistory,
     currentVersionId,
+    // Dual-model state
+    geminiAnalysis,
+    lastModelUsed,
+    modelRouting,
     sendMessage,
     setSelectedElement,
     addReferenceImage,
@@ -354,6 +359,7 @@ export function LayoutBuilderWizard({
   // Reference media panel state
   const [showReferenceMediaPanel, _setShowReferenceMediaPanel] = useState(true);
   const [showDesignSidePanel, setShowDesignSidePanel] = useState(isAdvancedMode);
+  const [showGeminiAnalysis, setShowGeminiAnalysis] = useState(true); // Auto-show when analysis available
 
   // Data states for advanced features
   const [customAnimation, setCustomAnimation] = useState<CustomAnimation | null>(null);
@@ -1557,6 +1563,8 @@ export function LayoutBuilderWizard({
             isLoading={isLoading}
             isCapturing={isCapturing}
             hasSelection={!!selectedElement}
+            lastModelUsed={lastModelUsed}
+            hasImages={referenceImages.length > 0}
           />
         </div>
 
@@ -1570,6 +1578,17 @@ export function LayoutBuilderWizard({
                 onCancel={analysisProgress.cancel}
                 showDetails={false}
                 compact={true}
+              />
+            </div>
+          )}
+
+          {/* Gemini Analysis Panel - shows when visual analysis is available */}
+          {geminiAnalysis && showGeminiAnalysis && (
+            <div className="absolute top-2 right-2 z-20 w-80 max-h-[60vh] overflow-y-auto">
+              <GeminiAnalysisPanel
+                analysis={geminiAnalysis}
+                isVisible={showGeminiAnalysis}
+                onClose={() => setShowGeminiAnalysis(false)}
               />
             </div>
           )}

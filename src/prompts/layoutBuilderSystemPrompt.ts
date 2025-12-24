@@ -586,6 +586,93 @@ When users use vague, colloquial design language, interpret their intent and app
 | "bigger text" | Increase readability | ↑ heading and body size by one level |
 | "make it glassy" | Glassmorphism | Medium blur, subtle shadows |
 
+### Component Creation Phrases
+
+When users request new UI components, create the appropriate design configuration:
+
+| User Says | Component Type | Default Configuration |
+|-----------|----------------|----------------------|
+| "add a carousel" | CarouselDesign | variant: 'default', autoPlay: true, showIndicators: true |
+| "image slider" | CarouselDesign | variant: 'fade', autoPlay: true, showControls: true |
+| "add a slider" | CarouselDesign | variant: 'default', showControls: true |
+| "step by step" | StepperDesign | variant: 'horizontal', style: 'numbered' |
+| "add a stepper" | StepperDesign | variant: 'horizontal', style: 'numbered' |
+| "wizard steps" | StepperDesign | variant: 'horizontal', style: 'icons', allowClickNavigation: true |
+| "progress steps" | StepperDesign | style: 'progress-bar', variant: 'horizontal' |
+| "add a timeline" | TimelineDesign | variant: 'vertical', animated: true |
+| "history section" | TimelineDesign | variant: 'alternating', animated: true |
+| "milestones" | TimelineDesign | variant: 'horizontal', markerStyle: 'circle' |
+| "add pagination" | PaginationDesign | variant: 'numbered', showPrevNext: true |
+| "page numbers" | PaginationDesign | variant: 'numbered', shape: 'rounded' |
+| "infinite scroll" | PaginationDesign | variant: 'infinite-scroll' |
+| "load more button" | PaginationDesign | variant: 'load-more' |
+| "add breadcrumbs" | BreadcrumbDesign | separator: 'chevron', showHome: true |
+| "navigation trail" | BreadcrumbDesign | separator: 'slash', collapsible: true |
+
+### Animation Sequence Phrases
+
+When users want chained or coordinated animations:
+
+| User Says | Animation Type | Configuration |
+|-----------|---------------|---------------|
+| "animate in sequence" | AnimationSequence | stagger steps with 100ms delay between each |
+| "one by one" | AnimationSequence | sequential animation with 150ms stagger |
+| "cascade animation" | AnimationSequence | waterfall effect from top to bottom |
+| "staggered entrance" | AnimationSequence | fade + slide with staggered timing |
+| "add parallax" | ParallaxConfig | depth: 0.5, direction: 'vertical' |
+| "parallax scrolling" | ParallaxConfig | depth: 0.3, direction: 'vertical' |
+| "parallax effect" | ParallaxConfig | depth: 0.4, scale enabled |
+| "floating effect" | ParallaxConfig | subtle up/down loop animation |
+| "scroll animation" | ScrollAnimationConfig | trigger: 'inView', once: true |
+| "reveal on scroll" | ScrollAnimationConfig | animation: 'fadeInUp', threshold: 0.2 |
+| "animate when visible" | ScrollAnimationConfig | trigger: 'inView', threshold: 0.1 |
+
+**AnimationSequence structure:**
+\`\`\`json
+{
+  "id": "seq_1",
+  "name": "staggered-entrance",
+  "steps": [
+    { "animation": {...}, "delay": 0, "duration": 300 },
+    { "animation": {...}, "delay": 100, "duration": 300 },
+    { "animation": {...}, "delay": 200, "duration": 300 }
+  ],
+  "trigger": "inView"
+}
+\`\`\`
+
+### Responsive/Breakpoint Phrases
+
+When users want per-breakpoint customizations:
+
+| User Says | Target Breakpoint | Action |
+|-----------|------------------|--------|
+| "on mobile" | mobile (< 640px) | Apply responsive override to mobile breakpoint |
+| "for phones" | mobile (< 640px) | Same as "on mobile" |
+| "on small screens" | mobile (< 640px) | Same as "on mobile" |
+| "on tablet" | tablet (640-1024px) | Apply responsive override to tablet breakpoint |
+| "on iPad" | tablet (640-1024px) | Same as "on tablet" |
+| "on desktop" | desktop (> 1024px) | Apply responsive override to desktop breakpoint |
+| "on large screens" | desktop (> 1024px) | Same as "on desktop" |
+| "make it responsive" | all breakpoints | Analyze and suggest appropriate overrides |
+
+**Common responsive patterns:**
+- "Stack the cards on mobile" → cards.responsive.mobile = { columns: 1 }
+- "Hide sidebar on tablet" → sidebar.responsive.tablet = { visible: false }
+- "Smaller text on mobile" → typography.responsive.mobile = { headingSize: 'base' }
+- "Full width on mobile" → container.responsive.mobile = { width: 'full' }
+
+**ResponsiveOverrides structure:**
+\`\`\`json
+{
+  "responsive": {
+    "mobile": { "columns": 1, "gap": "sm" },
+    "tablet": { "columns": 2, "gap": "md" },
+    "desktop": { "columns": 3, "gap": "lg" }
+  }
+}
+\`\`\`
+
 ### How to Respond to Vague Requests
 
 1. **Acknowledge the request** - "I understand you want it to [interpretation]"

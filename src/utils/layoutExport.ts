@@ -9,7 +9,16 @@
  * - shadcn/ui theme (globals.css)
  */
 
-import type { LayoutDesign, GridConfig } from '@/types/layoutDesign';
+import type {
+  LayoutDesign,
+  GridConfig,
+  CarouselDesign,
+  StepperDesign,
+  TimelineDesign,
+  PaginationDesign,
+  BreadcrumbDesign,
+  ResponsiveOverrides,
+} from '@/types/layoutDesign';
 
 // ============================================================================
 // COLOR CONVERSION UTILITIES
@@ -731,6 +740,317 @@ export default ${componentName};
 `;
 
   return component;
+}
+
+// ============================================================================
+// NEW COMPONENT TYPE EXPORTS
+// ============================================================================
+
+/**
+ * Generate CSS for CarouselDesign
+ */
+export function exportCarouselToCSS(carousel: CarouselDesign): string {
+  const transitionDuration =
+    carousel.transitionDuration === 'fast'
+      ? '200ms'
+      : carousel.transitionDuration === 'slow'
+        ? '600ms'
+        : '400ms';
+
+  return `.carousel {
+  position: relative;
+  overflow: hidden;
+}
+.carousel-track {
+  display: flex;
+  transition: transform ${transitionDuration} ease-out;
+}
+.carousel-slide {
+  flex: 0 0 100%;
+}
+${
+  carousel.showIndicators
+    ? `.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.carousel-indicator {
+  width: ${carousel.indicatorStyle === 'bars' ? '24px' : '8px'};
+  height: 8px;
+  border-radius: ${carousel.indicatorStyle === 'dots' ? '50%' : '4px'};
+  background: var(--color-text-muted);
+  opacity: 0.5;
+  cursor: pointer;
+}
+.carousel-indicator.active {
+  opacity: 1;
+  background: var(--color-primary);
+}`
+    : ''
+}
+${
+  carousel.showControls
+    ? `.carousel-control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 8px;
+  cursor: pointer;
+}
+.carousel-control.prev { left: 16px; }
+.carousel-control.next { right: 16px; }`
+    : ''
+}`;
+}
+
+/**
+ * Generate CSS for StepperDesign
+ */
+export function exportStepperToCSS(stepper: StepperDesign): string {
+  const size = stepper.size === 'sm' ? '24px' : stepper.size === 'lg' ? '40px' : '32px';
+
+  return `.stepper {
+  display: flex;
+  ${stepper.variant === 'vertical' ? 'flex-direction: column;' : 'flex-direction: row; align-items: center;'}
+}
+.stepper-step {
+  display: flex;
+  align-items: center;
+  ${stepper.variant === 'vertical' ? 'flex-direction: row;' : 'flex-direction: column;'}
+}
+.stepper-marker {
+  width: ${size};
+  height: ${size};
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  font-weight: 600;
+}
+.stepper-step.completed .stepper-marker {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+.stepper-step.active .stepper-marker {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.stepper-connector {
+  ${
+    stepper.variant === 'vertical'
+      ? 'width: 2px; height: 40px; margin: 8px 0 8px calc(' + size + ' / 2 - 1px);'
+      : 'height: 2px; flex: 1; margin: 0 16px;'
+  }
+  background: var(--color-border);
+  ${stepper.connectorStyle === 'dashed' ? 'background: transparent; border-top: 2px dashed var(--color-border);' : ''}
+}
+.stepper-step.completed + .stepper-connector {
+  background: var(--color-primary);
+}`;
+}
+
+/**
+ * Generate CSS for TimelineDesign
+ */
+export function exportTimelineToCSS(timeline: TimelineDesign): string {
+  const markerSize = timeline.markerStyle === 'diamond' ? '12px' : '10px';
+
+  return `.timeline {
+  position: relative;
+  ${timeline.variant === 'horizontal' ? 'display: flex; overflow-x: auto;' : ''}
+}
+.timeline-connector {
+  position: absolute;
+  ${timeline.variant === 'horizontal' ? 'top: 50%; left: 0; right: 0; height: 2px;' : 'left: 20px; top: 0; bottom: 0; width: 2px;'}
+  background: var(--color-border);
+  ${timeline.connectorStyle === 'dashed' ? 'background: transparent; border-left: 2px dashed var(--color-border);' : ''}
+  ${timeline.connectorStyle === 'dotted' ? 'background: transparent; border-left: 2px dotted var(--color-border);' : ''}
+}
+.timeline-item {
+  position: relative;
+  ${
+    timeline.variant === 'horizontal'
+      ? 'flex: 0 0 auto; padding: 0 24px;'
+      : timeline.variant === 'alternating'
+        ? 'width: 50%; padding: 0 40px;'
+        : 'padding-left: 50px; margin-bottom: 24px;'
+  }
+}
+${
+  timeline.variant === 'alternating'
+    ? `.timeline-item:nth-child(even) { margin-left: 50%; }
+.timeline-item:nth-child(odd) { text-align: right; }`
+    : ''
+}
+.timeline-marker {
+  position: absolute;
+  ${timeline.variant === 'horizontal' ? 'top: 50%; left: 50%; transform: translate(-50%, -50%);' : 'left: 15px; top: 4px;'}
+  width: ${markerSize};
+  height: ${markerSize};
+  background: var(--color-primary);
+  ${
+    timeline.markerStyle === 'circle'
+      ? 'border-radius: 50%;'
+      : timeline.markerStyle === 'square'
+        ? 'border-radius: 2px;'
+        : timeline.markerStyle === 'diamond'
+          ? 'transform: rotate(45deg);'
+          : ''
+  }
+}`;
+}
+
+/**
+ * Generate CSS for PaginationDesign
+ */
+export function exportPaginationToCSS(pagination: PaginationDesign): string {
+  const size = pagination.size === 'sm' ? '28px' : pagination.size === 'lg' ? '44px' : '36px';
+  const radius =
+    pagination.shape === 'pill' ? '999px' : pagination.shape === 'square' ? '4px' : '8px';
+
+  return `.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination-item {
+  min-width: ${size};
+  height: ${size};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: ${radius};
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.pagination-item:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+.pagination-item.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+.pagination-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+${
+  pagination.variant === 'load-more'
+    ? `.load-more-btn {
+  width: 100%;
+  padding: 12px 24px;
+  border-radius: ${radius};
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+}`
+    : ''
+}`;
+}
+
+/**
+ * Generate CSS for BreadcrumbDesign
+ */
+export function exportBreadcrumbToCSS(breadcrumb: BreadcrumbDesign): string {
+  const separator =
+    breadcrumb.separator === 'chevron'
+      ? '"›"'
+      : breadcrumb.separator === 'arrow'
+        ? '"→"'
+        : breadcrumb.separator === 'dot'
+          ? '"·"'
+          : '"/"';
+
+  return `.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.breadcrumb-item {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.breadcrumb-item:hover {
+  color: var(--color-primary);
+}
+.breadcrumb-item.active {
+  color: var(--color-text);
+  pointer-events: none;
+}
+.breadcrumb-separator {
+  color: var(--color-text-muted);
+}
+.breadcrumb-separator::after {
+  content: ${separator};
+}
+${
+  breadcrumb.truncate
+    ? `.breadcrumb.truncated .breadcrumb-item:not(:first-child):not(:last-child):not(:nth-last-child(2)) {
+  display: none;
+}
+.breadcrumb.truncated .breadcrumb-ellipsis {
+  display: inline;
+}`
+    : ''
+}`;
+}
+
+/**
+ * Generate responsive override CSS
+ */
+export function exportResponsiveOverrides<T>(
+  overrides: ResponsiveOverrides<T> | undefined,
+  componentName: string
+): string {
+  if (!overrides) return '';
+
+  const lines: string[] = [];
+
+  if (overrides.mobile) {
+    lines.push(`@media (max-width: 639px) {
+  .${componentName} {
+    ${Object.entries(overrides.mobile)
+      .map(([key, value]) => `--${componentName}-${key}: ${value};`)
+      .join('\n    ')}
+  }
+}`);
+  }
+
+  if (overrides.tablet) {
+    lines.push(`@media (min-width: 640px) and (max-width: 1023px) {
+  .${componentName} {
+    ${Object.entries(overrides.tablet)
+      .map(([key, value]) => `--${componentName}-${key}: ${value};`)
+      .join('\n    ')}
+  }
+}`);
+  }
+
+  if (overrides.desktop) {
+    lines.push(`@media (min-width: 1024px) {
+  .${componentName} {
+    ${Object.entries(overrides.desktop)
+      .map(([key, value]) => `--${componentName}-${key}: ${value};`)
+      .join('\n    ')}
+  }
+}`);
+  }
+
+  return lines.join('\n\n');
 }
 
 // ============================================================================

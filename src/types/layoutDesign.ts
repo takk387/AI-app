@@ -538,6 +538,113 @@ export interface AccordionDesign {
   animation: 'smooth' | 'instant';
 }
 
+/**
+ * Carousel/Slider component design specification
+ */
+export interface CarouselDesign {
+  variant: 'default' | 'fade' | 'overlap' | 'continuous' | 'coverflow';
+  showIndicators: boolean;
+  showControls: boolean;
+  autoPlay: boolean;
+  autoPlayDuration: number; // milliseconds
+  pauseOnHover: boolean;
+  transitionDuration: 'fast' | 'normal' | 'slow';
+  indicatorStyle: 'dots' | 'bars' | 'thumbnails' | 'numbers';
+  indicatorPosition: 'bottom' | 'top' | 'left' | 'right';
+  controlStyle: 'arrows' | 'chevrons' | 'minimal' | 'circular';
+  controlPosition: 'inside' | 'outside' | 'bottom';
+  loop: boolean;
+  slidesPerView: number;
+  spacing: 'none' | 'sm' | 'md' | 'lg';
+}
+
+/**
+ * Stepper/Wizard component design specification
+ */
+export interface StepperDesign {
+  variant: 'horizontal' | 'vertical';
+  style: 'numbered' | 'icons' | 'dots' | 'progress-bar' | 'circles';
+  connectorStyle: 'solid' | 'dashed' | 'dotted' | 'none';
+  completedStyle: 'check' | 'filled' | 'highlight' | 'strikethrough';
+  size: 'sm' | 'md' | 'lg';
+  labelPosition: 'bottom' | 'right' | 'hidden';
+  showDescription: boolean;
+  allowClickNavigation: boolean;
+  animated: boolean;
+  colorScheme: 'primary' | 'success' | 'neutral';
+}
+
+/**
+ * Timeline component design specification
+ */
+export interface TimelineDesign {
+  variant: 'vertical' | 'horizontal' | 'alternating' | 'compact';
+  connectorStyle: 'solid' | 'dashed' | 'dotted' | 'gradient';
+  connectorWidth: 'thin' | 'normal' | 'thick';
+  markerStyle: 'circle' | 'square' | 'diamond' | 'icon' | 'image';
+  markerSize: 'sm' | 'md' | 'lg';
+  datePosition: 'inline' | 'opposite' | 'above' | 'hidden';
+  contentStyle: 'card' | 'simple' | 'bordered';
+  animated: boolean;
+  animationStyle: 'fade' | 'slide' | 'scale';
+  showConnector: boolean;
+}
+
+/**
+ * Pagination component design specification
+ */
+export interface PaginationDesign {
+  variant: 'numbered' | 'simple' | 'dots' | 'load-more' | 'infinite-scroll';
+  size: 'sm' | 'md' | 'lg';
+  showFirstLast: boolean;
+  showPrevNext: boolean;
+  maxVisiblePages: number;
+  shape: 'rounded' | 'square' | 'pill' | 'circle';
+  style: 'filled' | 'outlined' | 'ghost' | 'minimal';
+  position: 'left' | 'center' | 'right' | 'space-between';
+  showPageInfo: boolean;
+  showPageSize: boolean;
+}
+
+/**
+ * Breadcrumb component design specification
+ */
+export interface BreadcrumbDesign {
+  separator: 'slash' | 'chevron' | 'arrow' | 'dot' | 'custom';
+  customSeparator?: string;
+  showHome: boolean;
+  homeIcon: boolean;
+  truncate: boolean;
+  maxItems: number;
+  collapsible: boolean;
+  collapseAt: number;
+  size: 'sm' | 'md' | 'lg';
+  style: 'default' | 'pills' | 'underlined';
+}
+
+// ============================================================================
+// RESPONSIVE OVERRIDES
+// ============================================================================
+
+/**
+ * Generic responsive overrides wrapper for any component type
+ * Allows per-breakpoint customization of component properties
+ */
+export interface ResponsiveOverrides<T> {
+  mobile?: Partial<T>;
+  tablet?: Partial<T>;
+  desktop?: Partial<T>;
+  wide?: Partial<T>;
+  custom?: Record<string, Partial<T>>; // Custom breakpoint names
+}
+
+/**
+ * Component with responsive support
+ */
+export type ResponsiveComponent<T> = T & {
+  responsive?: ResponsiveOverrides<T>;
+};
+
 // ============================================================================
 // CUSTOMIZABLE VALUE WRAPPER
 // ============================================================================
@@ -602,20 +709,26 @@ export interface BreakpointVisibility {
  * Extended components interface with new component types
  */
 export interface ExtendedLayoutComponents {
-  header?: HeaderDesign;
-  sidebar?: SidebarDesign;
-  hero?: HeroDesign;
-  navigation?: NavigationDesign;
-  cards?: CardDesign & { gridConfig?: GridConfig };
-  lists?: ListDesign;
-  stats?: StatsDesign;
-  footer?: FooterDesign;
-  forms?: FormDesign;
-  tables?: TableDesign;
-  tabs?: TabsDesign;
-  modals?: ModalDesign;
-  alerts?: AlertDesign;
-  accordions?: AccordionDesign;
+  header?: ResponsiveComponent<HeaderDesign>;
+  sidebar?: ResponsiveComponent<SidebarDesign>;
+  hero?: ResponsiveComponent<HeroDesign>;
+  navigation?: ResponsiveComponent<NavigationDesign>;
+  cards?: ResponsiveComponent<CardDesign> & { gridConfig?: GridConfig };
+  lists?: ResponsiveComponent<ListDesign>;
+  stats?: ResponsiveComponent<StatsDesign>;
+  footer?: ResponsiveComponent<FooterDesign>;
+  forms?: ResponsiveComponent<FormDesign>;
+  tables?: ResponsiveComponent<TableDesign>;
+  tabs?: ResponsiveComponent<TabsDesign>;
+  modals?: ResponsiveComponent<ModalDesign>;
+  alerts?: ResponsiveComponent<AlertDesign>;
+  accordions?: ResponsiveComponent<AccordionDesign>;
+  // New component types
+  carousels?: ResponsiveComponent<CarouselDesign>;
+  steppers?: ResponsiveComponent<StepperDesign>;
+  timelines?: ResponsiveComponent<TimelineDesign>;
+  pagination?: ResponsiveComponent<PaginationDesign>;
+  breadcrumbs?: ResponsiveComponent<BreadcrumbDesign>;
 }
 
 /**
@@ -1394,6 +1507,90 @@ export interface CompleteDesignAnalysis {
 }
 
 // ============================================================================
+// ANIMATION SEQUENCE TYPES
+// ============================================================================
+
+/**
+ * Animation sequence for chained/sequential animations
+ * Allows multiple animations to be played in order
+ */
+export interface AnimationSequence {
+  id: string;
+  name: string;
+  description?: string;
+  steps: AnimationStep[];
+  trigger: 'load' | 'scroll' | 'hover' | 'click' | 'inView' | 'focus';
+  triggerOffset?: number; // For scroll trigger, pixels from viewport
+  loop?: boolean;
+  loopDelay?: number; // Delay between loop iterations
+  reverseOnComplete?: boolean;
+}
+
+/**
+ * Single step in an animation sequence
+ */
+export interface AnimationStep {
+  id: string;
+  animationType: 'fade' | 'slide' | 'scale' | 'rotate' | 'color' | 'blur' | 'custom';
+  element: string; // CSS selector or element description
+  property?: string; // CSS property (for custom)
+  fromValue?: string;
+  toValue?: string;
+  duration: number; // milliseconds
+  delay: number; // ms after previous step completes
+  overlap?: number; // ms to overlap with next (negative = gap)
+  easing: string; // CSS easing function
+  stagger?: {
+    enabled: boolean;
+    delay: number; // Delay between each child element
+    from: 'start' | 'center' | 'end' | 'random';
+  };
+}
+
+/**
+ * Enhanced parallax configuration
+ */
+export interface ParallaxConfig {
+  enabled: boolean;
+  depth: number; // 0-1, how much element moves relative to scroll
+  direction: 'vertical' | 'horizontal' | 'both';
+  perspective?: number; // For 3D parallax effect (px)
+  speed?: number; // Multiplier for scroll speed
+  scale?: {
+    start: number;
+    end: number;
+  };
+  opacity?: {
+    start: number;
+    end: number;
+  };
+  rotation?: {
+    axis: 'x' | 'y' | 'z';
+    degrees: number;
+  };
+  offset?: {
+    x: number;
+    y: number;
+  };
+  smoothing?: number; // 0-1, how smooth the parallax effect is
+  targetElement?: string; // CSS selector
+}
+
+/**
+ * Scroll-triggered animation configuration
+ */
+export interface ScrollAnimationConfig {
+  trigger: 'enter' | 'leave' | 'center' | 'custom';
+  customTrigger?: number; // 0-1, viewport position
+  scrub?: boolean | number; // Link animation to scroll position
+  pin?: boolean; // Pin element during animation
+  pinSpacing?: boolean;
+  markers?: boolean; // Debug markers
+  start?: string; // e.g., "top center"
+  end?: string; // e.g., "bottom top"
+}
+
+// ============================================================================
 // VIDEO ANALYSIS TYPES
 // ============================================================================
 
@@ -1454,6 +1651,12 @@ export interface DetectedAnimation {
   // NEW: DALL-E generated background support
   generatedImageUrl?: string; // URL of AI-generated background image
   generatedPrompt?: string; // Prompt used to generate the image
+  // Animation sequence support (for chained animations)
+  sequence?: AnimationSequence;
+  // Enhanced parallax configuration
+  parallaxConfig?: ParallaxConfig;
+  // Scroll-triggered animation settings
+  scrollConfig?: ScrollAnimationConfig;
 }
 
 /**

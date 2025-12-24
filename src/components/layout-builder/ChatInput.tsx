@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { getModelIndicator, type ModelRouting } from '@/utils/modelRouter';
 
 interface ChatInputProps {
   onSend: (text: string, includeCapture: boolean) => void;
@@ -8,6 +9,10 @@ interface ChatInputProps {
   isLoading: boolean;
   isCapturing: boolean;
   hasSelection: boolean;
+  /** The last model that was used for a response */
+  lastModelUsed?: ModelRouting | null;
+  /** Whether images are currently attached (affects routing preview) */
+  hasImages?: boolean;
 }
 
 /**
@@ -19,10 +24,15 @@ export function ChatInput({
   isLoading,
   isCapturing,
   hasSelection,
+  lastModelUsed,
+  hasImages,
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [includeCapture, setIncludeCapture] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Get model indicator for display
+  const modelIndicator = lastModelUsed ? getModelIndicator(lastModelUsed) : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +135,23 @@ export function ChatInput({
           <span className="text-xs text-blue-400 ml-auto">
             Element selected - AI will see it highlighted
           </span>
+        )}
+
+        {/* Model indicator */}
+        {modelIndicator && !hasSelection && (
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-sm" title={`Last response from ${modelIndicator.label}`}>
+              {modelIndicator.emoji}
+            </span>
+            <span className="text-xs text-slate-400">{modelIndicator.label}</span>
+          </div>
+        )}
+
+        {/* Image routing hint */}
+        {(hasImages || includeCapture) && !isLoading && (
+          <div className="ml-2 flex items-center gap-1">
+            <span className="text-xs text-purple-400">Visual analysis enabled</span>
+          </div>
         )}
       </div>
 
