@@ -242,6 +242,14 @@ export const CheckIcon: React.FC<IconProps> = (props) => (
   </Icon>
 );
 
+// Shield Check - for security/quality
+export const ShieldCheckIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <polyline points="9 12 11 14 15 10" />
+  </Icon>
+);
+
 // Clipboard - for copy
 export const ClipboardIcon: React.FC<IconProps> = (props) => (
   <Icon {...props}>
@@ -640,5 +648,111 @@ export const ListChecksIcon: React.FC<IconProps> = (props) => (
     <polyline points="3 6 4 7 6 5" />
     <polyline points="3 12 4 13 6 11" />
     <polyline points="3 18 4 19 6 17" />
+  </Icon>
+);
+
+// ============================================
+// Marketing page icons
+// ============================================
+
+// Book Open - for documentation
+export const BookOpenIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+  </Icon>
+);
+
+// Light Bulb - for ideas/features
+export const LightBulbIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+    <path d="M9 18h6" />
+    <path d="M10 22h4" />
+  </Icon>
+);
+
+// Code Bracket - for code features
+export const CodeBracketIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <polyline points="16 18 22 12 16 6" />
+    <polyline points="8 6 2 12 8 18" />
+  </Icon>
+);
+
+// Paint Brush - for design
+export const PaintBrushIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
+    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+    <path d="M14.5 17.5 4.5 15" />
+  </Icon>
+);
+
+// Cube - for components/building blocks
+export const CubeIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </Icon>
+);
+
+// Pencil Square - for editing
+export const PencilSquareIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </Icon>
+);
+
+// X Mark - for close (alias for XIcon with heroicons naming)
+export const XMarkIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </Icon>
+);
+
+// Minus - for negative/partial
+export const MinusIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </Icon>
+);
+
+// Arrow Right - for CTAs
+export const ArrowRightIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </Icon>
+);
+
+// Document Text - for docs
+export const DocumentTextIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <line x1="10" y1="9" x2="8" y2="9" />
+  </Icon>
+);
+
+// Currency Dollar - for pricing
+export const CurrencyDollarIcon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </Icon>
+);
+
+// Bars 3 - hamburger menu (alias for MenuIcon with heroicons naming)
+export const Bars3Icon: React.FC<IconProps> = (props) => (
+  <Icon {...props}>
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="18" x2="21" y2="18" />
   </Icon>
 );

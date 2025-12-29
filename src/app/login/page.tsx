@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message || 'Failed to sign in');
       } else {
-        router.push('/');
+        router.push('/app');
         router.refresh();
       }
     } catch {

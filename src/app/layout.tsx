@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import AuthGuard from '../components/AuthGuard';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
@@ -46,11 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ErrorBoundary>
                 {/* DevTools outside AuthGuard so it always renders in dev mode */}
                 <DevTools />
-                <AuthGuard>
-                  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900 transition-colors duration-300">
-                    {children}
-                  </div>
-                </AuthGuard>
+                {children}
               </ErrorBoundary>
             </AuthProvider>
           </SettingsProvider>
