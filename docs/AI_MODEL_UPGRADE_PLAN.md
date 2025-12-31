@@ -227,6 +227,88 @@ private async uploadToSupabase(base64: string, size: string): Promise<string> {
 2. Set bucket to public (for generated app images)
 3. Add `SUPABASE_SERVICE_ROLE_KEY` to Railway environment variables
 
+---
+
+#### Supabase Storage Setup (SQL)
+
+Run this in the Supabase SQL Editor:
+
+```sql
+-- Create the ai-images bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'ai-images',
+  'ai-images',
+  true,  -- Public bucket for generated app images
+  5242880,  -- 5MB max file size
+  ARRAY['image/jpeg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp'];
+
+-- RLS Policy: Allow authenticated users to upload
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'ai-images');
+
+-- RLS Policy: Allow service role to upload (for server-side generation)
+CREATE POLICY "Allow service role uploads"
+ON storage.objects
+FOR INSERT
+TO service_role
+WITH CHECK (bucket_id = 'ai-images');
+
+-- RLS Policy: Allow public read access (images are public)
+CREATE POLICY "Allow public read access"
+ON storage.objects
+FOR SELECT
+TO public
+USING (bucket_id = 'ai-images');
+
+-- RLS Policy: Allow service role to delete (for cleanup)
+CREATE POLICY "Allow service role delete"
+ON storage.objects
+FOR DELETE
+TO service_role
+USING (bucket_id = 'ai-images');
+```
+
+---
+
+#### Railway Environment Variable
+
+Add the Supabase service role key to Railway:
+
+**Option 1: Railway CLI**
+
+```bash
+railway variables set SUPABASE_SERVICE_ROLE_KEY="your-service-role-key-here"
+```
+
+**Option 2: Railway Dashboard**
+
+1. Go to your Railway project
+2. Click on the service
+3. Go to **Variables** tab
+4. Add new variable:
+   - Name: `SUPABASE_SERVICE_ROLE_KEY`
+   - Value: (copy from Supabase Dashboard → Settings → API → service_role key)
+
+**Where to find the service role key:**
+
+1. Go to Supabase Dashboard
+2. Click **Settings** (gear icon)
+3. Click **API**
+4. Copy the `service_role` key (NOT the `anon` key)
+
+⚠️ **Security Note:** The service role key bypasses RLS. Only use it server-side, never expose to client.
+
+---
+
 **5. Add mapping helpers (new methods in class):**
 
 ```typescript
