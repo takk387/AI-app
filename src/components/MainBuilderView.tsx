@@ -469,9 +469,9 @@ export function MainBuilderView() {
 
   return (
     <ToastProvider>
-      <div className="h-[calc(100vh-56px)] flex flex-col">
+      <div className="h-[calc(100vh-56px)] flex flex-col overflow-hidden">
         {/* Main Content */}
-        <div className="flex-1 max-w-[1800px] mx-auto w-full px-4 py-4">
+        <div className="flex-1 min-h-0 max-w-[1800px] mx-auto w-full px-4 py-2">
           <ResizablePanelGroup
             direction="horizontal"
             persistenceKey="ai-builder-layout-v2"
