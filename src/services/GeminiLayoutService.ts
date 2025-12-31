@@ -163,7 +163,7 @@ class GeminiLayoutService {
 
     if (apiKey) {
       this.client = new GoogleGenerativeAI(apiKey);
-      this.model = this.client.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      this.model = this.client.getGenerativeModel({ model: 'gemini-3-flash-preview' });
       this.isAvailable = true;
     } else {
       console.warn('Gemini service: GOOGLE_API_KEY not configured');

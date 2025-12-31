@@ -231,8 +231,8 @@ const LAYOUT_BUILDER_TOOLS: Anthropic.Tool[] = [
         },
         quality: {
           type: 'string',
-          enum: ['standard', 'hd'],
-          description: 'Image quality - standard ($0.04) or hd ($0.08-0.12)',
+          enum: ['low', 'medium', 'high'],
+          description: 'Image quality - low ($0.012), medium ($0.016), high ($0.032-0.064)',
         },
       },
       required: ['prompt', 'targetElement'],
@@ -748,7 +748,8 @@ async function executeGenerateBackground(input: {
   }
 
   try {
-    const quality = input.quality || 'standard';
+    // Map old quality types to new GPT Image 1.5 types
+    const quality = input.quality === 'hd' ? 'high' : 'medium';
     const size = '1024x1024';
     const cost = getImageCost(quality, size);
 
@@ -764,7 +765,6 @@ Requirements:
       prompt: enhancedPrompt,
       size,
       quality,
-      style: input.style === 'vivid' ? 'vivid' : 'natural',
     });
 
     return {

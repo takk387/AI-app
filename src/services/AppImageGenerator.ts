@@ -40,7 +40,7 @@ export interface AppImageGenerationOptions {
   generateCards?: boolean;
   generateBackground?: boolean;
   maxCards?: number;
-  quality?: 'standard' | 'hd';
+  quality?: 'low' | 'medium' | 'high';
 }
 
 const DEFAULT_OPTIONS: AppImageGenerationOptions = {
@@ -48,7 +48,7 @@ const DEFAULT_OPTIONS: AppImageGenerationOptions = {
   generateCards: true,
   generateBackground: false,
   maxCards: 4,
-  quality: 'standard',
+  quality: 'medium',
 };
 
 // ============================================================================
@@ -145,8 +145,8 @@ export async function generateImagesForApp(
         };
 
         // Record usage and cost
-        rateLimiter.recordGeneration('hero', 'hd', '1792x1024'); // Hero is always HD wide
-        result.totalCost += getImageCost('hd', '1792x1024');
+        rateLimiter.recordGeneration('hero', 'high', '1536x1024'); // Hero is always high quality wide
+        result.totalCost += getImageCost('high', '1536x1024');
       } catch (error) {
         console.error('Hero image generation failed:', error);
         // Continue with card generation even if hero fails
@@ -172,8 +172,8 @@ export async function generateImagesForApp(
 
         // Record usage and cost for each card
         cardImages.forEach(() => {
-          rateLimiter.recordGeneration('card', 'standard', '1024x1024');
-          result.totalCost += getImageCost('standard', '1024x1024');
+          rateLimiter.recordGeneration('card', 'medium', '1024x1024');
+          result.totalCost += getImageCost('medium', '1024x1024');
         });
       } catch (error) {
         console.error('Card image generation failed:', error);
@@ -194,8 +194,8 @@ export async function generateImagesForApp(
           prompt: backgroundImage.revisedPrompt,
         };
 
-        rateLimiter.recordGeneration('background', 'standard', '1024x1024');
-        result.totalCost += getImageCost('standard', '1024x1024');
+        rateLimiter.recordGeneration('background', 'medium', '1024x1024');
+        result.totalCost += getImageCost('medium', '1024x1024');
       } catch (error) {
         console.error('Background image generation failed:', error);
         // Continue without background
@@ -286,16 +286,16 @@ export function estimateImageGenerationCost(
   let cost = 0;
 
   if (options.generateHero) {
-    cost += getImageCost('hd', '1792x1024'); // $0.12
+    cost += getImageCost('high', '1536x1024'); // $0.064
   }
 
   if (options.generateCards) {
     const cardCount = options.maxCards || 4;
-    cost += cardCount * getImageCost('standard', '1024x1024'); // $0.04 each
+    cost += cardCount * getImageCost('medium', '1024x1024'); // $0.016 each
   }
 
   if (options.generateBackground) {
-    cost += getImageCost('standard', '1024x1024'); // $0.04
+    cost += getImageCost('medium', '1024x1024'); // $0.016
   }
 
   return cost;

@@ -45,13 +45,15 @@ export interface UsageStats {
 // Cost Constants
 // ============================================================================
 
+// GPT Image 1.5 pricing (60-80% cheaper than DALL-E 3)
 export const COST_PER_IMAGE = {
-  'hd-1792x1024': 0.12,
-  'hd-1024x1792': 0.12,
-  'hd-1024x1024': 0.08,
-  'standard-1792x1024': 0.08,
-  'standard-1024x1792': 0.08,
-  'standard-1024x1024': 0.04,
+  'high-1536x1024': 0.064,
+  'high-1024x1536': 0.064,
+  'high-1024x1024': 0.032,
+  'medium-1536x1024': 0.032,
+  'medium-1024x1536': 0.032,
+  'medium-1024x1024': 0.016,
+  'low-1024x1024': 0.012,
 } as const;
 
 export type CostKey = keyof typeof COST_PER_IMAGE;
@@ -115,11 +117,11 @@ class DalleRateLimiter {
    */
   public recordGeneration(
     type: 'hero' | 'card' | 'background' | 'custom',
-    quality: 'hd' | 'standard',
+    quality: 'high' | 'medium' | 'low',
     size: string
   ): void {
     const key = `${quality}-${size}` as CostKey;
-    const cost = COST_PER_IMAGE[key] || 0.04;
+    const cost = COST_PER_IMAGE[key] || 0.016; // Default to medium-1024x1024
 
     this.usage.imagesGenerated++;
     this.usage.estimatedCost += cost;
@@ -193,9 +195,9 @@ class DalleRateLimiter {
   /**
    * Get estimated cost for a specific image type
    */
-  public getEstimatedCost(quality: 'hd' | 'standard', size: string): number {
+  public getEstimatedCost(quality: 'high' | 'medium' | 'low', size: string): number {
     const key = `${quality}-${size}` as CostKey;
-    return COST_PER_IMAGE[key] || 0.04;
+    return COST_PER_IMAGE[key] || 0.016;
   }
 
   /**
@@ -279,14 +281,14 @@ export const dalleRateLimiter = {
   getRemainingGenerations: () => getDalleRateLimiter().getRemainingGenerations(),
   recordGeneration: (
     type: 'hero' | 'card' | 'background' | 'custom',
-    quality: 'hd' | 'standard',
+    quality: 'high' | 'medium' | 'low',
     size: string
   ) => getDalleRateLimiter().recordGeneration(type, quality, size),
   getUsage: () => getDalleRateLimiter().getUsage(),
   getStats: () => getDalleRateLimiter().getStats(),
   setDailyLimit: (limit: number) => getDalleRateLimiter().setDailyLimit(limit),
   isCostWarning: () => getDalleRateLimiter().isCostWarning(),
-  getEstimatedCost: (quality: 'hd' | 'standard', size: string) =>
+  getEstimatedCost: (quality: 'high' | 'medium' | 'low', size: string) =>
     getDalleRateLimiter().getEstimatedCost(quality, size),
   resetDaily: () => getDalleRateLimiter().resetDaily(),
   clearAll: () => getDalleRateLimiter().clearAll(),

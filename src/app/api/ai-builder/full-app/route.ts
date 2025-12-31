@@ -281,7 +281,7 @@ MODIFICATION MODE for "${currentAppName}":
             generateImages !== false
               ? {
                   generateImages: generateImages ?? !!layoutDesign, // Default: true if layoutDesign exists
-                  imageQuality: imageQuality || 'standard',
+                  imageQuality: imageQuality || 'medium',
                   maxImages: maxImages || 4,
                   appName: currentAppName,
                   appDescription: prompt,

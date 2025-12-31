@@ -28,7 +28,7 @@ export interface GenerationContext {
   // Image generation options
   imageOptions?: {
     generateImages?: boolean;
-    imageQuality?: 'standard' | 'hd';
+    imageQuality?: 'low' | 'medium' | 'high';
     maxImages?: number;
     appName?: string;
     appDescription?: string;
@@ -710,7 +710,7 @@ export async function generateFullApp(
           generateCards: true,
           generateBackground: false,
           maxCards: imageOptions.maxImages || 4,
-          quality: imageOptions.imageQuality || 'standard',
+          quality: imageOptions.imageQuality || 'medium',
         }
       );
 

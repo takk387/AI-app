@@ -50,7 +50,7 @@ interface CustomImageRequest {
   prompt: string;
   size?: ImageSize;
   quality?: ImageQuality;
-  style?: 'vivid' | 'natural';
+  // style removed - not supported by GPT Image 1.5
 }
 
 type ImageRequest =
@@ -335,7 +335,6 @@ export async function POST(
           prompt: imageRequest.prompt,
           size: imageRequest.size,
           quality: imageRequest.quality,
-          style: imageRequest.style,
         });
 
         return NextResponse.json({
@@ -425,9 +424,9 @@ export async function GET(): Promise<NextResponse> {
     available,
     cache: cacheStats,
     pricing: {
-      hero: { size: '1792x1024', quality: 'hd', cost: '$0.12' },
-      card: { size: '1024x1024', quality: 'standard', cost: '$0.04' },
-      background: { size: '1024x1024', quality: 'standard', cost: '$0.04' },
+      hero: { size: '1536x1024', quality: 'high', cost: '$0.064' },
+      card: { size: '1024x1024', quality: 'medium', cost: '$0.016' },
+      background: { size: '1024x1024', quality: 'medium', cost: '$0.016' },
     },
   });
 }

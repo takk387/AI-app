@@ -1,25 +1,26 @@
 /**
- * DALL-E 3 Service
+ * GPT Image 1.5 Service
  *
- * Provides image generation capabilities using OpenAI's DALL-E 3 model.
+ * Provides image generation capabilities using OpenAI's GPT Image 1.5 model.
  * Integrates with the LayoutBuilder to generate contextual visual assets.
+ * Images are stored in Supabase Storage for persistence.
  */
 
 import OpenAI from 'openai';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // ============================================================================
 // Type Definitions
 // ============================================================================
 
-export type ImageSize = '1024x1024' | '1792x1024' | '1024x1792';
-export type ImageQuality = 'standard' | 'hd';
-export type ImageStyle = 'vivid' | 'natural';
+export type ImageSize = '1024x1024' | '1536x1024' | '1024x1536' | 'auto';
+export type ImageQuality = 'low' | 'medium' | 'high';
+// ImageStyle removed - not supported by GPT Image 1.5
 
 export interface ImageGenerationRequest {
   prompt: string;
   size?: ImageSize;
   quality?: ImageQuality;
-  style?: ImageStyle;
 }
 
 export interface GeneratedImage {
@@ -59,18 +60,20 @@ export interface BackgroundImageRequest {
 // Cost Tracking
 // ============================================================================
 
+// GPT Image 1.5 pricing (60-80% cheaper than DALL-E 3)
 const COST_PER_IMAGE: Record<string, number> = {
-  'hd-1792x1024': 0.12,
-  'hd-1024x1792': 0.12,
-  'hd-1024x1024': 0.08,
-  'standard-1792x1024': 0.08,
-  'standard-1024x1792': 0.08,
-  'standard-1024x1024': 0.04,
+  'high-1536x1024': 0.064,
+  'high-1024x1536': 0.064,
+  'high-1024x1024': 0.032,
+  'medium-1536x1024': 0.032,
+  'medium-1024x1536': 0.032,
+  'medium-1024x1024': 0.016,
+  'low-1024x1024': 0.012,
 };
 
 export function getImageCost(quality: ImageQuality, size: ImageSize): number {
   const key = `${quality}-${size}`;
-  return COST_PER_IMAGE[key] || 0.04;
+  return COST_PER_IMAGE[key] || 0.016; // Default to medium-1024x1024
 }
 
 // ============================================================================
@@ -79,6 +82,7 @@ export function getImageCost(quality: ImageQuality, size: ImageSize): number {
 
 class DalleService {
   private client: OpenAI | null = null;
+  private supabase: SupabaseClient | null = null;
   private cache: Map<string, GeneratedImage> = new Map();
   private isAvailable: boolean = false;
 
@@ -93,9 +97,65 @@ class DalleService {
       this.client = new OpenAI({ apiKey });
       this.isAvailable = true;
     } else {
-      console.warn('DALL-E service: OPENAI_API_KEY not configured');
+      console.warn('GPT Image service: OPENAI_API_KEY not configured');
       this.isAvailable = false;
     }
+
+    // Initialize Supabase client for image storage
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && supabaseServiceKey) {
+      this.supabase = createClient(supabaseUrl, supabaseServiceKey);
+    }
+  }
+
+  /**
+   * Upload base64 image to Supabase Storage and return public URL
+   */
+  private async uploadToSupabase(base64: string): Promise<string> {
+    if (!this.supabase) {
+      // Fallback to data URL if Supabase not configured
+      return `data:image/jpeg;base64,${base64}`;
+    }
+
+    const buffer = Buffer.from(base64, 'base64');
+    const filename = `generated/${Date.now()}-${crypto.randomUUID()}.jpg`;
+
+    const { data, error } = await this.supabase.storage.from('ai-images').upload(filename, buffer, {
+      contentType: 'image/jpeg',
+      cacheControl: '31536000', // 1 year cache
+    });
+
+    if (error) {
+      console.error('Supabase upload failed:', error);
+      // Fallback: return data URL (works but not ideal for persistence)
+      return `data:image/jpeg;base64,${base64}`;
+    }
+
+    const { data: urlData } = this.supabase.storage.from('ai-images').getPublicUrl(data.path);
+
+    return urlData.publicUrl;
+  }
+
+  /**
+   * Map old DALL-E 3 sizes to GPT Image 1.5 sizes
+   */
+  private mapSize(size: string): ImageSize {
+    const sizeMap: Record<string, ImageSize> = {
+      '1024x1024': '1024x1024',
+      '1792x1024': '1536x1024',
+      '1024x1792': '1024x1536',
+    };
+    return sizeMap[size] || '1024x1024';
+  }
+
+  /**
+   * Map old DALL-E 3 quality to GPT Image 1.5 quality
+   */
+  private mapQuality(quality: string): ImageQuality {
+    if (quality === 'hd') return 'high';
+    if (quality === 'standard') return 'medium';
+    return quality as ImageQuality;
   }
 
   /**
@@ -106,17 +166,21 @@ class DalleService {
   }
 
   /**
-   * Generate an image using DALL-E 3
+   * Generate an image using GPT Image 1.5
    */
   async generateImage(request: ImageGenerationRequest): Promise<GeneratedImage> {
     if (!this.client) {
-      throw new Error('DALL-E service not initialized: OPENAI_API_KEY not configured');
+      throw new Error('GPT Image service not initialized: OPENAI_API_KEY not configured');
     }
 
-    const { prompt, size = '1024x1024', quality = 'standard', style = 'natural' } = request;
+    const { prompt, size = '1024x1024', quality = 'medium' } = request;
+
+    // Map to GPT Image 1.5 compatible values
+    const mappedSize = this.mapSize(size);
+    const mappedQuality = this.mapQuality(quality);
 
     // Check cache first
-    const cacheKey = this.getCacheKey(prompt, size, quality, style);
+    const cacheKey = this.getCacheKey(prompt, mappedSize, mappedQuality);
     const cached = this.cache.get(cacheKey);
     if (cached) {
       return cached;
@@ -124,24 +188,27 @@ class DalleService {
 
     try {
       const response = await this.client.images.generate({
-        model: 'dall-e-3',
+        model: 'gpt-image-1.5',
         prompt,
-        size,
-        quality,
-        style,
+        size: mappedSize,
+        quality: mappedQuality,
+        output_format: 'jpeg',
         n: 1,
       });
 
       const imageData = response.data?.[0];
-      if (!imageData?.url) {
-        throw new Error('No image data returned from DALL-E');
+      if (!imageData?.b64_json) {
+        throw new Error('No image data returned from GPT Image');
       }
 
+      // Upload base64 to Supabase Storage and get persistent URL
+      const url = await this.uploadToSupabase(imageData.b64_json);
+
       const result: GeneratedImage = {
-        url: imageData.url,
+        url,
         revisedPrompt: imageData.revised_prompt || prompt,
-        size,
-        quality,
+        size: mappedSize,
+        quality: mappedQuality,
         generatedAt: Date.now(),
       };
 
@@ -150,7 +217,7 @@ class DalleService {
 
       return result;
     } catch (error) {
-      console.error('DALL-E image generation failed:', error);
+      console.error('GPT Image generation failed:', error);
       throw error;
     }
   }
@@ -163,9 +230,8 @@ class DalleService {
 
     return this.generateImage({
       prompt,
-      size: '1792x1024',
-      quality: 'hd',
-      style: request.designContext.style === 'playful' ? 'vivid' : 'natural',
+      size: '1536x1024',
+      quality: 'high',
     });
   }
 
@@ -178,8 +244,7 @@ class DalleService {
     return this.generateImage({
       prompt,
       size: '1024x1024',
-      quality: 'standard',
-      style: 'natural',
+      quality: 'medium',
     });
   }
 
@@ -192,8 +257,7 @@ class DalleService {
     return this.generateImage({
       prompt,
       size: '1024x1024',
-      quality: 'standard',
-      style: 'natural',
+      quality: 'medium',
     });
   }
 
@@ -320,12 +384,7 @@ ${primaryColor ? `- Subtle hints of ${primaryColor} as accent` : ''}
   // Cache Management
   // ---------------------------------------------------------------------------
 
-  private getCacheKey(
-    prompt: string,
-    size: ImageSize,
-    quality: ImageQuality,
-    style: ImageStyle
-  ): string {
+  private getCacheKey(prompt: string, size: ImageSize, quality: ImageQuality): string {
     // Create a simple hash of the prompt for caching
     let hash = 0;
     for (let i = 0; i < prompt.length; i++) {
@@ -333,7 +392,7 @@ ${primaryColor ? `- Subtle hints of ${primaryColor} as accent` : ''}
       hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
-    return `${hash.toString(36)}-${size}-${quality}-${style}`;
+    return `${hash.toString(36)}-${size}-${quality}`;
   }
 
   /**
