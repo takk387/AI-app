@@ -248,33 +248,22 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = 5242880,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp'];
 
--- RLS Policy: Allow authenticated users to upload
+-- RLS Policy: Allow authenticated users to upload (for client-side if needed)
 CREATE POLICY "Allow authenticated uploads"
 ON storage.objects
 FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'ai-images');
 
--- RLS Policy: Allow service role to upload (for server-side generation)
-CREATE POLICY "Allow service role uploads"
-ON storage.objects
-FOR INSERT
-TO service_role
-WITH CHECK (bucket_id = 'ai-images');
-
--- RLS Policy: Allow public read access (images are public)
+-- RLS Policy: Allow public read access (images are publicly accessible)
+-- Note: TO public applies to both anon and authenticated users
 CREATE POLICY "Allow public read access"
 ON storage.objects
 FOR SELECT
 TO public
 USING (bucket_id = 'ai-images');
 
--- RLS Policy: Allow service role to delete (for cleanup)
-CREATE POLICY "Allow service role delete"
-ON storage.objects
-FOR DELETE
-TO service_role
-USING (bucket_id = 'ai-images');
+-- Note: Service role (used server-side) bypasses RLS entirely, no policy needed
 ```
 
 ---
@@ -286,7 +275,7 @@ Add the Supabase service role key to Railway:
 **Option 1: Railway CLI**
 
 ```bash
-railway variables set SUPABASE_SERVICE_ROLE_KEY="your-service-role-key-here"
+railway variables --set "SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here"
 ```
 
 **Option 2: Railway Dashboard**
