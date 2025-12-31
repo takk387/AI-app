@@ -88,7 +88,13 @@ function createMockFile(
   path: string,
   content: string = 'export default function() {}'
 ): FileContent {
-  return { path, content };
+  return {
+    path,
+    content,
+    hash: `hash-${content.length}`,
+    tokenCount: Math.ceil(content.length / 4),
+    lastModified: Date.now(),
+  };
 }
 
 function createMockFiles(): FileContent[] {
@@ -335,54 +341,78 @@ describe('Dependency Tracking', () => {
 describe('Context Snapshot', () => {
   test('snapshot includes selected files', () => {
     const snapshot: CodeContextSnapshot = {
-      id: 'snapshot-1',
-      createdAt: Date.now(),
-      files: [
+      appId: 'app-123',
+      appName: 'My App',
+      version: 1,
+      context: [
         {
           path: 'src/App.tsx',
           representation: 'full',
           content: 'export default function App() {}',
           tokenCount: 50,
+          priority: 0.8,
+          reason: 'Main app component',
         },
       ],
-      totalTokens: 50,
-      strategy: 'balanced',
       dependencyHints: [],
       omittedSummary: {
-        count: 0,
+        fileCount: 0,
         totalTokens: 0,
-        categories: {},
+        categories: {
+          component: 0,
+          page: 0,
+          'api-route': 0,
+          hook: 0,
+          'context-provider': 0,
+          'type-definition': 0,
+          utility: 0,
+          style: 0,
+          config: 0,
+          test: 0,
+          layout: 0,
+          other: 0,
+        },
       },
     };
 
-    expect(snapshot.files).toHaveLength(1);
-    expect(snapshot.totalTokens).toBe(50);
+    expect(snapshot.context).toHaveLength(1);
+    expect(snapshot.context[0].tokenCount).toBe(50);
   });
 
   test('snapshot includes omitted file summary', () => {
     const omittedSummary: CodeContextSnapshot['omittedSummary'] = {
-      count: 5,
+      fileCount: 5,
       totalTokens: 2500,
       categories: {
-        test: 3,
         component: 2,
+        page: 0,
+        'api-route': 0,
+        hook: 0,
+        'context-provider': 0,
+        'type-definition': 0,
+        utility: 0,
+        style: 0,
+        config: 0,
+        test: 3,
+        layout: 0,
+        other: 0,
       },
     };
 
-    expect(omittedSummary.count).toBe(5);
+    expect(omittedSummary.fileCount).toBe(5);
     expect(omittedSummary.categories.test).toBe(3);
   });
 
   test('snapshot includes dependency hints', () => {
     const hints: CodeContextSnapshot['dependencyHints'] = [
       {
-        from: 'src/App.tsx',
-        to: 'src/components/Button.tsx',
-        type: 'import',
+        file: 'src/App.tsx',
+        imports: [{ from: 'src/components/Button.tsx', symbols: ['Button'] }],
+        usedBy: [],
       },
     ];
 
-    expect(hints[0].from).toBe('src/App.tsx');
-    expect(hints[0].to).toBe('src/components/Button.tsx');
+    expect(hints[0].file).toBe('src/App.tsx');
+    expect(hints[0].imports[0].from).toBe('src/components/Button.tsx');
   });
 });

@@ -28,28 +28,29 @@ function createMockAppConcept(): AppConcept {
     targetUsers: 'Developers',
     coreFeatures: [
       {
+        id: 'auth',
         name: 'Authentication',
         description: 'User login and registration',
-        priority: 'must-have',
-        complexity: 'moderate',
+        priority: 'high',
       },
       {
+        id: 'dashboard',
         name: 'Dashboard',
         description: 'Main dashboard view',
-        priority: 'must-have',
-        complexity: 'simple',
+        priority: 'high',
       },
     ],
     uiPreferences: {
       style: 'modern',
       colorScheme: 'dark',
-      responsiveness: 'fully-responsive',
+      layout: 'dashboard',
     },
     technical: {
       needsAuth: true,
       needsDatabase: true,
       needsAPI: true,
-      preferredStack: 'react',
+      needsFileUpload: false,
+      needsRealtime: false,
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -76,21 +77,41 @@ function createMockPhase(overrides: Partial<DynamicPhase> = {}): DynamicPhase {
 
 function createMockPhasePlan(): DynamicPhasePlan {
   return {
+    id: 'plan-123',
+    appName: 'Test App',
+    appDescription: 'A test application',
     totalPhases: 3,
     estimatedTotalTokens: 10000,
+    estimatedTotalTime: '15 min',
     phases: [
       createMockPhase({ number: 1, name: 'Setup' }),
       createMockPhase({ number: 2, name: 'Core Features', dependencies: [1] }),
       createMockPhase({ number: 3, name: 'Polish', dependencies: [1, 2] }),
     ],
+    complexity: 'moderate',
     concept: createMockAppConcept(),
-    contextStrategy: 'sliding_window',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    currentPhaseNumber: 1,
+    completedPhaseNumbers: [],
+    failedPhaseNumbers: [],
+    accumulatedFiles: [],
+    accumulatedFeatures: [],
   };
 }
 
 function createMockLayoutDesign(): LayoutDesign {
   return {
+    id: 'layout-123',
+    name: 'Test Layout',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    basePreferences: {
+      style: 'modern',
+      colorScheme: 'dark',
+      layout: 'dashboard',
+    },
     globalStyles: {
       colors: {
         primary: '#3B82F6',
@@ -126,11 +147,7 @@ function createMockLayoutDesign(): LayoutDesign {
         animations: 'smooth',
       },
     },
-    components: {
-      buttons: { style: 'solid', size: 'md' },
-      inputs: { style: 'bordered', size: 'md' },
-      cards: { style: 'elevated', padding: 'md' },
-    },
+    components: {},
     structure: {
       type: 'dashboard',
       hasHeader: true,
@@ -138,15 +155,25 @@ function createMockLayoutDesign(): LayoutDesign {
       hasFooter: true,
       sidebarPosition: 'left',
       headerType: 'fixed',
-      contentLayout: 'fluid',
+      contentLayout: 'full-width',
       mainContentWidth: 'full',
     },
     responsive: {
       mobileBreakpoint: 640,
       tabletBreakpoint: 1024,
       mobileLayout: 'stack',
+      mobileHeader: 'hamburger',
+      hideSidebarOnMobile: true,
+      stackCardsOnMobile: true,
     },
-  } as LayoutDesign;
+    referenceMedia: [],
+    conversationContext: {
+      messageCount: 0,
+      keyDecisions: [],
+      userPreferences: [],
+      lastUpdated: new Date().toISOString(),
+    },
+  };
 }
 
 // ============================================================================
@@ -160,7 +187,7 @@ describe('DynamicPhasePlan Interface', () => {
     expect(plan.totalPhases).toBe(3);
     expect(plan.phases).toHaveLength(3);
     expect(plan.concept).toBeDefined();
-    expect(plan.contextStrategy).toBe('sliding_window');
+    expect(plan.complexity).toBe('moderate');
   });
 
   test('phases have correct numbering', () => {
@@ -206,11 +233,11 @@ describe('DynamicPhase Interface', () => {
 
   test('supports different statuses', () => {
     const pendingPhase = createMockPhase({ status: 'pending' });
-    const inProgressPhase = createMockPhase({ status: 'in_progress' });
+    const inProgressPhase = createMockPhase({ status: 'in-progress' });
     const completedPhase = createMockPhase({ status: 'completed' });
 
     expect(pendingPhase.status).toBe('pending');
-    expect(inProgressPhase.status).toBe('in_progress');
+    expect(inProgressPhase.status).toBe('in-progress');
     expect(completedPhase.status).toBe('completed');
   });
 });
@@ -219,6 +246,7 @@ describe('PhaseExecutionResult Interface', () => {
   test('successful result has correct structure', () => {
     const result: PhaseExecutionResult = {
       phaseNumber: 1,
+      phaseName: 'Setup',
       success: true,
       generatedCode: '// Generated code',
       generatedFiles: ['src/App.tsx', 'src/index.tsx'],
@@ -236,17 +264,18 @@ describe('PhaseExecutionResult Interface', () => {
   test('failed result has error info', () => {
     const result: PhaseExecutionResult = {
       phaseNumber: 1,
+      phaseName: 'Setup',
       success: false,
       generatedCode: '',
       generatedFiles: [],
       implementedFeatures: [],
       tokensUsed: { input: 500, output: 0 },
       duration: 2000,
-      error: 'API timeout',
+      errors: ['API timeout'],
     };
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('API timeout');
+    expect(result.errors).toContain('API timeout');
   });
 });
 
@@ -256,42 +285,65 @@ describe('PhaseExecutionContext Interface', () => {
     const context: PhaseExecutionContext = {
       phaseNumber: 1,
       phaseName: 'Setup',
+      phaseDescription: 'Initial project setup',
       features: ['project-structure'],
       testCriteria: ['Project runs'],
       previousPhaseCode: '',
       allPhases: [phase],
       completedPhases: [],
-      fullConcept: createMockAppConcept(),
+      cumulativeFeatures: [],
+      cumulativeFiles: [],
+      appName: 'Test App',
+      appDescription: 'A test application',
+      appType: 'FRONTEND_ONLY',
+      techStack: {
+        needsAuth: true,
+        needsDatabase: true,
+        needsAPI: true,
+        needsFileUpload: false,
+        needsRealtime: false,
+      },
       totalPhases: 3,
-      estimatedTokens: 3000,
-      phase,
     };
 
     expect(context.phaseNumber).toBe(1);
     expect(context.phaseName).toBe('Setup');
-    expect(context.fullConcept.name).toBe('Test App');
+    expect(context.appName).toBe('Test App');
     expect(context.totalPhases).toBe(3);
   });
 
-  test('supports layout design', () => {
+  test('supports layout design via fullConcept', () => {
     const phase = createMockPhase();
+    const mockLayoutDesign = createMockLayoutDesign();
     const context: PhaseExecutionContext = {
       phaseNumber: 1,
       phaseName: 'Setup',
+      phaseDescription: 'Initial project setup',
       features: [],
       testCriteria: [],
       previousPhaseCode: '',
       allPhases: [phase],
       completedPhases: [],
-      fullConcept: createMockAppConcept(),
+      cumulativeFeatures: [],
+      cumulativeFiles: [],
+      appName: 'Test App',
+      appDescription: 'A test application',
+      appType: 'FRONTEND_ONLY',
+      techStack: {
+        needsAuth: true,
+        needsDatabase: true,
+        needsAPI: true,
+        needsFileUpload: false,
+        needsRealtime: false,
+      },
       totalPhases: 1,
-      estimatedTokens: 1000,
-      phase,
-      layoutDesign: createMockLayoutDesign(),
+      fullConcept: {
+        layoutDesign: mockLayoutDesign,
+      },
     };
 
-    expect(context.layoutDesign).toBeDefined();
-    expect(context.layoutDesign?.globalStyles.colors.primary).toBe('#3B82F6');
+    expect(context.fullConcept?.layoutDesign).toBeDefined();
+    expect(context.fullConcept?.layoutDesign?.globalStyles.colors.primary).toBe('#3B82F6');
   });
 
   test('supports previous phase code', () => {
@@ -299,15 +351,25 @@ describe('PhaseExecutionContext Interface', () => {
     const context: PhaseExecutionContext = {
       phaseNumber: 2,
       phaseName: 'Core Features',
+      phaseDescription: 'Core feature implementation',
       features: ['auth'],
       testCriteria: ['Login works'],
       previousPhaseCode: '// Previous code\nexport default function App() {}',
       allPhases: [phase],
-      completedPhases: [{ number: 1, name: 'Setup' }],
-      fullConcept: createMockAppConcept(),
+      completedPhases: [1],
+      cumulativeFeatures: ['setup'],
+      cumulativeFiles: ['src/App.tsx'],
+      appName: 'Test App',
+      appDescription: 'A test application',
+      appType: 'FRONTEND_ONLY',
+      techStack: {
+        needsAuth: true,
+        needsDatabase: true,
+        needsAPI: true,
+        needsFileUpload: false,
+        needsRealtime: false,
+      },
       totalPhases: 3,
-      estimatedTokens: 5000,
-      phase,
     };
 
     expect(context.previousPhaseCode).toContain('Previous code');
