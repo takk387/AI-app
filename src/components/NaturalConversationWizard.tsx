@@ -185,6 +185,12 @@ What would you like to build?`,
     !!wizardState.technical.needsRealtime ||
     !!wizardState.technical.needsFileUpload;
 
+  // Memoized callback to prevent infinite loops in hooks
+  // (inline arrow functions create new references on each render, causing useCallback deps to change)
+  const handleAddMessage = useCallback((message: Message) => {
+    setMessages((prev) => [...prev, message]);
+  }, []);
+
   // Architecture generation hook - defined first so we can reference isGeneratingArchitecture
   // Note: onArchitectureComplete callback is set up after generatePhases is defined
   const { architectureSpec, isGeneratingArchitecture, generateArchitecture, clearArchitecture } =
@@ -192,7 +198,7 @@ What would you like to build?`,
       wizardState,
       importedLayoutDesign,
       onShowToast: showToast,
-      onAddMessage: (message) => setMessages((prev) => [...prev, message]),
+      onAddMessage: handleAddMessage,
     });
 
   // Phase generation hook with architecture state guards
@@ -209,7 +215,7 @@ What would you like to build?`,
     phasePlan,
     setPhasePlan,
     onShowToast: showToast,
-    onAddMessage: (message) => setMessages((prev) => [...prev, message]),
+    onAddMessage: handleAddMessage,
     isGeneratingArchitecture,
     architectureSpec,
     needsBackend,
