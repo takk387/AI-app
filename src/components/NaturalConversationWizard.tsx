@@ -30,6 +30,7 @@ import {
 import { useDraftPersistence } from '@/hooks/useDraftPersistence';
 import { usePhaseGeneration } from '@/hooks/usePhaseGeneration';
 import { useArchitectureGeneration } from '@/hooks/useArchitectureGeneration';
+import { usePlanRegeneration } from '@/hooks/usePlanRegeneration';
 import {
   RecoveryPromptDialog,
   MessageBubble,
@@ -195,17 +196,22 @@ What would you like to build?`,
   });
 
   // Architecture generation hook
-  const {
-    architectureSpec,
-    isGeneratingArchitecture,
-    generateArchitecture,
-    clearArchitecture,
-    needsBackend,
-  } = useArchitectureGeneration({
+  const { architectureSpec, isGeneratingArchitecture, generateArchitecture, clearArchitecture } =
+    useArchitectureGeneration({
+      wizardState,
+      importedLayoutDesign,
+      onShowToast: showToast,
+      onAddMessage: (message) => setMessages((prev) => [...prev, message]),
+    });
+
+  // Plan regeneration hook - auto-regenerates when concept changes
+  const { isRegenerating, pendingRegeneration, regenerationReason } = usePlanRegeneration({
     wizardState,
-    importedLayoutDesign,
-    onShowToast: showToast,
-    onAddMessage: (message) => setMessages((prev) => [...prev, message]),
+    phasePlan,
+    generatePhases,
+    architectureSpec,
+    isGeneratingPhases,
+    debounceMs: 500,
   });
 
   // Update suggested actions when phase plan is generated
@@ -559,13 +565,39 @@ What would you like to build?`,
           )}
 
           {/* Phase generation indicator */}
-          {isGeneratingPhases && (
+          {isGeneratingPhases && !isRegenerating && (
             <div className="flex justify-start">
               <div className="bg-purple-600/10 rounded-lg px-4 py-3 border-l-2 border-purple-500">
                 <div className="flex items-center gap-3">
                   <LoaderIcon size={18} className="text-purple-400" />
                   <span className="text-zinc-300">Generating implementation plan...</span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Plan regeneration indicator */}
+          {isRegenerating && (
+            <div className="flex justify-start">
+              <div className="bg-amber-600/10 rounded-lg px-4 py-3 border-l-2 border-amber-500">
+                <div className="flex items-center gap-3">
+                  <LoaderIcon size={18} className="text-amber-400" />
+                  <span className="text-zinc-300">
+                    Updating implementation plan
+                    {regenerationReason ? ` (${regenerationReason} changed)` : ''}...
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pending regeneration indicator */}
+          {pendingRegeneration && !isRegenerating && (
+            <div className="flex justify-start">
+              <div className="bg-zinc-700/50 rounded-lg px-4 py-2 border-l-2 border-zinc-500">
+                <span className="text-zinc-400 text-sm">
+                  Changes detected - plan will update shortly...
+                </span>
               </div>
             </div>
           )}
@@ -586,7 +618,7 @@ What would you like to build?`,
         <SuggestedActionsBar
           actions={suggestedActions}
           onAction={handleAction}
-          disabled={isLoading}
+          disabled={isLoading || isRegenerating || pendingRegeneration}
         />
 
         {/* Pending Images Preview */}

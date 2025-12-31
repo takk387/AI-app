@@ -59,11 +59,13 @@ interface UsePhaseGenerationOptions {
 
 interface UsePhaseGenerationReturn {
   isGeneratingPhases: boolean;
+  isRegeneration: boolean;
+  previousPlan: DynamicPhasePlan | null;
   generatePhases: (preGeneratedArchitecture?: ArchitectureSpec) => Promise<void>;
   buildConversationContext: () => string;
   convertRolesToUserRoles: () => UserRole[] | undefined;
   extractWorkflowsFromConversation: () => WizardState['workflows'] | undefined;
-  formatPhasePlanMessage: (plan: DynamicPhasePlan) => string;
+  formatPhasePlanMessage: (plan: DynamicPhasePlan, isUpdate?: boolean) => string;
 }
 
 export function usePhaseGeneration({
@@ -76,6 +78,8 @@ export function usePhaseGeneration({
   onAddMessage,
 }: UsePhaseGenerationOptions): UsePhaseGenerationReturn {
   const [isGeneratingPhases, setIsGeneratingPhases] = useState(false);
+  const [isRegeneration, setIsRegeneration] = useState(false);
+  const [previousPlan, setPreviousPlan] = useState<DynamicPhasePlan | null>(null);
 
   /**
    * Build conversation context summary for phase generation
@@ -175,8 +179,13 @@ export function usePhaseGeneration({
   /**
    * Format the phase plan as a readable message
    */
-  const formatPhasePlanMessage = useCallback((plan: DynamicPhasePlan): string => {
-    let message = `## Implementation Plan: ${plan.appName}
+  const formatPhasePlanMessage = useCallback(
+    (plan: DynamicPhasePlan, isUpdate?: boolean): string => {
+      const header = isUpdate
+        ? `## Plan Updated: ${plan.appName}`
+        : `## Implementation Plan: ${plan.appName}`;
+
+      let message = `${header}
 
 **Complexity:** ${plan.complexity}
 **Total Phases:** ${plan.totalPhases}
@@ -188,25 +197,27 @@ export function usePhaseGeneration({
 
 `;
 
-    for (const phase of plan.phases) {
-      message += `**Phase ${phase.number}: ${phase.name}** (${phase.estimatedTime})
+      for (const phase of plan.phases) {
+        message += `**Phase ${phase.number}: ${phase.name}** (${phase.estimatedTime})
 ${phase.description}
 `;
-      if (phase.features.length > 0 && phase.features.length <= 5) {
-        message += `- ${phase.features.join('\n- ')}\n`;
+        if (phase.features.length > 0 && phase.features.length <= 5) {
+          message += `- ${phase.features.join('\n- ')}\n`;
+        }
+        message += '\n';
       }
-      message += '\n';
-    }
 
-    message += `---
+      message += `---
 
 Does this look good? You can:
 - **Start building** to begin with Phase 1
 - Ask me to **adjust** any phases
 - Add or remove features before starting`;
 
-    return message;
-  }, []);
+      return message;
+    },
+    []
+  );
 
   /**
    * Generate implementation phases
@@ -220,6 +231,13 @@ Does this look good? You can:
           message: 'Please complete the app concept before generating phases.',
         });
         return;
+      }
+
+      // Track if this is a regeneration (plan already exists)
+      const isRegen = phasePlan !== null;
+      setIsRegeneration(isRegen);
+      if (isRegen) {
+        setPreviousPlan(phasePlan);
       }
 
       setIsGeneratingPhases(true);
@@ -289,11 +307,11 @@ Does this look good? You can:
         if (data.success && data.plan) {
           setPhasePlan(data.plan);
 
-          // Add message showing the plan
+          // Add message showing the plan (with update indicator if regenerating)
           const planMessage: Message = {
             id: `plan-${Date.now()}`,
             role: 'assistant',
-            content: formatPhasePlanMessage(data.plan),
+            content: formatPhasePlanMessage(data.plan, isRegen),
             timestamp: new Date(),
           };
           onAddMessage(planMessage);
@@ -329,6 +347,8 @@ Does this look good? You can:
       wizardState,
       messages,
       importedLayoutDesign,
+      phasePlan,
+      setPhasePlan,
       onShowToast,
       onAddMessage,
       convertRolesToUserRoles,
@@ -347,6 +367,8 @@ Does this look good? You can:
 
   return {
     isGeneratingPhases,
+    isRegeneration,
+    previousPlan,
     generatePhases,
     buildConversationContext,
     convertRolesToUserRoles,
