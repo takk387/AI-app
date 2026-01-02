@@ -5,18 +5,22 @@
 Your AI App Builder now supports **two types of interactions** in the same chat interface:
 
 ### 1. **Q&A Mode** 💬
+
 Ask programming questions and get helpful answers without building apps.
 
 **Examples:**
+
 - "What is useState in React?"
 - "How do I use TypeScript generics?"
 - "Explain the difference between props and state"
 - "Why should I use Next.js?"
 
 ### 2. **App Building Mode** 🏗️
+
 Request apps and modifications as usual.
 
 **Examples:**
+
 - "Build a todo app"
 - "Create a weather dashboard"
 - "Add dark mode to my app"
@@ -27,17 +31,21 @@ Request apps and modifications as usual.
 ## How It Works
 
 ### Smart Detection 🤖
+
 The system automatically detects whether you're asking a question or requesting an app build:
 
 **Question Indicators:**
+
 - Words like: what, how, why, when, where, who, explain, tell me, can you help
 - Questions ending with `?`
 - No build-related words present
 
 **Build Indicators:**
+
 - Words like: build, create, make, generate, add, develop, implement
 
 **Examples:**
+
 - ✅ "What is React?" → Detected as **question**
 - ✅ "Build a React app" → Detected as **build request**
 - ✅ "How can I create better UIs?" → Detected as **question** (no build words)
@@ -46,12 +54,14 @@ The system automatically detects whether you're asking a question or requesting 
 ### Different Endpoints 🔀
 
 **Q&A Questions** → Routes to `/api/chat`
+
 - Simple Q&A conversation
 - No app generation
 - No approval needed
 - No preview/code tabs
 
 **Build Requests** → Routes to `/api/ai-builder/full-app`
+
 - Full app generation
 - Smart approval for major changes
 - Version history tracking
@@ -60,11 +70,13 @@ The system automatically detects whether you're asking a question or requesting 
 ### Visual Feedback 🎨
 
 **For Questions:**
+
 - 🤔 Thinking...
 - 📚 Gathering information...
 - ✍️ Formulating answer...
 
 **For App Building:**
+
 - 🤔 Analyzing your request...
 - 🏗️ Designing architecture...
 - ⚡ Generating code...
@@ -134,6 +146,7 @@ if (data.type === 'chat') {
 Try these examples to test both modes:
 
 **Q&A Examples:**
+
 ```
 What is React?
 How do I use TypeScript?
@@ -142,6 +155,7 @@ Why use Tailwind CSS?
 ```
 
 **Build Examples:**
+
 ```
 Build a calculator
 Create a todo app
@@ -150,6 +164,7 @@ Make it responsive
 ```
 
 **Mixed Conversation:**
+
 ```
 User: "What is a todo app?"
 AI: [Q&A response about todo apps]
@@ -170,10 +185,10 @@ AI: [Modifies app with localStorage]
 
 Both endpoints use **Claude Sonnet 4.5** (latest model):
 
-| Endpoint | Model | Max Tokens | Purpose |
-|----------|-------|------------|---------|
-| `/api/chat` | claude-sonnet-4-5-20250929 | 4,096 | Q&A conversations |
-| `/api/ai-builder/full-app` | claude-sonnet-4-5-20250929 | 16,384 | App generation (doubled for complex apps) |
+| Endpoint                   | Model                      | Max Tokens | Purpose                                   |
+| -------------------------- | -------------------------- | ---------- | ----------------------------------------- |
+| `/api/chat`                | claude-sonnet-4-5-20250929 | 4,096      | Q&A conversations                         |
+| `/api/ai-builder/full-app` | claude-sonnet-4-5-20250929 | 16,384     | App generation (doubled for complex apps) |
 
 ---
 
@@ -186,6 +201,7 @@ The dual-purpose chat is now **fully functional**! You can:
 3. **Mix conversations** naturally between Q&A and building
 
 All existing features still work:
+
 - ✅ Smart approval for major changes
 - ✅ Version history and revert
 - ✅ Streaming for large apps

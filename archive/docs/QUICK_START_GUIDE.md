@@ -46,6 +46,7 @@ Everything is fully integrated and working. Here's how to use it:
 ### Scenario 1: Quick Component Generation
 
 **Steps:**
+
 1. Type in the text area: `"Create a pricing card with 3 tiers"`
 2. Click **⚡ Generate**
 3. Wait 5-15 seconds as AI works through all steps
@@ -54,6 +55,7 @@ Everything is fully integrated and working. Here's how to use it:
 6. Click **📥 Download** to get the .tsx file
 
 **What You'll See:**
+
 - **Requirements**: What the AI understood
 - **Architecture**: How it's structured
 - **Code**: The actual TypeScript component
@@ -65,6 +67,7 @@ Everything is fully integrated and working. Here's how to use it:
 ### Scenario 2: Using Templates for Speed
 
 **Steps:**
+
 1. Click **📝 Templates** button (top right)
 2. Sidebar opens from the left
 3. Click on a template (e.g., "Modern Card")
@@ -73,6 +76,7 @@ Everything is fully integrated and working. Here's how to use it:
 6. Click **⚡ Generate**
 
 **To Save a Template:**
+
 1. Enter your prompt
 2. Open Templates sidebar
 3. Click **💾 Save Current Prompt**
@@ -84,6 +88,7 @@ Everything is fully integrated and working. Here's how to use it:
 ### Scenario 3: Refining with AI Chat
 
 **Steps:**
+
 1. Generate any component first
 2. Click **💬 Chat** button (top right)
 3. Chat panel slides up from bottom
@@ -95,6 +100,7 @@ Everything is fully integrated and working. Here's how to use it:
 6. Component updates automatically
 
 **Chat Features:**
+
 - Full conversation history
 - Context-aware responses
 - Multiple iterations
@@ -105,22 +111,26 @@ Everything is fully integrated and working. Here's how to use it:
 ### Scenario 4: Testing with Different Themes & Devices
 
 **Steps:**
+
 1. Generate a component
 2. Click **👁️ Preview** step (top navigation)
 3. Use the preview controls:
 
 **Theme Switching:**
+
 - Click **☀️** for light theme
 - Click **🌙** for dark theme
 - Preview updates instantly
 
 **Responsive Testing:**
+
 - Click **🖥️** for desktop view
 - Click **📱** for tablet view (iPad size)
 - Click **📱** for mobile view (iPhone size)
 - See device dimensions overlay
 
 **Live vs Static:**
+
 - Click **● Live** for interactive rendering
 - Click **○ Static** for safe HTML preview
 
@@ -129,6 +139,7 @@ Everything is fully integrated and working. Here's how to use it:
 ### Scenario 5: Props Injection for Dynamic Testing
 
 **Steps:**
+
 1. In Preview step, click **⚙️ Props** button
 2. Props editor sidebar opens
 3. Add a prop:
@@ -138,6 +149,7 @@ Everything is fully integrated and working. Here's how to use it:
 5. Component updates with new prop
 
 **Advanced Props:**
+
 - Use JSON for objects: `{"name": "John", "age": 30}`
 - Use arrays: `["item1", "item2", "item3"]`
 - Use numbers: `42`
@@ -149,10 +161,12 @@ Everything is fully integrated and working. Here's how to use it:
 ### Scenario 6: Managing History & Creating Variations
 
 **Steps:**
+
 1. Click **📋 History** button (top right)
 2. Sidebar opens from right showing all generations
 
 **History Features:**
+
 - **Search**: Type to find components
 - **Filter**: All / Favorites / Recent
 - **Star**: Click ☆ to favorite
@@ -162,6 +176,7 @@ Everything is fully integrated and working. Here's how to use it:
 - **Import**: Click 📥 to load JSON
 
 **Creating Variations:**
+
 1. Find a component in history
 2. Click **🔄** button
 3. AI suggests a variation idea
@@ -170,6 +185,7 @@ Everything is fully integrated and working. Here's how to use it:
 6. Variations are linked to parent
 
 **Variation Ideas AI Suggests:**
+
 - Dark mode support
 - Animations
 - Accessibility improvements
@@ -184,6 +200,7 @@ Everything is fully integrated and working. Here's how to use it:
 ## 🎨 Preview Controls Reference
 
 ### Top Bar (Preview Step)
+
 ```
 ┌────────────────────────────────────────────────┐
 │ ● Live | iPad | Light Theme       ⚠️ Error    │
@@ -193,6 +210,7 @@ Everything is fully integrated and working. Here's how to use it:
 ```
 
 ### Control Buttons
+
 ```
 ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
 │ ☀️ | 🌙  │ │🖥️ 📱 📱 │ │● Live    │ │⚙️ Props  │
@@ -205,10 +223,12 @@ Everything is fully integrated and working. Here's how to use it:
 ## 💡 Pro Tips
 
 ### Tip 1: Use Specific Prompts
+
 ❌ "Make a card"
 ✅ "Create a product card with image, title, price, rating stars, and add to cart button"
 
 ### Tip 2: Combine Features
+
 1. Use template as starting point
 2. Generate component
 3. Test in different themes/devices
@@ -216,18 +236,22 @@ Everything is fully integrated and working. Here's how to use it:
 5. Save as new template
 
 ### Tip 3: Organize with Favorites
+
 - Star components you use often
 - Filter to Favorites
 - Quick access to best components
 
 ### Tip 4: Export Your Library
+
 - Build up a collection
 - Export history regularly
 - Import on different machines
 - Share with team
 
 ### Tip 5: Test Edge Cases
+
 Use props injection to test:
+
 - Empty states: `title = ""`
 - Long text: `title = "Very long text..."`
 - Special characters: `name = "O'Brien"`
@@ -238,18 +262,21 @@ Use props injection to test:
 ## 🐛 Troubleshooting
 
 ### If Generation Fails:
+
 1. Check browser console for errors
 2. Verify internet connection
 3. Check OpenAI API key in .env.local
 4. System will fallback to demo mode
 
 ### If Preview Doesn't Show:
+
 1. Check the Preview tab is selected
 2. Try toggling Live/Static mode
 3. Check browser console for errors
 4. Try a simpler component first
 
 ### If Props Don't Work:
+
 1. Make sure component uses the prop
 2. Check prop name matches exactly
 3. Try Static mode instead of Live

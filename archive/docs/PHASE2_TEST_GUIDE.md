@@ -3,6 +3,7 @@
 ## Quick Test (5 Minutes)
 
 ### Step 1: Start Dev Server
+
 ```bash
 npm run dev
 ```
@@ -10,15 +11,18 @@ npm run dev
 ### Step 2: Run Tests
 
 **Option A: Using curl (Command Line)**
+
 ```bash
 curl -X POST http://localhost:3000/api/test-modifier
 ```
 
 **Option B: Using Browser**
+
 1. Open: http://localhost:3000/api/test-modifier
 2. Click POST request (or use Postman/Insomnia)
 
 **Option C: Using PowerShell**
+
 ```powershell
 Invoke-WebRequest -Uri "http://localhost:3000/api/test-modifier" -Method POST
 ```
@@ -26,6 +30,7 @@ Invoke-WebRequest -Uri "http://localhost:3000/api/test-modifier" -Method POST
 ### Step 3: Check Results
 
 The API will return JSON with:
+
 ```json
 {
   "timestamp": "2025-11-02T...",
@@ -50,25 +55,30 @@ The API will return JSON with:
 ## What's Being Tested
 
 ### Test 1: Add Import ✅
+
 - Adds `import { useState } from 'react';` to clean file
 - Validates proper positioning
 
 ### Test 2: Merge Imports ✅
+
 - Merges new import with existing
 - Ensures no duplicates
 
 ### Test 3: Wrap in AuthGuard ✅
+
 - **THE BIG ONE** - Tests authentication wrapper
 - Adds import
 - Wraps JSX properly
 - Correct indentation
 
 ### Test 4: Add State Variable ✅
+
 - Adds useState hook
 - Auto-imports useState
 - Proper formatting
 
 ### Test 5: Multiple Modifications ✅
+
 - Tests complete workflow:
   - Multiple imports
   - Multiple state variables
@@ -76,6 +86,7 @@ The API will return JSON with:
 - Validates no "undefined" in output
 
 ### Test 6: Error Handling ✅
+
 - Tests validation catches invalid imports
 - Ensures proper error messages
 
@@ -95,6 +106,7 @@ Total: 6
 ### Sample Output (Test 3 - AuthGuard)
 
 **Input:**
+
 ```typescript
 export default function App() {
   return (
@@ -106,6 +118,7 @@ export default function App() {
 ```
 
 **Output:**
+
 ```typescript
 import AuthGuard from '@/components/AuthGuard';
 
@@ -127,6 +140,7 @@ export default function App() {
 ### If Tests Fail
 
 **Check Console Logs:**
+
 ```bash
 # In your dev server terminal, you'll see:
 🧪 TEST 1: Add Import to Clean File
@@ -142,6 +156,7 @@ Total: 6
 **Common Issues:**
 
 1. **Import errors**: Check that tree-sitter packages are installed
+
    ```bash
    npm install tree-sitter tree-sitter-typescript
    ```
@@ -178,14 +193,14 @@ if (needsAuth) {
   const tree = modifier.getTree();
   const parser = modifier.getParser();
   const mainDiv = parser.findComponent(tree, 'div');
-  
+
   if (mainDiv) {
     modifier.wrapElement(mainDiv, {
       component: 'AuthGuard',
       import: {
         source: '@/components/AuthGuard',
-        defaultImport: 'AuthGuard'
-      }
+        defaultImport: 'AuthGuard',
+      },
     });
   }
 }
@@ -203,7 +218,7 @@ return result.code; // Send to user
 ✅ Proper indentation maintained  
 ✅ Valid TypeScript syntax  
 ✅ AuthGuard wrapper works correctly  
-✅ Imports properly deduplicated  
+✅ Imports properly deduplicated
 
 ---
 

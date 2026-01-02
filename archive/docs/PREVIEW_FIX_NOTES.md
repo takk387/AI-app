@@ -3,7 +3,9 @@
 ## Issues Fixed:
 
 ### **Problem: Preview showing raw JSX/HTML**
+
 Users were seeing text like:
+
 - `$/mo`
 - `class="text-gray-700 mb-2"`
 - `{price.toFixed(2)}`
@@ -19,6 +21,7 @@ Instead of the rendered component.
 **File:** `src/components/ComponentPreview.tsx`
 
 **Changes:**
+
 - Enhanced JSX parsing to extract return statement content
 - Better `className` to `class` conversion
 - Template literal handling for common patterns like `{price.toFixed(2)}`
@@ -27,6 +30,7 @@ Instead of the rendered component.
 - Self-closing tag normalization
 
 **Key Improvements:**
+
 ```typescript
 // Convert className properly
 jsx = jsx.replace(/className=/g, 'class=');
@@ -54,12 +58,14 @@ jsx = jsx.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>');
 **File:** `src/app/api/ai-builder/route.ts`
 
 **Changes:**
+
 - Instructed AI to generate simpler, cleaner JSX
 - Told AI to use hardcoded values for demo components (e.g., "29.99" instead of {price})
 - Emphasized simple JSX without complex template expressions
 - Only use state for truly interactive elements
 
 **Benefits:**
+
 - Cleaner generated code
 - Easier to preview without complex evaluation
 - Better for static HTML conversion
@@ -93,6 +99,7 @@ jsx = jsx.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>');
 ### **Example Transformation:**
 
 **Input (JSX):**
+
 ```jsx
 <div className="p-4">
   <h2>${price.toFixed(2)}/mo</h2>
@@ -101,6 +108,7 @@ jsx = jsx.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>');
 ```
 
 **Output (HTML):**
+
 ```html
 <div class="p-4">
   <h2>$29.99/mo</h2>
@@ -122,18 +130,21 @@ jsx = jsx.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>');
 ## 🧪 Testing:
 
 Try these quick start examples:
+
 1. "Design a pricing card with features list" ✅
 2. "Create a user profile card with avatar, name, and bio" ✅
 3. "Build a contact form with validation" ✅
 4. "Make a dashboard stats widget" ✅
 
 All should now render properly with:
+
 - Correct values displayed
 - Tailwind CSS styling applied
 - No raw JSX/template syntax visible
 - Professional appearance
 
 **Recent Improvements (November 2025):**
+
 - ✅ Removed 13+ debug console.log statements for cleaner production code
 - ✅ Improved template removal to be surgical (preserves React patterns)
 - ✅ Expanded icon library to 60+ icons with fallback support
@@ -148,11 +159,13 @@ All should now render properly with:
 ### **Why not full React execution?**
 
 We tried several approaches:
+
 1. ❌ Full eval() with React - Security risks, complex state management
 2. ❌ Dynamic component loading - Requires complex setup
 3. ✅ **Smart JSX to HTML conversion** - Secure, fast, reliable
 
 The current solution:
+
 - ✅ Secure (no arbitrary code execution)
 - ✅ Fast (simple string transformation)
 - ✅ Reliable (predictable output)
@@ -161,6 +174,7 @@ The current solution:
 ### **Limitations:**
 
 Components with complex logic (loops, maps, conditionals) may not preview perfectly in static mode, but:
+
 - The **Code tab** always shows the full working code
 - Users can **download** and use in their projects
 - Most UI components preview correctly
@@ -168,6 +182,7 @@ Components with complex logic (loops, maps, conditionals) may not preview perfec
 ### **Future Enhancements:**
 
 Could add:
+
 - [ ] Sandboxed iframe execution for complex components
 - [ ] CodeSandbox-style live execution
 - [ ] Web Workers for safe code evaluation
@@ -197,8 +212,8 @@ The preview now works beautifully! 🎉
 ```tsx
 // ❌ This BREAKS preview
 export default async function Home() {
-  const posts = await getPosts();  // Promise!
-  return <div>{posts}</div>
+  const posts = await getPosts(); // Promise!
+  return <div>{posts}</div>;
 }
 ```
 
@@ -219,17 +234,17 @@ Updated AI system prompt to generate **preview-compatible full-stack apps** usin
 
 export default function HomePage() {
   const [posts, setPosts] = useState([]);
-  
+
   useEffect(() => {
     // Mock data for preview
     setPosts([
       { id: '1', title: 'Post 1', content: '...' }
     ]);
-    
+
     // For local dev: uncomment
     // fetch('/api/posts').then(r => r.json()).then(setPosts);
   }, []);
-  
+
   return <div>{posts.map(...)}</div>
 }
 ```
@@ -269,6 +284,7 @@ export default function HomePage() {
 ### **📊 Before vs After:**
 
 #### Before (Broken):
+
 ```tsx
 ===FILE:app/page.tsx===
 export default async function Home() {
@@ -276,9 +292,11 @@ export default async function Home() {
   return <div>...</div>;
 }
 ```
+
 **Result:** ❌ Preview Error
 
 #### After (Fixed):
+
 ```tsx
 ===FILE:app/page.tsx===
 'use client';
@@ -286,14 +304,15 @@ import { useState, useEffect } from 'react';
 
 export default function HomePage() {
   const [posts, setPosts] = useState([]);
-  
+
   useEffect(() => {
     setPosts([...mockData]);  // ✅ Works!
   }, []);
-  
+
   return <div>...</div>;
 }
 ```
+
 **Result:** ✅ Preview Works!
 
 ---
@@ -311,6 +330,7 @@ export default function HomePage() {
 ### **🚀 Current Status:**
 
 **All Preview Modes Working:**
+
 - ✅ Frontend-only apps (src/App.tsx)
 - ✅ Full-stack apps (app/page.tsx with 'use client')
 - ✅ Live editing

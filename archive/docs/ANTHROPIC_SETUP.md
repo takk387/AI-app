@@ -25,10 +25,12 @@ Your app now uses **Claude 3.5 Sonnet** (or Claude Sonnet 4.5 if available) inst
 ## Model Information
 
 The app attempts to use:
+
 - **Primary**: `claude-sonnet-4.5` (if it exists as of Oct 2025)
 - **Fallback**: The system will suggest checking Anthropic docs if the model isn't found
 
 If you get a model error, update the model name in `src/app/api/ai-builder/route.ts` to:
+
 - `claude-3-5-sonnet-20241022` (latest as of late 2024)
 - Or check [Anthropic's model documentation](https://docs.anthropic.com/claude/docs/models-overview)
 
@@ -43,6 +45,7 @@ If you get a model error, update the model name in `src/app/api/ai-builder/route
 ## Pricing
 
 Claude 3.5 Sonnet pricing (subject to change):
+
 - Input: ~$3 per million tokens
 - Output: ~$15 per million tokens
 

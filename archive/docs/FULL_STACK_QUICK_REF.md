@@ -3,12 +3,14 @@
 ## App Types at a Glance
 
 ### 🎨 Frontend-Only
+
 **Use when:** Building UI prototypes, games, calculators, dashboards
 **Preview:** ✅ Instant live preview
 **Setup:** ⚡ None needed
 **Example:** "Build a todo app"
 
-### ⚡ Full-Stack  
+### ⚡ Full-Stack
+
 **Use when:** Need database, auth, APIs, file uploads
 **Preview:** 🔧 Download required
 **Setup:** 5-10 minutes
@@ -19,6 +21,7 @@
 ## Quick Examples
 
 ### Frontend
+
 ```
 "Build a calculator"
 "Create a todo app with local storage"
@@ -27,6 +30,7 @@
 ```
 
 ### Full-Stack
+
 ```
 "Build a blog with PostgreSQL and auth"
 "Create an e-commerce site with Stripe"
@@ -38,14 +42,14 @@
 
 ## Backend Features Available
 
-| Feature | Tech | Use Case |
-|---------|------|----------|
-| 🗄️ **Database** | Prisma + PostgreSQL | Data persistence |
-| 🔐 **Auth** | NextAuth.js | User login (OAuth, JWT) |
-| 🔌 **APIs** | Next.js Routes | REST endpoints |
-| 📁 **Uploads** | Cloudinary/S3 | File management |
-| ⚡ **Real-time** | Pusher | Live updates |
-| ✉️ **Email** | Resend | Notifications |
+| Feature          | Tech                | Use Case                |
+| ---------------- | ------------------- | ----------------------- |
+| 🗄️ **Database**  | Prisma + PostgreSQL | Data persistence        |
+| 🔐 **Auth**      | NextAuth.js         | User login (OAuth, JWT) |
+| 🔌 **APIs**      | Next.js Routes      | REST endpoints          |
+| 📁 **Uploads**   | Cloudinary/S3       | File management         |
+| ⚡ **Real-time** | Pusher              | Live updates            |
+| ✉️ **Email**     | Resend              | Notifications           |
 
 ---
 
@@ -63,12 +67,14 @@
 ## File Structure
 
 ### Frontend-Only
+
 ```
 src/
   App.tsx  # Everything here
 ```
 
 ### Full-Stack
+
 ```
 app/
   page.tsx           # Main page
@@ -85,6 +91,7 @@ lib/
 ## Visual Indicators
 
 ### In Preview:
+
 - **⚡ Full-Stack** badge → Needs local setup
 - **🔌** icon → API route file
 - **🗄️** icon → Database schema
@@ -95,12 +102,14 @@ lib/
 ## Deployment
 
 ### Frontend
+
 ```bash
 vercel              # 1-click deploy
 netlify deploy      # Alternative
 ```
 
 ### Full-Stack
+
 ```bash
 # Vercel (recommended)
 1. Push to GitHub
