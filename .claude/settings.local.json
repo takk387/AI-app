@@ -82,7 +82,19 @@
       "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\status\\\\[id]\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\status\\\\[id]\")",
       "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\")",
       "Bash(if not exist \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\\\\[id]\" mkdir \"c:\\\\AI-app\\\\src\\\\app\\\\api\\\\railway\\\\cleanup\\\\[id]\")",
-      "Bash(git grep:*)"
+      "Bash(git grep:*)",
+      "Bash(for f in InteractionEditor.tsx StateEditor.tsx GestureEditor.tsx AnimationPreviewPlayer.tsx)",
+      "Bash(do ls -la \"c:/AI-app/src/components/layout-builder/$f\")",
+      "Bash(echo:*)",
+      "Bash(for f in HistoryTimeline.tsx TemplateLibrary.tsx VoiceInput.tsx)",
+      "Bash(for f in DesignOptionsPanel.tsx OptionCard.tsx BeforeAfter.tsx)",
+      "Bash(do ls \"c:/AI-app/src/components/layout-builder/$f\")",
+      "Bash(for f in \"src/components/layout-builder/SelectionHighlight.tsx\" \"src/components/layout-builder/ClickableOverlay.tsx\" \"src/data/elementQuickActions.ts\" \"src/components/layout-builder/DesignOptionsPanel.tsx\" \"src/components/layout-builder/OptionCard.tsx\" \"src/components/layout-builder/BeforeAfter.tsx\" \"src/hooks/useDesignOptions.ts\" \"src/app/api/layout/generate-options/route.ts\" \"src/components/layout-builder/InteractionEditor.tsx\" \"src/components/layout-builder/AnimationPreviewPlayer.tsx\" \"src/components/layout-builder/StateEditor.tsx\" \"src/components/layout-builder/GestureEditor.tsx\" \"src/data/interactionPresets.ts\" \"src/components/layout-builder/HistoryTimeline.tsx\" \"src/components/layout-builder/TemplateLibrary.tsx\" \"src/components/layout-builder/VoiceInput.tsx\" \"src/services/TemplateService.ts\" \"src/hooks/useKeyboardShortcuts.ts\" \"src/services/LayoutExportService.ts\" \"src/hooks/useAppBuilderSync.ts\" \"src/services/AccessibilityChecker.ts\" \"src/components/layout-builder/A11yWarnings.tsx\" \"src/components/layout-builder/ErrorRecovery.tsx\")",
+      "Bash(do if [ -f \"c:/AI-app/$f\" ])",
+      "Bash(then echo \"✓ $f\")",
+      "Bash(else echo \"✗ $f MISSING\")",
+      "Bash(fi)",
+      "Bash(for f in \"src/hooks/useResponsivePreview.ts\" \"src/components/layout-builder/InteractionEditor.tsx\" \"src/data/interactionPresets.ts\" \"src/components/layout-builder/HistoryTimeline.tsx\" \"src/components/layout-builder/VoiceInput.tsx\" \"src/services/TemplateService.ts\" \"src/services/LayoutExportService.ts\" \"src/hooks/useAppBuilderSync.ts\" \"src/services/AccessibilityChecker.ts\" \"src/components/layout-builder/A11yWarnings.tsx\" \"src/components/layout-builder/ErrorRecovery.tsx\")"
     ],
     "deny": [],
     "ask": []

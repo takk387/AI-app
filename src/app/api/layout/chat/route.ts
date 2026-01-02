@@ -9,8 +9,9 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import {
-  buildLayoutBuilderPrompt,
+  buildDynamicContext,
   buildPixelPerfectPrompt,
+  LAYOUT_BUILDER_SYSTEM_PROMPT,
 } from '@/prompts/layoutBuilderSystemPrompt';
 import type {
   LayoutDesign,
@@ -3404,13 +3405,17 @@ function extractDesignContext(
 // MAIN HANDLER
 // ============================================================================
 
+// Track last known design for delta optimization
+let lastKnownDesign: Partial<LayoutDesign> = {};
+
 export async function POST(request: Request) {
   try {
     const body: LayoutChatRequest = await request.json();
     const {
       message,
       conversationHistory,
-      currentDesign,
+      currentDesign: rawCurrentDesign,
+      designUnchanged, // Token optimization: true when design hasn't changed
       selectedElement,
       previewScreenshot,
       referenceImages,
@@ -3418,7 +3423,19 @@ export async function POST(request: Request) {
       requestedAnalysis,
       memoriesContext: clientMemoriesContext, // Cross-session memories from client (P0-P1 Phase 7b)
       workflowState: requestWorkflowState, // Multi-step workflow state from client
+      currentDevice = 'desktop', // Current device view for responsive context
     } = body;
+
+    // Handle design delta optimization: use cached design if unchanged
+    // Safeguard: If designUnchanged but cache is empty (cold start), use raw design or empty
+    const hasValidCache = Object.keys(lastKnownDesign).length > 0;
+    const currentDesign: Partial<LayoutDesign> =
+      designUnchanged && hasValidCache ? lastKnownDesign : rawCurrentDesign || {};
+
+    // Update cache when new design is provided
+    if (rawCurrentDesign && !designUnchanged) {
+      lastKnownDesign = rawCurrentDesign;
+    }
 
     // Initialize workflow state from request (for multi-step workflows)
     initializeWorkflowState(requestWorkflowState);
@@ -3463,10 +3480,15 @@ export async function POST(request: Request) {
 
     // Token budget for conversation context (matches AIBuilder settings)
     const MAX_CONTEXT_TOKENS = 100000;
-    const PRESERVE_LAST_N = 20;
+    const PRESERVE_LAST_N = 15;
+
+    // Hard limit on conversation history to reduce token costs
+    // Most layout design conversations don't need more than 15 messages of context
+    const MAX_HISTORY_MESSAGES = 15;
+    const trimmedHistory = conversationHistory.slice(-MAX_HISTORY_MESSAGES);
 
     // Convert LayoutMessage to ChatMessage format for compression
-    const chatMessages: ChatMessage[] = conversationHistory.map((msg, index) => ({
+    const chatMessages: ChatMessage[] = trimmedHistory.map((msg, index) => ({
       id: msg.id || `layout-msg-${index}`,
       role: msg.role,
       content: msg.content,
@@ -3489,11 +3511,8 @@ export async function POST(request: Request) {
 
       processedMessages = compressed.recentMessages;
     } else {
-      // No compression needed, but still limit to last 50 messages as safety
-      processedMessages = chatMessages.slice(-50);
-      if (chatMessages.length > 50) {
-        truncationNotice = `⚠️ CONTEXT NOTICE: This conversation has ${chatMessages.length} total messages. You are seeing the 50 most recent. If you need details about earlier design decisions, ask the user to clarify rather than assuming.`;
-      }
+      // No compression needed - history already limited to MAX_HISTORY_MESSAGES
+      processedMessages = chatMessages;
     }
 
     // Add truncation notice if history was limited
@@ -3550,9 +3569,21 @@ export async function POST(request: Request) {
     // Add text message
     let messageText = message;
 
+    // Add device context to message for responsive design
+    const deviceWidths = { desktop: 1280, tablet: 820, mobile: 390 };
+    const deviceContext =
+      currentDevice !== 'desktop'
+        ? `[User is viewing in ${currentDevice.toUpperCase()} mode (${deviceWidths[currentDevice]}px width)]\n\n`
+        : '';
+
     // Add selected element context to message
     if (selectedElement) {
-      messageText = `[User has selected the "${selectedElement}" element in the preview]\n\n${message}`;
+      const elementId = selectedElement.id;
+      const elementType = selectedElement.type || 'element';
+      const elementName = selectedElement.displayName || elementId;
+      messageText = `${deviceContext}[User has selected the "${elementName}" ${elementType} in the preview]\n\n${message}`;
+    } else if (deviceContext) {
+      messageText = `${deviceContext}${message}`;
     }
 
     currentContent.push({ type: 'text', text: messageText });
@@ -3564,12 +3595,15 @@ export async function POST(request: Request) {
     });
 
     // Build system prompt with context
-    let systemPrompt: string;
+    // Use two-block approach for better Anthropic caching:
+    // - Static block (cached): The core system prompt that rarely changes
+    // - Dynamic block: Design state, element context, memories, device context
+    let systemBlocks: Anthropic.TextBlockParam[];
 
     if (analysisMode === 'pixel-perfect' && referenceImages?.length) {
-      // Use pixel-perfect prompt for design replication
+      // Use pixel-perfect prompt for design replication (single block, not cacheable)
       const hasAnalysis = !!(pixelPerfectAnalysis || quickAnalysisResult);
-      systemPrompt = buildPixelPerfectPrompt(
+      const pixelPerfectPrompt = buildPixelPerfectPrompt(
         hasAnalysis,
         quickAnalysisResult
           ? {
@@ -3580,19 +3614,41 @@ export async function POST(request: Request) {
             }
           : undefined
       );
+      systemBlocks = [{ type: 'text', text: pixelPerfectPrompt }];
     } else {
-      // Use standard layout builder prompt
-      systemPrompt = buildLayoutBuilderPrompt(
+      // Use split prompt for better caching
+      // Static part: ~8K tokens, cached across requests
+      const staticPrompt = LAYOUT_BUILDER_SYSTEM_PROMPT;
+
+      // Dynamic part: Changes per request based on current state
+      let dynamicContext = buildDynamicContext(
         currentDesign,
-        selectedElement || null,
+        selectedElement?.id || null,
         !!previewScreenshot,
         referenceImages?.length || 0
       );
-    }
 
-    // Add cross-session memories context to system prompt (P0-P1 Phase 7b)
-    if (clientMemoriesContext) {
-      systemPrompt += `\n\n## User Design Preferences (from past sessions)\n${clientMemoriesContext}`;
+      // Add cross-session memories context (P0-P1 Phase 7b)
+      if (clientMemoriesContext) {
+        dynamicContext += `\n\n## User Design Preferences (from past sessions)\n${clientMemoriesContext}`;
+      }
+
+      // Add responsive design context
+      if (currentDevice !== 'desktop') {
+        dynamicContext += `\n\n## Responsive Design Context
+The user is currently viewing in ${currentDevice.toUpperCase()} mode (${deviceWidths[currentDevice]}px width).
+When making changes:
+- Focus on ${currentDevice}-specific adjustments unless explicitly asked otherwise
+- Consider using responsive overrides for ${currentDevice} instead of global changes
+- Test that changes work well at this breakpoint
+- Common ${currentDevice} patterns: ${currentDevice === 'mobile' ? 'stacked layouts, hamburger menu, larger touch targets' : 'two-column layouts, collapsible sidebars, medium touch targets'}`;
+      }
+
+      // Two blocks: static (cached) + dynamic (per-request)
+      systemBlocks = [
+        { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: dynamicContext },
+      ];
     }
 
     // Call Claude API with tools enabled
@@ -3600,7 +3656,7 @@ export async function POST(request: Request) {
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
       temperature: 0.7,
-      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+      system: systemBlocks,
       messages,
       tools: LAYOUT_BUILDER_TOOLS,
     });
@@ -3651,7 +3707,7 @@ export async function POST(request: Request) {
           model: 'claude-sonnet-4-5-20250929',
           max_tokens: 2048,
           temperature: 0.7,
-          system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+          system: systemBlocks, // Reuse the same system blocks for continuation
           messages: continuationMessages,
           tools: LAYOUT_BUILDER_TOOLS,
         });

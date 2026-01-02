@@ -55,6 +55,7 @@ import { useDynamicBuildPhases } from '@/hooks/useDynamicBuildPhases';
 import { useStreamingGeneration } from '@/hooks/useStreamingGeneration';
 import { useSmartContext } from '@/hooks/useSmartContext';
 import { useProjectDocumentation } from '@/hooks/useProjectDocumentation';
+import { useAppBuilderSync } from '@/hooks/useAppBuilderSync';
 
 // Types
 import type { GeneratedComponent, ChatMessage, AppVersion, Phase } from '../types/aiBuilderTypes';
@@ -247,6 +248,21 @@ export function MainBuilderView() {
   });
 
   const smartContext = useSmartContext();
+
+  // App Builder Sync - bidirectional sync between Layout Builder and App Builder
+  const appBuilderSync = useAppBuilderSync(appConcept?.layoutDesign || null, {
+    autoSync: true,
+    debounceMs: 1500,
+    onSyncComplete: (exportedLayout) => {
+      console.log('[AppBuilderSync] Layout synced:', {
+        componentCount: exportedLayout.components.length,
+        hasTokens: !!exportedLayout.tokens,
+      });
+    },
+    onSyncError: (error) => {
+      console.error('[AppBuilderSync] Sync error:', error.message);
+    },
+  });
 
   const messageSender = useMessageSender({
     chatMessages,

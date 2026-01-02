@@ -17,6 +17,11 @@ import {
   type GeminiChatResponse,
 } from '@/services/GeminiLayoutService';
 import { buildLayoutBuilderPrompt } from '@/prompts/layoutBuilderSystemPrompt';
+import {
+  getRoutingForElement,
+  getRoutingForRequest,
+  type ModelRouting,
+} from '@/services/modelRouter';
 import type {
   LayoutDesign,
   LayoutChatRequest,
@@ -24,6 +29,7 @@ import type {
   DesignChange,
   SuggestedAction,
   LayoutWorkflowState,
+  ElementType,
 } from '@/types/layoutDesign';
 
 // Vercel serverless function config
@@ -114,6 +120,27 @@ export async function POST(request: Request) {
     if (referenceImages) allImages.push(...referenceImages);
 
     const hasImages = allImages.length > 0;
+
+    // Determine effective model mode using smart routing when 'auto'
+    let effectiveModelMode = modelMode;
+    let _routingReason = ''; // Prefixed for future debugging use
+
+    if (modelMode === 'auto') {
+      const selectedElement = validatedRequest.selectedElement;
+      if (selectedElement) {
+        // Element-based routing
+        const routing = getRoutingForElement(selectedElement as ElementType, message);
+        effectiveModelMode =
+          routing.primary === 'DUAL' ? 'dual' : routing.primary === 'GEMINI' ? 'gemini' : 'claude';
+        _routingReason = routing.reason;
+      } else {
+        // General request routing
+        const routing = getRoutingForRequest(message, hasImages);
+        effectiveModelMode =
+          routing.primary === 'DUAL' ? 'dual' : routing.primary === 'GEMINI' ? 'gemini' : 'claude';
+        _routingReason = routing.reason;
+      }
+    }
 
     // =========================================================================
     // STAGE 1: GEMINI VISUAL ANALYSIS
@@ -237,7 +264,7 @@ export async function POST(request: Request) {
     // =========================================================================
 
     // Combine messages
-    const combinedMessage = buildCombinedMessage(geminiMessage, claudeMessage, modelMode);
+    const combinedMessage = buildCombinedMessage(geminiMessage, claudeMessage, effectiveModelMode);
 
     // If we only have Gemini analysis, convert it to design updates
     if (geminiAnalysis && Object.keys(updatedDesign).length === 0) {

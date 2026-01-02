@@ -115,6 +115,39 @@ export interface LayoutStructure {
   estimatedComponentCount: number;
 }
 
+/**
+ * Extracted styles from a reference image for selective application
+ */
+export interface ExtractedStyles {
+  colors: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    background?: string;
+    surface?: string;
+    text?: string;
+  };
+  typography: {
+    fontFamily?: string;
+    headingWeight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
+    bodySize?: 'xs' | 'sm' | 'base' | 'lg';
+    lineHeight?: 'tight' | 'normal' | 'relaxed';
+  };
+  spacing: {
+    density?: 'compact' | 'normal' | 'relaxed';
+    sectionPadding?: 'sm' | 'md' | 'lg' | 'xl';
+    componentGap?: 'sm' | 'md' | 'lg';
+  };
+  effects: {
+    borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
+    shadows?: 'none' | 'subtle' | 'medium' | 'strong';
+    hasGradients?: boolean;
+    hasBlur?: boolean;
+  };
+  vibe: string;
+  recommendations: string[];
+}
+
 export interface ColorPalette {
   colors: {
     primary: string;
@@ -557,6 +590,86 @@ Always maintain a helpful, creative, and enthusiastic tone.`;
   }
 
   /**
+   * Extract applicable styles from a reference image
+   * Returns structured style data that can be selectively applied
+   */
+  async extractApplicableStyles(imageBase64: string): Promise<ExtractedStyles> {
+    if (!this.model) {
+      throw new Error('Gemini service not initialized: GOOGLE_API_KEY not configured');
+    }
+
+    const imagePart: Part = {
+      inlineData: {
+        mimeType: 'image/png',
+        data: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+      },
+    };
+
+    const prompt = `Analyze this design reference image and extract applicable styles.
+
+Return a JSON object with these categories (all optional, only include what's clearly visible):
+
+{
+  "colors": {
+    "primary": "#hex color for main brand color",
+    "secondary": "#hex for secondary color",
+    "accent": "#hex for accent/highlight color",
+    "background": "#hex for main background",
+    "surface": "#hex for card/surface backgrounds",
+    "text": "#hex for main text color"
+  },
+  "typography": {
+    "fontFamily": "detected or suggested font family",
+    "headingWeight": "light|normal|medium|semibold|bold",
+    "bodySize": "xs|sm|base|lg",
+    "lineHeight": "tight|normal|relaxed"
+  },
+  "spacing": {
+    "density": "compact|normal|relaxed",
+    "sectionPadding": "sm|md|lg|xl",
+    "componentGap": "sm|md|lg"
+  },
+  "effects": {
+    "borderRadius": "none|sm|md|lg|xl|full",
+    "shadows": "none|subtle|medium|strong",
+    "hasGradients": true/false,
+    "hasBlur": true/false
+  },
+  "vibe": "one sentence describing the overall design vibe",
+  "recommendations": ["array of specific style recommendations"]
+}
+
+Only include properties you can clearly identify from the image.
+Return ONLY the JSON object, no markdown or explanation.`;
+
+    try {
+      const result = await this.model.generateContent([prompt, imagePart]);
+      const response = await result.response;
+      const text = response.text();
+
+      // Parse JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      return {
+        colors: parsed.colors || {},
+        typography: parsed.typography || {},
+        spacing: parsed.spacing || {},
+        effects: parsed.effects || {},
+        vibe: parsed.vibe || '',
+        recommendations: parsed.recommendations || [],
+      };
+    } catch (error) {
+      console.error('[GeminiLayoutService] extractApplicableStyles error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Clear the analysis cache
    */
   clearCache(): void {
@@ -597,6 +710,8 @@ export const geminiLayoutService = {
     getGeminiLayoutService().extractColorPalette(imageBase64),
   detectLayoutStructure: (imageBase64: string) =>
     getGeminiLayoutService().detectLayoutStructure(imageBase64),
+  extractApplicableStyles: (imageBase64: string) =>
+    getGeminiLayoutService().extractApplicableStyles(imageBase64),
   chat: (request: GeminiChatRequest) => getGeminiLayoutService().chat(request),
   checkAvailability: () => getGeminiLayoutService().checkAvailability(),
   clearCache: () => getGeminiLayoutService().clearCache(),

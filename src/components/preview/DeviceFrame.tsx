@@ -6,8 +6,8 @@ import React from 'react';
 // TYPES
 // ============================================================================
 
-// Simplified to just Desktop and Phone views
-export type DeviceType = 'desktop' | 'phone' | 'none';
+// Desktop, Tablet, and Phone views
+export type DeviceType = 'desktop' | 'tablet' | 'phone' | 'none';
 
 export interface DeviceFrameProps {
   device: DeviceType;
@@ -39,7 +39,7 @@ interface DeviceFrameConfig {
   cameraPosition: 'top' | 'top-left';
 }
 
-// Simplified: Only phone needs a frame, desktop shows raw preview
+// Device configurations: Phone and Tablet have frames, desktop shows raw preview
 const DEVICE_CONFIGS: Record<string, DeviceFrameConfig> = {
   // Phone - Modern notch style (like iPhone 14)
   phone: {
@@ -56,6 +56,23 @@ const DEVICE_CONFIGS: Record<string, DeviceFrameConfig> = {
     frameColor: '#1a1a1a',
     buttonColor: '#2a2a2a',
     hasCamera: false,
+    cameraPosition: 'top',
+  },
+  // Tablet - iPad-style with minimal bezels
+  tablet: {
+    bezelWidth: 16,
+    bezelRadius: 28,
+    screenRadius: 20,
+    hasNotch: false,
+    notchWidth: 0,
+    notchHeight: 0,
+    hasDynamicIsland: false,
+    hasHomeButton: false,
+    hasPunchHole: false,
+    punchHolePosition: 'center',
+    frameColor: '#1a1a1a',
+    buttonColor: '#2a2a2a',
+    hasCamera: true,
     cameraPosition: 'top',
   },
 };
@@ -169,25 +186,25 @@ const SideButtons = React.memo(function SideButtons({
 
 export function DeviceFrame({
   device,
-  orientation: _orientation, // Orientation is implicit: desktop=landscape, phone=portrait
+  orientation: _orientation, // Orientation is implicit: desktop=landscape, phone/tablet=portrait
   width,
   height,
   children,
   className = '',
 }: DeviceFrameProps) {
-  // Only phone shows a frame, desktop shows raw preview
-  const isPhone = device === 'phone';
-  const config = isPhone ? DEVICE_CONFIGS.phone : DEFAULT_CONFIG;
+  // Phone and tablet show a device frame, desktop shows raw preview
+  const hasFrame = device === 'phone' || device === 'tablet';
+  const config = hasFrame ? DEVICE_CONFIGS[device] || DEFAULT_CONFIG : DEFAULT_CONFIG;
 
   // Use provided dimensions directly - no swapping needed
-  // Desktop: 1280x800 (landscape), Phone: 390x844 (portrait)
+  // Desktop: 1280x800 (landscape), Tablet: 820x1180 (portrait), Phone: 390x844 (portrait)
   const displayWidth = width;
   const displayHeight = height === 'auto' ? 800 : height;
-  const frameWidth = displayWidth + (isPhone ? config.bezelWidth * 2 : 0);
-  const frameHeight = displayHeight + (isPhone ? config.bezelWidth * 2 : 0);
+  const frameWidth = displayWidth + (hasFrame ? config.bezelWidth * 2 : 0);
+  const frameHeight = displayHeight + (hasFrame ? config.bezelWidth * 2 : 0);
 
   // Desktop/none view - no frame, just render content
-  if (!isPhone) {
+  if (!hasFrame) {
     return (
       <div
         className={`relative bg-zinc-900 rounded-lg shadow-2xl ${className}`}
@@ -207,7 +224,7 @@ export function DeviceFrame({
     );
   }
 
-  // Phone view - show device frame with notch
+  // Phone/Tablet view - show device frame
   return (
     <div
       className={`relative ${className}`}
@@ -227,9 +244,13 @@ export function DeviceFrame({
           padding: config.bezelWidth,
         }}
       >
-        {/* Side buttons */}
-        <SideButtons height={frameHeight} side="left" />
-        <SideButtons height={frameHeight} side="right" />
+        {/* Side buttons - only for phone */}
+        {device === 'phone' && (
+          <>
+            <SideButtons height={frameHeight} side="left" />
+            <SideButtons height={frameHeight} side="right" />
+          </>
+        )}
 
         {/* Screen area */}
         <div
@@ -240,8 +261,15 @@ export function DeviceFrame({
             borderRadius: config.screenRadius,
           }}
         >
-          {/* Notch */}
+          {/* Notch - only for phone */}
           {config.hasNotch && <IPhoneNotch width={config.notchWidth} height={config.notchHeight} />}
+
+          {/* Camera indicator for tablet */}
+          {device === 'tablet' && config.hasCamera && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+              <div className="w-2 h-2 rounded-full bg-zinc-800" />
+            </div>
+          )}
 
           {/* Content */}
           <div className="w-full h-full overflow-hidden">{children}</div>

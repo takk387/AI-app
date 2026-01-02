@@ -25,7 +25,7 @@ export interface DeviceToolbarProps {
 // HELPER COMPONENTS
 // ============================================================================
 
-// Simple Desktop/Phone toggle
+// Device selector with Desktop/Tablet/Phone options
 function DeviceToggle({
   currentDeviceId,
   onSelect,
@@ -33,30 +33,29 @@ function DeviceToggle({
   currentDeviceId: string | null;
   onSelect: (deviceId: string) => void;
 }) {
-  const isDesktop = currentDeviceId === 'desktop' || !currentDeviceId;
+  const devices = [
+    { id: 'desktop', label: 'Desktop', icon: '🖥️', title: '1280×800' },
+    { id: 'tablet', label: 'Tablet', icon: '📱', title: '820×1180' },
+    { id: 'phone', label: 'Phone', icon: '📱', title: '390×844' },
+  ];
 
   return (
     <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 border border-zinc-700">
-      <button
-        onClick={() => onSelect('desktop')}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-          isDesktop ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-white'
-        }`}
-        title="Desktop view (1280×800)"
-      >
-        <span>🖥️</span>
-        <span>Desktop</span>
-      </button>
-      <button
-        onClick={() => onSelect('phone')}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-          !isDesktop ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-white'
-        }`}
-        title="Phone view (390×844)"
-      >
-        <span>📱</span>
-        <span>Phone</span>
-      </button>
+      {devices.map((device) => (
+        <button
+          key={device.id}
+          onClick={() => onSelect(device.id)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            currentDeviceId === device.id || (!currentDeviceId && device.id === 'desktop')
+              ? 'bg-blue-600 text-white'
+              : 'text-zinc-400 hover:text-white'
+          }`}
+          title={`${device.label} view (${device.title})`}
+        >
+          <span>{device.icon}</span>
+          <span className="hidden sm:inline">{device.label}</span>
+        </button>
+      ))}
     </div>
   );
 }

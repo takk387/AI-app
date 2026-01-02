@@ -1,0 +1,256 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import type { ElementInteractions } from '@/types/layoutDesign';
+import {
+  hoverPresets,
+  clickPresets,
+  scrollPresets,
+  type InteractionPreset,
+} from '@/data/interactionPresets';
+
+interface InteractionEditorProps {
+  /** Current interactions configuration */
+  interactions?: ElementInteractions;
+  /** Callback when interactions change */
+  onChange: (interactions: ElementInteractions) => void;
+  /** Element being edited */
+  elementId: string;
+  /** Element type for context */
+  elementType?: string;
+  /** Optional class name */
+  className?: string;
+}
+
+type TabType = 'hover' | 'click' | 'scroll' | 'custom';
+
+/**
+ * InteractionEditor Component
+ *
+ * Allows editing hover, click, and scroll interactions for an element.
+ * Provides presets and custom configuration options.
+ */
+export function InteractionEditor({
+  interactions = {},
+  onChange,
+  elementId,
+  elementType,
+  className = '',
+}: InteractionEditorProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('hover');
+  const [previewActive, setPreviewActive] = useState(false);
+
+  // Apply a preset
+  const applyPreset = useCallback(
+    (preset: InteractionPreset) => {
+      onChange({
+        ...interactions,
+        ...preset.interactions,
+      });
+    },
+    [interactions, onChange]
+  );
+
+  // Clear interactions for a category
+  const clearCategory = useCallback(
+    (category: keyof ElementInteractions) => {
+      const updated = { ...interactions };
+      delete updated[category];
+      onChange(updated);
+    },
+    [interactions, onChange]
+  );
+
+  // Render preset cards
+  const renderPresets = (presets: InteractionPreset[]) => (
+    <div className="grid grid-cols-2 gap-2">
+      {presets.map((preset) => (
+        <button
+          key={preset.id}
+          type="button"
+          onClick={() => applyPreset(preset)}
+          className="p-3 text-left bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors"
+        >
+          <div className="font-medium text-white text-sm">{preset.name}</div>
+          <div className="text-xs text-slate-400 mt-1">{preset.description}</div>
+        </button>
+      ))}
+    </div>
+  );
+
+  // Render current configuration
+  const renderCurrentConfig = () => {
+    const hasHover = interactions.hover && Object.keys(interactions.hover).length > 0;
+    const hasActive = interactions.active && Object.keys(interactions.active).length > 0;
+    const hasScroll = interactions.scroll;
+
+    if (!hasHover && !hasActive && !hasScroll) {
+      return (
+        <div className="text-center text-slate-400 py-8">
+          <p className="mb-2">No interactions configured</p>
+          <p className="text-sm">Select a preset or create custom interactions</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {hasHover && (
+          <div className="p-3 bg-slate-800 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-400">Hover Effect</span>
+              <button
+                type="button"
+                onClick={() => clearCategory('hover')}
+                className="text-xs text-slate-400 hover:text-red-400"
+              >
+                Remove
+              </button>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              {interactions.hover?.transform && (
+                <div>Transform: {interactions.hover.transform}</div>
+              )}
+              {interactions.hover?.boxShadow && <div>Shadow: Applied</div>}
+              {interactions.hover?.opacity !== undefined && (
+                <div>Opacity: {interactions.hover.opacity}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasActive && (
+          <div className="p-3 bg-slate-800 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-green-400">Click Effect</span>
+              <button
+                type="button"
+                onClick={() => clearCategory('active')}
+                className="text-xs text-slate-400 hover:text-red-400"
+              >
+                Remove
+              </button>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              {interactions.active?.transform && (
+                <div>Transform: {interactions.active.transform}</div>
+              )}
+              {interactions.active?.scale !== undefined && (
+                <div>Scale: {interactions.active.scale}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasScroll && (
+          <div className="p-3 bg-slate-800 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-purple-400">Scroll Animation</span>
+              <button
+                type="button"
+                onClick={() => clearCategory('scroll')}
+                className="text-xs text-slate-400 hover:text-red-400"
+              >
+                Remove
+              </button>
+            </div>
+            <div className="text-xs text-slate-300 space-y-1">
+              <div>Animation: {interactions.scroll?.animation}</div>
+              <div>Trigger: {interactions.scroll?.trigger}</div>
+              {interactions.scroll?.duration && (
+                <div>Duration: {interactions.scroll.duration}ms</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'hover', label: 'Hover' },
+    { id: 'click', label: 'Click' },
+    { id: 'scroll', label: 'Scroll' },
+    { id: 'custom', label: 'Custom' },
+  ];
+
+  return (
+    <div className={`bg-slate-900 rounded-xl border border-slate-700 ${className}`}>
+      {/* Header */}
+      <div className="p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-white">Interactions</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {elementType ? `${elementType}: ` : ''}
+              {elementId}
+            </p>
+          </div>
+          <button
+            type="button"
+            onMouseEnter={() => setPreviewActive(true)}
+            onMouseLeave={() => setPreviewActive(false)}
+            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              previewActive
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            {previewActive ? 'Previewing...' : 'Preview'}
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-700">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {activeTab === 'hover' && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-slate-300">Hover Presets</h4>
+            {renderPresets(hoverPresets)}
+          </div>
+        )}
+
+        {activeTab === 'click' && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-slate-300">Click Presets</h4>
+            {renderPresets(clickPresets)}
+          </div>
+        )}
+
+        {activeTab === 'scroll' && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-slate-300">Scroll Animation Presets</h4>
+            {renderPresets(scrollPresets)}
+          </div>
+        )}
+
+        {activeTab === 'custom' && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-slate-300">Current Configuration</h4>
+            {renderCurrentConfig()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default InteractionEditor;

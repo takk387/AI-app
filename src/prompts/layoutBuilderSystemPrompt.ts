@@ -1161,7 +1161,24 @@ Reference specific visual elements when making suggestions.
 }
 
 /**
- * Build the complete system prompt with context
+ * Generate only the dynamic context portion of the prompt.
+ * This is separated to enable Anthropic prompt caching on the static portion.
+ */
+export function buildDynamicContext(
+  design: Partial<LayoutDesign>,
+  selectedElement: string | null,
+  hasScreenshot: boolean,
+  referenceCount: number
+): string {
+  return `${generateDesignContext(design)}
+${generateElementContext(selectedElement)}
+${generateReferenceContext(referenceCount)}
+${generateScreenshotPrompt(hasScreenshot)}`;
+}
+
+/**
+ * Build the complete layout builder prompt (static + dynamic).
+ * Note: For better caching, use LAYOUT_BUILDER_SYSTEM_PROMPT and buildDynamicContext separately.
  */
 export function buildLayoutBuilderPrompt(
   design: Partial<LayoutDesign>,
@@ -1171,10 +1188,7 @@ export function buildLayoutBuilderPrompt(
 ): string {
   return `${LAYOUT_BUILDER_SYSTEM_PROMPT}
 
-${generateDesignContext(design)}
-${generateElementContext(selectedElement)}
-${generateReferenceContext(referenceCount)}
-${generateScreenshotPrompt(hasScreenshot)}`;
+${buildDynamicContext(design, selectedElement, hasScreenshot, referenceCount)}`;
 }
 
 /**

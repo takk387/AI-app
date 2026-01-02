@@ -252,6 +252,7 @@ export function LayoutBuilderWizard({
     design,
     isLoading,
     selectedElement,
+    selectedElementId,
     referenceImages,
     suggestedActions,
     recentChanges,
@@ -595,6 +596,27 @@ export function LayoutBuilderWizard({
       }
     },
     [capturePreview, updateDesign, design, saveDesign, applyToAppConcept, onApplyToAppConcept]
+  );
+
+  // Handle element selection from LayoutPreview (receives string ID, creates minimal SelectedElementInfo)
+  const handleElementSelect = useCallback(
+    (elementId: string | null) => {
+      if (elementId === null) {
+        setSelectedElement(null);
+      } else {
+        // Create minimal SelectedElementInfo from just the ID
+        // Full info will be populated when Click + Talk overlay is used
+        setSelectedElement({
+          id: elementId,
+          type: 'custom',
+          bounds: { x: 0, y: 0, width: 0, height: 0 },
+          currentProperties: {},
+          allowedActions: [],
+          displayName: elementId,
+        });
+      }
+    },
+    [setSelectedElement]
   );
 
   // Handle effects settings change from DesignControlPanel
@@ -1459,7 +1481,12 @@ export function LayoutBuilderWizard({
           <RecentChangesIndicator changes={recentChanges} />
 
           {/* Suggested actions */}
-          <SuggestedActionsBar actions={suggestedActions} onAction={handleAction} />
+          <SuggestedActionsBar
+            actions={suggestedActions}
+            onAction={handleAction}
+            selectedElement={selectedElement}
+            onSendMessage={(msg) => sendMessage(msg, false)}
+          />
 
           {/* Component Library Panel */}
           {showComponentLibrary && (
@@ -1603,8 +1630,8 @@ export function LayoutBuilderWizard({
                     preferences={previewPreferences}
                     className="h-full"
                     onPreferenceChange={handlePreferenceChange}
-                    onElementSelect={setSelectedElement}
-                    selectedElement={selectedElement}
+                    onElementSelect={handleElementSelect}
+                    selectedElement={selectedElementId}
                     componentDesign={{
                       effectsSettings: design.globalStyles?.effects,
                       colorSettings: design.globalStyles?.colors,
@@ -1627,8 +1654,8 @@ export function LayoutBuilderWizard({
                   preferences={previewPreferences}
                   className="h-full"
                   onPreferenceChange={handlePreferenceChange}
-                  onElementSelect={setSelectedElement}
-                  selectedElement={selectedElement}
+                  onElementSelect={handleElementSelect}
+                  selectedElement={selectedElementId}
                   componentDesign={{
                     effectsSettings: design.globalStyles?.effects,
                     colorSettings: design.globalStyles?.colors,
@@ -1676,7 +1703,7 @@ export function LayoutBuilderWizard({
                 }}
                 pixelPerfectAnalysis={pixelPerfectAnalysis}
                 onExportSpecSheet={handleExportSpecSheet}
-                selectedElement={selectedElement}
+                selectedElement={selectedElementId}
                 onClearSelection={() => setSelectedElement(null)}
                 analysisMode={analysisMode}
               />

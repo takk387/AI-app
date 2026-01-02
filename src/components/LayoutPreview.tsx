@@ -390,6 +390,7 @@ function getShadowClass(shadow?: EffectsSettings['shadows']): string {
 
 /**
  * Selectable wrapper component for element selection
+ * Includes data attributes for Click + Talk element detection
  */
 interface SelectableProps {
   id: string;
@@ -398,9 +399,22 @@ interface SelectableProps {
   onClick: (id: string) => void;
   className?: string;
   style?: React.CSSProperties;
+  /** Optional element type override (defaults to inferring from id) */
+  elementType?: string;
+  /** Optional display label */
+  elementLabel?: string;
 }
 
-function Selectable({ id, children, isSelected, onClick, className = '', style }: SelectableProps) {
+function Selectable({
+  id,
+  children,
+  isSelected,
+  onClick,
+  className = '',
+  style,
+  elementType,
+  elementLabel,
+}: SelectableProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -408,6 +422,9 @@ function Selectable({ id, children, isSelected, onClick, className = '', style }
       onClick(id);
     }
   };
+
+  // Infer element type from id if not explicitly provided
+  const inferredType = elementType || id.replace(/-\d+$/, '').split('-')[0];
 
   return (
     <div
@@ -419,7 +436,10 @@ function Selectable({ id, children, isSelected, onClick, className = '', style }
       }}
       onKeyDown={handleKeyDown}
       aria-pressed={isSelected}
-      aria-label={`Select ${id} element`}
+      aria-label={`Select ${elementLabel || id} element`}
+      data-element-id={id}
+      data-element-type={inferredType}
+      data-element-label={elementLabel}
       className={`cursor-pointer transition-all ${
         isSelected
           ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent'

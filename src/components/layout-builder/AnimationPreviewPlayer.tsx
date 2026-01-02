@@ -1,0 +1,211 @@
+'use client';
+
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { scrollAnimationKeyframes } from '@/data/interactionPresets';
+
+interface AnimationPreviewPlayerProps {
+  /** Animation name to preview */
+  animation: string;
+  /** Animation duration in ms */
+  duration?: number;
+  /** Animation delay in ms */
+  delay?: number;
+  /** Animation timing function */
+  timing?: string;
+  /** Whether to loop the animation */
+  loop?: boolean;
+  /** Custom keyframes (overrides preset) */
+  customKeyframes?: Record<string, Record<string, string>>;
+  /** Optional class name */
+  className?: string;
+}
+
+/**
+ * AnimationPreviewPlayer Component
+ *
+ * Plays a single animation in isolation for preview purposes.
+ * Supports both preset animations and custom keyframes.
+ */
+export function AnimationPreviewPlayer({
+  animation,
+  duration = 500,
+  delay = 0,
+  timing = 'ease-out',
+  loop = false,
+  customKeyframes,
+  className = '',
+}: AnimationPreviewPlayerProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playCount, setPlayCount] = useState(0);
+  const elementRef = useRef<HTMLDivElement>(null);
+  const styleRef = useRef<HTMLStyleElement | null>(null);
+
+  // Get keyframes for the animation
+  const keyframes = customKeyframes || scrollAnimationKeyframes[animation];
+
+  // Generate CSS keyframes
+  const generateKeyframesCss = useCallback(() => {
+    if (!keyframes) return '';
+
+    const keyframeRules = Object.entries(keyframes)
+      .map(([key, styles]) => {
+        const styleStr = Object.entries(styles)
+          .map(([prop, val]) => `${prop}: ${val}`)
+          .join('; ');
+        return `${key} { ${styleStr} }`;
+      })
+      .join('\n');
+
+    return `@keyframes preview-${animation}-${playCount} {
+      ${keyframeRules}
+    }`;
+  }, [keyframes, animation, playCount]);
+
+  // Play the animation
+  const play = useCallback(() => {
+    if (!elementRef.current) return;
+
+    // Increment play count to force new animation
+    setPlayCount((c) => c + 1);
+    setIsPlaying(true);
+
+    // Reset after animation completes
+    setTimeout(
+      () => {
+        if (!loop) {
+          setIsPlaying(false);
+        }
+      },
+      duration + delay + 100
+    );
+  }, [duration, delay, loop]);
+
+  // Stop the animation
+  const stop = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  // Inject keyframes CSS
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const css = generateKeyframesCss();
+    if (!css) return;
+
+    // Create style element
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    styleRef.current = style;
+
+    return () => {
+      if (styleRef.current) {
+        document.head.removeChild(styleRef.current);
+        styleRef.current = null;
+      }
+    };
+  }, [isPlaying, generateKeyframesCss]);
+
+  // Auto-play on mount if loop is enabled
+  useEffect(() => {
+    if (loop) {
+      play();
+    }
+  }, [loop, play]);
+
+  if (!keyframes) {
+    return (
+      <div className={`p-4 bg-slate-800 rounded-lg text-center ${className}`}>
+        <p className="text-sm text-slate-400">Unknown animation: {animation}</p>
+      </div>
+    );
+  }
+
+  const animationStyle = isPlaying
+    ? {
+        animation: `preview-${animation}-${playCount} ${duration}ms ${timing} ${delay}ms ${loop ? 'infinite' : 'forwards'}`,
+      }
+    : {};
+
+  return (
+    <div className={`bg-slate-900 rounded-xl border border-slate-700 overflow-hidden ${className}`}>
+      {/* Preview Area */}
+      <div className="p-8 bg-slate-800 flex items-center justify-center min-h-[200px]">
+        <div
+          ref={elementRef}
+          style={animationStyle}
+          className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center"
+        >
+          <span className="text-white font-medium text-sm">Preview</span>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="p-4 border-t border-slate-700">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h4 className="font-medium text-white text-sm">{animation}</h4>
+            <p className="text-xs text-slate-400">
+              {duration}ms{delay > 0 ? ` (${delay}ms delay)` : ''}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isPlaying && !loop ? (
+              <div className="px-2 py-1 text-xs bg-green-900/30 text-green-400 rounded">
+                Playing...
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={play}
+            disabled={isPlaying && !loop}
+            className="flex-1 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-400 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {isPlaying && !loop ? 'Playing...' : 'Play'}
+          </button>
+
+          {loop && isPlaying && (
+            <button
+              type="button"
+              onClick={stop}
+              className="px-4 py-2 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Keyframes Display */}
+      <div className="p-4 border-t border-slate-700 bg-slate-800/50">
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="text-xs font-medium text-slate-400">Keyframes</h5>
+        </div>
+        <div className="font-mono text-xs text-slate-300 space-y-1">
+          {Object.entries(keyframes).map(([key, styles]) => (
+            <div key={key} className="flex">
+              <span className="text-blue-400 w-12">{key}</span>
+              <span className="text-slate-500">
+                {Object.entries(styles)
+                  .map(([p, v]) => `${p}: ${v}`)
+                  .join(', ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AnimationPreviewPlayer;

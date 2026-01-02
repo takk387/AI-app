@@ -17,7 +17,7 @@ import {
   type ModelRouting,
   type RoutingDecision,
 } from '@/utils/modelRouter';
-import type { VisualAnalysis } from '@/services/GeminiLayoutService';
+import type { VisualAnalysis, ExtractedStyles } from '@/services/GeminiLayoutService';
 import type {
   LayoutDesign,
   LayoutMessage,
@@ -28,9 +28,12 @@ import type {
   MessageError,
   DetectedAnimation,
   LayoutWorkflowState,
+  SelectedElementInfo,
+  DeviceView,
 } from '@/types/layoutDesign';
 import type { UIPreferences, AppConcept } from '@/types/appConcept';
 import type { ChatMessage } from '@/types/aiBuilderTypes';
+import type { DesignOption } from '@/components/layout-builder/DesignOptionsPanel';
 
 // ============================================================================
 // CONSTANTS
@@ -41,6 +44,52 @@ const VERSION_HISTORY_KEY = 'layoutBuilder_versionHistory';
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 const MAX_HISTORY_SIZE = 50;
 const MAX_VERSION_HISTORY_SIZE = 20;
+
+/**
+ * Determine if a message needs semantic memory context.
+ * Simple styling requests don't need memory search, saving tokens.
+ * Memory is needed for: references to past work, user preferences, brand guidelines.
+ */
+function needsMemoryContext(message: string): boolean {
+  // Simple patterns that don't need memory (styling/quick changes)
+  const simplePatterns = [
+    /^make (it|the|this)/i,
+    /^change (the|this)/i,
+    /^(add|remove|hide|show)/i,
+    /^(bigger|smaller|darker|lighter|bolder)/i,
+    /^(more|less) (padding|margin|space|rounded)/i,
+    /^set (the )?/i,
+    /^(increase|decrease)/i,
+  ];
+
+  // Patterns that explicitly need memory (user preferences, past context)
+  const memoryTriggers = [
+    /remember|previous|last time|before|earlier/i,
+    /my (preference|style|brand|usual)/i,
+    /like (I|we) (did|had|used)/i,
+    /same as/i,
+    /keep (it )?consistent/i,
+    /brand (color|style|guidelines)/i,
+  ];
+
+  const isSimple = simplePatterns.some((p) => p.test(message));
+  const needsMemory = memoryTriggers.some((p) => p.test(message));
+
+  // Skip memory for simple requests unless they explicitly need it
+  return !isSimple || needsMemory;
+}
+
+/**
+ * Simple hash function for design state comparison.
+ * Uses JSON.stringify for simplicity - fast enough for our needs.
+ */
+function hashDesign(design: Partial<LayoutDesign>): string {
+  try {
+    return JSON.stringify(design);
+  } catch {
+    return '';
+  }
+}
 
 // ============================================================================
 // TYPES
@@ -96,7 +145,10 @@ interface UseLayoutBuilderReturn {
   messages: LayoutMessage[];
   design: Partial<LayoutDesign>;
   isLoading: boolean;
-  selectedElement: string | null;
+  /** Rich element info for Click + Talk mode (includes bounds, type, actions) */
+  selectedElement: SelectedElementInfo | null;
+  /** Convenience getter for just the element ID */
+  selectedElementId: string | null;
   referenceImages: string[];
   lastCapture: string | null;
   suggestedActions: SuggestedAction[];
@@ -116,7 +168,8 @@ interface UseLayoutBuilderReturn {
 
   // Actions
   sendMessage: (text: string, includeCapture?: boolean) => Promise<void>;
-  setSelectedElement: (elementId: string | null) => void;
+  /** Set the selected element (pass SelectedElementInfo or null to deselect) */
+  setSelectedElement: (element: SelectedElementInfo | null) => void;
   addReferenceImage: (imageData: string) => void;
   removeReferenceImage: (index: number) => void;
   capturePreview: () => Promise<string | null>;
@@ -145,6 +198,28 @@ interface UseLayoutBuilderReturn {
   restoreVersion: (versionId: string) => void;
   deleteVersion: (versionId: string) => void;
   getVersionById: (versionId: string) => DesignVersion | undefined;
+
+  // Design Options (Click + Talk)
+  /** Generate design options based on user request */
+  generateOptions: (request: string, count?: number) => Promise<void>;
+  /** Current design options */
+  designOptions: DesignOption[];
+  /** Whether options are being generated */
+  isGeneratingOptions: boolean;
+  /** Apply a design option */
+  applyDesignOption: (option: DesignOption) => void;
+  /** Clear design options */
+  clearDesignOptions: () => void;
+
+  // Responsive Design
+  /** Current device view for responsive context */
+  currentDevice: DeviceView;
+  /** Set the current device view */
+  setCurrentDevice: (device: DeviceView) => void;
+
+  // Reference-Based Design
+  /** Apply extracted styles from a reference image to the design */
+  applyReferenceStyles: (styles: ExtractedStyles, options?: { merge?: boolean }) => void;
 
   // Computed
   hasUnsavedChanges: boolean;
@@ -415,12 +490,19 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
     currentLayoutDesign || { ...defaultLayoutDesign }
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [selectedElement, setSelectedElement] = useState<SelectedElementInfo | null>(null);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [lastCapture, setLastCapture] = useState<string | null>(null);
   const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [workflowState, setWorkflowState] = useState<LayoutWorkflowState | undefined>(undefined);
   const [recentChanges, setRecentChanges] = useState<DesignChange[]>([]);
+
+  // Design Options state (Click + Talk)
+  const [designOptions, setDesignOptions] = useState<DesignOption[]>([]);
+  const [isGeneratingOptions, setIsGeneratingOptions] = useState(false);
+
+  // Responsive preview state
+  const [currentDevice, setCurrentDevice] = useState<DeviceView>('desktop');
 
   // Dual-model state
   const [modelRouting, setModelRouting] = useState<RoutingDecision | null>(null);
@@ -448,6 +530,7 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
   // Refs
   const abortControllerRef = useRef<AbortController | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSentDesignHashRef = useRef<string>(''); // Track design hash to avoid redundant sends
 
   // ========================================================================
   // DRAFT RECOVERY & AUTO-SAVE
@@ -566,8 +649,9 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
 
       try {
         // Search for relevant memories from past sessions (P0-P1 Phase 7b)
+        // Skip memory search for simple styling requests to save tokens
         let memoriesContext = '';
-        if (isMemoryEnabled && isMemoryInitialized) {
+        if (isMemoryEnabled && isMemoryInitialized && needsMemoryContext(text)) {
           try {
             memoriesContext = await searchMemories(text);
           } catch (memError) {
@@ -587,16 +671,28 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
         // Get the appropriate API endpoint based on routing
         const apiEndpoint = getApiEndpoint(routingDecision.route);
 
+        // Check if design changed since last request (token optimization)
+        const currentDesignHash = hashDesign(design);
+        const designChanged = currentDesignHash !== lastSentDesignHashRef.current;
+
         const request: LayoutChatRequest = {
           message: text,
           conversationHistory: messages,
-          currentDesign: design,
+          // Only send full design if it changed, otherwise signal it's unchanged
+          currentDesign: designChanged ? design : undefined,
+          designUnchanged: !designChanged, // Signal to API that design hasn't changed
           selectedElement: selectedElement || undefined,
           previewScreenshot: screenshot || undefined,
           referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
           memoriesContext: memoriesContext || undefined, // Include cross-session memories
           workflowState: workflowState, // Include workflow state for multi-step workflows
+          currentDevice: currentDevice, // Include current device for responsive context
         };
+
+        // Update hash after building request
+        if (designChanged) {
+          lastSentDesignHashRef.current = currentDesignHash;
+        }
 
         const response = await fetch(apiEndpoint, {
           method: 'POST',
@@ -1292,6 +1388,135 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
   );
 
   // ========================================================================
+  // DESIGN OPTIONS (Click + Talk)
+  // ========================================================================
+
+  /**
+   * Generate design options based on user request
+   */
+  const generateOptions = useCallback(
+    async (request: string, count: number = 3) => {
+      setIsGeneratingOptions(true);
+      setDesignOptions([]);
+
+      try {
+        const response = await fetch('/api/layout/generate-options', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            request,
+            element: selectedElement,
+            currentDesign: design,
+            count,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate options');
+        }
+
+        const data = await response.json();
+        if (data.options && Array.isArray(data.options)) {
+          setDesignOptions(data.options);
+        }
+      } catch (error) {
+        console.error('[useLayoutBuilder] Failed to generate options:', error);
+      } finally {
+        setIsGeneratingOptions(false);
+      }
+    },
+    [selectedElement, design]
+  );
+
+  /**
+   * Apply a design option
+   */
+  const applyDesignOption = useCallback(
+    (option: DesignOption) => {
+      if (option.changes) {
+        updateDesign(option.changes);
+      }
+      setDesignOptions([]);
+    },
+    [updateDesign]
+  );
+
+  /**
+   * Clear design options
+   */
+  const clearDesignOptions = useCallback(() => {
+    setDesignOptions([]);
+  }, []);
+
+  /**
+   * Apply extracted styles from a reference image to the design
+   * Maps ExtractedStyles to LayoutDesign globalStyles structure
+   */
+  const applyReferenceStyles = useCallback(
+    (styles: ExtractedStyles, options?: { merge?: boolean }) => {
+      const shouldMerge = options?.merge ?? true;
+      const currentStyles = design.globalStyles ?? defaultLayoutDesign.globalStyles;
+
+      // Map bodySize - ExtractedStyles has 'lg' but LayoutDesign only supports xs/sm/base
+      const mapBodySize = (
+        size?: 'xs' | 'sm' | 'base' | 'lg'
+      ): 'xs' | 'sm' | 'base' | undefined => {
+        if (!size) return undefined;
+        if (size === 'lg') return 'base'; // Map lg to base since LayoutDesign doesn't support lg
+        return size;
+      };
+
+      // Map blur values from boolean to EffectsSettings blur type
+      const mapBlur = (hasBlur?: boolean): 'none' | 'subtle' | undefined => {
+        if (hasBlur === undefined) return undefined;
+        return hasBlur ? 'subtle' : 'none';
+      };
+
+      // Build the merged globalStyles
+      const mergedGlobalStyles = {
+        colors: {
+          ...(shouldMerge ? currentStyles.colors : defaultLayoutDesign.globalStyles.colors),
+          ...(styles.colors?.primary && { primary: styles.colors.primary }),
+          ...(styles.colors?.secondary && { secondary: styles.colors.secondary }),
+          ...(styles.colors?.accent && { accent: styles.colors.accent }),
+          ...(styles.colors?.background && { background: styles.colors.background }),
+          ...(styles.colors?.surface && { surface: styles.colors.surface }),
+          ...(styles.colors?.text && { text: styles.colors.text }),
+        },
+        typography: {
+          ...(shouldMerge ? currentStyles.typography : defaultLayoutDesign.globalStyles.typography),
+          ...(styles.typography?.fontFamily && { fontFamily: styles.typography.fontFamily }),
+          ...(styles.typography?.headingWeight && {
+            headingWeight: styles.typography.headingWeight,
+          }),
+          ...(mapBodySize(styles.typography?.bodySize) && {
+            bodySize: mapBodySize(styles.typography?.bodySize),
+          }),
+          ...(styles.typography?.lineHeight && { lineHeight: styles.typography.lineHeight }),
+        },
+        spacing: {
+          ...(shouldMerge ? currentStyles.spacing : defaultLayoutDesign.globalStyles.spacing),
+          ...(styles.spacing?.density && { density: styles.spacing.density }),
+          ...(styles.spacing?.sectionPadding && { sectionPadding: styles.spacing.sectionPadding }),
+          ...(styles.spacing?.componentGap && { componentGap: styles.spacing.componentGap }),
+        },
+        effects: {
+          ...(shouldMerge ? currentStyles.effects : defaultLayoutDesign.globalStyles.effects),
+          ...(styles.effects?.shadows && { shadows: styles.effects.shadows }),
+          ...(styles.effects?.borderRadius && { borderRadius: styles.effects.borderRadius }),
+          ...(styles.effects?.hasGradients !== undefined && {
+            gradients: styles.effects.hasGradients,
+          }),
+          ...(mapBlur(styles.effects?.hasBlur) && { blur: mapBlur(styles.effects?.hasBlur) }),
+        },
+      };
+
+      updateDesign({ globalStyles: mergedGlobalStyles });
+    },
+    [design, updateDesign]
+  );
+
+  // ========================================================================
   // COMPUTED
   // ========================================================================
 
@@ -1310,6 +1535,7 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
     design,
     isLoading,
     selectedElement,
+    selectedElementId: selectedElement?.id ?? null,
     referenceImages,
     lastCapture,
     suggestedActions,
@@ -1355,6 +1581,20 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
     restoreVersion,
     deleteVersion,
     getVersionById,
+
+    // Design Options (Click + Talk)
+    generateOptions,
+    designOptions,
+    isGeneratingOptions,
+    applyDesignOption,
+    clearDesignOptions,
+
+    // Responsive Design
+    currentDevice,
+    setCurrentDevice,
+
+    // Reference-Based Design
+    applyReferenceStyles,
 
     // Computed
     hasUnsavedChanges,

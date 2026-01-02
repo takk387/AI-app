@@ -14,12 +14,14 @@ import type { BreakpointConfig } from '@/types/layoutDesign';
 // TYPES
 // ============================================================================
 
+export type DeviceId = 'desktop' | 'tablet' | 'phone';
+
 export interface DevicePreset {
-  id: 'desktop' | 'phone';
+  id: DeviceId;
   name: string;
   width: number;
   height: number;
-  category: 'mobile' | 'desktop';
+  category: 'mobile' | 'tablet' | 'desktop';
   icon: string;
 }
 
@@ -63,10 +65,11 @@ const DEFAULT_BREAKPOINTS: BreakpointConfig = {
   '2xl': 1536,
 };
 
-// Simplified to just 2 views: Desktop and Phone
+// Three device views: Desktop, Tablet, and Phone
 // Apps auto-adjust to actual screen sizes when deployed
 const DEVICE_PRESETS: DevicePreset[] = [
   { id: 'desktop', name: 'Desktop', width: 1280, height: 800, category: 'desktop', icon: '🖥️' },
+  { id: 'tablet', name: 'Tablet', width: 820, height: 1180, category: 'tablet', icon: '📱' },
   { id: 'phone', name: 'Phone', width: 390, height: 844, category: 'mobile', icon: '📱' },
 ];
 
@@ -109,11 +112,21 @@ export function useResponsivePreview(
     }));
   }, []);
 
-  // Toggle between Desktop and Phone view
+  // Cycle through Desktop -> Tablet -> Phone views
   const toggleOrientation = useCallback(() => {
     setState((prev) => {
-      // Switch between desktop and phone
-      const newDevice = prev.devicePreset === 'desktop' ? 'phone' : 'desktop';
+      // Cycle: desktop -> tablet -> phone -> desktop
+      let newDevice: DeviceId;
+      switch (prev.devicePreset) {
+        case 'desktop':
+          newDevice = 'tablet';
+          break;
+        case 'tablet':
+          newDevice = 'phone';
+          break;
+        default:
+          newDevice = 'desktop';
+      }
       const device = DEVICE_PRESETS.find((d) => d.id === newDevice);
       if (device) {
         return {

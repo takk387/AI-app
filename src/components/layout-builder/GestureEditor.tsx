@@ -1,0 +1,235 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import type { ElementInteractions } from '@/types/layoutDesign';
+import { gesturePresets, type InteractionPreset } from '@/data/interactionPresets';
+
+interface GestureEditorProps {
+  /** Current interactions configuration */
+  interactions?: ElementInteractions;
+  /** Callback when interactions change */
+  onChange: (interactions: ElementInteractions) => void;
+  /** Element being edited */
+  elementId: string;
+  /** Optional class name */
+  className?: string;
+}
+
+/**
+ * GestureEditor Component
+ *
+ * Allows configuring swipe, drag, pinch, and long-press gestures for mobile.
+ */
+export function GestureEditor({
+  interactions = {},
+  onChange,
+  elementId,
+  className = '',
+}: GestureEditorProps) {
+  const [showCustom, setShowCustom] = useState(false);
+
+  // Apply a gesture preset
+  const applyPreset = useCallback(
+    (preset: InteractionPreset) => {
+      onChange({
+        ...interactions,
+        gesture: preset.interactions.gesture,
+      });
+    },
+    [interactions, onChange]
+  );
+
+  // Update gesture configuration
+  const updateGesture = useCallback(
+    (updates: Partial<NonNullable<ElementInteractions['gesture']>>) => {
+      onChange({
+        ...interactions,
+        gesture: {
+          ...interactions.gesture,
+          ...updates,
+        } as ElementInteractions['gesture'],
+      });
+    },
+    [interactions, onChange]
+  );
+
+  // Clear gesture
+  const clearGesture = useCallback(() => {
+    const updated = { ...interactions };
+    delete updated.gesture;
+    onChange(updated);
+  }, [interactions, onChange]);
+
+  const hasGesture = interactions.gesture && Object.keys(interactions.gesture).length > 0;
+
+  return (
+    <div className={`bg-slate-900 rounded-xl border border-slate-700 ${className}`}>
+      {/* Header */}
+      <div className="p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-white">Touch Gestures</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{elementId}</p>
+          </div>
+          <span className="px-2 py-0.5 text-xs bg-purple-900/30 text-purple-400 rounded">
+            Mobile
+          </span>
+        </div>
+      </div>
+
+      {/* Presets */}
+      <div className="p-4 space-y-4">
+        <h4 className="text-sm font-medium text-slate-300">Gesture Presets</h4>
+        <div className="grid grid-cols-2 gap-2">
+          {gesturePresets.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => applyPreset(preset)}
+              className={`p-3 text-left rounded-lg border transition-colors ${
+                interactions.gesture?.type === preset.interactions.gesture?.type &&
+                interactions.gesture?.action === preset.interactions.gesture?.action
+                  ? 'bg-purple-900/30 border-purple-500'
+                  : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+              }`}
+            >
+              <div className="font-medium text-white text-sm">{preset.name}</div>
+              <div className="text-xs text-slate-400 mt-1">{preset.description}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Current Configuration */}
+        {hasGesture && (
+          <div className="pt-4 border-t border-slate-700 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-slate-300">Current Gesture</h4>
+              <button
+                type="button"
+                onClick={() => setShowCustom(!showCustom)}
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                {showCustom ? 'Hide Options' : 'Customize'}
+              </button>
+            </div>
+
+            <div className="p-3 bg-slate-800 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">
+                  {interactions.gesture?.type === 'swipe' && '👆'}
+                  {interactions.gesture?.type === 'drag' && '✋'}
+                  {interactions.gesture?.type === 'pinch' && '🤏'}
+                  {interactions.gesture?.type === 'long-press' && '👇'}
+                </span>
+                <div>
+                  <div className="font-medium text-white text-sm capitalize">
+                    {interactions.gesture?.type}
+                    {interactions.gesture?.direction && ` ${interactions.gesture.direction}`}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    Action: {interactions.gesture?.action}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {showCustom && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Gesture Type</label>
+                  <select
+                    value={interactions.gesture?.type || 'swipe'}
+                    onChange={(e) =>
+                      updateGesture({
+                        type: e.target.value as 'swipe' | 'drag' | 'pinch' | 'long-press',
+                      })
+                    }
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                  >
+                    <option value="swipe">Swipe</option>
+                    <option value="drag">Drag</option>
+                    <option value="pinch">Pinch</option>
+                    <option value="long-press">Long Press</option>
+                  </select>
+                </div>
+
+                {(interactions.gesture?.type === 'swipe' || !interactions.gesture?.type) && (
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Direction</label>
+                    <select
+                      value={interactions.gesture?.direction || 'left'}
+                      onChange={(e) =>
+                        updateGesture({
+                          direction: e.target.value as 'left' | 'right' | 'up' | 'down' | 'any',
+                        })
+                      }
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                    >
+                      <option value="left">Left</option>
+                      <option value="right">Right</option>
+                      <option value="up">Up</option>
+                      <option value="down">Down</option>
+                      <option value="any">Any Direction</option>
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Action</label>
+                  <select
+                    value={interactions.gesture?.action || 'dismiss'}
+                    onChange={(e) => updateGesture({ action: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                  >
+                    <option value="delete">Delete</option>
+                    <option value="dismiss">Dismiss</option>
+                    <option value="archive">Archive</option>
+                    <option value="reorder">Reorder</option>
+                    <option value="context-menu">Show Context Menu</option>
+                    <option value="expand">Expand</option>
+                    <option value="collapse">Collapse</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Feedback</label>
+                  <select
+                    value={interactions.gesture?.feedback || 'visual'}
+                    onChange={(e) =>
+                      updateGesture({
+                        feedback: e.target.value as 'visual' | 'haptic' | 'both',
+                      })
+                    }
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                  >
+                    <option value="visual">Visual Only</option>
+                    <option value="haptic">Haptic Only</option>
+                    <option value="both">Visual + Haptic</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={clearGesture}
+              className="w-full px-3 py-2 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 rounded-lg transition-colors"
+            >
+              Remove Gesture
+            </button>
+          </div>
+        )}
+
+        {/* Mobile Note */}
+        <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+          <p className="text-xs text-slate-400">
+            Gestures are optimized for touch devices. They will be disabled on desktop but you can
+            preview them using touch simulation in DevTools.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default GestureEditor;

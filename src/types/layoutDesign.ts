@@ -213,6 +213,87 @@ export interface AppliedMicroInteraction {
   tailwind?: string;
 }
 
+/**
+ * Complete element interactions configuration
+ * Supports hover, active, focus, disabled, loading states, scroll animations, and gestures
+ */
+export interface ElementInteractions {
+  hover?: {
+    transform?: string; // e.g., "scale(1.05)"
+    boxShadow?: string;
+    backgroundColor?: string;
+    borderColor?: string;
+    opacity?: number;
+    transition?: string; // e.g., "all 0.2s ease"
+  };
+  active?: {
+    transform?: string;
+    boxShadow?: string;
+    backgroundColor?: string;
+    scale?: number;
+  };
+  focus?: {
+    outline?: string;
+    boxShadow?: string;
+    borderColor?: string;
+    ring?: string; // Tailwind ring utilities
+  };
+  disabled?: {
+    opacity?: number;
+    cursor?: string;
+    filter?: string; // e.g., "grayscale(100%)"
+    pointerEvents?: 'none' | 'auto';
+  };
+  loading?: {
+    type: 'spinner' | 'skeleton' | 'progress' | 'pulse';
+    placeholder?: string;
+    color?: string;
+    size?: 'sm' | 'md' | 'lg';
+  };
+  scroll?: {
+    trigger: 'enter' | 'exit' | 'progress';
+    animation: string; // e.g., "fadeInUp", "slideInLeft"
+    delay?: number; // ms
+    duration?: number; // ms
+    threshold?: number; // 0-1, when to trigger
+  };
+  gesture?: {
+    type: 'swipe' | 'drag' | 'pinch' | 'long-press';
+    direction?: 'left' | 'right' | 'up' | 'down' | 'any';
+    action: string; // e.g., "delete", "reorder", "dismiss"
+    feedback?: 'visual' | 'haptic' | 'both';
+  };
+  pageTransition?: {
+    type: 'fade' | 'slide' | 'scale' | 'flip';
+    duration?: number; // ms
+    direction?: 'left' | 'right' | 'up' | 'down';
+    easing?: string;
+  };
+}
+
+/**
+ * Animation reference for element
+ */
+export interface AnimationRef {
+  id: string;
+  trigger: 'load' | 'scroll' | 'hover' | 'click' | 'focus';
+  delay?: number;
+  duration?: number;
+  iterationCount?: number | 'infinite';
+}
+
+/**
+ * Custom animation definition
+ */
+export interface CustomAnimation {
+  id: string;
+  name: string;
+  keyframes: Record<string, Record<string, string>>; // e.g., { "0%": { opacity: "0" }, "100%": { opacity: "1" } }
+  timing: string; // e.g., "ease-in-out"
+  duration: number; // ms
+  iterationCount: number | 'infinite';
+}
+
 export interface GlobalStyles {
   typography: TypographySettings;
   colors: ColorSettings;
@@ -307,7 +388,8 @@ export interface LayoutMessage {
   content: string;
   timestamp: Date;
   attachments?: string[]; // Base64 images
-  selectedElement?: string; // Element that was selected when message was sent
+  /** Selected element info when message was sent (Click + Talk mode) */
+  selectedElement?: SelectedElementInfo;
   previewSnapshot?: string; // Screenshot of preview when message was sent
   error?: MessageError; // Error information for retry functionality
   isRetrying?: boolean; // Indicates message is being retried
@@ -383,6 +465,78 @@ export type LayoutComponentType =
   | 'tabs'
   | 'modal'
   | 'custom';
+
+/**
+ * Element types for Click + Talk mode element selection
+ * Extends LayoutComponentType with additional UI element types
+ */
+export type ElementType =
+  | 'header'
+  | 'footer'
+  | 'sidebar'
+  | 'hero'
+  | 'section'
+  | 'card'
+  | 'button'
+  | 'text'
+  | 'heading'
+  | 'image'
+  | 'nav'
+  | 'list'
+  | 'form'
+  | 'input'
+  | 'container'
+  | 'link'
+  | 'icon'
+  | 'video'
+  | 'modal'
+  | 'tabs'
+  | 'menu'
+  | 'custom';
+
+/**
+ * Bounding rectangle for element position tracking
+ */
+export interface ElementBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Design version for history tracking
+ */
+export interface DesignVersion {
+  id: string;
+  timestamp: Date | string;
+  description: string;
+  name?: string;
+  thumbnail?: string;
+  design: Partial<LayoutDesign>;
+  changedElements?: string[];
+}
+
+/**
+ * Rich element info for Click + Talk mode
+ * Contains everything needed to show contextual actions and scope AI changes
+ */
+export interface SelectedElementInfo {
+  /** Element identifier (e.g., "header", "sidebar", "cards") */
+  id: string;
+  /** Type of element for context-aware actions */
+  type: ElementType;
+  /** Visual bounds for highlight positioning */
+  bounds: ElementBounds;
+  /** Current style properties of the element */
+  currentProperties: Record<string, unknown>;
+  /** Parent element ID for hierarchy context */
+  parentId?: string;
+  /** Quick actions available for this element type */
+  allowedActions: string[];
+  /** User-friendly display name */
+  displayName?: string;
+}
 
 /**
  * Layout node types for building nested structures
@@ -765,11 +919,18 @@ export interface LayoutWorkflowState {
   startedAt: string;
 }
 
+/** Device view types for responsive design */
+export type DeviceView = 'desktop' | 'tablet' | 'mobile';
+
 export interface LayoutChatRequest {
   message: string;
   conversationHistory: LayoutMessage[];
-  currentDesign: Partial<LayoutDesign>;
-  selectedElement?: string;
+  /** Current design state - optional if designUnchanged is true (token optimization) */
+  currentDesign?: Partial<LayoutDesign>;
+  /** Signal that design hasn't changed since last request (token optimization) */
+  designUnchanged?: boolean;
+  /** Selected element info for scoped AI changes (Click + Talk mode) */
+  selectedElement?: SelectedElementInfo;
   previewScreenshot?: string;
   referenceImages?: string[];
   /** Analysis mode: standard, pixel-perfect replication, or video-replication */
@@ -780,6 +941,8 @@ export interface LayoutChatRequest {
   memoriesContext?: string;
   /** Current workflow state for multi-step design workflows */
   workflowState?: LayoutWorkflowState;
+  /** Current device view for responsive context */
+  currentDevice?: DeviceView;
 }
 
 export interface DesignChange {

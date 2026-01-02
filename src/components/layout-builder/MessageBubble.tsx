@@ -91,7 +91,9 @@ export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
         {message.selectedElement && (
           <div className="text-xs opacity-70 mb-2 flex items-center gap-1">
             <span>Selected:</span>
-            <span className="font-medium">{message.selectedElement}</span>
+            <span className="font-medium">
+              {message.selectedElement.displayName || message.selectedElement.id}
+            </span>
           </div>
         )}
 

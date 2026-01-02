@@ -25,7 +25,8 @@ export type PanelName =
   | 'breakpointEditor'
   | 'darkModeEditor'
   | 'layerPanel'
-  | 'performanceReport';
+  | 'performanceReport'
+  | 'designOptions';
 
 interface LayoutPanelState {
   // Panel visibility states
@@ -48,6 +49,7 @@ interface LayoutPanelState {
   showDarkModeEditor: boolean;
   showLayerPanel: boolean;
   showPerformanceReport: boolean;
+  showDesignOptions: boolean;
 
   // Advanced mode toggle (persisted to localStorage)
   isAdvancedMode: boolean;
@@ -96,6 +98,7 @@ const panelKeyMap: Record<
   darkModeEditor: 'showDarkModeEditor',
   layerPanel: 'showLayerPanel',
   performanceReport: 'showPerformanceReport',
+  designOptions: 'showDesignOptions',
 };
 
 // Helper to get initial advanced mode from localStorage
@@ -129,6 +132,7 @@ const initialState = {
   showDarkModeEditor: false,
   showLayerPanel: false,
   showPerformanceReport: false,
+  showDesignOptions: false,
   isAdvancedMode: getInitialAdvancedMode(),
 };
 
@@ -180,6 +184,7 @@ export const useBreakpointEditor = () => useLayoutPanelStore((s) => s.showBreakp
 export const useDarkModeEditor = () => useLayoutPanelStore((s) => s.showDarkModeEditor);
 export const useLayerPanel = () => useLayoutPanelStore((s) => s.showLayerPanel);
 export const usePerformanceReport = () => useLayoutPanelStore((s) => s.showPerformanceReport);
+export const useDesignOptions = () => useLayoutPanelStore((s) => s.showDesignOptions);
 export const useAdvancedMode = () => useLayoutPanelStore((s) => s.isAdvancedMode);
 
 // Action hooks - uses useShallow to prevent unnecessary re-renders
