@@ -18,6 +18,7 @@ import {
   HistoryIcon,
   FolderIcon,
   ExportIcon,
+  PlusIcon,
 } from './ui/Icons';
 
 interface MenuItem {
@@ -65,6 +66,23 @@ export function SideDrawer({
   const setShowDocumentationPanel = useAppStore((state) => state.setShowDocumentationPanel);
   const currentDocumentation = useAppStore((state) => state.currentDocumentation);
 
+  // State clearing for new project
+  const setAppConcept = useAppStore((state) => state.setAppConcept);
+  const setCurrentLayoutDesign = useAppStore((state) => state.setCurrentLayoutDesign);
+  const setNewAppStagePlan = useAppStore((state) => state.setNewAppStagePlan);
+  const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
+
+  const handleStartNewProject = () => {
+    // Clear all project state
+    setAppConcept(null);
+    setCurrentLayoutDesign(null);
+    setNewAppStagePlan(null);
+    setDynamicPhasePlan(null);
+    // Navigate to wizard
+    router.push('/app/wizard');
+    onClose();
+  };
+
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -90,6 +108,12 @@ export function SideDrawer({
     {
       title: 'Project',
       items: [
+        {
+          icon: <PlusIcon size={18} />,
+          label: 'Start New Project',
+          description: 'Begin with the wizard',
+          onClick: handleStartNewProject,
+        },
         {
           icon: <FileIcon size={18} />,
           label: 'Project Docs',

@@ -106,17 +106,6 @@ export function AppNavigation({
     4: false, // Builder is the final destination
   };
 
-  // Get current step based on pathname
-  const getCurrentStep = () => {
-    if (pathname === '/app/wizard') return 1;
-    if (pathname === '/app/design') return 2;
-    if (pathname === '/app/build') return 3;
-    if (pathname === '/app') return 4;
-    return 0;
-  };
-
-  const currentStep = getCurrentStep();
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-[1800px] mx-auto px-4">
@@ -139,7 +128,6 @@ export function AppNavigation({
             {navItems.map((item, index) => {
               const isActive = pathname === item.href;
               const isCompleted = completedSteps[item.step as keyof typeof completedSteps];
-              const isPastStep = currentStep > item.step;
 
               return (
                 <Link
@@ -151,7 +139,7 @@ export function AppNavigation({
                     ${
                       isActive
                         ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border border-blue-500/30'
-                        : isCompleted || isPastStep
+                        : isCompleted
                           ? 'text-zinc-300 hover:text-white hover:bg-white/5'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
                     }
@@ -165,13 +153,13 @@ export function AppNavigation({
                     ${
                       isActive
                         ? 'bg-blue-500 text-white'
-                        : isCompleted || isPastStep
+                        : isCompleted
                           ? 'bg-green-500/20 text-green-400'
                           : 'bg-zinc-800 text-zinc-500'
                     }
                   `}
                   >
-                    {isCompleted || isPastStep ? <CheckIcon size={12} /> : item.step}
+                    {isCompleted ? <CheckIcon size={12} /> : item.step}
                   </div>
                   {item.icon}
                   <span>{item.label}</span>
