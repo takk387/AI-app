@@ -108,7 +108,7 @@ export async function POST(request: Request): Promise<NextResponse<GenerateOptio
     const systemPrompt = buildSystemPrompt(element, currentDesign);
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 2048,
       temperature: 0.8, // Higher temperature for more variety
       system: systemPrompt,

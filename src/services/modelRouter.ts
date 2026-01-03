@@ -217,15 +217,15 @@ export function getRoutingForRequest(
 export function getModelId(routing: ModelRouting): string {
   switch (routing) {
     case 'CLAUDE':
-      return 'claude-sonnet-4-20250514';
+      return 'claude-sonnet-4-5-20250929';
     case 'CLAUDE_HAIKU':
       return 'claude-3-5-haiku-20241022';
     case 'GEMINI':
-      return 'gemini-2.0-flash';
+      return 'gemini-3-flash-preview';
     case 'DUAL':
-      return 'claude-sonnet-4-20250514'; // Primary for dual
+      return 'claude-sonnet-4-5-20250929'; // Primary for dual
     default:
-      return 'claude-sonnet-4-20250514';
+      return 'claude-sonnet-4-5-20250929';
   }
 }
 
