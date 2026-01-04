@@ -30,7 +30,6 @@ const SECTIONS: { id: SettingsSection; label: string; icon: string }[] = [
   { id: 'ai', label: 'AI', icon: '🤖' },
   { id: 'preview', label: 'Preview', icon: '👁️' },
   { id: 'build', label: 'Build', icon: '🔨' },
-  { id: 'appearance', label: 'Appearance', icon: '🎨' },
   { id: 'shortcuts', label: 'Shortcuts', icon: '⌨️' },
   { id: 'storage', label: 'Storage & Data', icon: '💾' },
   { id: 'account', label: 'Account', icon: '👤' },
@@ -351,42 +350,6 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
               onChange={(value) => updateBuildSettings({ minify: value })}
               label="Minify Output"
               description="Compress and minify generated code"
-            />
-          </div>
-        );
-
-      case 'appearance':
-        return (
-          <div>
-            <SectionHeader title="Appearance Settings" description="Customize the look and feel" />
-            <Select
-              value={settings.appearance.theme}
-              onChange={(value) => updateAppearanceSettings({ theme: value })}
-              options={[
-                { value: 'light', label: 'Light' },
-                { value: 'dark', label: 'Dark' },
-                { value: 'system', label: 'System (auto)' },
-              ]}
-              label="Theme"
-              description="Choose light, dark, or follow system preference"
-            />
-            <ColorPicker
-              value={settings.appearance.accentColor}
-              onChange={(value) => updateAppearanceSettings({ accentColor: value })}
-              label="Accent Color"
-              description="Primary color for buttons and highlights"
-              presets={['#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']}
-            />
-            <Select<UIDensity>
-              value={settings.appearance.uiDensity}
-              onChange={(value) => updateAppearanceSettings({ uiDensity: value })}
-              options={[
-                { value: 'compact', label: 'Compact' },
-                { value: 'comfortable', label: 'Comfortable' },
-                { value: 'spacious', label: 'Spacious' },
-              ]}
-              label="UI Density"
-              description="Control spacing and padding in the interface"
             />
           </div>
         );
