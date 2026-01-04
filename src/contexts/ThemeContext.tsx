@@ -42,11 +42,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setThemeState(stored);
         setResolvedTheme(resolveTheme(stored));
       } else {
+        setThemeState('system');
         setResolvedTheme(resolveTheme('system'));
       }
     } catch (error) {
       // localStorage may be unavailable in private browsing mode
       console.warn('Failed to load theme from localStorage:', error);
+      setThemeState('system');
       setResolvedTheme(resolveTheme('system'));
     }
   }, []);
