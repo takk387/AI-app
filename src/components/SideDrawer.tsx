@@ -59,7 +59,7 @@ export function SideDrawer({
 }: SideDrawerProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { theme, setTheme } = useThemeContext();
+  const { resolvedTheme, toggleTheme } = useThemeContext();
 
   // Documentation state
   const showDocumentationPanel = useAppStore((state) => state.showDocumentationPanel);
@@ -160,10 +160,10 @@ export function SideDrawer({
       title: 'Preferences',
       items: [
         {
-          icon: theme === 'dark' ? <MoonIcon size={18} /> : <SunIcon size={18} />,
+          icon: resolvedTheme === 'dark' ? <MoonIcon size={18} /> : <SunIcon size={18} />,
           label: 'Theme',
-          description: theme === 'dark' ? 'Dark mode' : 'Light mode',
-          onClick: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+          description: resolvedTheme === 'dark' ? 'Dark mode' : 'Light mode',
+          onClick: toggleTheme,
           toggle: true,
         },
         {
