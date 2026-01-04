@@ -80,10 +80,13 @@ export function FeaturesGrid() {
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2
+            className="text-3xl sm:text-4xl font-bold mb-4"
+            style={{ color: 'var(--text-primary)' }}
+          >
             Why Developers Choose Us
           </h2>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
             Built different from the ground up. Features that actually matter for building real
             applications.
           </p>
@@ -101,7 +104,11 @@ export function FeaturesGrid() {
             <motion.div
               key={feature.title}
               variants={itemVariants}
-              className="group relative p-6 bg-slate-900/50 border border-slate-800 rounded-2xl hover:border-slate-700 transition-all hover:bg-slate-900/80"
+              className="group relative p-6 rounded-2xl transition-all"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+              }}
             >
               {/* Icon */}
               <div
@@ -111,8 +118,12 @@ export function FeaturesGrid() {
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-              <p className="text-slate-400 leading-relaxed">{feature.description}</p>
+              <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                {feature.title}
+              </h3>
+              <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                {feature.description}
+              </p>
 
               {/* Hover Glow */}
               <div

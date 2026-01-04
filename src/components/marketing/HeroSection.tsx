@@ -64,7 +64,8 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
+          style={{ color: 'var(--text-primary)' }}
         >
           Build Full-Stack{' '}
           <span className="bg-gradient-to-r from-garden-400 via-gold-400 to-blossom-400 bg-clip-text text-transparent">
@@ -79,7 +80,8 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg sm:text-xl text-slate-400 mb-10 max-w-2xl mx-auto"
+          className="text-lg sm:text-xl mb-10 max-w-2xl mx-auto"
+          style={{ color: 'var(--text-secondary)' }}
         >
           The only AI app builder with planning mode, visual design understanding, and intelligent
           phased code generation. Not just components — complete applications.
@@ -101,7 +103,13 @@ export function HeroSection() {
           </Link>
           <Link
             href="/docs"
-            className="px-8 py-4 text-lg font-semibold text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 rounded-xl transition-all hover:bg-white/5"
+            className="px-8 py-4 text-lg font-semibold rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5"
+            style={{
+              color: 'var(--text-secondary)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--border-color)',
+            }}
           >
             See How It Works
           </Link>
@@ -112,10 +120,16 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-16 pt-8 border-t border-slate-800"
+          className="mt-16 pt-8"
+          style={{ borderTop: '1px solid var(--border-color)' }}
         >
-          <p className="text-sm text-slate-500 mb-4">Trusted by developers building with AI</p>
-          <div className="flex items-center justify-center gap-8 text-slate-600">
+          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+            Trusted by developers building with AI
+          </p>
+          <div
+            className="flex items-center justify-center gap-8"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             <span className="text-2xl font-bold">React</span>
             <span className="text-2xl font-bold">Next.js</span>
             <span className="text-2xl font-bold">TypeScript</span>

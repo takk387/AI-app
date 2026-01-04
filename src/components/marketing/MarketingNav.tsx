@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useThemeContext } from '@/contexts/ThemeContext';
 import {
   RocketIcon,
   DocumentTextIcon,
@@ -10,6 +11,8 @@ import {
   ChevronDownIcon,
   Bars3Icon,
   XMarkIcon,
+  SunIcon,
+  MoonIcon,
 } from '@/components/ui/Icons';
 
 const docsDropdownItems = [
@@ -20,6 +23,7 @@ const docsDropdownItems = [
 
 export function MarketingNav() {
   const { user } = useAuth();
+  const { resolvedTheme, toggleTheme } = useThemeContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [docsDropdownOpen, setDocsDropdownOpen] = useState(false);
 
@@ -50,7 +54,8 @@ export function MarketingNav() {
               <button
                 onClick={() => setDocsDropdownOpen(!docsDropdownOpen)}
                 onBlur={() => setTimeout(() => setDocsDropdownOpen(false), 150)}
-                className="flex items-center gap-1 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                className="flex items-center gap-1 px-4 py-2 text-sm transition-colors rounded-lg"
+                style={{ color: 'var(--text-secondary)' }}
               >
                 <DocumentTextIcon size={16} />
                 <span>Documents</span>
@@ -61,15 +66,32 @@ export function MarketingNav() {
               </button>
 
               {docsDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden">
+                <div
+                  className="absolute top-full left-0 mt-2 w-64 rounded-xl shadow-xl overflow-hidden"
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
                   {docsDropdownItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="block px-4 py-3 hover:bg-slate-800 transition-colors"
+                      className="block px-4 py-3 transition-colors"
+                      style={{ background: 'var(--bg-secondary)' }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = 'var(--bg-tertiary)')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = 'var(--bg-secondary)')
+                      }
                     >
-                      <div className="text-sm font-medium text-white">{item.label}</div>
-                      <div className="text-xs text-slate-500">{item.description}</div>
+                      <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {item.label}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {item.description}
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -79,15 +101,26 @@ export function MarketingNav() {
             {/* Pricing */}
             <Link
               href="/pricing"
-              className="flex items-center gap-1 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+              className="flex items-center gap-1 px-4 py-2 text-sm transition-colors rounded-lg"
+              style={{ color: 'var(--text-secondary)' }}
             >
               <CurrencyDollarIcon size={16} />
               <span>Pricing</span>
             </Link>
           </div>
 
-          {/* Auth Buttons */}
+          {/* Auth Buttons + Theme Toggle */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {resolvedTheme === 'dark' ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+            </button>
+
             {user ? (
               <Link
                 href="/app"
@@ -99,7 +132,8 @@ export function MarketingNav() {
               <>
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm font-medium transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Log in
                 </Link>
@@ -116,7 +150,8 @@ export function MarketingNav() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-slate-400 hover:text-white"
+            className="md:hidden p-2"
+            style={{ color: 'var(--text-secondary)' }}
           >
             {mobileMenuOpen ? <XMarkIcon size={24} /> : <Bars3Icon size={24} />}
           </button>
@@ -125,37 +160,53 @@ export function MarketingNav() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900 border-t border-slate-800">
+        <div
+          className="md:hidden"
+          style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)' }}
+        >
           <div className="px-4 py-4 space-y-2">
+            {/* Theme Toggle in Mobile */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 w-full px-4 py-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {resolvedTheme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+              <span>{resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
             <Link
               href="/docs"
-              className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+              className="block px-4 py-2 rounded-lg"
+              style={{ color: 'var(--text-secondary)' }}
               onClick={() => setMobileMenuOpen(false)}
             >
               User Guides
             </Link>
             <Link
               href="/terms"
-              className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+              className="block px-4 py-2 rounded-lg"
+              style={{ color: 'var(--text-secondary)' }}
               onClick={() => setMobileMenuOpen(false)}
             >
               Terms of Service
             </Link>
             <Link
               href="/privacy"
-              className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+              className="block px-4 py-2 rounded-lg"
+              style={{ color: 'var(--text-secondary)' }}
               onClick={() => setMobileMenuOpen(false)}
             >
               Privacy Policy
             </Link>
             <Link
               href="/pricing"
-              className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+              className="block px-4 py-2 rounded-lg"
+              style={{ color: 'var(--text-secondary)' }}
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
             </Link>
-            <div className="pt-4 border-t border-slate-800 space-y-2">
+            <div className="pt-4 space-y-2" style={{ borderTop: '1px solid var(--border-color)' }}>
               {user ? (
                 <Link
                   href="/app"
@@ -168,7 +219,8 @@ export function MarketingNav() {
                 <>
                   <Link
                     href="/login"
-                    className="block px-4 py-2 text-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+                    className="block px-4 py-2 text-center rounded-lg"
+                    style={{ color: 'var(--text-secondary)' }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Log in

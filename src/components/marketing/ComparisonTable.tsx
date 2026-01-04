@@ -130,8 +130,11 @@ function FeatureCell({ value }: { value: boolean | string }) {
   if (value === false) {
     return (
       <div className="flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center">
-          <XMarkIcon size={14} className="text-slate-600" />
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center"
+          style={{ background: 'var(--bg-tertiary)' }}
+        >
+          <XMarkIcon size={14} style={{ color: 'var(--text-muted)' }} />
         </div>
       </div>
     );
@@ -147,12 +150,17 @@ function FeatureCell({ value }: { value: boolean | string }) {
 
 export function ComparisonTable() {
   return (
-    <section className="py-24 px-4 bg-slate-900/30">
+    <section className="py-24 px-4" style={{ background: 'var(--bg-secondary)' }}>
       <div className="max-w-5xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">How We Compare</h2>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+          <h2
+            className="text-3xl sm:text-4xl font-bold mb-4"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            How We Compare
+          </h2>
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
             See how AI App Builder stacks up against other popular AI code generators.
           </p>
         </div>
@@ -168,15 +176,19 @@ export function ComparisonTable() {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="text-left p-4 text-slate-400 font-medium">Feature</th>
+                <th
+                  className="text-left p-4 font-medium"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Feature
+                </th>
                 {competitors.map((comp) => (
                   <th
                     key={comp.key}
                     className={`p-4 text-center font-medium ${
-                      comp.highlight
-                        ? 'text-garden-400 bg-garden-500/10 rounded-t-xl'
-                        : 'text-slate-400'
+                      comp.highlight ? 'text-garden-400 bg-garden-500/10 rounded-t-xl' : ''
                     }`}
+                    style={!comp.highlight ? { color: 'var(--text-secondary)' } : undefined}
                   >
                     {comp.name}
                   </th>
@@ -185,8 +197,11 @@ export function ComparisonTable() {
             </thead>
             <tbody>
               {features.map((feature, index) => (
-                <tr key={feature.name} className={index % 2 === 0 ? 'bg-slate-900/50' : ''}>
-                  <td className="p-4 text-slate-300">
+                <tr
+                  key={feature.name}
+                  style={index % 2 === 0 ? { background: 'var(--bg-tertiary)' } : undefined}
+                >
+                  <td className="p-4" style={{ color: 'var(--text-primary)' }}>
                     <span className="flex items-center gap-2">
                       {feature.name}
                       {feature.exclusive && (
@@ -217,7 +232,7 @@ export function ComparisonTable() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-12 text-center"
         >
-          <p className="text-slate-400 mb-4">
+          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
             Ready to build with the most capable AI app builder?
           </p>
           <a

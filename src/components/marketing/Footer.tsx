@@ -19,7 +19,9 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-slate-900/50 border-t border-slate-800">
+    <footer
+      style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)' }}
+    >
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
@@ -28,22 +30,27 @@ export function Footer() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-garden-500 to-gold-500 flex items-center justify-center">
                 <RocketIcon size={18} className="text-white" />
               </div>
-              <span className="text-lg font-semibold text-white">AI App Builder</span>
+              <span className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                AI App Builder
+              </span>
             </Link>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               Build full-stack React applications with AI-powered planning and code generation.
             </p>
           </div>
 
           {/* Product Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Product</h4>
+            <h4 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Product
+            </h4>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                    className="text-sm transition-colors hover:opacity-80"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {link.label}
                   </Link>
@@ -54,13 +61,16 @@ export function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Legal</h4>
+            <h4 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Legal
+            </h4>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                    className="text-sm transition-colors hover:opacity-80"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {link.label}
                   </Link>
@@ -71,13 +81,16 @@ export function Footer() {
 
           {/* Company Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Company</h4>
+            <h4 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Company
+            </h4>
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                    className="text-sm transition-colors hover:opacity-80"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     {link.label}
                   </Link>
@@ -88,12 +101,17 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">
+        <div
+          className="mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={{ borderTop: '1px solid var(--border-color)' }}
+        >
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             &copy; {new Date().getFullYear()} AI App Builder. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <span className="text-sm text-slate-600">Powered by Claude AI</span>
+            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Powered by Claude AI
+            </span>
           </div>
         </div>
       </div>
