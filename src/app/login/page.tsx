@@ -27,7 +27,8 @@ export default function LoginPage() {
       if (error) {
         setError(error.message || 'Failed to sign in');
       } else {
-        router.push('/app');
+        // Start users at wizard for guided flow
+        router.push('/app/wizard');
         router.refresh();
       }
     } catch {
