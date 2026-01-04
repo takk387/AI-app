@@ -275,12 +275,12 @@ export function SideDrawer({
                         {item.toggle && (
                           <div
                             className={`w-8 h-5 rounded-full transition-colors ${
-                              theme === 'dark' ? 'bg-garden-600' : 'bg-slate-700'
+                              resolvedTheme === 'dark' ? 'bg-garden-600' : 'bg-slate-700'
                             }`}
                           >
                             <div
                               className={`w-4 h-4 rounded-full bg-white transform transition-transform mt-0.5 ${
-                                theme === 'dark' ? 'translate-x-3.5' : 'translate-x-0.5'
+                                resolvedTheme === 'dark' ? 'translate-x-3.5' : 'translate-x-0.5'
                               }`}
                             />
                           </div>
