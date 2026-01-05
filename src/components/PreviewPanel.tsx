@@ -20,13 +20,44 @@ import {
  * Check if a component has valid JSON code to preview
  */
 function hasValidCode(component: GeneratedComponent | null): boolean {
-  if (!component || !component.code || component.code.trim() === '') {
+  if (!component) {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[PreviewPanel] hasValidCode: no component');
+    }
+    return false;
+  }
+  if (!component.code || component.code.trim() === '') {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[PreviewPanel] hasValidCode: component has no code', {
+        id: component.id,
+        name: component.name,
+      });
+    }
     return false;
   }
   try {
     const parsed = JSON.parse(component.code);
-    return parsed && parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0;
-  } catch {
+    const isValid =
+      parsed && parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0;
+    if (!isValid && process.env.NODE_ENV === 'development') {
+      console.debug('[PreviewPanel] hasValidCode: parsed but invalid structure', {
+        id: component.id,
+        name: component.name,
+        hasFiles: !!parsed?.files,
+        filesIsArray: Array.isArray(parsed?.files),
+        filesLength: parsed?.files?.length ?? 0,
+      });
+    }
+    return isValid;
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[PreviewPanel] hasValidCode: JSON parse failed', {
+        id: component.id,
+        name: component.name,
+        error: e instanceof Error ? e.message : 'Unknown error',
+        codePreview: component.code.slice(0, 100),
+      });
+    }
     return false;
   }
 }

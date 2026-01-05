@@ -463,6 +463,15 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         setChatMessages((prev) => [...prev, aiAppMessage]);
 
         const files = streamResult.files as Array<{ path: string; content: string }>;
+
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[useSendMessage] handleBuildTrigger result:', {
+            name: streamResult.name,
+            filesCount: files?.length ?? 0,
+            hasFiles: !!(files && files.length > 0),
+          });
+        }
+
         if (files && files.length > 0) {
           let newComponent: GeneratedComponent = {
             id: generateId(),
@@ -479,7 +488,20 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
           setCurrentComponent(newComponent);
           setComponents((prev) => [newComponent, ...prev].slice(0, 50));
           await onSaveComponent(newComponent);
+
+          // Small delay to ensure React has processed state updates
+          await new Promise((resolve) => setTimeout(resolve, 50));
           setActiveTab('preview');
+        } else {
+          // Files array is empty - show error message
+          const emptyFilesMessage: ChatMessage = {
+            id: generateId(),
+            role: 'assistant',
+            content:
+              '⚠️ The app was created but no code files were generated. This might be due to a formatting issue. Please try rephrasing your request or try again.',
+            timestamp: new Date().toISOString(),
+          };
+          setChatMessages((prev) => [...prev, emptyFilesMessage]);
         }
       } else {
         const errorMessage: ChatMessage = {
@@ -537,6 +559,15 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         setChatMessages((prev) => [...prev, aiAppMessage]);
 
         const files = streamResult.files as Array<{ path: string; content: string }>;
+
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[useSendMessage] handleModifyTrigger result:', {
+            name: streamResult.name,
+            filesCount: files?.length ?? 0,
+            hasFiles: !!(files && files.length > 0),
+          });
+        }
+
         if (files && files.length > 0) {
           versionControl.pushToUndoStack({
             id: generateId(),
@@ -562,6 +593,9 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
             prev.map((c) => (c.id === currentComponent.id ? updatedComponent : c))
           );
           await onSaveComponent(updatedComponent);
+
+          // Small delay to ensure React has processed state updates
+          await new Promise((resolve) => setTimeout(resolve, 50));
           setActiveTab('preview');
 
           // Complete phase tracking
@@ -578,6 +612,16 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
             };
             dynamicBuildPhases.completePhase(phaseResult);
           }
+        } else {
+          // Files array is empty - show error message
+          const emptyFilesMessage: ChatMessage = {
+            id: generateId(),
+            role: 'assistant',
+            content:
+              '⚠️ The modification was processed but no updated code files were returned. Please try again.',
+            timestamp: new Date().toISOString(),
+          };
+          setChatMessages((prev) => [...prev, emptyFilesMessage]);
         }
       } else {
         const errorMessage: ChatMessage = {
