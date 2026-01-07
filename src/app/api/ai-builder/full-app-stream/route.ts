@@ -25,6 +25,7 @@ import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
 import type { LayoutDesign } from '@/types/layoutDesign';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 import type { SerializedPhaseContext } from '@/types/dynamicPhases';
+import { runAgenticGeneration } from '@/utils/agenticCodeGeneration';
 
 // Vercel serverless function config
 export const maxDuration = 300;
@@ -177,6 +178,7 @@ export async function POST(request: Request) {
         layoutDesign,
         architectureSpec,
         phaseContexts,
+        useAgenticValidation, // Option A: Enable tool-based validation during generation
       } = requestBody as {
         prompt: string;
         conversationHistory?: Array<{ role: string; content: string }>;
@@ -202,6 +204,7 @@ export async function POST(request: Request) {
         layoutDesign?: LayoutDesign;
         architectureSpec?: ArchitectureSpec;
         phaseContexts?: Record<string, SerializedPhaseContext>;
+        useAgenticValidation?: boolean; // Option A: Enable tool-based validation during generation
       };
 
       // Validate request content limits
@@ -467,7 +470,9 @@ MODIFICATION MODE for "${currentAppName}":
       await writeEvent({
         type: 'thinking',
         timestamp: Date.now(),
-        message: 'AI is analyzing your request and planning the app structure...',
+        message: useAgenticValidation
+          ? 'AI is analyzing your request with real-time validation...'
+          : 'AI is analyzing your request and planning the app structure...',
       });
 
       perfTracker.checkpoint('ai_request_sent');
@@ -476,6 +481,350 @@ MODIFICATION MODE for "${currentAppName}":
       if (writerClosed) {
         return;
       }
+
+      // ========================================================================
+      // OPTION A: AGENTIC VALIDATION MODE
+      // When enabled, Claude can use validation tools during generation
+      // This runs INSTEAD of streaming, but post-hoc validation still runs after
+      // ========================================================================
+      if (useAgenticValidation) {
+        await writeEvent({
+          type: 'thinking',
+          timestamp: Date.now(),
+          message: 'Using agentic validation mode - AI will validate code during generation...',
+        });
+
+        try {
+          const agenticResult = await runAgenticGeneration(anthropic, {
+            maxToolIterations: 3,
+            systemPrompt,
+            messages,
+            model: modelName,
+            maxTokens: tokenBudget.max_tokens,
+            thinkingBudget: tokenBudget.thinking_budget,
+            onProgress: async (message) => {
+              await writeEvent({
+                type: 'thinking',
+                timestamp: Date.now(),
+                message,
+              });
+            },
+          });
+
+          if (!agenticResult.success) {
+            await writeEvent({
+              type: 'error',
+              timestamp: Date.now(),
+              message: agenticResult.error || 'Agentic generation failed',
+              code: 'AGENTIC_ERROR',
+              recoverable: true,
+            });
+            clearTimeout(globalTimeoutId);
+            await closeWriter();
+            return;
+          }
+
+          // Use agentic result as responseText - continue to existing validation flow
+          const responseText = agenticResult.responseText;
+          const inputTokens = agenticResult.inputTokens;
+          const outputTokens = agenticResult.outputTokens;
+          const cachedTokens = agenticResult.cachedTokens;
+
+          perfTracker.checkpoint('ai_response_received');
+
+          if (!responseText) {
+            await writeEvent({
+              type: 'error',
+              timestamp: Date.now(),
+              message: 'No response from Claude',
+              code: 'EMPTY_RESPONSE',
+              recoverable: true,
+            });
+            clearTimeout(globalTimeoutId);
+            await closeWriter();
+            return;
+          }
+
+          // Parse response (same as streaming path)
+          const nameMatch = responseText.match(/===NAME===\s*([\s\S]*?)\s*===/);
+          const descriptionMatch = responseText.match(/===DESCRIPTION===\s*([\s\S]*?)\s*===/);
+          const appTypeMatch = responseText.match(/===APP_TYPE===\s*([\s\S]*?)\s*===/);
+          const changeTypeMatch = responseText.match(/===CHANGE_TYPE===\s*([\s\S]*?)\s*===/);
+          const changeSummaryMatch = responseText.match(/===CHANGE_SUMMARY===\s*([\s\S]*?)\s*===/);
+          const dependenciesMatch = responseText.match(/===DEPENDENCIES===\s*([\s\S]*?)\s*===/);
+          const setupMatch = responseText.match(/===SETUP===\s*([\s\S]*?)===END===/);
+
+          if (!nameMatch || !descriptionMatch) {
+            await writeEvent({
+              type: 'error',
+              timestamp: Date.now(),
+              message: 'Invalid response format - missing required delimiters',
+              code: 'PARSE_ERROR',
+              recoverable: true,
+            });
+            clearTimeout(globalTimeoutId);
+            await closeWriter();
+            return;
+          }
+
+          const name = nameMatch[1].trim().split('\n')[0].trim();
+          const descriptionText = descriptionMatch[1].trim().split('\n')[0].trim();
+          const appType = appTypeMatch
+            ? appTypeMatch[1].trim().split('\n')[0].trim()
+            : 'FRONTEND_ONLY';
+
+          // Extract files
+          const fileMatches = responseText.matchAll(
+            /===FILE:([\s\S]*?)===\s*([\s\S]*?)(?====FILE:|===DEPENDENCIES===|===SETUP===|===END===|$)/g
+          );
+          const files: Array<{ path: string; content: string; description: string }> = [];
+
+          for (const match of fileMatches) {
+            const path = match[1].trim();
+            const content = match[2].trim();
+            files.push({
+              path,
+              content,
+              description: `${path.split('/').pop()} file`,
+            });
+
+            // Send file events for UI feedback
+            await writeEvent({
+              type: 'file_complete',
+              timestamp: Date.now(),
+              filePath: path,
+              fileIndex: files.length,
+              totalFiles: files.length,
+              charCount: content.length,
+            });
+          }
+
+          if (files.length === 0) {
+            await writeEvent({
+              type: 'error',
+              timestamp: Date.now(),
+              message: 'No files generated in response',
+              code: 'NO_FILES',
+              recoverable: true,
+            });
+            clearTimeout(globalTimeoutId);
+            await closeWriter();
+            return;
+          }
+
+          // Check for truncation
+          const truncationInfo = detectTruncation(responseText, files);
+          if (truncationInfo.isTruncated && truncationInfo.salvageableFiles > 0) {
+            const completeFiles = files.slice(0, truncationInfo.salvageableFiles);
+            files.length = 0;
+            files.push(...completeFiles);
+          }
+
+          // POST-HOC VALIDATION (still runs even with agentic mode as safety net)
+          await writeEvent({
+            type: 'validation',
+            timestamp: Date.now(),
+            message: 'Running post-generation validation (safety net)...',
+            filesValidated: 0,
+            totalFiles: files.length,
+            errorsFound: 0,
+            autoFixed: 0,
+          });
+
+          const validationErrors: Array<{ file: string; errors: ValidationError[] }> = [];
+          let totalErrors = 0;
+          let autoFixedCount = 0;
+
+          for (let i = 0; i < files.length; i++) {
+            if (writerClosed) break;
+
+            const file = files[i];
+            if (
+              file.path.endsWith('.tsx') ||
+              file.path.endsWith('.ts') ||
+              file.path.endsWith('.jsx') ||
+              file.path.endsWith('.js')
+            ) {
+              try {
+                const validation = await validateGeneratedCode(file.content, file.path);
+
+                if (!validation.valid) {
+                  totalErrors += validation.errors.length;
+
+                  const fixedCode = autoFixCode(file.content, validation.errors);
+                  if (fixedCode !== file.content) {
+                    file.content = fixedCode;
+                    autoFixedCount += validation.errors.filter(
+                      (e) => e.type === 'UNCLOSED_STRING'
+                    ).length;
+
+                    const revalidation = await validateGeneratedCode(fixedCode, file.path);
+                    if (!revalidation.valid) {
+                      validationErrors.push({ file: file.path, errors: revalidation.errors });
+                    }
+                  } else {
+                    validationErrors.push({ file: file.path, errors: validation.errors });
+                  }
+                }
+              } catch (validationError) {
+                console.error(`Validation error for ${file.path}:`, validationError);
+              }
+            }
+
+            await writeEvent({
+              type: 'validation',
+              timestamp: Date.now(),
+              message: `Validated ${file.path}`,
+              filesValidated: i + 1,
+              totalFiles: files.length,
+              errorsFound: totalErrors,
+              autoFixed: autoFixedCount,
+            });
+          }
+
+          perfTracker.checkpoint('validation_complete');
+
+          // Inject design system files if layoutDesign is provided
+          if (layoutDesign) {
+            const designFiles = generateDesignFilesArray(layoutDesign);
+            const existingPaths = new Set(files.map((f) => f.path));
+            const filesToAdd = designFiles.filter((df) => !existingPaths.has(df.path));
+            const filesToReplace = designFiles.filter((df) => existingPaths.has(df.path));
+
+            for (let i = 0; i < files.length; i++) {
+              const replacement = filesToReplace.find((df) => df.path === files[i].path);
+              if (replacement) {
+                files[i] = {
+                  ...files[i],
+                  content: replacement.content,
+                  description: `Design system: ${files[i].path}`,
+                };
+              }
+            }
+
+            files.unshift(
+              ...filesToAdd.map((df) => ({
+                path: df.path,
+                content: df.content,
+                description: `Design system: ${df.path}`,
+              }))
+            );
+          }
+
+          // Parse dependencies
+          const dependencies: Record<string, string> = {};
+          if (dependenciesMatch) {
+            const depsText = dependenciesMatch[1].trim();
+            const depsLines = depsText.split('\n');
+            for (const line of depsLines) {
+              const [pkg, version] = line.split(':').map((s) => s.trim());
+              if (pkg && version) {
+                dependencies[pkg] = version;
+              }
+            }
+          }
+
+          const changeType = changeTypeMatch
+            ? changeTypeMatch[1].trim().split('\n')[0].trim()
+            : 'NEW_APP';
+          const changeSummary = changeSummaryMatch ? changeSummaryMatch[1].trim() : '';
+          const setupInstructions = setupMatch
+            ? setupMatch[1].trim()
+            : 'Run npm install && npm run dev';
+
+          const validationWarnings =
+            validationErrors.length > 0
+              ? {
+                  hasWarnings: true,
+                  message: `Code validation detected ${totalErrors - autoFixedCount} potential issue(s).`,
+                  details: validationErrors,
+                }
+              : undefined;
+
+          // Send complete event
+          const completeEvent: CompleteEvent = {
+            type: 'complete',
+            timestamp: Date.now(),
+            success: true,
+            data: {
+              name,
+              description: descriptionText,
+              appType,
+              changeType,
+              changeSummary,
+              files,
+              dependencies,
+              setupInstructions,
+              validationWarnings,
+            },
+            stats: {
+              totalTime: Date.now() - startTime,
+              filesGenerated: files.length,
+              inputTokens,
+              outputTokens,
+              cachedTokens,
+              agenticToolCalls: agenticResult.toolCallsMade, // Track agentic tool usage
+            },
+          };
+
+          await writeEvent(completeEvent);
+
+          // Log successful completion
+          try {
+            analytics.logRequestComplete(requestId, {
+              modelUsed: modelName,
+              promptLength: Math.round(systemPrompt.length / 4),
+              responseLength: responseText.length,
+              validationRan: true,
+              validationIssuesFound: totalErrors,
+              validationIssuesFixed: autoFixedCount,
+              metadata: {
+                appName: name,
+                appType: appType,
+                changeType: changeType,
+                isModification: isModification,
+                hasImage: hasImage,
+                filesGenerated: files.length,
+                hasDependencies: Object.keys(dependencies).length > 0,
+                streaming: false, // Agentic mode is non-streaming
+                agenticMode: true,
+                agenticToolCalls: agenticResult.toolCallsMade,
+              },
+            });
+          } catch (analyticsError) {
+            console.error('Analytics logging failed:', analyticsError);
+          }
+
+          if (process.env.NODE_ENV === 'development') {
+            try {
+              perfTracker.log('Full-App-Stream Route (Agentic)');
+            } catch (perfError) {
+              console.error('Performance tracking failed:', perfError);
+            }
+          }
+
+          // Close and return - agentic path complete
+          clearTimeout(globalTimeoutId);
+          await closeWriter();
+          return;
+        } catch (agenticError) {
+          console.error('Agentic generation error:', agenticError);
+          await writeEvent({
+            type: 'error',
+            timestamp: Date.now(),
+            message:
+              agenticError instanceof Error ? agenticError.message : 'Agentic generation failed',
+            code: 'AGENTIC_ERROR',
+            recoverable: false,
+          });
+          clearTimeout(globalTimeoutId);
+          await closeWriter();
+          return;
+        }
+      }
+      // ========================================================================
+      // END AGENTIC MODE - Continue with existing streaming below
+      // ========================================================================
 
       // Stream from Claude with abort signal
       const aiStream = await anthropic.messages.stream({

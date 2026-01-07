@@ -120,6 +120,7 @@ export interface CompleteEvent extends BaseStreamEvent {
     inputTokens: number;
     outputTokens: number;
     cachedTokens: number;
+    agenticToolCalls?: number; // Option A: Track validation tool calls when agentic mode enabled
   };
 }
 
