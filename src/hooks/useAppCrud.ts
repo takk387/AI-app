@@ -75,6 +75,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
     setShowLibrary,
     setShowNameAppModal,
     setNewAppStagePlan,
+    setCurrentAppId,
   } = useAppStore();
 
   /**
@@ -104,6 +105,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       // Set as current component and add to library
       setCurrentComponent(newComponent);
       addComponent(newComponent);
+      setCurrentAppId(newComponent.id); // Set currentAppId for deploy flow
       setChatMessages([getWelcomeMessage()]);
       setActiveTab('chat');
       setShowNameAppModal(false);
@@ -120,6 +122,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
     [
       setCurrentComponent,
       addComponent,
+      setCurrentAppId,
       setChatMessages,
       setActiveTab,
       setShowNameAppModal,
@@ -133,6 +136,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
   const loadComponent = useCallback(
     (comp: GeneratedComponent) => {
       setCurrentComponent(comp);
+      setCurrentAppId(comp.id); // Set currentAppId for deploy flow
       setChatMessages(comp.conversationHistory);
       setShowLibrary(false);
       setActiveTab('preview');
@@ -140,7 +144,14 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       setNewAppStagePlan(hasPendingPhases ? comp.stagePlan! : null);
     },
-    [setCurrentComponent, setChatMessages, setShowLibrary, setActiveTab, setNewAppStagePlan]
+    [
+      setCurrentComponent,
+      setCurrentAppId,
+      setChatMessages,
+      setShowLibrary,
+      setActiveTab,
+      setNewAppStagePlan,
+    ]
   );
 
   /**
@@ -168,6 +179,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
 
       if (currentComponent?.id === id) {
         setCurrentComponent(null);
+        setCurrentAppId(null); // Clear currentAppId when deleting current app
         setChatMessages([getWelcomeMessage()]);
         setActiveTab('chat');
       }
@@ -186,6 +198,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       setComponents,
       currentComponent,
       setCurrentComponent,
+      setCurrentAppId,
       setChatMessages,
       setActiveTab,
       getWelcomeMessage,

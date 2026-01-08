@@ -29,6 +29,7 @@ async function getAnalyzers() {
     { analyzeReactIssues },
     { analyzePerformanceIssues },
     { analyzeSemantics },
+    { analyzeLogicConsistency },
     { applyFixesToFiles },
   ] = await Promise.all([
     import('./analyzers/SyntaxAnalyzer'),
@@ -36,6 +37,7 @@ async function getAnalyzers() {
     import('./analyzers/ReactAnalyzer'),
     import('./analyzers/PerformanceAnalyzer'),
     import('./analyzers/SemanticAnalyzer'),
+    import('./analyzers/LogicConsistencyAnalyzer'),
     import('./AutoFixEngine'),
   ]);
   return {
@@ -44,6 +46,7 @@ async function getAnalyzers() {
     analyzeReactIssues,
     analyzePerformanceIssues,
     analyzeSemantics,
+    analyzeLogicConsistency,
     applyFixesToFiles,
   };
 }
@@ -55,6 +58,7 @@ async function getAnalyzers() {
 interface CodeReviewConfig {
   strictness: ReviewStrictness;
   enableAutoFix: boolean;
+  enableLogicAnalysis?: boolean; // Optional AI logic check
   maxIssuesPerFile: number;
   timeoutMs: number;
 }
@@ -62,6 +66,7 @@ interface CodeReviewConfig {
 const DEFAULT_CONFIG: CodeReviewConfig = {
   strictness: 'standard',
   enableAutoFix: true,
+  enableLogicAnalysis: false,
   maxIssuesPerFile: 50,
   timeoutMs: 30000,
 };
@@ -139,6 +144,7 @@ export async function performLightReview(
     analyzeSecurityIssues,
     analyzeReactIssues,
     analyzePerformanceIssues,
+    analyzeLogicConsistency,
     applyFixesToFiles,
   } = await getAnalyzers();
 
@@ -152,6 +158,28 @@ export async function performLightReview(
   // Only run performance analyzer in standard/strict mode
   if (mergedConfig.strictness !== 'relaxed') {
     analyzerPromises.push(analyzePerformanceIssues(files));
+  }
+
+  // Run logic analysis if enabled (Soft Warning System)
+  if (mergedConfig.enableLogicAnalysis && phaseContext) {
+    // Map phase context to comprehensive context for the analyzer
+    const logicContext: ComprehensiveReviewContext = {
+      originalRequirements: `Phase ${phaseContext.phaseNumber}: ${phaseContext.phaseName}`,
+      expectedFeatures: phaseContext.expectedFeatures,
+      allFeatures: (phaseContext.expectedFeatures || []).map((f) => ({
+        name: f,
+        description: f,
+        priority: 'medium',
+      })),
+      technicalRequirements: {}, // Not available in light review
+    };
+
+    analyzerPromises.push(
+      analyzeLogicConsistency(
+        files.map((f) => ({ path: f.path, content: f.content })),
+        logicContext
+      )
+    );
   }
 
   updatePipelineState({ progress: 20 });
@@ -272,10 +300,10 @@ export async function performComprehensiveReview(
   });
 
   // Load analyzers dynamically
-  const { analyzeSemantics, applyFixesToFiles } = await getAnalyzers();
+  const { analyzeSemantics, analyzeLogicConsistency, applyFixesToFiles } = await getAnalyzers();
 
   // Perform semantic analysis with Claude AI
-  const semanticResult = await analyzeSemantics(
+  const semanticResultPromise = analyzeSemantics(
     files.map((f) => ({ path: f.path, content: f.content })),
     {
       originalRequirements: requirements.originalRequirements,
@@ -286,6 +314,17 @@ export async function performComprehensiveReview(
     }
   );
 
+  // Perform logic consistency analysis (Soft Warning System)
+  const logicResultPromise = analyzeLogicConsistency(
+    files.map((f) => ({ path: f.path, content: f.content })),
+    requirements
+  );
+
+  const [semanticResult, logicResult] = await Promise.all([
+    semanticResultPromise,
+    logicResultPromise,
+  ]);
+
   // Combine heuristic check with AI analysis for robustness
   const heuristicIssues = checkRequirementsImplemented(files, requirements);
   const semanticIssues = [...semanticResult.issues, ...heuristicIssues].filter(
@@ -293,7 +332,7 @@ export async function performComprehensiveReview(
   );
 
   // Combine all issues
-  const allIssues = [...lightResult.issues, ...semanticIssues];
+  const allIssues = [...lightResult.issues, ...semanticIssues, ...logicResult.issues];
 
   updatePipelineState({ progress: 80 });
 
@@ -463,6 +502,7 @@ function calculateCategoryScores(
     ['performance_rerender', 'performance_memo', 'performance_expensive'].includes(i.category)
   );
   const accessibilityIssues = issues.filter((i) => i.category === 'accessibility');
+  const logicIssues = issues.filter((i) => i.category === 'logic_warning');
 
   return {
     syntax: calculateScore(syntaxIssues),
@@ -470,6 +510,7 @@ function calculateCategoryScores(
     bestPractices: calculateScore(bestPracticesIssues),
     performance: calculateScore(performanceIssues),
     accessibility: calculateScore(accessibilityIssues),
+    logic: calculateScore(logicIssues),
   };
 }
 
@@ -478,10 +519,12 @@ function calculateCategoryScores(
  */
 function calculateOverallScore(scores: CategoryScores): number {
   // Weighted average - security and syntax are more important
+  // Rebalanced to include logic (0.15) without reducing security significantly
   const weights = {
-    syntax: 0.25,
-    security: 0.3,
-    bestPractices: 0.2,
+    syntax: 0.2,
+    security: 0.25,
+    logic: 0.15,
+    bestPractices: 0.15,
     performance: 0.15,
     accessibility: 0.1,
   };

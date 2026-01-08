@@ -14,6 +14,7 @@ import {
   DownloadIcon,
   MessageSquareIcon,
   LoaderIcon,
+  RocketIcon,
 } from './ui/Icons';
 
 /**
@@ -85,6 +86,7 @@ export interface PreviewPanelProps {
   // Actions
   onExport: (component: GeneratedComponent) => void;
   onDownload: () => void;
+  onDeploy?: () => void;
 
   // Branch management
   onBranchSwitch?: (branchId: string) => void;
@@ -114,6 +116,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
   redoCount = 0,
   onExport,
   onDownload,
+  onDeploy,
   onBranchSwitch,
   onCreateBranch,
   onDeleteBranch,
@@ -202,13 +205,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
         {/* Spacer */}
         <div className="flex-1"></div>
 
-        {/* Export/Download Actions (only when component exists) */}
+        {/* Export/Download/Deploy Actions (only when component exists) */}
         {currentComponent && (
           <>
             <button
               onClick={() => onExport(currentComponent)}
               disabled={isExporting}
-              className="btn-primary disabled:opacity-50"
+              className="btn-secondary disabled:opacity-50"
             >
               {isExporting ? <LoaderIcon size={16} /> : <PackageIcon size={16} />}
               <span className="hidden sm:inline">Export</span>
@@ -217,6 +220,16 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = React.memo(function Pre
               <DownloadIcon size={16} />
               <span className="hidden sm:inline">Download</span>
             </button>
+            {onDeploy && (
+              <button
+                onClick={onDeploy}
+                className="btn-primary bg-gradient-to-r from-garden-600 to-garden-500 hover:from-garden-500 hover:to-garden-400"
+                title="Deploy to production"
+              >
+                <RocketIcon size={16} />
+                <span className="hidden sm:inline">Deploy</span>
+              </button>
+            )}
           </>
         )}
       </div>

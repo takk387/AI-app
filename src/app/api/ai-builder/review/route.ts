@@ -69,6 +69,7 @@ function validateRequest(body: unknown): {
       requirements: req.requirements as ReviewRequest['requirements'],
       phaseContext: req.phaseContext as ReviewRequest['phaseContext'],
       strictness: (req.strictness as ReviewStrictness) || 'standard',
+      enableLogicAnalysis: req.enableLogicAnalysis as boolean,
     },
   };
 }
@@ -121,14 +122,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<ReviewRes
       );
     }
 
-    const { reviewType, files, requirements, phaseContext, strictness } = validation.data;
+    const { reviewType, files, requirements, phaseContext, strictness, enableLogicAnalysis } =
+      validation.data;
 
     // Perform review based on type
     let result;
     if (reviewType === 'comprehensive' && requirements) {
       result = await performComprehensiveReview(files, requirements, { strictness });
     } else {
-      result = await performLightReview(files, phaseContext, { strictness });
+      result = await performLightReview(files, phaseContext, { strictness, enableLogicAnalysis });
     }
 
     // Return response

@@ -13,6 +13,7 @@ import {
   XMarkIcon,
   SunIcon,
   MoonIcon,
+  LayoutIcon,
 } from '@/components/ui/Icons';
 
 const docsDropdownItems = [
@@ -122,12 +123,22 @@ export function MarketingNav() {
             </button>
 
             {user ? (
-              <Link
-                href="/app"
-                className="px-4 py-2 text-sm font-medium text-white bg-garden-600 hover:bg-garden-500 rounded-lg transition-colors"
-              >
-                Go to App
-              </Link>
+              <>
+                <Link
+                  href="/app/dashboard"
+                  className="flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-lg"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <LayoutIcon size={16} />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  href="/app"
+                  className="px-4 py-2 text-sm font-medium text-white bg-garden-600 hover:bg-garden-500 rounded-lg transition-colors"
+                >
+                  Go to App
+                </Link>
+              </>
             ) : (
               <>
                 <Link
@@ -208,13 +219,24 @@ export function MarketingNav() {
             </Link>
             <div className="pt-4 space-y-2" style={{ borderTop: '1px solid var(--border-color)' }}>
               {user ? (
-                <Link
-                  href="/app"
-                  className="block px-4 py-2 text-center text-white bg-garden-600 hover:bg-garden-500 rounded-lg"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Go to App
-                </Link>
+                <>
+                  <Link
+                    href="/app/dashboard"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <LayoutIcon size={18} />
+                    <span>Dashboard</span>
+                  </Link>
+                  <Link
+                    href="/app"
+                    className="block px-4 py-2 text-center text-white bg-garden-600 hover:bg-garden-500 rounded-lg"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Go to App
+                  </Link>
+                </>
               ) : (
                 <>
                   <Link

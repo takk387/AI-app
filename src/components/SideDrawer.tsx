@@ -19,6 +19,7 @@ import {
   FolderIcon,
   ExportIcon,
   PlusIcon,
+  LayoutIcon,
 } from './ui/Icons';
 
 interface MenuItem {
@@ -113,6 +114,15 @@ export function SideDrawer({
           label: 'Start New Project',
           description: 'Begin with the wizard',
           onClick: handleStartNewProject,
+        },
+        {
+          icon: <LayoutIcon size={18} />,
+          label: 'Dashboard',
+          description: 'View all projects',
+          onClick: () => {
+            router.push('/app/dashboard');
+            onClose();
+          },
         },
         {
           icon: <FileIcon size={18} />,

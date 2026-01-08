@@ -348,45 +348,36 @@ for (let i = 0; i < contexts.length; i++) {
 
 ---
 
-## Pre-Execution Conflict Detection
+## Conflict Resolution Strategy (The "Merge Driver")
 
-**Key insight**: Independent phases should NEVER generate the same file. File overlap indicates a dependency calculation bug.
+Instead of aborting on conflict, use an intelligent AST-based merge driver to reconcile changes to shared files (e.g., `App.tsx` or `globals.css`).
 
-**Before executing parallel group:**
+### AST Merge Logic
+
+When two parallel phases modify the same file:
+
+1.  **Parse:** Convert both generated versions and the original base version to ASTs.
+2.  **Diff:** Identify specific insertions (e.g., Phase A added `<AuthProvider>`, Phase B added `<ThemeProvider>`).
+3.  **Synthesize:** Construct a new AST containing both additions.
+4.  **Fallback:** If AST merge fails (overlapping edits to the same node), use AI arbitration to resolve.
 
 ```typescript
-function validateParallelGroup(phases: DynamicPhase[]): {
-  valid: boolean;
-  conflicts: Array<{ file: string; phases: number[] }>;
-} {
-  const fileToPhases = new Map<string, number[]>();
+// src/services/ParallelResultMerger.ts
 
-  for (const phase of phases) {
-    for (const plannedFile of phase.plannedFiles || []) {
-      const existing = fileToPhases.get(plannedFile) || [];
-      existing.push(phase.number);
-      fileToPhases.set(plannedFile, existing);
-    }
+async function mergeConflictingFile(
+  baseContent: string,
+  versionA: string,
+  versionB: string
+): Promise<string> {
+  // Try AST merge first (deterministic)
+  try {
+    return astMerge(baseContent, versionA, versionB);
+  } catch (e) {
+    // Fallback to AI resolution
+    return aiMerge(baseContent, versionA, versionB);
   }
-
-  const conflicts = [];
-  for (const [file, phaseNums] of fileToPhases) {
-    if (phaseNums.length > 1) {
-      conflicts.push({ file, phases: phaseNums });
-    }
-  }
-
-  return { valid: conflicts.length === 0, conflicts };
 }
 ```
-
-**If conflicts detected:**
-
-1. Show warning: "Phase 3 and Phase 5 both plan to modify `src/App.tsx`"
-2. Auto-fix: Add dependency between them so they run sequentially
-3. Re-compute parallel groups with updated dependencies
-
----
 
 ## Error Handling
 

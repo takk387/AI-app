@@ -28,7 +28,8 @@ export type IssueCategory =
   | 'performance_expensive' // Expensive operations in render
   | 'accessibility' // a11y issues (missing alt, aria labels, etc.)
   | 'import_unused' // Unused imports
-  | 'import_missing'; // Missing required imports
+  | 'import_missing' // Missing required imports
+  | 'logic_warning'; // Logic consistency warnings (soft)
 
 /**
  * Severity levels for issues
@@ -91,6 +92,7 @@ export interface CategoryScores {
   performance: number; // 0-100
   accessibility: number; // 0-100
   requirements?: number; // 0-100 (only in comprehensive review)
+  logic?: number; // 0-100 (logic consistency)
 }
 
 /**
@@ -222,6 +224,7 @@ export interface ReviewRequest {
   requirements?: ComprehensiveReviewContext;
   phaseContext?: PhaseReviewContext;
   strictness?: ReviewStrictness;
+  enableLogicAnalysis?: boolean;
 }
 
 /**
@@ -348,6 +351,7 @@ export function getEnabledCategories(strictness: ReviewStrictness): IssueCategor
     'react_missing_deps',
     'performance_rerender',
     'import_missing',
+    'logic_warning',
   ];
 
   const strict: IssueCategory[] = [
@@ -357,6 +361,7 @@ export function getEnabledCategories(strictness: ReviewStrictness): IssueCategor
     'accessibility',
     'import_unused',
     'missing_feature',
+    'logic_warning',
   ];
 
   switch (strictness) {

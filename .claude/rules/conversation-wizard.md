@@ -4,6 +4,9 @@ paths:
   - src/components/NaturalConversationWizard.tsx
   - src/hooks/usePhaseGeneration.ts
   - src/hooks/useDraftPersistence.ts
+  - src/hooks/useArchitectureGeneration.ts
+  - src/hooks/usePlanRegeneration.ts
+  - src/app/api/wizard/**
   - src/types/appConcept.ts
 ---
 
@@ -11,11 +14,12 @@ paths:
 
 ## Component Architecture
 
-**Main Component:** `NaturalConversationWizard.tsx` (~600 lines after refactor)
+**Main Component:** `NaturalConversationWizard.tsx` (~737 lines)
 
-- 6-step guided app creation via natural conversation
-- Auto-saves draft at each step
-- Generates AppConcept object for phase generation
+- Continuous conversation-based app planning (no rigid steps)
+- Auto-saves drafts with recovery on refresh
+- Sequential generation: Architecture → Phase Plan
+- Generates AppConcept object for phase execution
 
 **Sub-components in `conversation-wizard/`:**
 
@@ -26,38 +30,121 @@ paths:
 - `RecoveryPromptDialog.tsx` - Draft recovery modal
 - `WizardHeader.tsx` - Header with layout import option
 - `PendingImagesPreview.tsx` - Image upload preview
+- `ArchitectureReviewPanel.tsx` - Backend architecture display with expandable sections
 
 ## Key Hooks
 
 ### useDraftPersistence
 
-**Location:** `src/hooks/useDraftPersistence.ts`
+**Location:** `src/hooks/useDraftPersistence.ts` (~206 lines)
 
 Handles auto-save/recovery of conversation state:
 
 ```typescript
 {
-  savedDraft: Draft | null
-  saveDraft(state): void
-  clearDraft(): void
-  hasDraft: boolean
+  // State
+  messages: Message[]
+  setMessages: Dispatch<SetStateAction<Message[]>>
+  wizardState: TState
+  setWizardState: Dispatch<SetStateAction<TState>>
+  phasePlan: TPlan | null
+  setPhasePlan: Dispatch<SetStateAction<TPlan | null>>
+
+  // Recovery
+  isInitialized: boolean
+  showRecoveryPrompt: boolean
+  draftAge: string
+
+  // Actions
+  startFresh(): void
+  recover(): void
+  clearDrafts(): void
 }
 ```
 
 ### usePhaseGeneration
 
-**Location:** `src/hooks/usePhaseGeneration.ts`
+**Location:** `src/hooks/usePhaseGeneration.ts` (~437 lines)
 
 Handles phase generation and context building:
 
 ```typescript
 {
-  phasePlan: DynamicPhasePlan | null
-  isGenerating: boolean
-  generatePhases(appConcept): Promise<void>
-  buildContext(phase): string
+  isGeneratingPhases: boolean
+  isRegeneration: boolean
+  previousPlan: DynamicPhasePlan | null
+  generatePhases(preGeneratedArchitecture?): Promise<void>
+  buildConversationContext(): string
+  convertRolesToUserRoles(): UserRole[] | undefined
+  extractWorkflowsFromConversation(): Workflow[] | undefined
+  formatPhasePlanMessage(plan, isUpdate?): string
 }
 ```
+
+**Context Building:**
+
+- Uses `segmentConversation` for conversation analysis
+- Uses `buildStructuredContext` for structured extraction
+- Prioritizes high-importance segments for token efficiency
+
+### useArchitectureGeneration
+
+**Location:** `src/hooks/useArchitectureGeneration.ts`
+
+Generates backend architecture before phase generation:
+
+```typescript
+{
+  architectureSpec: ArchitectureSpec | null
+  isGeneratingArchitecture: boolean
+  architectureError: string | null
+  needsBackend: boolean
+  generateArchitecture(): Promise<void>
+  clearArchitecture(): void
+}
+```
+
+### usePlanRegeneration
+
+**Location:** `src/hooks/usePlanRegeneration.ts`
+
+Monitors concept changes and triggers automatic plan regeneration:
+
+```typescript
+{
+  isRegenerating: boolean
+  pendingRegeneration: boolean
+  regenerationReason: string | null
+  cancelRegeneration(): void
+}
+```
+
+## API Routes
+
+| Route                               | Method | Purpose                       |
+| ----------------------------------- | ------ | ----------------------------- |
+| `/api/wizard/chat`                  | POST   | Conversation with AI          |
+| `/api/wizard/generate-architecture` | POST   | Generate backend architecture |
+| `/api/wizard/generate-phases`       | POST   | Generate phase plan           |
+
+## Wizard Flow
+
+Sequential 3-phase generation pipeline:
+
+1. **Conversation** - Natural chat to build app concept
+   - AI extracts features, roles, workflows from conversation
+   - User can import layout from Layout Builder
+   - Draft auto-saved continuously
+
+2. **Architecture Generation** - If backend needed
+   - Generates database schema, API endpoints, auth strategy
+   - User reviews in ArchitectureReviewPanel
+   - Can regenerate if changes needed
+
+3. **Phase Generation** - Create implementation plan
+   - Builds complete AppConcept from wizard state
+   - Generates DynamicPhasePlan for execution
+   - Auto-regenerates if concept changes significantly
 
 ## AppConcept Type Structure
 
@@ -74,13 +161,15 @@ interface AppConcept {
   technical: TechnicalRequirements;
   roles?: UserRole[];
   workflows?: Workflow[];
-  layoutDesign?: LayoutDesign; // Optional, from Layout Builder
-  conversationContext?: string; // Full conversation history
+  layoutDesign?: LayoutDesign; // From Layout Builder
+  architectureSpec?: ArchitectureSpec; // From architecture generation
+  conversationContext?: string; // Compressed conversation
   createdAt: string;
   updatedAt: string;
 }
 
 interface Feature {
+  id: string;
   name: string;
   description: string;
   priority: 'must-have' | 'nice-to-have';
@@ -88,31 +177,38 @@ interface Feature {
 }
 ```
 
-## Wizard Flow
-
-1. **Welcome** - Initial greeting, explain process
-2. **App Idea** - User describes their app concept
-3. **Features** - AI extracts and confirms features
-4. **UI Preferences** - Style, colors, layout preferences
-5. **Technical** - Tech requirements, integrations
-6. **Summary** - Review AppConcept, start building
-
 ## State Management
 
-Wizard state stored in `useAppStore`:
+State managed by `useDraftPersistence` hook (not useAppStore):
 
 ```typescript
+// From useDraftPersistence
 {
-  wizardStep: number
-  appConcept: Partial<AppConcept>
-  wizardMessages: Message[]
-  isWizardComplete: boolean
+  messages: Message[]           // Conversation history
+  wizardState: WizardState      // Extracted concept data
+  phasePlan: DynamicPhasePlan   // Generated plan
+}
+
+// WizardState shape
+{
+  name?: string
+  description?: string
+  purpose?: string
+  targetUsers?: string
+  features: Feature[]
+  technical: Partial<TechnicalRequirements>
+  uiPreferences: Partial<UIPreferences>
+  roles?: Role[]
+  workflows?: Workflow[]
+  isComplete: boolean
+  readyForPhases: boolean
 }
 ```
 
 ## Integration Points
 
 - **Layout Builder** → Can import `layoutDesign` into AppConcept
+- **Architecture Generation** → Generates `architectureSpec` before phases
 - **DynamicPhaseGenerator** → Receives completed AppConcept
 - **AIBuilder** → Receives phase plan for execution
 
@@ -120,4 +216,8 @@ Wizard state stored in `useAppStore`:
 
 - `useDraftPersistence` ← Prevents lost work on refresh
 - `usePhaseGeneration` ← Bridges wizard to builder
+- `useArchitectureGeneration` ← Sequential generation requires architecture first
+- `usePlanRegeneration` ← Auto-updates plan on concept changes
 - `appConcept.ts` types ← Contract with phase generator
+- `conversationSegmentation.ts` ← Context compression utilities
+- `structuredExtraction.ts` ← Structured context building

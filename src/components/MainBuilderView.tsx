@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -24,7 +25,6 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './ui';
 import {
   LibraryModal,
   VersionHistoryModal,
-  DeploymentModal,
   DiffPreviewModal,
   CompareVersionsModal,
   NameAppModal,
@@ -60,7 +60,7 @@ import { useAppBuilderSync } from '@/hooks/useAppBuilderSync';
 import type { GeneratedComponent, ChatMessage, AppVersion, Phase } from '../types/aiBuilderTypes';
 
 // Utils
-import { parseAppFiles, getDeploymentInstructions } from '../utils/exportApp';
+import { parseAppFiles } from '../utils/exportApp';
 import { captureLayoutPreview } from '../utils/screenshotCapture';
 
 // Services
@@ -96,6 +96,7 @@ What would you like to create today?`,
 }
 
 export function MainBuilderView() {
+  const router = useRouter();
   const { user, sessionReady } = useAuth();
 
   // ============================================================================
@@ -108,6 +109,8 @@ export function MainBuilderView() {
     isComplete: false,
     readyForPhases: false,
   });
+  // Track if user wants to deploy after saving the app
+  const [pendingDeployAfterSave, setPendingDeployAfterSave] = useState(false);
 
   // Initialize StorageService
   const [storageService] = useState(() => {
@@ -154,8 +157,6 @@ export function MainBuilderView() {
     setShowSettings,
     showDiffPreview,
     setShowDiffPreview,
-    showDeploymentModal,
-    setShowDeploymentModal,
     showCompareModal,
     setShowCompareModal,
     showNameAppModal,
@@ -173,8 +174,6 @@ export function MainBuilderView() {
     // Data
     pendingDiff,
     setPendingDiff,
-    deploymentInstructions,
-    setDeploymentInstructions,
     exportingApp,
     setExportingApp,
     compareVersions,
@@ -469,6 +468,18 @@ export function MainBuilderView() {
     [setUserInput, setNewAppStagePlan]
   );
 
+  // Deploy handler - redirects to dashboard for deployment
+  const handleDeploy = useCallback(() => {
+    if (!currentAppId) {
+      // App not saved yet - prompt to save first, then deploy
+      setPendingDeployAfterSave(true);
+      setShowNameAppModal(true);
+      return;
+    }
+    // Redirect to dashboard with deploy query param
+    router.push(`/app/dashboard?deploy=${currentAppId}`);
+  }, [currentAppId, setShowNameAppModal, router]);
+
   // Filtered components
   const filteredComponents = useMemo(
     () =>
@@ -501,6 +512,15 @@ export function MainBuilderView() {
     };
     loadApps();
   }, [sessionReady, user?.id, loadComponentsFromDb, setComponents, setLoadingApps]);
+
+  // Handle pending deploy after app is saved
+  useEffect(() => {
+    if (pendingDeployAfterSave && currentAppId) {
+      // App was saved, now redirect to dashboard for deployment
+      setPendingDeployAfterSave(false);
+      router.push(`/app/dashboard?deploy=${currentAppId}`);
+    }
+  }, [pendingDeployAfterSave, currentAppId, router]);
 
   // ============================================================================
   // RENDER
@@ -612,6 +632,7 @@ export function MainBuilderView() {
                 redoCount={versionControl.redoStack.length}
                 onExport={handleExportApp}
                 onDownload={downloadCode}
+                onDeploy={handleDeploy}
                 isExporting={!!exportingApp}
                 onScreenshot={(image) => {
                   setUploadedImage(image);
@@ -710,26 +731,16 @@ export function MainBuilderView() {
           />
         )}
 
-        <DeploymentModal
-          isOpen={showDeploymentModal}
-          onClose={() => setShowDeploymentModal(false)}
-          deploymentInstructions={deploymentInstructions}
-          onPlatformChange={(platform) => {
-            if (currentComponent) {
-              const instructions = getDeploymentInstructions(platform, currentComponent.name);
-              setDeploymentInstructions(instructions);
-            }
-          }}
-          appName={currentComponent?.name}
-          appId={currentComponent?.id}
-        />
-
         <NameAppModal
           isOpen={showNameAppModal}
-          onClose={() => setShowNameAppModal(false)}
+          onClose={() => {
+            setShowNameAppModal(false);
+            setPendingDeployAfterSave(false); // Clear pending deploy if user cancels
+          }}
           onSubmit={(name) => {
             handleNameAppSubmit(name);
             setShowNameAppModal(false);
+            // Note: If pendingDeployAfterSave is true, the effect will redirect after currentAppId is set
           }}
         />
 
