@@ -72,15 +72,17 @@ export function SideDrawer({
   const setCurrentLayoutDesign = useAppStore((state) => state.setCurrentLayoutDesign);
   const setNewAppStagePlan = useAppStore((state) => state.setNewAppStagePlan);
   const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
+  const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
 
   const handleStartNewProject = () => {
-    // Clear all project state
+    // Clear all project state INCLUDING currentComponent (critical for modal to show)
     setAppConcept(null);
     setCurrentLayoutDesign(null);
     setNewAppStagePlan(null);
     setDynamicPhasePlan(null);
-    // Navigate to wizard
-    router.push('/app/wizard');
+    setCurrentComponent(null);
+    // Navigate to AI Builder (naming modal will appear)
+    router.push('/app');
     onClose();
   };
 

@@ -1,20 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import NaturalConversationWizard from '@/components/NaturalConversationWizard';
-import { NameAppModal } from '@/components/modals';
 import { useAppStore } from '@/store/useAppStore';
 import type { AppConcept } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 
 export default function WizardPage() {
   const router = useRouter();
-
-  // Local state for naming modal
-  const [appName, setAppName] = useState<string | null>(null);
-  const [showNameModal, setShowNameModal] = useState(true);
 
   // Store actions
   const setAppConcept = useAppStore((state) => state.setAppConcept);
@@ -46,41 +41,15 @@ export default function WizardPage() {
     router.push('/app');
   }, [router]);
 
-  // Handle name submission from modal
-  const handleNameSubmit = useCallback((name: string) => {
-    setAppName(name);
-    setShowNameModal(false);
-  }, []);
-
-  // Handle modal cancel - go back to dashboard
-  const handleNameModalClose = useCallback(() => {
-    router.push('/app/dashboard');
-  }, [router]);
-
   return (
-    <>
-      {/* Show naming modal if no app name yet */}
-      {showNameModal && !appName && (
-        <NameAppModal isOpen={true} onClose={handleNameModalClose} onSubmit={handleNameSubmit} />
-      )}
-
-      {/* Show wizard only after app is named */}
-      {appName && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-          className="h-[calc(100vh-56px)] md:h-[calc(100vh-56px)]"
-        >
-          <NaturalConversationWizard
-            onComplete={handleComplete}
-            onCancel={handleCancel}
-            initialConcept={{ name: appName }}
-            isFullPage
-          />
-        </motion.div>
-      )}
-    </>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className="h-[calc(100vh-56px)] md:h-[calc(100vh-56px)]"
+    >
+      <NaturalConversationWizard onComplete={handleComplete} onCancel={handleCancel} isFullPage />
+    </motion.div>
   );
 }

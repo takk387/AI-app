@@ -37,6 +37,7 @@ export function DashboardView() {
   const setAppConcept = useAppStore((state) => state.setAppConcept);
   const setCurrentLayoutDesign = useAppStore((state) => state.setCurrentLayoutDesign);
   const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
+  const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
 
   // Handle ?deploy=projectId query param from AI Builder redirect
   const deployProjectId = searchParams.get('deploy');
@@ -54,11 +55,13 @@ export function DashboardView() {
   }, [deployProjectId, projects]);
 
   const handleNewProject = () => {
-    // Clear project state to ensure naming modal shows fresh
+    // Clear project state INCLUDING currentComponent (critical for modal to show)
     setAppConcept(null);
     setCurrentLayoutDesign(null);
     setDynamicPhasePlan(null);
-    router.push('/app/wizard');
+    setCurrentComponent(null);
+    // Navigate to AI Builder (naming modal will appear)
+    router.push('/app');
   };
 
   const handleDeploy = (projectId: string) => {

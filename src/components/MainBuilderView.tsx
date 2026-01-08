@@ -142,6 +142,7 @@ export function MainBuilderView() {
     setComponents,
     currentComponent,
     setCurrentComponent,
+    loadingApps,
     setLoadingApps,
     setDbSyncError,
 
@@ -522,6 +523,14 @@ export function MainBuilderView() {
     }
   }, [pendingDeployAfterSave, currentAppId, router]);
 
+  // Show naming modal if no app is loaded (after initial load completes)
+  useEffect(() => {
+    // Wait for session to be ready and initial app load to complete
+    if (sessionReady && !loadingApps && !currentComponent && !showNameAppModal) {
+      setShowNameAppModal(true);
+    }
+  }, [sessionReady, loadingApps, currentComponent, showNameAppModal, setShowNameAppModal]);
+
   // ============================================================================
   // RENDER
   // ============================================================================
@@ -736,6 +745,10 @@ export function MainBuilderView() {
           onClose={() => {
             setShowNameAppModal(false);
             setPendingDeployAfterSave(false); // Clear pending deploy if user cancels
+            // If no app loaded, redirect to dashboard (can't use AI Builder without app)
+            if (!currentComponent) {
+              router.push('/app/dashboard');
+            }
           }}
           onSubmit={(name) => {
             handleNameAppSubmit(name);
