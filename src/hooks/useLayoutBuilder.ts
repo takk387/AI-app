@@ -8,6 +8,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { captureLayoutPreview, containsVisualKeywords } from '@/utils/screenshotCapture';
+import { extractColorsFromImage } from '@/utils/colorExtraction';
 import { LAYOUT_BUILDER_GREETING } from '@/prompts/layoutBuilderSystemPrompt';
 import { defaultLayoutDesign } from '@/types/layoutDesign';
 import { useSmartContext } from './useSmartContext';
@@ -726,6 +727,70 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           setGeminiAnalysis(data.geminiAnalysis);
           if (onGeminiAnalysis) {
             onGeminiAnalysis(data.geminiAnalysis);
+          }
+        } else if (referenceImages.length > 0) {
+          // FALLBACK: If Gemini unavailable but we have reference images,
+          // extract colors client-side using canvas-based extraction
+          try {
+            console.log(
+              '[useLayoutBuilder] Gemini unavailable, using client-side color extraction'
+            );
+            const extractionResult = await extractColorsFromImage(referenceImages[0]);
+
+            // Create a synthetic VisualAnalysis from client-side extraction
+            const clientSideAnalysis: VisualAnalysis = {
+              layoutType: 'single-page',
+              colorPalette: {
+                primary: extractionResult.palette.primary,
+                secondary: extractionResult.palette.secondary,
+                accent: extractionResult.palette.accent,
+                background: extractionResult.palette.background,
+                surface: extractionResult.palette.surface,
+                text: extractionResult.palette.text,
+                textMuted: extractionResult.palette.textMuted,
+              },
+              typography: {
+                headingStyle: 'Bold sans-serif',
+                bodyStyle: 'Regular sans-serif',
+                headingWeight: 'bold',
+                bodyWeight: 'normal',
+                estimatedHeadingFont: 'Inter',
+                estimatedBodyFont: 'Inter',
+              },
+              spacing: {
+                density: 'normal',
+                sectionPadding: 'md',
+                componentGap: 'md',
+              },
+              components: [],
+              effects: {
+                borderRadius: 'md',
+                shadows: 'subtle',
+                hasGradients: false,
+                hasBlur: false,
+                hasAnimations: false,
+              },
+              vibe: extractionResult.isDarkImage ? 'Dark and modern' : 'Light and clean',
+              vibeKeywords: extractionResult.isDarkImage
+                ? ['dark', 'modern', 'sleek']
+                : ['light', 'clean', 'minimal'],
+              confidence: 0.7,
+            };
+
+            setGeminiAnalysis(clientSideAnalysis);
+            if (onGeminiAnalysis) {
+              onGeminiAnalysis(clientSideAnalysis);
+            }
+
+            // Inject the client-side analysis into data so it's applied below
+            data.geminiAnalysis = clientSideAnalysis;
+
+            console.log(
+              '[useLayoutBuilder] Client-side extracted colors:',
+              extractionResult.palette
+            );
+          } catch (extractError) {
+            console.error('[useLayoutBuilder] Client-side color extraction failed:', extractError);
           }
         }
 
