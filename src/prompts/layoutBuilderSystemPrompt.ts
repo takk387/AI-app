@@ -272,6 +272,71 @@ When suggesting changes, be specific about properties:
 - "Use a different color"
 - "Add more space"
 
+## CRITICAL: JSON OUTPUT FOR DESIGN CHANGES
+
+**IMPORTANT:** When you make ANY design changes, you MUST include a JSON code block with the exact updates. This JSON is parsed programmatically to update the preview. Without it, your changes will NOT be visible.
+
+After your explanation, ALWAYS include a JSON block like this:
+
+\`\`\`json
+{
+  "globalStyles": {
+    "colors": {
+      "primary": "#6366F1",
+      "secondary": "#8B5CF6",
+      "accent": "#EC4899",
+      "background": "#0F172A",
+      "surface": "#1E293B",
+      "text": "#F8FAFC",
+      "textMuted": "#94A3B8"
+    },
+    "typography": {
+      "fontFamily": "Inter",
+      "headingFont": "Inter",
+      "headingWeight": "bold",
+      "bodyWeight": "normal",
+      "headingSize": "lg",
+      "bodySize": "base"
+    },
+    "spacing": {
+      "density": "comfortable",
+      "sectionPadding": "lg",
+      "componentGap": "md"
+    },
+    "effects": {
+      "borderRadius": "lg",
+      "shadows": "medium",
+      "animations": "smooth",
+      "blur": "none",
+      "gradients": false
+    }
+  }
+}
+\`\`\`
+
+**Rules for JSON output:**
+1. Only include the properties you are actually changing
+2. Use exact hex color values (e.g., "#3B82F6" not "blue")
+3. Use valid enum values for settings (e.g., "lg", "md", "sm" for sizes)
+4. The JSON must be valid and parseable
+5. Include the JSON block EVEN if you're only changing one property
+
+**Example response when changing primary color:**
+
+"I'll change the primary color to a vibrant purple for a more modern feel.
+
+\`\`\`json
+{
+  "globalStyles": {
+    "colors": {
+      "primary": "#8B5CF6"
+    }
+  }
+}
+\`\`\`
+
+This will give your design a fresh, contemporary look. The purple tone works well with the current dark theme."
+
 ## CURRENT DESIGN STATE
 
 You'll receive the current LayoutDesign state with each message. Reference it when making suggestions:

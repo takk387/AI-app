@@ -403,43 +403,134 @@ function buildCombinedMessage(
 }
 
 /**
+ * Named color to hex mapping for natural language parsing
+ */
+const COLOR_NAME_TO_HEX: Record<string, string> = {
+  red: '#EF4444',
+  blue: '#3B82F6',
+  green: '#22C55E',
+  yellow: '#EAB308',
+  purple: '#8B5CF6',
+  pink: '#EC4899',
+  orange: '#F97316',
+  teal: '#14B8A6',
+  cyan: '#06B6D4',
+  indigo: '#6366F1',
+  violet: '#8B5CF6',
+  white: '#FFFFFF',
+  black: '#000000',
+  gray: '#6B7280',
+  grey: '#6B7280',
+};
+
+/**
  * Extract design updates from Claude's response
+ * Tries JSON first, then falls back to natural language parsing
  */
 async function extractDesignUpdates(
   response: string,
   currentDesign: Record<string, unknown>
 ): Promise<{ updates: Partial<LayoutDesign>; changes: DesignChange[] } | null> {
-  // Try to find JSON in the response
+  // First, try to find JSON in the response (preferred method)
   const jsonMatch = response.match(/```json\n?([\s\S]*?)\n?```/);
-  if (!jsonMatch) {
-    return null;
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[1]);
+      const changes: DesignChange[] = [];
+
+      // Track changes
+      if (parsed.globalStyles) {
+        for (const [key, value] of Object.entries(parsed.globalStyles)) {
+          changes.push({
+            property: `globalStyles.${key}`,
+            oldValue: JSON.stringify(
+              (currentDesign as Record<string, Record<string, unknown>>).globalStyles?.[key]
+            ),
+            newValue: JSON.stringify(value),
+            reason: 'Updated based on analysis',
+          });
+        }
+      }
+
+      return {
+        updates: parsed,
+        changes,
+      };
+    } catch {
+      // JSON parsing failed, fall through to natural language parsing
+    }
   }
 
-  try {
-    const parsed = JSON.parse(jsonMatch[1]);
-    const changes: DesignChange[] = [];
+  // Fallback: Try to extract colors from natural language
+  const colorUpdates: Record<string, string> = {};
+  const changes: DesignChange[] = [];
 
-    // Track changes
-    if (parsed.globalStyles) {
-      for (const [key, value] of Object.entries(parsed.globalStyles)) {
-        changes.push({
-          property: `globalStyles.${key}`,
-          oldValue: JSON.stringify(
-            (currentDesign as Record<string, Record<string, unknown>>).globalStyles?.[key]
-          ),
-          newValue: JSON.stringify(value),
-          reason: 'Updated based on analysis',
-        });
+  // Pattern for "primary color to #XXXXXX" or "primary color to blue"
+  const colorPatterns = [
+    {
+      key: 'primary',
+      patterns: [
+        /primary\s+colou?r\s+(?:to|=|:)\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\w+)/i,
+        /set\s+primary\s+(?:to|=|:)\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\w+)/i,
+      ],
+    },
+    {
+      key: 'secondary',
+      patterns: [/secondary\s+colou?r\s+(?:to|=|:)\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\w+)/i],
+    },
+    {
+      key: 'accent',
+      patterns: [/accent\s+colou?r\s+(?:to|=|:)\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\w+)/i],
+    },
+    {
+      key: 'background',
+      patterns: [/background\s+(?:colou?r\s+)?(?:to|=|:)\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\w+)/i],
+    },
+    {
+      key: 'text',
+      patterns: [/text\s+colou?r\s+(?:to|=|:)\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}|\w+)/i],
+    },
+  ];
+
+  for (const { key, patterns } of colorPatterns) {
+    for (const pattern of patterns) {
+      const match = response.match(pattern);
+      if (match) {
+        let colorValue = match[1].toLowerCase();
+        // Convert named color to hex if needed
+        if (!colorValue.startsWith('#')) {
+          colorValue = COLOR_NAME_TO_HEX[colorValue] || colorValue;
+        }
+        if (colorValue.startsWith('#')) {
+          colorUpdates[key] = colorValue.toUpperCase();
+          changes.push({
+            property: `globalStyles.colors.${key}`,
+            oldValue: JSON.stringify(
+              (currentDesign as Record<string, Record<string, Record<string, unknown>>>)
+                .globalStyles?.colors?.[key]
+            ),
+            newValue: colorValue.toUpperCase(),
+            reason: 'Extracted from natural language response',
+          });
+        }
+        break;
       }
     }
+  }
 
+  // If we found any colors, return them as updates
+  if (Object.keys(colorUpdates).length > 0) {
     return {
-      updates: parsed,
+      updates: {
+        globalStyles: {
+          colors: colorUpdates as unknown as LayoutDesign['globalStyles']['colors'],
+        },
+      } as Partial<LayoutDesign>,
       changes,
     };
-  } catch {
-    return null;
   }
+
+  return null;
 }
 
 /**
