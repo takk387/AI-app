@@ -15,6 +15,7 @@ import {
   getGeminiLayoutService,
   type GeminiChatRequest,
   type GeminiChatResponse,
+  type VisualAnalysis,
 } from '@/services/GeminiLayoutService';
 import type {
   LayoutDesign,
@@ -98,7 +99,28 @@ export async function POST(request: Request) {
       });
     }
 
-    // Build Gemini request
+    // When reference images are present, use analyzeScreenshot for proper color extraction
+    // The chat() method has a generic prompt that doesn't extract colors accurately
+    // analyzeScreenshot() has specific instructions to extract EXACT colors from the image
+    let imageAnalysis: VisualAnalysis | null = null;
+    const hasReferenceImages = referenceImages && referenceImages.length > 0;
+
+    if (hasReferenceImages && allImages.length > 0) {
+      try {
+        // Use analyzeScreenshot for accurate color extraction from reference image
+        imageAnalysis = await geminiService.analyzeScreenshot(allImages[0]);
+        console.log('[chat-gemini] Analyzed reference image, extracted colors:', {
+          primary: imageAnalysis.colorPalette.primary,
+          secondary: imageAnalysis.colorPalette.secondary,
+          accent: imageAnalysis.colorPalette.accent,
+          background: imageAnalysis.colorPalette.background,
+        });
+      } catch (analyzeError) {
+        console.error('[chat-gemini] Image analysis failed:', analyzeError);
+      }
+    }
+
+    // Build Gemini request for chat response
     const geminiRequest: GeminiChatRequest = {
       message,
       images: allImages,
@@ -109,18 +131,21 @@ export async function POST(request: Request) {
       })),
     };
 
-    // Call Gemini
+    // Call Gemini for conversational response
     const geminiResponse: GeminiChatResponse = await geminiService.chat(geminiRequest);
 
     const duration = Date.now() - startTime;
 
-    // Convert visual analysis to design updates if available
+    // Convert visual analysis to design updates
+    // PRIORITY: Use imageAnalysis from analyzeScreenshot (accurate colors)
+    // FALLBACK: Use geminiResponse.analysis from chat (if available)
     let designUpdates: Partial<LayoutDesign> =
       (geminiResponse.designUpdates as Partial<LayoutDesign>) || {};
 
-    // If Gemini returned a visual analysis (with colors, typography, etc.), convert it to design updates
-    if (geminiResponse.analysis) {
-      const analysis = geminiResponse.analysis;
+    // Use the image analysis from analyzeScreenshot (accurate) or fall back to chat response
+    const analysis = imageAnalysis || geminiResponse.analysis;
+
+    if (analysis) {
       designUpdates = {
         ...designUpdates,
         globalStyles: {
@@ -176,7 +201,8 @@ export async function POST(request: Request) {
         })) as SuggestedAction[]) || [],
       designChanges: [] as DesignChange[],
       tokensUsed: { input: 0, output: 0 }, // Gemini doesn't expose token counts the same way
-      geminiAnalysis: geminiResponse.analysis,
+      // Use imageAnalysis from analyzeScreenshot (accurate) or fall back to chat response
+      geminiAnalysis: imageAnalysis || geminiResponse.analysis,
       modelUsed: 'gemini' as const,
       duration,
     };
