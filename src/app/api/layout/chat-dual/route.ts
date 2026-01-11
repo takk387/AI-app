@@ -266,11 +266,31 @@ export async function POST(request: Request) {
     // Combine messages
     const combinedMessage = buildCombinedMessage(geminiMessage, claudeMessage, effectiveModelMode);
 
-    // If we only have Gemini analysis, convert it to design updates
-    if (geminiAnalysis && Object.keys(updatedDesign).length === 0) {
+    // Always apply Gemini's visual analysis when available
+    // Gemini provides accurate colors/typography from the image, Claude provides structural changes
+    if (geminiAnalysis) {
       const geminiDesignUpdates = convertGeminiToDesignUpdates(geminiAnalysis);
-      updatedDesign = geminiDesignUpdates.updates;
-      designChanges = geminiDesignUpdates.changes;
+      const geminiStyles = geminiDesignUpdates.updates.globalStyles;
+
+      // Merge Gemini's visual updates with Claude's structural updates
+      // Gemini takes priority for globalStyles (colors, typography, effects, spacing)
+      // Claude takes priority for structure and components
+      if (geminiStyles) {
+        updatedDesign = {
+          ...updatedDesign,
+          globalStyles: {
+            ...updatedDesign.globalStyles,
+            // Gemini's visual analysis takes priority for all visual elements
+            colors: geminiStyles.colors,
+            typography: geminiStyles.typography,
+            spacing: geminiStyles.spacing,
+            effects: geminiStyles.effects,
+          },
+        };
+      }
+
+      // Include Gemini's design changes
+      designChanges = [...designChanges, ...geminiDesignUpdates.changes];
     }
 
     // Merge with current design

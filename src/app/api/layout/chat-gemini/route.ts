@@ -107,15 +107,61 @@ export async function POST(request: Request) {
 
     const duration = Date.now() - startTime;
 
+    // Convert visual analysis to design updates if available
+    let designUpdates: Partial<LayoutDesign> =
+      (geminiResponse.designUpdates as Partial<LayoutDesign>) || {};
+
+    // If Gemini returned a visual analysis (with colors, typography, etc.), convert it to design updates
+    if (geminiResponse.analysis) {
+      const analysis = geminiResponse.analysis;
+      designUpdates = {
+        ...designUpdates,
+        globalStyles: {
+          ...designUpdates.globalStyles,
+          colors: {
+            primary: analysis.colorPalette.primary,
+            secondary: analysis.colorPalette.secondary,
+            accent: analysis.colorPalette.accent,
+            background: analysis.colorPalette.background,
+            surface: analysis.colorPalette.surface,
+            text: analysis.colorPalette.text,
+            textMuted: analysis.colorPalette.textMuted,
+            border: analysis.colorPalette.textMuted,
+          },
+          typography: {
+            fontFamily: analysis.typography.estimatedBodyFont || 'Inter',
+            headingFont: analysis.typography.estimatedHeadingFont,
+            headingWeight: analysis.typography.headingWeight,
+            bodyWeight: analysis.typography.bodyWeight,
+            headingSize: 'lg' as const,
+            bodySize: 'base' as const,
+            lineHeight: 'normal' as const,
+            letterSpacing: 'normal' as const,
+          },
+          spacing: {
+            density: analysis.spacing.density,
+            containerWidth: 'standard' as const,
+            sectionPadding: analysis.spacing.sectionPadding,
+            componentGap: analysis.spacing.componentGap,
+          },
+          effects: {
+            borderRadius: analysis.effects.borderRadius,
+            shadows: analysis.effects.shadows,
+            animations: analysis.effects.hasAnimations ? 'smooth' : 'subtle',
+            blur: analysis.effects.hasBlur ? 'subtle' : 'none',
+            gradients: analysis.effects.hasGradients,
+          },
+        },
+      };
+    }
+
     // Build response
     const response = {
       message: geminiResponse.message,
-      updatedDesign: geminiResponse.designUpdates
-        ? mergeDesigns(
-            currentDesign as Partial<LayoutDesign>,
-            geminiResponse.designUpdates as Partial<LayoutDesign>
-          )
-        : currentDesign,
+      updatedDesign:
+        Object.keys(designUpdates).length > 0
+          ? mergeDesigns(currentDesign as Partial<LayoutDesign>, designUpdates)
+          : currentDesign,
       suggestedActions:
         (geminiResponse.suggestedActions?.map((a) => ({
           label: a.label,
