@@ -296,18 +296,22 @@ export async function POST(request: Request) {
     // BUILD RESPONSE
     // =========================================================================
 
-    // Combine messages
-    const combinedMessage = buildCombinedMessage(geminiMessage, claudeMessage, effectiveModelMode);
+    // In dual mode with Gemini analysis: Use Gemini's Creative Director message only
+    // Claude works silently on code structure - no message to user
+    const combinedMessage =
+      geminiAnalysis && geminiMessage
+        ? geminiMessage // Gemini is the Creative Director - its message is the chat response
+        : buildCombinedMessage(geminiMessage, claudeMessage, effectiveModelMode);
 
     // Always apply Gemini's visual analysis when available
-    // Gemini provides accurate colors/typography from the image, Claude provides structural changes
+    // Gemini provides accurate colors/typography from the image AND layout structure
     if (geminiAnalysis) {
       const geminiDesignUpdates = convertGeminiToDesignUpdates(geminiAnalysis);
       const geminiStyles = geminiDesignUpdates.updates.globalStyles;
+      const geminiStructure = geminiDesignUpdates.updates.structure;
 
-      // Merge Gemini's visual updates with Claude's structural updates
-      // Gemini takes priority for globalStyles (colors, typography, effects, spacing)
-      // Claude takes priority for structure and components
+      // Merge Gemini's visual updates AND structure with Claude's refinements
+      // Gemini takes priority for globalStyles AND structure (from reference image analysis)
       if (geminiStyles) {
         updatedDesign = {
           ...updatedDesign,
@@ -319,6 +323,8 @@ export async function POST(request: Request) {
             spacing: geminiStyles.spacing,
             effects: geminiStyles.effects,
           },
+          // Gemini's detected layout structure from reference image
+          structure: geminiStructure,
         };
       }
 
@@ -332,17 +338,30 @@ export async function POST(request: Request) {
     // CRITICAL: If Gemini analysis exists, force Gemini's colors to be the ONLY colors
     // This bypasses any deep merge issues that might preserve old/Claude colors
     if (geminiAnalysis) {
-      const geminiColors =
-        convertGeminiToDesignUpdates(geminiAnalysis).updates.globalStyles?.colors;
+      const geminiDesignUpdates = convertGeminiToDesignUpdates(geminiAnalysis);
+
+      // Force Gemini's colors
+      const geminiColors = geminiDesignUpdates.updates.globalStyles?.colors;
       if (geminiColors && mergedDesign.globalStyles) {
         mergedDesign.globalStyles.colors = geminiColors;
       }
+
+      // Force Gemini's structure (layout type, sidebar, header, footer)
+      const geminiStructure = geminiDesignUpdates.updates.structure;
+      if (geminiStructure) {
+        mergedDesign.structure = {
+          ...mergedDesign.structure,
+          ...geminiStructure,
+        };
+      }
     }
 
-    // Debug logging for color flow verification (can be removed once issue is confirmed fixed)
-    console.log('[chat-dual] Color flow debug:', {
+    // Debug logging for color/structure flow verification
+    console.log('[chat-dual] Design flow debug:', {
       hasGeminiAnalysis: !!geminiAnalysis,
+      geminiLayoutType: geminiAnalysis?.layoutType,
       geminiColors: geminiAnalysis?.colorPalette,
+      finalStructure: mergedDesign.structure,
       finalColors: mergedDesign.globalStyles?.colors,
     });
 

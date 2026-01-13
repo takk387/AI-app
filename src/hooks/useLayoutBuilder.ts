@@ -800,6 +800,8 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           role: 'assistant',
           content: data.message,
           timestamp: new Date(),
+          // Attach Gemini analysis for embedding Creative Director panel in chat
+          geminiAnalysis: data.geminiAnalysis,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);

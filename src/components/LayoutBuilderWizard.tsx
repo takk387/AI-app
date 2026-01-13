@@ -85,7 +85,7 @@ import {
   DesignSidePanel,
   MediaUploadZone,
 } from '@/components/layout-builder';
-import { GeminiAnalysisPanel } from '@/components/layout-builder/GeminiAnalysisPanel';
+// GeminiAnalysisPanel import removed - now embedded in MessageBubble component
 import { useLayoutPanelStore } from '@/stores/useLayoutPanelStore';
 
 // ============================================================================
@@ -371,7 +371,7 @@ export function LayoutBuilderWizard({
   // Reference media panel state
   const [showReferenceMediaPanel, _setShowReferenceMediaPanel] = useState(true);
   const [showDesignSidePanel, setShowDesignSidePanel] = useState(isAdvancedMode);
-  const [showGeminiAnalysis, setShowGeminiAnalysis] = useState(true); // Auto-show when analysis available
+  // Note: showGeminiAnalysis state removed - Creative Director Analysis is now embedded in chat via MessageBubble
 
   // Data states for advanced features
   const [customAnimation, setCustomAnimation] = useState<CustomAnimation | null>(null);
@@ -1697,16 +1697,8 @@ export function LayoutBuilderWizard({
             </div>
           )}
 
-          {/* Gemini Analysis Panel - shows when visual analysis is available */}
-          {geminiAnalysis && showGeminiAnalysis && (
-            <div className="absolute top-2 right-2 z-20 w-80 max-h-[60vh] overflow-y-auto">
-              <GeminiAnalysisPanel
-                analysis={geminiAnalysis}
-                isVisible={showGeminiAnalysis}
-                onClose={() => setShowGeminiAnalysis(false)}
-              />
-            </div>
-          )}
+          {/* Creative Director Analysis is now embedded in chat messages via MessageBubble */}
+          {/* The floating popup has been removed - analysis appears inline with Gemini's response */}
 
           {/* Layout Preview - FULL SPACE */}
           <div className="flex-1 min-h-0 overflow-hidden relative" id="layout-preview-container">

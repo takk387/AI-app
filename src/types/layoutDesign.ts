@@ -3,6 +3,8 @@
  * Complete design specification for the Layout Builder feature
  */
 
+import type { VisualAnalysis } from '@/services/GeminiLayoutService';
+
 // ============================================================================
 // Component Design Types
 // ============================================================================
@@ -393,6 +395,8 @@ export interface LayoutMessage {
   previewSnapshot?: string; // Screenshot of preview when message was sent
   error?: MessageError; // Error information for retry functionality
   isRetrying?: boolean; // Indicates message is being retried
+  /** Gemini's visual analysis for embedding Creative Director panel in chat */
+  geminiAnalysis?: VisualAnalysis;
 }
 
 // ============================================================================

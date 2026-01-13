@@ -1,6 +1,7 @@
 'use client';
 
 import type { LayoutMessage } from '@/types/layoutDesign';
+import { GeminiAnalysisPanel } from './GeminiAnalysisPanel';
 
 interface MessageBubbleProps {
   message: LayoutMessage;
@@ -144,6 +145,17 @@ export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
             message.content
           )}
         </div>
+
+        {/* Embed Creative Director Analysis panel when Gemini analysis is present */}
+        {message.geminiAnalysis && (
+          <div className="mt-3 -mx-2">
+            <GeminiAnalysisPanel
+              analysis={message.geminiAnalysis}
+              isVisible={true}
+              className="rounded-xl"
+            />
+          </div>
+        )}
 
         {/* Retry button for errors */}
         {canRetry && !message.isRetrying && onRetry && (
