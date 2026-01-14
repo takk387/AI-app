@@ -31,6 +31,10 @@ import type {
   LayoutWorkflowState,
   ElementType,
 } from '@/types/layoutDesign';
+import {
+  mapGeminiLayoutToStructureType,
+  mapStructureTypeToLayout,
+} from '@/utils/layoutTypeMapping';
 
 // Vercel serverless function config
 export const maxDuration = 60;
@@ -353,6 +357,12 @@ export async function POST(request: Request) {
           ...mergedDesign.structure,
           ...geminiStructure,
         };
+
+        // CRITICAL: Sync basePreferences.layout with structure.type
+        // This ensures LayoutPreview renders the correct layout component
+        if (geminiStructure.type && mergedDesign.basePreferences) {
+          mergedDesign.basePreferences.layout = mapStructureTypeToLayout(geminiStructure.type);
+        }
       }
     }
 
@@ -619,28 +629,8 @@ function convertGeminiToDesignUpdates(analysis: VisualAnalysis): {
   const sidebarPosition: 'left' | 'right' =
     sidebarComponent?.position?.area === 'right' ? 'right' : 'left';
 
-  // Map Gemini's layoutType to LayoutStructure type
-  const structureType = (():
-    | 'single-page'
-    | 'multi-page'
-    | 'dashboard'
-    | 'landing'
-    | 'wizard'
-    | 'split' => {
-    switch (analysis.layoutType) {
-      case 'dashboard':
-        return 'dashboard';
-      case 'landing':
-        return 'landing';
-      case 'e-commerce':
-      case 'portfolio':
-      case 'blog':
-      case 'saas':
-        return 'single-page';
-      default:
-        return 'single-page';
-    }
-  })();
+  // Map Gemini's layoutType to LayoutStructure type using centralized utility
+  const structureType = mapGeminiLayoutToStructureType(analysis.layoutType);
 
   const updates: Partial<LayoutDesign> = {
     globalStyles: {

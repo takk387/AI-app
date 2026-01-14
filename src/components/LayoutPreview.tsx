@@ -1343,8 +1343,13 @@ function DashboardLayout({
   const isMobile = viewMode === 'mobile';
   const isTablet = viewMode === 'tablet';
 
+  // Inline style for main background - overrides Tailwind bg class when colorSettings is set
+  const containerStyle = colorSettings?.background
+    ? { backgroundColor: colorSettings.background }
+    : undefined;
+
   return (
-    <div className={`flex flex-col h-full ${colors.bg}`}>
+    <div className={`flex flex-col h-full ${colors.bg}`} style={containerStyle}>
       <Header
         appName={appName}
         navItems={content.navItems}
@@ -1442,8 +1447,13 @@ function MultiPageLayout({
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
 
+  // Inline style for main background - overrides Tailwind bg class when colorSettings is set
+  const containerStyle = colorSettings?.background
+    ? { backgroundColor: colorSettings.background }
+    : undefined;
+
   return (
-    <div className={`flex flex-col h-full ${colors.bg}`}>
+    <div className={`flex flex-col h-full ${colors.bg}`} style={containerStyle}>
       <Header
         appName={appName}
         navItems={content.navItems}
@@ -1526,8 +1536,13 @@ function SinglePageLayout({
 }: LayoutComponentProps) {
   const isMobile = viewMode === 'mobile';
 
+  // Inline style for main background - overrides Tailwind bg class when colorSettings is set
+  const containerStyle = colorSettings?.background
+    ? { backgroundColor: colorSettings.background }
+    : undefined;
+
   return (
-    <div className={`flex flex-col h-full ${colors.bg}`}>
+    <div className={`flex flex-col h-full ${colors.bg}`} style={containerStyle}>
       <Header
         appName={appName}
         navItems={content.navItems}
@@ -1735,6 +1750,22 @@ export function LayoutPreview({
   const style = stylePresets[preferences.style] || stylePresets.modern;
   const colors = colorSchemes[preferences.colorScheme] || colorSchemes.dark;
   const primaryColor = preferences.primaryColor || DEFAULT_PRIMARY_COLOR;
+
+  // Debug logging for layout preview (enabled via NEXT_PUBLIC_DEBUG_PANEL)
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DEBUG_PANEL === 'true') {
+      console.log('[LayoutPreview] Design settings received:', {
+        'preferences.layout': preferences.layout,
+        'preferences.colorScheme': preferences.colorScheme,
+        'colorSettings (from Gemini)': componentDesign?.colorSettings,
+        'colorSettings.background': componentDesign?.colorSettings?.background,
+        'colorSettings.primary': componentDesign?.colorSettings?.primary,
+        'colorSettings.text': componentDesign?.colorSettings?.text,
+        'colorSettings.surface': componentDesign?.colorSettings?.surface,
+        'baseColors (Tailwind fallback)': colors,
+      });
+    }
+  }, [preferences.layout, preferences.colorScheme, componentDesign?.colorSettings, colors]);
 
   // Get device dimensions
   const dimensions = getDeviceDimensions(viewMode);

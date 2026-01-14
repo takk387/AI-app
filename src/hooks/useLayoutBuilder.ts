@@ -22,6 +22,10 @@ import geminiLayoutService, {
   type VisualAnalysis,
   type ExtractedStyles,
 } from '@/services/GeminiLayoutService';
+import {
+  mapGeminiLayoutToUILayout,
+  mapGeminiLayoutToStructureType,
+} from '@/utils/layoutTypeMapping';
 import type {
   LayoutDesign,
   LayoutMessage,
@@ -856,25 +860,15 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
               }
             : undefined;
 
-          // Map Gemini's layoutType to basePreferences.layout
+          // Map Gemini's layoutType to both basePreferences.layout AND structure.type
           // This ensures the preview renders the correct layout component
           const geminiLayoutType = data.geminiAnalysis?.layoutType;
-          const mappedLayout: 'single-page' | 'multi-page' | 'dashboard' | undefined = (() => {
-            if (!geminiLayoutType) return undefined;
-            switch (geminiLayoutType) {
-              case 'dashboard':
-                return 'dashboard';
-              case 'e-commerce':
-              case 'blog':
-                return 'multi-page';
-              case 'landing':
-              case 'portfolio':
-              case 'saas':
-              case 'single-page':
-              default:
-                return 'single-page';
-            }
-          })();
+          const mappedLayout = geminiLayoutType
+            ? mapGeminiLayoutToUILayout(geminiLayoutType)
+            : undefined;
+          const mappedStructureType = geminiLayoutType
+            ? mapGeminiLayoutToStructureType(geminiLayoutType)
+            : undefined;
 
           // Detect colorScheme from Gemini's extracted background color
           const detectedColorScheme: 'light' | 'dark' | undefined = geminiColors
@@ -939,7 +933,9 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
             structure: {
               ...design.structure,
               ...(data.updatedDesign?.structure || {}),
-              // If Gemini detected structure from reference image, apply it
+              // If Gemini detected layout type, apply it to structure.type
+              ...(mappedStructureType ? { type: mappedStructureType } : {}),
+              // If Gemini detected components from reference image, apply them
               ...(data.geminiAnalysis?.components
                 ? {
                     hasHeader: data.geminiAnalysis.components.some((c) => c.type === 'header'),

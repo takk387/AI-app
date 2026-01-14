@@ -85,6 +85,7 @@ import {
   DesignSidePanel,
   MediaUploadZone,
 } from '@/components/layout-builder';
+import { mapStructureTypeToLayout } from '@/utils/layoutTypeMapping';
 // GeminiAnalysisPanel import removed - now embedded in MessageBubble component
 import { useLayoutPanelStore } from '@/stores/useLayoutPanelStore';
 
@@ -209,25 +210,9 @@ interface LayoutBuilderWizardProps {
 
 /**
  * Map LayoutStructure.type to valid UIPreferences.layout types
- * This is needed because structure.type has additional values (landing, wizard, split)
- * that aren't valid for UIPreferences.layout
+ * This is now imported from centralized utility - keeping alias for backwards compatibility
  */
-function getLayoutFromStructure(
-  structureType: string | undefined
-): 'single-page' | 'multi-page' | 'dashboard' | 'custom' {
-  switch (structureType) {
-    case 'dashboard':
-      return 'dashboard';
-    case 'multi-page':
-      return 'multi-page';
-    case 'landing':
-    case 'wizard':
-    case 'split':
-    case 'single-page':
-    default:
-      return 'single-page';
-  }
-}
+const getLayoutFromStructure = mapStructureTypeToLayout;
 
 // ============================================================================
 // MAIN COMPONENT
