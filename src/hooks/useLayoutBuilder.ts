@@ -825,17 +825,8 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           }
         }
 
-        // Determine intelligent model routing
-        const hasImages = !!(screenshot || (referenceImages && referenceImages.length > 0));
-        const routingDecision = determineModelRouting({
-          message: text,
-          hasImages,
-          currentDesign: design as Record<string, unknown>,
-        });
-        setModelRouting(routingDecision);
-
-        // Get the appropriate API endpoint based on routing
-        const apiEndpoint = getApiEndpoint(routingDecision.route);
+        // Use Gemini-only endpoint
+        const apiEndpoint = '/api/layout/chat';
 
         // Check if design changed since last request (token optimization)
         const currentDesignHash = hashDesign(design);
@@ -874,15 +865,13 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: LayoutChatResponse & {
           geminiAnalysis?: VisualAnalysis;
-          modelUsed?: ModelRouting;
+          modelUsed?: 'gemini';
+          componentCount?: number;
+          autoApplied?: boolean;
         } = await response.json();
 
-        // Track which model was used
-        if (data.modelUsed) {
-          setLastModelUsed(data.modelUsed);
-        } else {
-          setLastModelUsed(routingDecision.route);
-        }
+        // Track that Gemini was used
+        setLastModelUsed('GEMINI' as ModelRouting);
 
         // Handle Gemini analysis from dual-model pipeline
         if (data.geminiAnalysis) {
@@ -891,69 +880,15 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
             onGeminiAnalysis(data.geminiAnalysis);
           }
         } else if (referenceImages.length > 0) {
-          // FALLBACK: If Gemini unavailable but we have reference images,
-          // extract colors client-side using canvas-based extraction
-          try {
-            console.log(
-              '[useLayoutBuilder] Gemini unavailable, using client-side color extraction'
-            );
-            const extractionResult = await extractColorsFromImage(referenceImages[0]);
+          // Gemini is required for layout builder - no fallback
+          console.warn('[useLayoutBuilder] Gemini analysis not available');
+        }
 
-            // Create a synthetic VisualAnalysis from client-side extraction
-            const clientSideAnalysis: VisualAnalysis = {
-              layoutType: 'single-page',
-              colorPalette: {
-                primary: extractionResult.palette.primary,
-                secondary: extractionResult.palette.secondary,
-                accent: extractionResult.palette.accent,
-                background: extractionResult.palette.background,
-                surface: extractionResult.palette.surface,
-                text: extractionResult.palette.text,
-                textMuted: extractionResult.palette.textMuted,
-              },
-              typography: {
-                headingStyle: 'Bold sans-serif',
-                bodyStyle: 'Regular sans-serif',
-                headingWeight: 'bold',
-                bodyWeight: 'normal',
-                estimatedHeadingFont: 'Inter',
-                estimatedBodyFont: 'Inter',
-              },
-              spacing: {
-                density: 'normal',
-                sectionPadding: 'md',
-                componentGap: 'md',
-              },
-              components: [],
-              effects: {
-                borderRadius: 'md',
-                shadows: 'subtle',
-                hasGradients: false,
-                hasBlur: false,
-                hasAnimations: false,
-              },
-              vibe: extractionResult.isDarkImage ? 'Dark and modern' : 'Light and clean',
-              vibeKeywords: extractionResult.isDarkImage
-                ? ['dark', 'modern', 'sleek']
-                : ['light', 'clean', 'minimal'],
-              confidence: 0.7,
-            };
-
-            setGeminiAnalysis(clientSideAnalysis);
-            if (onGeminiAnalysis) {
-              onGeminiAnalysis(clientSideAnalysis);
-            }
-
-            // Inject the client-side analysis into data so it's applied below
-            data.geminiAnalysis = clientSideAnalysis;
-
-            console.log(
-              '[useLayoutBuilder] Client-side extracted colors:',
-              extractionResult.palette
-            );
-          } catch (extractError) {
-            console.error('[useLayoutBuilder] Client-side color extraction failed:', extractError);
-          }
+        // Log auto-application status
+        if (data.autoApplied && data.componentCount) {
+          console.log(
+            `[useLayoutBuilder] ✅ Auto-applied ${data.componentCount} components from reference image`
+          );
         }
 
         // Add assistant message
@@ -968,106 +903,50 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
 
         setMessages((prev) => [...prev, assistantMessage]);
 
-        // Update design with any changes - use updateDesign to track history
-        // Check for either updatedDesign content OR geminiAnalysis (which has colors to apply)
+        // Update design with any changes from Gemini
         const hasDesignUpdates = data.updatedDesign && Object.keys(data.updatedDesign).length > 0;
-        const hasGeminiColors = data.geminiAnalysis?.colorPalette;
 
-        if (hasDesignUpdates || hasGeminiColors) {
-          // Merge updates with current design
-          const baseStyles = defaultLayoutDesign.globalStyles;
-
-          // If we have Gemini analysis but no design updates, create colors from Gemini
-          const geminiColors = hasGeminiColors
-            ? {
-                primary: data.geminiAnalysis!.colorPalette.primary,
-                secondary: data.geminiAnalysis!.colorPalette.secondary,
-                accent: data.geminiAnalysis!.colorPalette.accent,
-                background: data.geminiAnalysis!.colorPalette.background,
-                surface: data.geminiAnalysis!.colorPalette.surface,
-                text: data.geminiAnalysis!.colorPalette.text,
-                textMuted: data.geminiAnalysis!.colorPalette.textMuted,
-                border: data.geminiAnalysis!.colorPalette.textMuted,
-              }
-            : undefined;
-
-          // Map Gemini's layoutType to both basePreferences.layout AND structure.type
-          // This ensures the preview renders the correct layout component
-          const geminiLayoutType = data.geminiAnalysis?.layoutType;
-          const mappedLayout = geminiLayoutType
-            ? mapGeminiLayoutToUILayout(geminiLayoutType)
-            : undefined;
-          const mappedStructureType = geminiLayoutType
-            ? mapGeminiLayoutToStructureType(geminiLayoutType)
-            : undefined;
-
-          // Detect colorScheme from Gemini's extracted background color
-          const detectedColorScheme: 'light' | 'dark' | undefined = geminiColors
-            ? isColorDark(geminiColors.background)
-              ? 'dark'
-              : 'light'
-            : undefined;
-
-          // DEBUG: Log Gemini design application
-          console.log('[useLayoutBuilder] Applying Gemini design:', {
-            hasGeminiColors: !!geminiColors,
-            extractedBackground: geminiColors?.background,
-            extractedPrimary: geminiColors?.primary,
-            detectedLayout: mappedLayout,
-            detectedStructure: mappedStructureType,
-            hasHeader: data.geminiAnalysis?.components?.some((c) => c.type === 'header'),
-            hasSidebar: data.geminiAnalysis?.components?.some((c) => c.type === 'sidebar'),
-            hasFooter: data.geminiAnalysis?.components?.some((c) => c.type === 'footer'),
-          });
-
-          // Use functional state update to avoid stale closure issue
-          // This ensures we merge with the LATEST design state, not a stale reference
+        if (hasDesignUpdates) {
+          // PHASE 3: BULLETPROOF DATA PRESERVATION
+          // Use functional state update to avoid stale closure issues
           setDesign((prevDesign) => {
+            // STEP 1: Extract components from ALL possible sources
+            const detectedComponents =
+              data.updatedDesign?.structure?.detectedComponents ||
+              prevDesign.structure?.detectedComponents;
+
+            // STEP 2: Validate components
+            if (detectedComponents && detectedComponents.length > 0) {
+              console.log('[✅ Components preserved]', detectedComponents.length);
+            } else if (
+              data.geminiAnalysis?.components &&
+              data.geminiAnalysis.components.length > 0
+            ) {
+              console.warn('[⚠️ Components detected but not in updatedDesign]');
+            }
+
+            // STEP 3: Merge with FORCED component preservation
             const mergedDesign = {
               ...prevDesign,
               ...(data.updatedDesign || {}),
-              // Sync basePreferences.layout with Gemini's detected layout type
               basePreferences: {
                 ...prevDesign.basePreferences,
                 ...(data.updatedDesign?.basePreferences || {}),
-                // Use Gemini's detected layout and colorScheme if available
-                ...(mappedLayout ? { layout: mappedLayout } : {}),
-                ...(detectedColorScheme ? { colorScheme: detectedColorScheme } : {}),
               },
               globalStyles: {
                 ...prevDesign.globalStyles,
                 ...(data.updatedDesign?.globalStyles || {}),
+                // Force Gemini's colors if they exist (bypass any merge issues)
+                colors: data.updatedDesign?.globalStyles?.colors || prevDesign.globalStyles?.colors,
                 typography: {
-                  ...baseStyles.typography,
                   ...prevDesign.globalStyles?.typography,
                   ...(data.updatedDesign?.globalStyles?.typography || {}),
                 },
-                // When Gemini colors exist, use them as the COMPLETE color set (no spreading old values)
-                // This prevents old colors from persisting through spread operations
-                colors: geminiColors
-                  ? {
-                      primary: geminiColors.primary,
-                      secondary: geminiColors.secondary,
-                      accent: geminiColors.accent,
-                      background: geminiColors.background,
-                      surface: geminiColors.surface,
-                      text: geminiColors.text,
-                      textMuted: geminiColors.textMuted,
-                      border: geminiColors.border,
-                    }
-                  : {
-                      // Only spread when no Gemini colors
-                      ...baseStyles.colors,
-                      ...prevDesign.globalStyles?.colors,
-                      ...(data.updatedDesign?.globalStyles?.colors || {}),
-                    },
                 spacing: {
-                  ...baseStyles.spacing,
                   ...prevDesign.globalStyles?.spacing,
                   ...(data.updatedDesign?.globalStyles?.spacing || {}),
                 },
                 effects: {
-                  ...baseStyles.effects,
                   ...prevDesign.globalStyles?.effects,
                   ...(data.updatedDesign?.globalStyles?.effects || {}),
                 },
@@ -1079,26 +958,8 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
               structure: {
                 ...prevDesign.structure,
                 ...(data.updatedDesign?.structure || {}),
-                // If Gemini detected layout type, apply it to structure.type
-                ...(mappedStructureType ? { type: mappedStructureType } : {}),
-                // If Gemini detected components from reference image, apply them
-                ...(data.geminiAnalysis?.components
-                  ? {
-                      hasHeader: data.geminiAnalysis.components.some((c) => c.type === 'header'),
-                      hasSidebar: data.geminiAnalysis.components.some((c) => c.type === 'sidebar'),
-                      hasFooter: data.geminiAnalysis.components.some((c) => c.type === 'footer'),
-                      // Only pass components for dynamic layout rendering if they have precise bounds
-                      // This happens when analyzePageEnhanced() was used (for reference images)
-                      // Components from analyzeScreenshot() don't have bounds and shouldn't be passed
-                      ...(data.geminiAnalysis.components[0] &&
-                      'bounds' in data.geminiAnalysis.components[0]
-                        ? {
-                            detectedComponents: data.geminiAnalysis
-                              .components as unknown as DetectedComponentEnhanced[],
-                          }
-                        : {}),
-                    }
-                  : {}),
+                // FORCE: Components are sacred, never overwrite
+                detectedComponents: detectedComponents || prevDesign.structure?.detectedComponents,
               },
             } as Partial<LayoutDesign>;
 

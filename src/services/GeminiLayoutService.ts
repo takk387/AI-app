@@ -18,6 +18,7 @@ import type {
   MultiPageAnalysisResult,
   PageRole,
 } from '@/types/layoutDesign';
+import { GEMINI_LAYOUT_BUILDER_SYSTEM_PROMPT } from '@/prompts/geminiLayoutBuilderPrompt';
 
 // ============================================================================
 // Helper Functions
@@ -257,8 +258,12 @@ class GeminiLayoutService {
 
     if (apiKey) {
       this.client = new GoogleGenerativeAI(apiKey);
-      this.model = this.client.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+      // Try gemini-3-pro first, fallback to other models if unavailable
+      const modelPriority = ['gemini-3-pro', 'gemini-2.0-flash-exp', 'gemini-1.5-pro'];
+      const modelToUse = modelPriority[0]; // Start with gemini-3-pro
+      this.model = this.client.getGenerativeModel({ model: modelToUse });
       this.isAvailable = true;
+      console.log(`[GeminiLayoutService] Initialized with model: ${modelToUse}`);
     } else {
       console.warn('Gemini service: GOOGLE_API_KEY not configured');
       this.isAvailable = false;
@@ -617,20 +622,15 @@ Return ONLY valid JSON, no markdown.`;
   // ---------------------------------------------------------------------------
 
   private buildSystemPrompt(currentDesign?: Record<string, unknown>): string {
-    return `You are a Creative Director AI assistant specializing in visual design for web applications.
+    // Use the comprehensive system prompt from Phase 4
+    const basePrompt = GEMINI_LAYOUT_BUILDER_SYSTEM_PROMPT;
 
-Your role:
-- Analyze visual designs with exceptional accuracy
-- Suggest design improvements based on modern UI/UX principles
-- Extract colors, typography, spacing, and layout patterns
-- Describe design aesthetics and "vibes" in creative terms
-- Help users clone, replicate, or improve designs
+    // Add current design context if available
+    const contextSection = currentDesign
+      ? `\n\n## Current Design Context\n\n${JSON.stringify(currentDesign, null, 2).slice(0, 2000)}`
+      : '';
 
-${currentDesign ? `Current design context:\n${JSON.stringify(currentDesign, null, 2).slice(0, 2000)}` : ''}
-
-When suggesting design changes, provide specific values (hex colors, spacing values, etc.).
-When analyzing images, be thorough and accurate with color extraction.
-Always maintain a helpful, creative, and enthusiastic tone.`;
+    return basePrompt + contextSection;
   }
 
   private extractSuggestedActions(text: string): Array<{ label: string; action: string }> {
@@ -774,8 +774,33 @@ Return ONLY the JSON object, no markdown or explanation.`;
       },
     };
 
-    const prompt = `You are an expert UI/UX analyst. Analyze this screenshot for EXACT REPLICATION purposes.
+    const prompt = `You are an expert UI/UX analyst analyzing a UI for EXACT REPLICATION by a code generation system.
 ${pageName ? `This page is named: "${pageName}"` : ''}
+
+CRITICAL MISSION: Every component you detect will be built into a real application by the Dynamic Phase Builder.
+If you miss something, it won't exist in the final app. Be EXHAUSTIVE and PRECISE.
+
+Your analysis feeds into:
+1. Visual preview (DynamicLayoutRenderer) - renders the layout in real-time
+2. Code generation (Dynamic Phase Builder) - generates production React components
+3. Production deployment (AI App Builder) - deploys the working application
+
+DETECTION REQUIREMENTS:
+- Detect EVERY visible UI element, no matter how small
+- Include structural components (header, footer, sidebar, navigation)
+- Include content sections (hero, features, pricing, testimonials, stats, cta)
+- Include interactive elements (buttons, inputs, forms, modals, dropdowns)
+- Include data display (tables, charts, stats, badges, cards)
+- Include navigation (tabs, breadcrumbs, pagination, menus)
+- Include micro-elements (dividers, avatars, icons, tooltips, progress bars)
+
+PRECISION REQUIREMENTS:
+- Provide EXACT measurements as viewport percentages (0-100)
+- Extract EXACT hex colors (no approximations like #000 or #FFF - use actual colors)
+- Identify parent-child relationships (nested structure)
+- Detect interactive states (hover, active, focus, disabled)
+- Capture content samples (text, placeholders, labels)
+- Note responsive indicators if visible
 
 Return a JSON object with PRECISE measurements as percentages of viewport (0-100):
 
@@ -874,7 +899,7 @@ CRITICAL RULES FOR EXACT REPLICATION:
 2. Provide PRECISE bounding boxes as viewport percentages (measure carefully)
 3. Identify parent-child relationships between components (nested structure)
 4. Mark navigation items and their destinations if detectable
-5. Include ALL visible UI components, not just major sections
+5. Include ALL visible UI components, not just major sections - aim for 20-30+ components per complex layout
 6. For each component, extract:
    - Exact background color, text color, border color
    - Font size and weight as they appear
@@ -885,6 +910,14 @@ CRITICAL RULES FOR EXACT REPLICATION:
 8. Detect interactive elements (buttons, links, inputs)
 9. Identify component variants (primary button vs secondary, filled vs outlined)
 10. Note any special states (hover styles, active states, disabled states)
+
+COMPONENT TYPES SUPPORTED (30+ types):
+header, sidebar, hero, cards, navigation, footer, form, table, carousel, timeline, stepper, stats, 
+testimonials, pricing, features, cta, breadcrumb, pagination, tabs, search-bar, user-menu, logo, 
+content-section, image-gallery, chart, button, input, list, menu, modal, dropdown, badge, avatar, 
+divider, progress, and more
+
+REMEMBER: Missing elements = missing features in production. Be thorough, precise, and complete.
 
 Return ONLY valid JSON, no markdown.`;
 
