@@ -258,9 +258,9 @@ class GeminiLayoutService {
 
     if (apiKey) {
       this.client = new GoogleGenerativeAI(apiKey);
-      // Try gemini-3-pro first, fallback to other models if unavailable
-      const modelPriority = ['gemini-3-pro', 'gemini-2.0-flash-exp', 'gemini-1.5-pro'];
-      const modelToUse = modelPriority[0]; // Start with gemini-3-pro
+      // Gemini 3 Flash is optimal for vision/multimodal tasks (3x faster, better visual understanding)
+      const modelPriority = ['gemini-3-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+      const modelToUse = modelPriority[0];
       this.model = this.client.getGenerativeModel({ model: modelToUse });
       this.isAvailable = true;
       console.log(`[GeminiLayoutService] Initialized with model: ${modelToUse}`);
