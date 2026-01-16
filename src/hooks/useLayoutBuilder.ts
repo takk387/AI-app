@@ -43,6 +43,7 @@ import type {
   DetectedNavigation,
   InferredRoute,
   MultiPageAnalysisResult,
+  DetectedComponentEnhanced,
 } from '@/types/layoutDesign';
 import type { UIPreferences, AppConcept } from '@/types/appConcept';
 import type { ChatMessage } from '@/types/aiBuilderTypes';
@@ -1086,8 +1087,16 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
                       hasHeader: data.geminiAnalysis.components.some((c) => c.type === 'header'),
                       hasSidebar: data.geminiAnalysis.components.some((c) => c.type === 'sidebar'),
                       hasFooter: data.geminiAnalysis.components.some((c) => c.type === 'footer'),
-                      // Pass full component array for dynamic layout rendering
-                      detectedComponents: data.geminiAnalysis.components,
+                      // Only pass components for dynamic layout rendering if they have precise bounds
+                      // This happens when analyzePageEnhanced() was used (for reference images)
+                      // Components from analyzeScreenshot() don't have bounds and shouldn't be passed
+                      ...(data.geminiAnalysis.components[0] &&
+                      'bounds' in data.geminiAnalysis.components[0]
+                        ? {
+                            detectedComponents: data.geminiAnalysis
+                              .components as unknown as DetectedComponentEnhanced[],
+                          }
+                        : {}),
                     }
                   : {}),
               },

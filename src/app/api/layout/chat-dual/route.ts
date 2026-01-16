@@ -30,6 +30,8 @@ import type {
   SuggestedAction,
   LayoutWorkflowState as _LayoutWorkflowState,
   ElementType,
+  PageAnalysis,
+  DetectedComponentEnhanced,
 } from '@/types/layoutDesign';
 import {
   mapGeminiLayoutToStructureType,
@@ -55,13 +57,13 @@ interface _DualModelRequest extends LayoutChatRequest {
 }
 
 interface DualModelResponse extends LayoutChatResponse {
-  geminiAnalysis?: VisualAnalysis;
+  geminiAnalysis?: VisualAnalysis | PageAnalysis;
   modelUsed: 'gemini' | 'claude' | 'dual';
   pipelineStages?: {
     gemini?: {
       completed: boolean;
       duration: number;
-      analysis?: VisualAnalysis;
+      analysis?: VisualAnalysis | PageAnalysis;
     };
     claude?: {
       completed: boolean;
@@ -250,7 +252,7 @@ export async function POST(request: Request) {
     // STAGE 1: GEMINI VISUAL ANALYSIS
     // =========================================================================
 
-    let geminiAnalysis: VisualAnalysis | undefined;
+    let geminiAnalysis: VisualAnalysis | PageAnalysis | undefined;
     let geminiMessage: string | undefined;
     let geminiDuration = 0;
 
@@ -269,10 +271,17 @@ export async function POST(request: Request) {
           const isReferenceImage = hasReferenceImages;
 
           console.log(
-            `[Gemini] Analyzing ${isReferenceImage ? 'reference image' : 'preview screenshot'}`
+            `[Gemini] Analyzing ${isReferenceImage ? 'reference image' : 'preview screenshot'} with ${isReferenceImage ? 'analyzePageEnhanced (precise bounds)' : 'analyzeScreenshot'}`
           );
 
-          geminiAnalysis = await geminiService.analyzeScreenshot(imageToAnalyze);
+          // Use analyzePageEnhanced for reference images to get precise component bounds
+          // This enables DynamicLayoutRenderer to replicate the exact layout structure
+          if (isReferenceImage) {
+            geminiAnalysis = await geminiService.analyzePageEnhanced(imageToAnalyze);
+          } else {
+            // For preview screenshots (current state analysis), use simpler method
+            geminiAnalysis = await geminiService.analyzeScreenshot(imageToAnalyze);
+          }
           geminiDuration = Date.now() - geminiStart;
 
           geminiMessage = buildGeminiSummary(geminiAnalysis);
@@ -465,6 +474,7 @@ export async function POST(request: Request) {
       geminiColors: geminiAnalysis?.colorPalette,
       finalStructure: mergedDesign.structure,
       finalColors: mergedDesign.globalStyles?.colors,
+      detectedComponentsCount: mergedDesign.structure?.detectedComponents?.length ?? 0,
     });
 
     const _totalDuration = Date.now() - startTime;
@@ -517,8 +527,9 @@ export async function POST(request: Request) {
 
 /**
  * Build a human-readable summary of Gemini's visual analysis
+ * Supports both VisualAnalysis and PageAnalysis types
  */
-function buildGeminiSummary(analysis: VisualAnalysis): string {
+function buildGeminiSummary(analysis: VisualAnalysis | PageAnalysis): string {
   const parts: string[] = [];
 
   parts.push(`I analyzed the design and detected a **${analysis.layoutType}** layout.`);
@@ -706,8 +717,9 @@ async function extractDesignUpdates(
 
 /**
  * Convert Gemini's visual analysis to design updates
+ * Supports both VisualAnalysis (simple) and PageAnalysis (enhanced with precise bounds)
  */
-function convertGeminiToDesignUpdates(analysis: VisualAnalysis): {
+function convertGeminiToDesignUpdates(analysis: VisualAnalysis | PageAnalysis): {
   updates: Partial<LayoutDesign>;
   changes: DesignChange[];
 } {
@@ -717,12 +729,36 @@ function convertGeminiToDesignUpdates(analysis: VisualAnalysis): {
   const hasFooter = analysis.components?.some((c) => c.type === 'footer') ?? false;
 
   // Determine sidebar position from component analysis
+  // For PageAnalysis (enhanced), check bounds.left; for VisualAnalysis, check position.area
   const sidebarComponent = analysis.components?.find((c) => c.type === 'sidebar');
-  const sidebarPosition: 'left' | 'right' =
-    sidebarComponent?.position?.area === 'right' ? 'right' : 'left';
+  let sidebarPosition: 'left' | 'right' = 'left';
+  if (sidebarComponent) {
+    // Check if it's DetectedComponentEnhanced (has bounds) or DetectedComponent (has position)
+    if ('bounds' in sidebarComponent && sidebarComponent.bounds) {
+      // Enhanced format: sidebar on right if left position > 50%
+      sidebarPosition = sidebarComponent.bounds.left > 50 ? 'right' : 'left';
+    } else if ('position' in sidebarComponent && sidebarComponent.position) {
+      // Simple format: check area string
+      sidebarPosition = sidebarComponent.position.area === 'right' ? 'right' : 'left';
+    }
+  }
 
   // Map Gemini's layoutType to LayoutStructure type using centralized utility
   const structureType = mapGeminiLayoutToStructureType(analysis.layoutType);
+
+  // Extract detected components for DynamicLayoutRenderer
+  // Only include if they have bounds (DetectedComponentEnhanced format)
+  let detectedComponents: DetectedComponentEnhanced[] | undefined;
+  if (analysis.components && analysis.components.length > 0) {
+    const firstComponent = analysis.components[0];
+    // Check if components have bounds (PageAnalysis/enhanced format)
+    if ('bounds' in firstComponent && firstComponent.bounds) {
+      detectedComponents = analysis.components as DetectedComponentEnhanced[];
+      console.log(
+        `[convertGeminiToDesignUpdates] Including ${detectedComponents.length} detected components with precise bounds`
+      );
+    }
+  }
 
   const updates: Partial<LayoutDesign> = {
     globalStyles: {
@@ -770,6 +806,9 @@ function convertGeminiToDesignUpdates(analysis: VisualAnalysis): {
       headerType: 'sticky' as const,
       contentLayout: 'centered' as const,
       mainContentWidth: 'standard' as const,
+      // CRITICAL: Pass detected components for DynamicLayoutRenderer
+      // This enables exact layout replication from reference images
+      detectedComponents,
     },
   };
 
@@ -806,7 +845,10 @@ function convertGeminiToDesignUpdates(analysis: VisualAnalysis): {
 /**
  * Generate suggested actions based on the conversation
  */
-function generateSuggestedActions(message: string, analysis?: VisualAnalysis): SuggestedAction[] {
+function generateSuggestedActions(
+  message: string,
+  analysis?: VisualAnalysis | PageAnalysis
+): SuggestedAction[] {
   const actions: SuggestedAction[] = [];
 
   if (analysis) {
