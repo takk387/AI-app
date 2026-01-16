@@ -102,8 +102,20 @@ export async function POST(request: Request) {
 
     const geminiService = getGeminiLayoutService();
 
+    // Check if Gemini is available
+    if (!geminiService.checkAvailability()) {
+      return NextResponse.json(
+        {
+          error: 'Gemini AI service is not available',
+          message:
+            'The AI service is currently unavailable. Please check your GOOGLE_API_KEY configuration.',
+        },
+        { status: 503 }
+      );
+    }
+
     // Use conversational chat if no images (natural language interaction)
-    if (!hasImages && geminiService.checkAvailability()) {
+    if (!hasImages) {
       try {
         const chatResponse = await geminiService.chat({
           message,
@@ -132,7 +144,7 @@ export async function POST(request: Request) {
         console.error('[Gemini-Only] Chat failed:', error);
         geminiMessage = 'I encountered an issue processing your request. Please try again.';
       }
-    } else if (hasImages && geminiService.checkAvailability()) {
+    } else if (hasImages) {
       try {
         const imageToAnalyze = allImages[0];
         const isReferenceImage = hasReferenceImages;
