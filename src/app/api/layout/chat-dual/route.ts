@@ -467,14 +467,27 @@ export async function POST(request: Request) {
       }
     }
 
-    // Debug logging for color/structure flow verification
-    console.log('[chat-dual] Design flow debug:', {
+    // PHASE 3 DEBUG: Comprehensive data flow logging for component preservation
+    console.log('[chat-dual] ✅ Design flow debug:', {
       hasGeminiAnalysis: !!geminiAnalysis,
       geminiLayoutType: geminiAnalysis?.layoutType,
       geminiColors: geminiAnalysis?.colorPalette,
+      geminiComponentCount: geminiAnalysis?.components?.length ?? 0,
+
+      // Track components through the conversion and merge pipeline
+      componentsInUpdatedDesign: updatedDesign.structure?.detectedComponents?.length ?? 0,
+      componentsInMergedDesign: mergedDesign.structure?.detectedComponents?.length ?? 0,
+
+      // Full structure verification
       finalStructure: mergedDesign.structure,
       finalColors: mergedDesign.globalStyles?.colors,
-      detectedComponentsCount: mergedDesign.structure?.detectedComponents?.length ?? 0,
+
+      // Component sample (first 2 for verification)
+      componentSample: mergedDesign.structure?.detectedComponents?.slice(0, 2).map((c) => ({
+        type: c.type,
+        bounds: c.bounds,
+        hasContent: !!c.content,
+      })),
     });
 
     const _totalDuration = Date.now() - startTime;

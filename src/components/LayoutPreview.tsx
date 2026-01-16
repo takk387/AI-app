@@ -75,8 +75,14 @@ function getStatusColor(status: StatusType, colorSettings?: Partial<ColorSetting
 
 /**
  * Map status string to StatusType
+ * FIXED: Added null safety to prevent crash when status is undefined
  */
-function mapStatusToType(status: string): StatusType {
+function mapStatusToType(status: string | undefined): StatusType {
+  // Return default if status is missing or invalid
+  if (!status || typeof status !== 'string') {
+    return 'default';
+  }
+
   const normalizedStatus = status.toLowerCase();
   if (
     normalizedStatus.includes('success') ||
@@ -1818,21 +1824,39 @@ export function LayoutPreview({
   const colors = colorSchemes[preferences.colorScheme] || colorSchemes.dark;
   const primaryColor = preferences.primaryColor || DEFAULT_PRIMARY_COLOR;
 
-  // Debug logging for layout preview (enabled via NEXT_PUBLIC_DEBUG_PANEL)
+  // PHASE 3 DEBUG: Enhanced logging for component tracking
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DEBUG_PANEL === 'true') {
-      console.log('[LayoutPreview] Design settings received:', {
-        'preferences.layout': preferences.layout,
-        'preferences.colorScheme': preferences.colorScheme,
-        'colorSettings (from Gemini)': componentDesign?.colorSettings,
-        'colorSettings.background': componentDesign?.colorSettings?.background,
-        'colorSettings.primary': componentDesign?.colorSettings?.primary,
-        'colorSettings.text': componentDesign?.colorSettings?.text,
-        'colorSettings.surface': componentDesign?.colorSettings?.surface,
-        'baseColors (Tailwind fallback)': colors,
-      });
+    // Always log component data (not just in debug mode) since this is critical for troubleshooting
+    const detectedComponents =
+      componentDesign?.detectedComponents || componentDesign?.structure?.detectedComponents;
+
+    console.log('[LayoutPreview] 🎨 Component design received:', {
+      'preferences.layout': preferences.layout,
+      'componentDesign exists': !!componentDesign,
+      'componentDesign keys': componentDesign ? Object.keys(componentDesign) : [],
+      'detectedComponents (direct)': componentDesign?.detectedComponents?.length ?? 0,
+      'detectedComponents (in structure)':
+        componentDesign?.structure?.detectedComponents?.length ?? 0,
+      'final detectedComponents count': detectedComponents?.length ?? 0,
+      'will use DynamicLayoutRenderer': !!(detectedComponents && detectedComponents.length > 0),
+      colorSettings: componentDesign?.colorSettings,
+      structure: componentDesign?.structure,
+    });
+
+    // Show warning if components were expected but not found
+    if (!detectedComponents || detectedComponents.length === 0) {
+      console.warn('[LayoutPreview] ⚠️ No detected components - falling back to fixed templates');
+      console.warn(
+        '[LayoutPreview] This will show the hardcoded "Sign In" button instead of detected layout'
+      );
+    } else {
+      console.log(
+        '[LayoutPreview] ✅ Using DynamicLayoutRenderer with',
+        detectedComponents.length,
+        'components'
+      );
     }
-  }, [preferences.layout, preferences.colorScheme, componentDesign?.colorSettings, colors]);
+  }, [preferences.layout, componentDesign, preferences.colorScheme]);
 
   // Get device dimensions
   const dimensions = getDeviceDimensions(viewMode);

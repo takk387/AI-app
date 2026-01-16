@@ -879,6 +879,15 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
           if (onGeminiAnalysis) {
             onGeminiAnalysis(data.geminiAnalysis);
           }
+
+          // PHASE 3 DEBUG: Log Gemini analysis component count
+          console.log('[useLayoutBuilder] 📥 Received Gemini analysis:', {
+            componentCount: data.geminiAnalysis.components?.length ?? 0,
+            hasComponents: !!(
+              data.geminiAnalysis.components && data.geminiAnalysis.components.length > 0
+            ),
+            layoutType: data.geminiAnalysis.layoutType,
+          });
         } else if (referenceImages.length > 0) {
           // Gemini is required for layout builder - no fallback
           console.warn('[useLayoutBuilder] Gemini analysis not available');
@@ -915,14 +924,34 @@ export function useLayoutBuilder(options: UseLayoutBuilderOptions = {}): UseLayo
               data.updatedDesign?.structure?.detectedComponents ||
               prevDesign.structure?.detectedComponents;
 
-            // STEP 2: Validate components
+            // STEP 2: PHASE 3 DEBUG - Validate components with detailed logging
+            console.log('[useLayoutBuilder] 🔍 Component extraction debug:', {
+              fromUpdatedDesign: data.updatedDesign?.structure?.detectedComponents?.length ?? 0,
+              fromPrevDesign: prevDesign.structure?.detectedComponents?.length ?? 0,
+              finalCount: detectedComponents?.length ?? 0,
+              hasGeminiComponents: data.geminiAnalysis?.components?.length ?? 0,
+              dataKeys: Object.keys(data.updatedDesign || {}),
+              structureKeys: Object.keys(data.updatedDesign?.structure || {}),
+            });
+
             if (detectedComponents && detectedComponents.length > 0) {
-              console.log('[✅ Components preserved]', detectedComponents.length);
+              console.log('[✅ Components preserved]', {
+                count: detectedComponents.length,
+                types: detectedComponents.map((c) => c.type).join(', '),
+                sample: detectedComponents[0],
+              });
             } else if (
               data.geminiAnalysis?.components &&
               data.geminiAnalysis.components.length > 0
             ) {
-              console.warn('[⚠️ Components detected but not in updatedDesign]');
+              console.error(
+                '[⚠️ DATA LOSS] Components detected by Gemini but not in updatedDesign',
+                {
+                  geminiComponentCount: data.geminiAnalysis.components.length,
+                  updatedDesignHasStructure: !!data.updatedDesign?.structure,
+                  updatedDesignHasComponents: !!data.updatedDesign?.structure?.detectedComponents,
+                }
+              );
             }
 
             // STEP 3: Merge with FORCED component preservation
