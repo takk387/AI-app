@@ -76,7 +76,6 @@ import {
   DraftRecoveryBanner,
   MessageBubble,
   SuggestedActionsBar,
-  RecentChangesIndicator,
   ChatInput,
   TemplatesMenu,
   ToolsMenu,
@@ -1627,9 +1626,6 @@ export function LayoutBuilderWizard({
             )}
             <div ref={messagesEndRef} />
           </div>
-
-          {/* Recent changes */}
-          <RecentChangesIndicator changes={recentChanges} />
 
           {/* Suggested actions */}
           <SuggestedActionsBar
