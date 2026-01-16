@@ -161,6 +161,29 @@ export async function POST(request: Request) {
           geminiAnalysis = await geminiService.analyzePageEnhanced(imageToAnalyze);
           componentCount = geminiAnalysis.components?.length || 0;
 
+          // Debug: Log what Gemini returned
+          console.log('[Gemini-Only] ===== GEMINI ANALYSIS RESULT =====');
+          console.log(
+            '[Gemini-Only] Colors extracted:',
+            JSON.stringify(geminiAnalysis.colorPalette, null, 2)
+          );
+          console.log('[Gemini-Only] Components count:', componentCount);
+          if (geminiAnalysis.components?.[0]) {
+            const firstComp = geminiAnalysis.components[0];
+            console.log('[Gemini-Only] First component type:', firstComp.type);
+            console.log(
+              '[Gemini-Only] First component has bounds:',
+              'bounds' in firstComp && !!firstComp.bounds
+            );
+            if ('bounds' in firstComp) {
+              console.log(
+                '[Gemini-Only] First component bounds:',
+                JSON.stringify(firstComp.bounds)
+              );
+            }
+          }
+          console.log('[Gemini-Only] ================================');
+
           // AUTOMATIC APPLICATION: Reference images are auto-applied
           const geminiDesignUpdates = convertGeminiToDesignUpdates(geminiAnalysis);
           updatedDesign = geminiDesignUpdates.updates;

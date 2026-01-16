@@ -906,6 +906,15 @@ Return a JSON object with PRECISE measurements as percentages of viewport (0-100
   "confidence": 0.0-1.0
 }
 
+CRITICAL COLOR EXTRACTION RULES:
+- Extract the EXACT hex colors you see in the image, not typical UI defaults
+- Include ALL prominent colors: whites, light colors, pastels, greens, oranges, blues
+- If the image has a white or light background, use #FFFFFF or the actual light color
+- Do NOT default to dark colors (#0F172A, #1E293B, #111827) unless the image is ACTUALLY dark
+- Primary color should be the most visually prominent accent/brand color
+- Background should match what you ACTUALLY see in the image
+- Look for subtle color differences - don't flatten similar colors to the same value
+
 CRITICAL RULES FOR EXACT REPLICATION:
 1. Extract EXACT hex colors visible in the image (not approximations)
 2. Provide PRECISE bounding boxes as viewport percentages (measure carefully)
