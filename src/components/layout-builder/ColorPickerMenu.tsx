@@ -69,8 +69,8 @@ interface ColorPickerMenuProps {
  */
 export function ColorPickerMenu({
   primaryColor,
-  secondaryColor = '#6366F1',
-  accentColor = '#F59E0B',
+  secondaryColor,
+  accentColor,
   onColorChange,
 }: ColorPickerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -219,81 +219,85 @@ export function ColorPickerMenu({
             </div>
           </div>
 
-          {/* Secondary Color */}
-          <div className="px-3 py-2">
-            <label className="text-xs block mb-1.5" style={{ color: 'var(--text-muted)' }}>
-              Secondary Color
-            </label>
-            <div className="flex items-center gap-2">
-              <label className="relative cursor-pointer">
-                <input
-                  type="color"
-                  value={secondaryColor}
-                  onChange={(e) => handleColorChange('secondary', e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div
-                  className="w-8 h-8 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors"
-                  style={{ backgroundColor: secondaryColor }}
-                />
+          {/* Secondary Color - only shown if provided */}
+          {secondaryColor && (
+            <div className="px-3 py-2">
+              <label className="text-xs block mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                Secondary Color
               </label>
-              <input
-                type="text"
-                value={secondaryColor.toUpperCase()}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-                    handleColorChange('secondary', val);
-                  }
-                }}
-                className="flex-1 text-xs px-2 py-1.5 rounded focus:border-garden-500 focus:outline-none font-mono"
-                style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color)',
-                }}
-                placeholder="#6366F1"
-              />
+              <div className="flex items-center gap-2">
+                <label className="relative cursor-pointer">
+                  <input
+                    type="color"
+                    value={secondaryColor}
+                    onChange={(e) => handleColorChange('secondary', e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="w-8 h-8 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors"
+                    style={{ backgroundColor: secondaryColor }}
+                  />
+                </label>
+                <input
+                  type="text"
+                  value={secondaryColor.toUpperCase()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                      handleColorChange('secondary', val);
+                    }
+                  }}
+                  className="flex-1 text-xs px-2 py-1.5 rounded focus:border-garden-500 focus:outline-none font-mono"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                  placeholder="#6366F1"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Accent Color */}
-          <div className="px-3 py-2">
-            <label className="text-xs block mb-1.5" style={{ color: 'var(--text-muted)' }}>
-              Accent Color
-            </label>
-            <div className="flex items-center gap-2">
-              <label className="relative cursor-pointer">
-                <input
-                  type="color"
-                  value={accentColor}
-                  onChange={(e) => handleColorChange('accent', e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div
-                  className="w-8 h-8 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors"
-                  style={{ backgroundColor: accentColor }}
-                />
+          {/* Accent Color - only shown if provided */}
+          {accentColor && (
+            <div className="px-3 py-2">
+              <label className="text-xs block mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                Accent Color
               </label>
-              <input
-                type="text"
-                value={accentColor.toUpperCase()}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-                    handleColorChange('accent', val);
-                  }
-                }}
-                className="flex-1 text-xs px-2 py-1.5 rounded focus:border-garden-500 focus:outline-none font-mono"
-                style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color)',
-                }}
-                placeholder="#F59E0B"
-              />
+              <div className="flex items-center gap-2">
+                <label className="relative cursor-pointer">
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => handleColorChange('accent', e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="w-8 h-8 rounded-lg border-2 border-white/20 hover:border-white/40 transition-colors"
+                    style={{ backgroundColor: accentColor }}
+                  />
+                </label>
+                <input
+                  type="text"
+                  value={accentColor.toUpperCase()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                      handleColorChange('accent', val);
+                    }
+                  }}
+                  className="flex-1 text-xs px-2 py-1.5 rounded focus:border-garden-500 focus:outline-none font-mono"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                  placeholder="#F59E0B"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="my-2" style={{ borderTop: '1px solid var(--border-color)' }} />
 
