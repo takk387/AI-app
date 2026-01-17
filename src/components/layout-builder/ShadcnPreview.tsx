@@ -95,8 +95,9 @@ export function ShadcnPreview({ design }: ShadcnPreviewProps) {
       '--muted-foreground': hexToHSL(colors.textMuted),
       '--accent': hexToHSL(colors.accent || colors.primary),
       '--accent-foreground': getForeground(colors.accent || colors.primary),
-      '--destructive': hexToHSL(colors.error || '#ef4444'),
-      '--destructive-foreground': getForeground(colors.error || '#ef4444'),
+      // Use error color if defined, otherwise fall back to primary (no hardcoded fallbacks)
+      '--destructive': hexToHSL(colors.error || colors.primary),
+      '--destructive-foreground': getForeground(colors.error || colors.primary),
       '--border': hexToHSL(colors.border),
       '--input': hexToHSL(colors.border),
       '--ring': hexToHSL(colors.primary),

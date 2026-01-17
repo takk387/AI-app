@@ -11,6 +11,8 @@ interface StateEditorProps {
   onChange: (interactions: ElementInteractions) => void;
   /** Element being edited */
   elementId: string;
+  /** Primary color from design settings - used as default for color inputs */
+  primaryColor?: string;
   /** Optional class name */
   className?: string;
 }
@@ -26,6 +28,7 @@ export function StateEditor({
   interactions = {},
   onChange,
   elementId,
+  primaryColor,
   className = '',
 }: StateEditorProps) {
   const [activeState, setActiveState] = useState<StateType>('focus');
@@ -95,7 +98,7 @@ export function StateEditor({
           <label className="block text-xs text-slate-400 mb-1">Border Color</label>
           <input
             type="color"
-            value={interactions.focus?.borderColor || '#3B82F6'}
+            value={interactions.focus?.borderColor || primaryColor || ''}
             onChange={(e) =>
               updateState('focus', {
                 ...interactions.focus,
@@ -245,7 +248,7 @@ export function StateEditor({
               <label className="block text-xs text-slate-400 mb-1">Color</label>
               <input
                 type="color"
-                value={interactions.loading.color || '#3B82F6'}
+                value={interactions.loading.color || primaryColor || ''}
                 onChange={(e) =>
                   updateState('loading', {
                     type: interactions.loading?.type || 'spinner',
