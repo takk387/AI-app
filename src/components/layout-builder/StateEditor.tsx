@@ -98,7 +98,7 @@ export function StateEditor({
           <label className="block text-xs text-slate-400 mb-1">Border Color</label>
           <input
             type="color"
-            value={interactions.focus?.borderColor || primaryColor || '#000000'}
+            value={interactions.focus?.borderColor || primaryColor || '#6B7280'}
             onChange={(e) =>
               updateState('focus', {
                 ...interactions.focus,
@@ -248,7 +248,7 @@ export function StateEditor({
               <label className="block text-xs text-slate-400 mb-1">Color</label>
               <input
                 type="color"
-                value={interactions.loading.color || primaryColor || '#000000'}
+                value={interactions.loading.color || primaryColor || '#6B7280'}
                 onChange={(e) =>
                   updateState('loading', {
                     type: interactions.loading?.type || 'spinner',
