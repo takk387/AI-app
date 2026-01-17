@@ -315,6 +315,8 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
             : undefined,
           image: uploadedImage || undefined,
           hasImage: !!uploadedImage,
+          hasAppConcept: !!appConcept,
+          hasPhasePlan: !!dynamicBuildPhases.plan,
         });
       }
 

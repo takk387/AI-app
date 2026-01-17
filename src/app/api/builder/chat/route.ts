@@ -46,6 +46,8 @@ interface BuilderRequest {
   currentAppState?: CurrentAppState;
   image?: string; // Base64 encoded image
   hasImage?: boolean;
+  hasAppConcept?: boolean; // Indicates if an appConcept exists
+  hasPhasePlan?: boolean; // Indicates if a phase plan exists
 }
 
 interface BuilderResponse {
@@ -70,7 +72,8 @@ interface BuilderResponse {
 function analyzeResponseType(
   userMessage: string,
   aiResponse: string,
-  hasCurrentApp: boolean
+  hasCurrentApp: boolean,
+  hasConceptReady: boolean = false
 ): {
   responseType: ResponseType;
   shouldTriggerBuild: boolean;
@@ -97,13 +100,40 @@ function analyzeResponseType(
   // Check if response contains code blocks (indicates build/modify)
   const hasCodeBlocks = aiResponse.includes('```');
 
+  // Context-aware: if user has a concept ready and confirms, trigger build
+  const isSimpleConfirmation =
+    /^(yes|yep|yeah|sure|ok|okay|go|do it|sounds good|perfect|great|ready|let's go|build it|let's build|make it|create it)$/i.test(
+      userMessage.trim()
+    );
+  if (hasConceptReady && isSimpleConfirmation) {
+    return {
+      responseType: RESPONSE_TYPES.BUILD,
+      shouldTriggerBuild: true,
+      shouldTriggerModify: false,
+      shouldTriggerDesign: false,
+    };
+  }
+
   // Check for explicit build indicators in user message
   const buildPatterns = [
-    /^(build|create|make|generate)\s+(it|this|that)$/i, // "build it", "create this"
-    /^(build|create|make|generate)\s+(me\s+)?(a|an|the)?\s*/i, // "build me a todo app"
+    // Direct build commands (removed restrictive $ anchors)
+    /^(build|create|make|generate)\s+(it|this|that)/i,
+    /^(build|create|make|generate)\s+(me\s+)?(a|an|the)?\s+/i,
     /^(give me|show me)\s+(a|an)?\s*(new\s+)?(app|component|page)/i,
-    /^(implement|start)\s+(it|this|that|the\s+plan|building)$/i, // "implement the plan"
-    /^(go|do\s+it|let'?s\s+go|let'?s\s+build|yes|yep|yeah|sure|ok|okay)$/i, // confirmations
+    /^(implement|start)\s+(it|this|that|the\s+plan|building)/i,
+
+    // Simple confirmations (removed $ anchor so "yes, build it" works)
+    /^(go|do\s+it|let'?s\s+go|let'?s\s+build|yes|yep|yeah|sure|ok|okay)/i,
+
+    // Natural language confirmations with build intent
+    /(yes|yep|yeah|sure|ok|okay|sounds good|perfect|great|exactly).*(build|create|make|generate|do it|go ahead)/i,
+    /(build|create|make|generate).*(yes|please|now|for me|that)/i,
+
+    // Affirmative responses to "Ready to build?" prompts
+    /^(i'?m ready|ready to|let'?s do|go for it|start building|make it|do it)/i,
+
+    // Confirmations that indicate approval
+    /^(that'?s|this is).*(what i want|perfect|exactly|right)/i,
   ];
   const isExplicitBuild = buildPatterns.some((p) => p.test(userMessage.trim()));
 
@@ -270,8 +300,9 @@ export async function POST(request: Request) {
 
     // Analyze response type
     const hasCurrentApp = !!(currentAppState?.files && currentAppState.files.length > 0);
+    const hasConceptReady = !!(body.hasAppConcept || body.hasPhasePlan);
     const { responseType, shouldTriggerBuild, shouldTriggerModify, shouldTriggerDesign } =
-      analyzeResponseType(message, assistantMessage, hasCurrentApp);
+      analyzeResponseType(message, assistantMessage, hasCurrentApp, hasConceptReady);
 
     const result: BuilderResponse = {
       message: assistantMessage,
