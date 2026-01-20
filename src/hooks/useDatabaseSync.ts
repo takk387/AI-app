@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/utils/supabase/client';
 import type { Database } from '@/types/supabase';
 import type {
   GeneratedComponent,
@@ -148,8 +148,8 @@ export function useDatabaseSync(options: UseDatabaseSyncOptions): UseDatabaseSyn
    */
   const saveComponent = useCallback(
     async (component: GeneratedComponent): Promise<{ success: boolean; error?: unknown }> => {
-      if (!userId) {
-        // User not authenticated - skip database save
+      if (!userId || !isSupabaseConfigured()) {
+        // User not authenticated or Supabase not configured - skip database save
         return { success: true };
       }
 
@@ -193,8 +193,8 @@ export function useDatabaseSync(options: UseDatabaseSyncOptions): UseDatabaseSyn
    */
   const deleteComponent = useCallback(
     async (componentId: string): Promise<{ success: boolean; error?: unknown }> => {
-      if (!userId) {
-        // User not authenticated - skip database delete
+      if (!userId || !isSupabaseConfigured()) {
+        // User not authenticated or Supabase not configured - skip database delete
         return { success: true };
       }
 
@@ -238,7 +238,7 @@ export function useDatabaseSync(options: UseDatabaseSyncOptions): UseDatabaseSyn
    * Load all components from the database
    */
   const loadComponents = useCallback(async (): Promise<GeneratedComponent[]> => {
-    if (!userId) {
+    if (!userId || !isSupabaseConfigured()) {
       return [];
     }
 

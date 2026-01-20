@@ -36,8 +36,9 @@ function buildButtonStyle(spec: ButtonSpec, state: ComponentState): CSSPropertie
   const states = spec.states as Record<string, Record<string, string>>;
   const stateStyles = states[state] || spec.states.default;
 
+  // NOTE: Using neutral gray as fallback - actual colors are AI-generated based on design description
   return {
-    background: stateStyles.background || '#3B82F6',
+    background: stateStyles.background || '#6B7280',
     color: stateStyles.color || '#FFFFFF',
     borderColor: stateStyles.borderColor || 'transparent',
     borderWidth: stateStyles.borderWidth || '0px',
@@ -103,8 +104,9 @@ function buildLinkStyle(spec: LinkSpec, state: ComponentState): CSSProperties {
   const states = spec.states as Record<string, Record<string, string>>;
   const stateStyles = states[state] || spec.states.default;
 
+  // NOTE: Using neutral gray as fallback - actual colors are AI-generated based on design description
   return {
-    color: stateStyles.color || '#3B82F6',
+    color: stateStyles.color || '#6B7280',
     textDecoration: stateStyles.textDecoration || 'none',
     opacity: stateStyles.opacity ? parseFloat(stateStyles.opacity) : 1,
     background: stateStyles.background || 'transparent',

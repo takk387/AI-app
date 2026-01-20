@@ -191,131 +191,7 @@ export const DEFAULT_ANIMATION: CustomAnimation = {
   ],
 };
 
-export const ANIMATION_PRESETS: CustomAnimation[] = [
-  DEFAULT_ANIMATION,
-  {
-    id: 'fadeInUp',
-    name: 'fadeInUp',
-    duration: 600,
-    delay: 0,
-    iterationCount: 1,
-    direction: 'normal',
-    fillMode: 'forwards',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { opacity: 0, translateY: 20 }, easing: 'ease-out' },
-      { id: 'kf-100', time: 100, properties: { opacity: 1, translateY: 0 }, easing: 'ease-out' },
-    ],
-  },
-  {
-    id: 'fadeInDown',
-    name: 'fadeInDown',
-    duration: 600,
-    delay: 0,
-    iterationCount: 1,
-    direction: 'normal',
-    fillMode: 'forwards',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { opacity: 0, translateY: -20 }, easing: 'ease-out' },
-      { id: 'kf-100', time: 100, properties: { opacity: 1, translateY: 0 }, easing: 'ease-out' },
-    ],
-  },
-  {
-    id: 'scaleIn',
-    name: 'scaleIn',
-    duration: 400,
-    delay: 0,
-    iterationCount: 1,
-    direction: 'normal',
-    fillMode: 'forwards',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { opacity: 0, scale: 0.9 }, easing: 'ease-out-back' },
-      { id: 'kf-100', time: 100, properties: { opacity: 1, scale: 1 }, easing: 'ease-out-back' },
-    ],
-  },
-  {
-    id: 'slideInLeft',
-    name: 'slideInLeft',
-    duration: 500,
-    delay: 0,
-    iterationCount: 1,
-    direction: 'normal',
-    fillMode: 'forwards',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { translateX: -100, opacity: 0 }, easing: 'ease-out' },
-      { id: 'kf-100', time: 100, properties: { translateX: 0, opacity: 1 }, easing: 'ease-out' },
-    ],
-  },
-  {
-    id: 'slideInRight',
-    name: 'slideInRight',
-    duration: 500,
-    delay: 0,
-    iterationCount: 1,
-    direction: 'normal',
-    fillMode: 'forwards',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { translateX: 100, opacity: 0 }, easing: 'ease-out' },
-      { id: 'kf-100', time: 100, properties: { translateX: 0, opacity: 1 }, easing: 'ease-out' },
-    ],
-  },
-  {
-    id: 'bounce',
-    name: 'bounce',
-    duration: 1000,
-    delay: 0,
-    iterationCount: 'infinite',
-    direction: 'normal',
-    fillMode: 'none',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { translateY: 0 }, easing: 'ease-in-out' },
-      { id: 'kf-50', time: 50, properties: { translateY: -30 }, easing: 'ease-in-out' },
-      { id: 'kf-100', time: 100, properties: { translateY: 0 }, easing: 'ease-in-out' },
-    ],
-  },
-  {
-    id: 'pulse',
-    name: 'pulse',
-    duration: 1500,
-    delay: 0,
-    iterationCount: 'infinite',
-    direction: 'normal',
-    fillMode: 'none',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { scale: 1 }, easing: 'ease-in-out' },
-      { id: 'kf-50', time: 50, properties: { scale: 1.05 }, easing: 'ease-in-out' },
-      { id: 'kf-100', time: 100, properties: { scale: 1 }, easing: 'ease-in-out' },
-    ],
-  },
-  {
-    id: 'shake',
-    name: 'shake',
-    duration: 500,
-    delay: 0,
-    iterationCount: 1,
-    direction: 'normal',
-    fillMode: 'none',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { translateX: 0 }, easing: 'ease-in-out' },
-      { id: 'kf-25', time: 25, properties: { translateX: -10 }, easing: 'ease-in-out' },
-      { id: 'kf-50', time: 50, properties: { translateX: 10 }, easing: 'ease-in-out' },
-      { id: 'kf-75', time: 75, properties: { translateX: -10 }, easing: 'ease-in-out' },
-      { id: 'kf-100', time: 100, properties: { translateX: 0 }, easing: 'ease-in-out' },
-    ],
-  },
-  {
-    id: 'spin',
-    name: 'spin',
-    duration: 1000,
-    delay: 0,
-    iterationCount: 'infinite',
-    direction: 'normal',
-    fillMode: 'none',
-    keyframes: [
-      { id: 'kf-0', time: 0, properties: { rotate: 0 }, easing: 'linear' },
-      { id: 'kf-100', time: 100, properties: { rotate: 360 }, easing: 'linear' },
-    ],
-  },
-];
+// NOTE: ANIMATION_PRESETS removed - animations are AI-generated based on design description
 
 // ============================================================================
 // EASING FUNCTIONS
@@ -737,7 +613,6 @@ export default {
   addKeyframe,
   removeKeyframe,
   updateKeyframe,
-  ANIMATION_PRESETS,
   EASING_PRESETS,
   PROPERTY_TRACKS,
 };

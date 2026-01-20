@@ -187,7 +187,8 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions): void
 
       const isModified = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
-      const key = e.key.toLowerCase();
+      const key = e.key?.toLowerCase() ?? '';
+      if (!key) return; // Guard against undefined e.key (dead keys, special keys)
 
       // Skip shortcuts when typing in input fields (except for specific ones)
       if (isInputElement(e.target)) {

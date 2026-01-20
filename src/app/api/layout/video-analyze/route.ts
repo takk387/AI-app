@@ -14,7 +14,7 @@ import type {
   VideoAnalysisResult,
   ExtractedFrame,
 } from '@/types/layoutDesign';
-import { matchAnimationToPreset } from '@/data/animationPresets';
+// NOTE: Preset files removed - AI generates styles dynamically instead
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -363,15 +363,12 @@ export async function POST(request: Request) {
       allTransitions.push(...result.transitions);
     });
 
-    // Match animations to presets and add recommendations
-    const animationsWithPresets = allAnimations.map((anim) => {
-      const preset = matchAnimationToPreset(anim);
-      return {
-        ...anim,
-        matchedPreset: preset?.id,
-        presetConfidence: preset ? 0.8 : 0,
-      };
-    });
+    // Presets removed - animations are AI-generated dynamically
+    const animationsWithPresets = allAnimations.map((anim) => ({
+      ...anim,
+      matchedPreset: undefined,
+      presetConfidence: 0,
+    }));
 
     // Build the result
     const result: VideoAnalysisResult = {

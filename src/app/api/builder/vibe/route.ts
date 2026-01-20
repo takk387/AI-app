@@ -68,14 +68,16 @@ export async function POST(request: Request) {
         // Sanitize void elements before validation
         const { manifest: sanitizedManifest } = sanitizeManifest(styledManifest);
 
-        // Self-Healing Pass
-        const validatedManifest = await validateAndFix(model, sanitizedManifest);
+        // Self-Healing Pass - pass original manifest to preserve design system on fallback
+        const validatedManifest = await validateAndFix(model, sanitizedManifest, manifest);
 
         return NextResponse.json({ manifest: validatedManifest, metaphor: generatedMetaphor });
       } catch (e) {
         console.error('Vibe Coding Failed:', e);
         // Fail safe - return original manifest with default metaphor
-        return NextResponse.json({ manifest, metaphor: 'Clean minimal matte paper' });
+        const fallbackMetaphor = deriveMetaphorFromPrompt(prompt);
+        console.log('Using fallback metaphor from user prompt:', fallbackMetaphor);
+        return NextResponse.json({ manifest, metaphor: fallbackMetaphor });
       }
     }
 
@@ -127,6 +129,36 @@ export async function POST(request: Request) {
 
 // --- INTERNAL HELPERS ---
 
+/**
+ * Derive a basic metaphor from user's prompt when AI generation fails.
+ * Preserves user's design intent instead of defaulting to generic styles.
+ */
+function deriveMetaphorFromPrompt(prompt: string): string {
+  const normalized = prompt.toLowerCase();
+
+  const keywords: Record<string, string> = {
+    dark: 'Deep obsidian with sharp edges and minimal contrast',
+    light: 'Bright clean paper with soft shadows',
+    glass: 'Translucent frosted glass with soft blur',
+    neon: 'Dark surface with glowing neon accents',
+    modern: 'Clean minimal surfaces with precise geometry',
+    warm: 'Warm natural materials with soft textures',
+    cool: 'Cool steel with crisp edges',
+    elegant: 'Refined surfaces with subtle gradients',
+    bold: 'High contrast with strong visual weight',
+    minimal: 'Clean white space with essential elements only',
+    professional: 'Polished corporate with muted tones',
+    playful: 'Rounded shapes with vibrant energy',
+  };
+
+  for (const [keyword, metaphor] of Object.entries(keywords)) {
+    if (normalized.includes(keyword)) return metaphor;
+  }
+
+  // Preserve user's words in the fallback
+  return `Clean design inspired by: ${prompt.slice(0, 50)}`;
+}
+
 async function generatePhysicalMetaphor(model: any, userPrompt: string): Promise<string> {
   const prompt = `
     TASK: Convert this UI request into a "Physical Material Metaphor".
@@ -141,8 +173,9 @@ async function generatePhysicalMetaphor(model: any, userPrompt: string): Promise
   `;
 
   const result = await model.generateContent(prompt);
-  const parsed = safeJsonParse(result.response.text(), { metaphor: 'Clean minimal matte paper' });
-  return parsed.metaphor || 'Clean minimal matte paper';
+  const fallbackMetaphor = deriveMetaphorFromPrompt(userPrompt);
+  const parsed = safeJsonParse(result.response.text(), { metaphor: fallbackMetaphor });
+  return parsed.metaphor || fallbackMetaphor;
 }
 
 async function synthesizeStyles(model: any, manifest: LayoutManifest, metaphor: string): Promise<LayoutManifest> {
@@ -185,7 +218,12 @@ Return ONLY the complete styled JSON manifest.
   return safeJsonParse(result.response.text(), manifest);
 }
 
-async function validateAndFix(model: any, jsonInput: any, attempt = 1): Promise<LayoutManifest> {
+async function validateAndFix(
+  model: any,
+  jsonInput: any,
+  originalManifest: LayoutManifest,
+  attempt = 1
+): Promise<LayoutManifest> {
   const MAX_RETRIES = 3;
   try {
     const parsed = LayoutManifestSchema.parse(jsonInput);
@@ -209,11 +247,11 @@ async function validateAndFix(model: any, jsonInput: any, attempt = 1): Promise<
   } catch (error: any) {
     if (attempt > MAX_RETRIES) {
       console.error('Critical: Repair failed 3 times. Engaging Safe Mode.');
-      return generateSafeModeManifest();
+      return generateSafeModeManifest(originalManifest);
     }
     console.warn(`Validation Error (Attempt ${attempt}):`, error.message);
     const fixedJson = await repairJson(model, JSON.stringify(jsonInput), error.message);
-    return validateAndFix(model, fixedJson, attempt + 1);
+    return validateAndFix(model, fixedJson, originalManifest, attempt + 1);
   }
 }
 
@@ -256,7 +294,27 @@ function lintTailwindClasses(node: UISpecNode): UISpecNode {
   };
 }
 
-function generateSafeModeManifest(): LayoutManifest {
+/**
+ * Generate a safe fallback manifest when styling completely fails.
+ * Preserves the original manifest's design system (colors/fonts extracted from user's images/videos).
+ */
+function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutManifest {
+  // Preserve colors extracted from user's uploaded image/video
+  const preservedColors = originalManifest?.designSystem?.colors ?? {
+    primary: '#3b82f6',
+    secondary: '#6b7280',
+    background: '#f3f4f6',
+    surface: '#ffffff',
+    text: '#111827',
+  };
+
+  const preservedFonts = originalManifest?.designSystem?.fonts ?? {
+    heading: 'Inter',
+    body: 'Inter',
+  };
+
+  // Safe mode uses neutral colors - the preserved colors are stored in designSystem
+  // for future regeneration attempts to use
   return {
     id: 'safe-mode-fallback',
     version: '1.0.0',
@@ -264,14 +322,14 @@ function generateSafeModeManifest(): LayoutManifest {
       id: 'root',
       type: 'container',
       semanticTag: 'safe-mode-container',
-      styles: { tailwindClasses: 'min-h-screen flex items-center justify-center bg-gray-100 p-8' },
+      styles: { tailwindClasses: 'min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-8' },
       attributes: {},
       children: [
         {
           id: 'error-card',
           type: 'container',
           semanticTag: 'error-card',
-          styles: { tailwindClasses: 'bg-white rounded-lg shadow-lg p-8 max-w-md text-center' },
+          styles: { tailwindClasses: 'bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md text-center' },
           attributes: {},
           children: [
             {
@@ -285,25 +343,27 @@ function generateSafeModeManifest(): LayoutManifest {
               id: 'error-title',
               type: 'text',
               semanticTag: 'error-title',
-              styles: { tailwindClasses: 'text-xl font-semibold text-gray-900 mb-2' },
+              styles: { tailwindClasses: 'text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2' },
               attributes: { text: 'Layout Generation Issue' },
             },
             {
               id: 'error-description',
               type: 'text',
               semanticTag: 'error-description',
-              styles: { tailwindClasses: 'text-gray-600' },
-              attributes: { text: 'The layout could not be fully generated. This is a safe fallback view. Please try regenerating.' },
+              styles: { tailwindClasses: 'text-gray-600 dark:text-gray-400' },
+              attributes: {
+                text: 'The layout could not be fully generated. Your design colors have been preserved. Please try regenerating.',
+              },
             },
           ],
         },
       ],
     },
     definitions: {},
-    detectedFeatures: [],
+    detectedFeatures: originalManifest?.detectedFeatures ?? [],
     designSystem: {
-      colors: { primary: '#3b82f6', secondary: '#6b7280', background: '#f3f4f6', surface: '#ffffff', text: '#111827' },
-      fonts: { heading: 'Inter', body: 'Inter' },
+      colors: preservedColors,
+      fonts: preservedFonts,
     },
   };
 }

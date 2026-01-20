@@ -27,10 +27,7 @@ import {
 } from '@/utils/contextCompression';
 import type { ChatMessage } from '@/types/aiBuilderTypes';
 import { getDalleService, getImageCost } from '@/services/dalleService';
-import { getAnimationPreset } from '@/data/animationPresets';
-import { getAdvancedEffectPreset } from '@/data/advancedEffectsPresets';
-import { getComponentStatePreset } from '@/data/componentStatePresets';
-import { getMicroInteractionPreset } from '@/data/microInteractionPresets';
+// NOTE: Preset files removed - AI generates styles dynamically instead
 
 // External API Service Integrations
 import {
@@ -791,27 +788,24 @@ function executeApplyAnimation(input: {
   duration?: string;
   easing?: string;
 }): ToolResult {
-  const preset = input.presetId ? getAnimationPreset(input.presetId) : null;
-
+  // Presets removed - AI generates animations dynamically
   const animation: DetectedAnimation = {
     id: `anim-${Date.now()}`,
-    type: (preset?.type || 'custom') as DetectedAnimation['type'],
+    type: 'custom' as DetectedAnimation['type'],
     element: input.targetElement,
     property: 'transform',
     fromValue: 'initial',
     toValue: 'animated',
-    duration: input.duration || `${preset?.duration || 300}ms`,
-    easing: input.easing || preset?.easing || 'ease-out',
-    cssAnimation: preset?.css.animation,
-    tailwindConfig: preset?.tailwind ? { class: preset.tailwind.class } : undefined,
-    confidence: preset ? 0.9 : 0.7,
+    duration: input.duration || '300ms',
+    easing: input.easing || 'ease-out',
+    confidence: 0.7,
   };
 
   return {
     success: true,
     data: {
       animation,
-      message: `Applied ${preset?.name || input.animationType} animation to ${input.targetElement}`,
+      message: `Applied ${input.animationType} animation to ${input.targetElement}`,
     },
   };
 }
@@ -821,14 +815,12 @@ function executeApplyEffect(input: {
   targetElement: string;
   presetId?: string;
 }): ToolResult {
-  const preset = input.presetId ? getAdvancedEffectPreset(input.presetId) : null;
-
+  // Presets removed - AI generates effects dynamically
   return {
     success: true,
     data: {
       effect: {
         type: input.effectType,
-        preset: preset || undefined,
         targetElement: input.targetElement,
       },
       message: `Applied ${input.effectType} effect to ${input.targetElement}`,
@@ -841,14 +833,12 @@ function executeApplyComponentState(input: {
   targetElement: string;
   presetId?: string;
 }): ToolResult {
-  const preset = input.presetId ? getComponentStatePreset(input.presetId) : null;
-
+  // Presets removed - AI generates states dynamically
   return {
     success: true,
     data: {
       componentState: {
         state: input.state,
-        preset: preset || undefined,
         targetElement: input.targetElement,
       },
       message: `Applied ${input.state} state styling to ${input.targetElement}`,
@@ -861,14 +851,12 @@ function executeApplyMicroInteraction(input: {
   targetElement: string;
   trigger?: string;
 }): ToolResult {
-  const preset = getMicroInteractionPreset(input.interactionId);
-
+  // Presets removed - AI generates micro-interactions dynamically
   return {
     success: true,
     data: {
       microInteraction: {
         id: input.interactionId,
-        preset: preset || undefined,
         targetElement: input.targetElement,
         trigger: input.trigger || 'hover',
       },

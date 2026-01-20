@@ -17,6 +17,14 @@ const motionComponents: Record<string, React.ComponentType<any>> = {
 // Placeholder for missing images
 const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect fill='%23f3f4f6' width='100' height='100'/%3E%3Ctext x='50' y='50' font-family='Arial' font-size='12' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
+// Filter out React-specific props that shouldn't be spread to DOM elements
+function filterDOMAttributes(attrs: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!attrs) return {};
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { iconName, componentId, text, ...domSafe } = attrs;
+  return domSafe;
+}
+
 interface EngineProps {
   node: UISpecNode;
   definitions: Record<string, UISpecNode>;
@@ -68,7 +76,7 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
             e.currentTarget.src = PLACEHOLDER_SVG;
           }}
-          {...(node.attributes ?? {})}
+          {...filterDOMAttributes(node.attributes)}
         />
       );
     }
@@ -79,7 +87,7 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
         initial={node.styles?.motion?.initial}
         animate={node.styles?.motion?.animate}
         onClick={(e: any) => { e.stopPropagation(); onSelect?.(node.id); }}
-        {...(node.attributes ?? {})}
+        {...filterDOMAttributes(node.attributes)}
       />
     );
   }
@@ -91,7 +99,7 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
       initial={node.styles?.motion?.initial}
       animate={node.styles?.motion?.animate}
       onClick={(e: any) => { e.stopPropagation(); onSelect?.(node.id); }}
-      {...(node.attributes ?? {})}
+      {...filterDOMAttributes(node.attributes)}
     >
       {node.attributes?.text}
       {node.children?.filter(Boolean).map(c => (

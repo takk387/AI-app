@@ -3,7 +3,8 @@
 /**
  * LinkDesigner Component
  *
- * Design panel for link styling with variants, hover effects, and presets.
+ * Design panel for link styling with variants and hover effects.
+ * NOTE: Presets removed - link styles are AI-generated based on design description.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -26,277 +27,11 @@ interface LinkVariant {
   spec: LinkSpec;
 }
 
-// ============================================================================
-// PRESETS
-// ============================================================================
-
-const LINK_PRESETS: { id: string; name: string; description: string; spec: LinkSpec }[] = [
-  {
-    id: 'default',
-    name: 'Default',
-    description: 'Standard link with underline on hover',
-    spec: {
-      variant: 'default',
-      states: {
-        default: {
-          color: '#3B82F6',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        hover: {
-          color: '#60A5FA',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-        focus: {
-          color: '#3B82F6',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'rgba(59, 130, 246, 0.1)',
-        },
-        active: {
-          color: '#2563EB',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-      },
-      fontSize: '14px',
-      fontWeight: 500,
-      textDecoration: 'none',
-      transition: 'all 0.15s ease',
-    },
-  },
-  {
-    id: 'underlined',
-    name: 'Always Underlined',
-    description: 'Underlined link that changes color on hover',
-    spec: {
-      variant: 'underlined',
-      states: {
-        default: {
-          color: '#3B82F6',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-        hover: {
-          color: '#60A5FA',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-        focus: {
-          color: '#3B82F6',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'rgba(59, 130, 246, 0.1)',
-        },
-        active: {
-          color: '#2563EB',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-      },
-      fontSize: '14px',
-      fontWeight: 500,
-      textDecoration: 'underline',
-      transition: 'all 0.15s ease',
-    },
-  },
-  {
-    id: 'subtle',
-    name: 'Subtle',
-    description: 'Muted link that becomes prominent on hover',
-    spec: {
-      variant: 'subtle',
-      states: {
-        default: {
-          color: '#94A3B8',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        hover: {
-          color: '#F8FAFC',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        focus: {
-          color: '#F8FAFC',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'rgba(148, 163, 184, 0.1)',
-        },
-        active: {
-          color: '#CBD5E1',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-      },
-      fontSize: '14px',
-      fontWeight: 400,
-      textDecoration: 'none',
-      transition: 'all 0.15s ease',
-    },
-  },
-  {
-    id: 'nav',
-    name: 'Navigation',
-    description: 'Bold navigation link with background on hover',
-    spec: {
-      variant: 'nav',
-      states: {
-        default: {
-          color: '#94A3B8',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        hover: {
-          color: '#F8FAFC',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'rgba(255, 255, 255, 0.1)',
-        },
-        focus: {
-          color: '#F8FAFC',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'rgba(255, 255, 255, 0.1)',
-        },
-        active: {
-          color: '#3B82F6',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'rgba(59, 130, 246, 0.1)',
-        },
-      },
-      fontSize: '14px',
-      fontWeight: 500,
-      textDecoration: 'none',
-      transition: 'all 0.2s ease',
-    },
-  },
-  {
-    id: 'gradient',
-    name: 'Gradient',
-    description: 'Link with gradient text effect',
-    spec: {
-      variant: 'gradient',
-      states: {
-        default: {
-          color: '#8B5CF6',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        hover: {
-          color: '#A78BFA',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        focus: {
-          color: '#8B5CF6',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'rgba(139, 92, 246, 0.1)',
-        },
-        active: {
-          color: '#7C3AED',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-      },
-      fontSize: '14px',
-      fontWeight: 600,
-      textDecoration: 'none',
-      transition: 'all 0.2s ease',
-    },
-  },
-  {
-    id: 'danger',
-    name: 'Danger',
-    description: 'Red link for destructive actions',
-    spec: {
-      variant: 'danger',
-      states: {
-        default: {
-          color: '#EF4444',
-          textDecoration: 'none',
-          opacity: '1',
-          background: 'transparent',
-        },
-        hover: {
-          color: '#F87171',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-        focus: {
-          color: '#EF4444',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'rgba(239, 68, 68, 0.1)',
-        },
-        active: {
-          color: '#DC2626',
-          textDecoration: 'underline',
-          opacity: '1',
-          background: 'transparent',
-        },
-      },
-      fontSize: '14px',
-      fontWeight: 500,
-      textDecoration: 'none',
-      transition: 'all 0.15s ease',
-    },
-  },
-];
+// No hardcoded defaults - link styles are AI-generated based on design description
 
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
-
-function PresetCard({
-  preset,
-  isSelected,
-  onSelect,
-}: {
-  preset: (typeof LINK_PRESETS)[0];
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      onClick={onSelect}
-      className={`
-        p-3 rounded-lg border transition-all text-left
-        ${
-          isSelected
-            ? 'border-garden-500 bg-garden-500/10 ring-2 ring-garden-500/30'
-            : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
-        }
-      `}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-slate-200">{preset.name}</span>
-        {isSelected && <span className="text-xs text-garden-400">Active</span>}
-      </div>
-      <div className="flex justify-center py-2">
-        <StatePreview componentType="link" spec={preset.spec} forcedState="default" />
-      </div>
-      <p className="text-xs text-slate-500 mt-2">{preset.description}</p>
-    </button>
-  );
-}
 
 function ColorPicker({
   label,
@@ -312,7 +47,7 @@ function ColorPicker({
       <label className="text-xs text-slate-500 w-20">{label}</label>
       <input
         type="color"
-        value={value.startsWith('#') ? value : '#3B82F6'}
+        value={value.startsWith('#') ? value : '#888888'}
         onChange={(e) => onChange(e.target.value)}
         className="w-8 h-8 rounded cursor-pointer border border-slate-600"
       />
@@ -431,7 +166,7 @@ function VariantManager({
 // ============================================================================
 
 export function LinkDesigner({ links: initialLinks, onChange, className = '' }: LinkDesignerProps) {
-  // State
+  // State - initialize from props only, no hardcoded defaults
   const [variants, setVariants] = useState<LinkVariant[]>(() => {
     if (initialLinks && initialLinks.length > 0) {
       return initialLinks.map((spec, index) => ({
@@ -440,7 +175,8 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
         spec,
       }));
     }
-    return [{ id: 'variant-0', name: 'Default', spec: LINK_PRESETS[0].spec }];
+    // Return empty - prompt user to generate via AI
+    return [];
   });
 
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -459,19 +195,6 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
   );
 
   // Handlers
-  const handlePresetSelect = useCallback(
-    (preset: (typeof LINK_PRESETS)[0]) => {
-      const newVariants = [...variants];
-      newVariants[selectedIndex] = {
-        ...newVariants[selectedIndex],
-        spec: { ...preset.spec },
-      };
-      setVariants(newVariants);
-      notifyChange(newVariants);
-    },
-    [variants, selectedIndex, notifyChange]
-  );
-
   const handleColorChange = useCallback(
     (state: keyof LinkSpec['states'], property: string, value: string) => {
       const newVariants = [...variants];
@@ -491,10 +214,24 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
   );
 
   const handleAddVariant = useCallback(() => {
+    // Create minimal spec - colors will be customized by user or generated by AI
+    const minimalSpec: LinkSpec = {
+      variant: `variant-${variants.length + 1}`,
+      states: {
+        default: { color: 'currentColor', textDecoration: 'none', opacity: '1', background: 'transparent' },
+        hover: { color: 'currentColor', textDecoration: 'underline', opacity: '1', background: 'transparent' },
+        focus: { color: 'currentColor', textDecoration: 'underline', opacity: '1', background: 'transparent' },
+        active: { color: 'currentColor', textDecoration: 'underline', opacity: '1', background: 'transparent' },
+      },
+      fontSize: '14px',
+      fontWeight: 500,
+      textDecoration: 'none',
+      transition: 'all 0.15s ease',
+    };
     const newVariant: LinkVariant = {
       id: `variant-${Date.now()}`,
       name: `Variant ${variants.length + 1}`,
-      spec: { ...LINK_PRESETS[0].spec },
+      spec: minimalSpec,
     };
     const newVariants = [...variants, newVariant];
     setVariants(newVariants);
@@ -531,6 +268,31 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
 
   const availableStates: ComponentState[] = ['default', 'hover', 'focus', 'active'];
 
+  // Empty state - no links defined yet
+  if (variants.length === 0) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        <div className="p-6 bg-slate-900 rounded-xl border border-slate-700 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+            <svg className="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-slate-300 mb-2">No Link Styles Defined</h3>
+          <p className="text-sm text-slate-400 mb-4">
+            Link styles will be generated by AI based on your design description.
+          </p>
+          <button
+            onClick={handleAddVariant}
+            className="px-4 py-2 bg-garden-600 text-white rounded-lg hover:bg-garden-500 transition-colors"
+          >
+            + Add Custom Variant
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Variant Manager */}
@@ -561,19 +323,14 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
         )}
       </div>
 
-      {/* Presets */}
-      <div>
-        <label className="block text-xs text-slate-400 mb-2">Style Presets</label>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          {LINK_PRESETS.map((preset) => (
-            <PresetCard
-              key={preset.id}
-              preset={preset}
-              isSelected={currentSpec?.variant === preset.spec.variant}
-              onSelect={() => handlePresetSelect(preset)}
-            />
-          ))}
-        </div>
+      {/* AI-Generated Styles Note */}
+      <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50 text-center">
+        <p className="text-sm text-slate-400">
+          Link styles are generated by AI based on your design description.
+        </p>
+        <p className="text-xs text-slate-500 mt-2">
+          Use the color customization below to fine-tune the generated styles.
+        </p>
       </div>
 
       {/* Color Customization */}
@@ -587,7 +344,7 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
               <label className="block text-xs text-slate-500 mb-2 uppercase">{state}</label>
               <ColorPicker
                 label="Color"
-                value={currentSpec?.states[state as keyof LinkSpec['states']]?.color || '#3B82F6'}
+                value={currentSpec?.states[state as keyof LinkSpec['states']]?.color || 'currentColor'}
                 onChange={(value) =>
                   handleColorChange(state as keyof LinkSpec['states'], 'color', value)
                 }
@@ -651,7 +408,7 @@ export function LinkDesigner({ links: initialLinks, onChange, className = '' }: 
       {/* Info */}
       <div className="text-xs text-slate-500 p-3 bg-slate-800/30 rounded-lg">
         <strong className="text-slate-400">Tip:</strong> Double-click variant names to rename them.
-        Use presets as starting points and customize colors as needed.
+        Customize colors for each state as needed.
       </div>
     </div>
   );

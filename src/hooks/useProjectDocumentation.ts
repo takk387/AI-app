@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store/useAppStore';
-import { createClient } from '@/utils/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/utils/supabase/client';
 import { ProjectDocumentationService } from '@/services/ProjectDocumentationService';
 import type { ProjectDocumentation } from '@/types/projectDocumentation';
 import type { AppConcept } from '@/types/appConcept';
@@ -155,6 +155,12 @@ export function useProjectDocumentation(
     if (!autoLoad || !effectiveAppId) return;
 
     const loadDocumentation = async () => {
+      // Skip loading if Supabase is not configured (placeholder URL)
+      if (!isSupabaseConfigured()) {
+        console.log('[Documentation] Supabase not configured - skipping documentation fetch');
+        return;
+      }
+
       setIsLoadingDocumentation(true);
       try {
         const result = await service.getByAppId(effectiveAppId);

@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient, isSupabaseConfigured } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectDocumentationService } from '@/services/ProjectDocumentationService';
 import type { ProjectDocumentation } from '@/types/projectDocumentation';
@@ -161,7 +161,7 @@ export function useDashboard(): UseDashboardReturn {
 
   // Fetch projects
   const fetchProjects = useCallback(async () => {
-    if (!user?.id) {
+    if (!user?.id || !isSupabaseConfigured()) {
       setRawProjects([]);
       setIsLoading(false);
       return;
@@ -216,7 +216,7 @@ export function useDashboard(): UseDashboardReturn {
   // Delete project
   const deleteProject = useCallback(
     async (projectId: string) => {
-      if (!user?.id) return;
+      if (!user?.id || !isSupabaseConfigured()) return;
 
       try {
         const supabase = createClient();
@@ -239,7 +239,7 @@ export function useDashboard(): UseDashboardReturn {
   // Archive project (update status to paused)
   const archiveProject = useCallback(
     async (projectId: string) => {
-      if (!user?.id) return;
+      if (!user?.id || !isSupabaseConfigured()) return;
 
       try {
         const supabase = createClient();

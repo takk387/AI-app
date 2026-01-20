@@ -134,12 +134,13 @@ const STATES_BY_TYPE: Record<ComponentType, ComponentState[]> = {
 // DEFAULT SPECS
 // ============================================================================
 
+// NOTE: Using neutral gray colors as defaults - actual colors are AI-generated based on design description
 const DEFAULT_BUTTON_SPEC: ButtonSpec = {
   variant: 'primary',
   size: 'md',
   states: {
     default: {
-      background: '#3B82F6',
+      background: '#6B7280',
       color: '#FFFFFF',
       borderColor: 'transparent',
       borderWidth: '0px',
@@ -147,23 +148,23 @@ const DEFAULT_BUTTON_SPEC: ButtonSpec = {
       transform: 'none',
     },
     hover: {
-      background: '#2563EB',
+      background: '#4B5563',
       color: '#FFFFFF',
       borderColor: 'transparent',
       borderWidth: '0px',
-      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+      boxShadow: '0 4px 12px rgba(107, 114, 128, 0.4)',
       transform: 'translateY(-1px)',
     },
     focus: {
-      background: '#3B82F6',
+      background: '#6B7280',
       color: '#FFFFFF',
       borderColor: 'transparent',
       borderWidth: '0px',
-      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5)',
+      boxShadow: '0 0 0 3px rgba(107, 114, 128, 0.5)',
       transform: 'none',
     },
     active: {
-      background: '#1D4ED8',
+      background: '#374151',
       color: '#FFFFFF',
       borderColor: 'transparent',
       borderWidth: '0px',
@@ -208,9 +209,9 @@ const DEFAULT_INPUT_SPEC: InputSpec = {
     focus: {
       background: 'transparent',
       color: '#F8FAFC',
-      borderColor: '#3B82F6',
+      borderColor: '#6B7280',
       borderWidth: '2px',
-      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.2)',
+      boxShadow: '0 0 0 3px rgba(107, 114, 128, 0.2)',
     },
     error: {
       background: 'rgba(239, 68, 68, 0.1)',
@@ -260,29 +261,30 @@ const DEFAULT_CARD_SPEC: CardSpec = {
   background: '#1E293B',
 };
 
+// NOTE: Using neutral gray colors as defaults - actual colors are AI-generated based on design description
 const DEFAULT_LINK_SPEC: LinkSpec = {
   variant: 'default',
   states: {
     default: {
-      color: '#3B82F6',
+      color: '#6B7280',
       textDecoration: 'none',
       opacity: '1',
       background: 'transparent',
     },
     hover: {
-      color: '#60A5FA',
+      color: '#9CA3AF',
       textDecoration: 'underline',
       opacity: '1',
       background: 'transparent',
     },
     focus: {
-      color: '#3B82F6',
+      color: '#6B7280',
       textDecoration: 'underline',
       opacity: '1',
-      background: 'rgba(59, 130, 246, 0.1)',
+      background: 'rgba(107, 114, 128, 0.1)',
     },
     active: {
-      color: '#2563EB',
+      color: '#4B5563',
       textDecoration: 'underline',
       opacity: '1',
       background: 'transparent',
