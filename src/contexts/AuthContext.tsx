@@ -5,6 +5,10 @@ import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+// Development auth bypass - skip all Supabase initialization
+const DEV_BYPASS_AUTH =
+  process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -19,10 +23,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Mock user for dev bypass mode
+const MOCK_DEV_USER = {
+  id: 'dev-user-id',
+  email: 'dev@localhost',
+  aud: 'authenticated',
+  role: 'authenticated',
+  created_at: new Date().toISOString(),
+  app_metadata: {},
+  user_metadata: { full_name: 'Dev User' },
+} as User;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionReady, setSessionReady] = useState(false); // Distinguishes "still loading" from "confirmed auth state"
+  const [user, setUser] = useState<User | null>(DEV_BYPASS_AUTH ? MOCK_DEV_USER : null);
+  const [loading, setLoading] = useState(!DEV_BYPASS_AUTH);
+  const [sessionReady, setSessionReady] = useState(DEV_BYPASS_AUTH); // Immediately ready in dev bypass mode
   const [error, setError] = useState<string | null>(null);
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
@@ -40,6 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Skip Supabase initialization entirely in dev bypass mode
+    if (DEV_BYPASS_AUTH) {
+      return;
+    }
+
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
@@ -124,6 +144,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (DEV_BYPASS_AUTH) {
+      return { error: null };
+    }
     try {
       const supabase = getSupabase();
       const { error } = await supabase.auth.signInWithPassword({
@@ -137,6 +160,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
+    if (DEV_BYPASS_AUTH) {
+      return { error: null };
+    }
     try {
       const supabase = getSupabase();
       const { error } = await supabase.auth.signUp({
@@ -155,6 +181,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    if (DEV_BYPASS_AUTH) {
+      return;
+    }
     try {
       const supabase = getSupabase();
       await supabase.auth.signOut();
@@ -164,6 +193,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshSession = async () => {
+    if (DEV_BYPASS_AUTH) {
+      return;
+    }
     try {
       const supabase = getSupabase();
       const { data } = await supabase.auth.getSession();

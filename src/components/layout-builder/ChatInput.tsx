@@ -13,6 +13,10 @@ interface ChatInputProps {
   lastModelUsed?: ModelRouting | null;
   /** Whether images are currently attached (affects routing preview) */
   hasImages?: boolean;
+  /** Callback when a file is selected for upload */
+  onFileSelect?: (file: File | null) => void;
+  /** Currently selected file for upload */
+  selectedFile?: File | null;
 }
 
 /**
@@ -26,17 +30,27 @@ export function ChatInput({
   hasSelection,
   lastModelUsed,
   hasImages,
+  onFileSelect,
+  selectedFile,
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [includeCapture, setIncludeCapture] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    onFileSelect?.(file);
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  };
 
   // Get model indicator for display
   const modelIndicator = lastModelUsed ? getModelIndicator(lastModelUsed) : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() || includeCapture) {
+    if (input.trim() || includeCapture || selectedFile) {
       onSend(input, includeCapture);
       setInput('');
       setIncludeCapture(false);
@@ -56,8 +70,68 @@ export function ChatInput({
       className="border-t p-4"
       style={{ borderColor: 'var(--border-color)' }}
     >
-      {/* Capture preview button */}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Action buttons row */}
       <div className="flex items-center gap-2 mb-3">
+        {/* Upload Reference button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+          style={
+            selectedFile
+              ? { background: 'var(--gold-primary)', color: 'white' }
+              : { background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }
+          }
+        >
+          {selectedFile ? (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="max-w-[120px] truncate">{selectedFile.name}</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              Upload Reference
+            </>
+          )}
+        </button>
+
+        {selectedFile && (
+          <button
+            type="button"
+            onClick={() => onFileSelect?.(null)}
+            className="text-xs hover:opacity-80"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Remove
+          </button>
+        )}
+
+        {/* Capture preview button */}
         <button
           type="button"
           onClick={() => {
@@ -156,9 +230,9 @@ export function ChatInput({
         )}
 
         {/* Image routing hint */}
-        {(hasImages || includeCapture) && !isLoading && (
+        {(hasImages || includeCapture || selectedFile) && !isLoading && (
           <div className="ml-2 flex items-center gap-1">
-            <span className="text-xs text-gold-400">Visual analysis enabled</span>
+            <span className="text-xs" style={{ color: 'var(--gold-primary)' }}>Visual analysis enabled</span>
           </div>
         )}
       </div>
@@ -182,7 +256,7 @@ export function ChatInput({
         />
         <button
           type="submit"
-          disabled={isLoading || (!input.trim() && !includeCapture)}
+          disabled={isLoading || (!input.trim() && !includeCapture && !selectedFile)}
           className="px-6 py-3 bg-garden-600 hover:bg-garden-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors"
         >
           {isLoading ? '...' : 'Send'}

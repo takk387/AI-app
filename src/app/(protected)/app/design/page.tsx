@@ -35,9 +35,6 @@ export default function DesignPage() {
     router.push('/app');
   }, [router]);
 
-  // Get API key from environment
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -50,7 +47,6 @@ export default function DesignPage() {
         isOpen={true}
         onClose={handleClose}
         appConcept={appConcept}
-        apiKey={apiKey}
       />
     </motion.div>
   );

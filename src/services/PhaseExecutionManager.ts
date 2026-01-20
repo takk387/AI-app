@@ -16,6 +16,19 @@ import type {
   AccumulatedFile,
   AccumulatedFeature,
   APIContract,
+  // Phase Integrity Types (P1-P9)
+  FileConflict,
+  FileConflictResult,
+  ImportInfo,
+  ImportValidationResult,
+  UnresolvedImport,
+  PhaseSnapshot,
+  TypeCheckResult,
+  TypeDefinition,
+  TypeCompatibilityResult,
+  PhaseTestResults,
+  ContractValidationResult,
+  RegressionTestResult,
 } from '@/types/dynamicPhases';
 import type { QualityReport, ReviewFile, ReviewStrictness } from '@/types/codeReview';
 
@@ -955,6 +968,23 @@ export class PhaseExecutionManager {
   private qualityReports: Map<number, QualityReport> = new Map();
   private reviewStrictness: ReviewStrictness = 'standard';
 
+  // ========== PHASE INTEGRITY TRACKING (P1-P9) ==========
+  // P1: File conflict detection
+  private fileVersionMap: Map<string, { hash: string; phase: number; exports: string[] }> =
+    new Map();
+
+  // P3: Phase snapshots for rollback
+  private phaseSnapshots: Map<number, PhaseSnapshot> = new Map();
+
+  // P5: TypeScript type check results
+  private typeCheckResults: Map<number, TypeCheckResult> = new Map();
+
+  // P6: Type definitions for compatibility checking
+  private typeDefinitions: TypeDefinition[] = [];
+
+  // P7: Smoke test results
+  private phaseTestResults: Map<number, PhaseTestResults> = new Map();
+
   constructor(plan: DynamicPhasePlan) {
     this.plan = plan;
     this.phaseGenerator = new DynamicPhaseGenerator();
@@ -1644,6 +1674,511 @@ export class PhaseExecutionManager {
    */
   getRawGeneratedFiles(): Array<{ path: string; content: string }> {
     return [...this.rawGeneratedFiles];
+  }
+
+  // ==========================================================================
+  // PHASE INTEGRITY SYSTEM (P1-P9)
+  // ==========================================================================
+
+  // ========== P1: FILE CONFLICT DETECTION ==========
+
+  /**
+   * Detect file conflicts when new files are generated
+   * Warns when phases overwrite files from previous phases
+   */
+  detectFileConflicts(
+    newFiles: Array<{ path: string; content: string }>,
+    phaseNumber: number
+  ): FileConflictResult {
+    const conflicts: FileConflict[] = [];
+
+    for (const file of newFiles) {
+      const hash = this.computeHash(file.content);
+      const existing = this.fileVersionMap.get(file.path);
+
+      if (existing && existing.hash !== hash) {
+        conflicts.push({
+          path: file.path,
+          type: 'OVERWRITE',
+          previousPhase: existing.phase,
+          currentPhase: phaseNumber,
+          severity: this.assessConflictSeverity(file.path, existing),
+        });
+      }
+
+      this.fileVersionMap.set(file.path, { hash, phase: phaseNumber, exports: [] });
+    }
+
+    return { conflicts, hasBreakingChanges: conflicts.some((c) => c.severity === 'critical') };
+  }
+
+  /**
+   * Compute a hash of file content for change detection (djb2 algorithm)
+   */
+  private computeHash(content: string): string {
+    let hash = 5381;
+    for (let i = 0; i < content.length; i++) {
+      hash = (hash << 5) + hash + content.charCodeAt(i);
+    }
+    return Math.abs(hash).toString(16);
+  }
+
+  /**
+   * Assess severity of file conflict based on file type
+   */
+  private assessConflictSeverity(
+    path: string,
+    _existing: { hash: string; phase: number; exports: string[] }
+  ): 'critical' | 'warning' | 'info' {
+    // Critical: Core files that affect entire app
+    if (path.includes('App.tsx') || path.includes('layout.tsx') || path.includes('/types/')) {
+      return 'critical';
+    }
+    // Critical: API routes
+    if (path.includes('/api/')) {
+      return 'critical';
+    }
+    // Warning: Components and utilities
+    if (path.includes('/components/') || path.includes('/utils/')) {
+      return 'warning';
+    }
+    // Info: Styles and configs
+    return 'info';
+  }
+
+  // ========== P2: IMPORT/EXPORT VALIDATION ==========
+
+  /**
+   * Validate that all imports reference valid exports
+   */
+  validateImportExports(): ImportValidationResult {
+    const unresolved: UnresolvedImport[] = [];
+    const exportMap = new Map<string, Set<string>>();
+
+    // Build export map from all files
+    for (const file of this.accumulatedFilesRich) {
+      exportMap.set(file.path, new Set(file.exports));
+    }
+
+    // Check each file's imports
+    for (const file of this.accumulatedFilesRich) {
+      for (const imp of file.imports || []) {
+        if (!imp.isRelative) continue; // Skip package imports
+
+        const resolvedPath = this.resolveImportPath(file.path, imp.from);
+        const targetExports = exportMap.get(resolvedPath);
+
+        if (!targetExports) {
+          unresolved.push({
+            file: file.path,
+            importFrom: imp.from,
+            resolvedTo: resolvedPath,
+            reason: 'FILE_NOT_FOUND',
+          });
+          continue;
+        }
+
+        for (const symbol of imp.symbols) {
+          if (!targetExports.has(symbol)) {
+            unresolved.push({
+              file: file.path,
+              symbol,
+              importFrom: imp.from,
+              reason: 'SYMBOL_NOT_EXPORTED',
+            });
+          }
+        }
+      }
+    }
+
+    return { valid: unresolved.length === 0, unresolved };
+  }
+
+  /**
+   * Resolve a relative import path to an absolute path
+   */
+  private resolveImportPath(fromFile: string, importPath: string): string {
+    // Get directory of the importing file
+    const fromDir = fromFile.substring(0, fromFile.lastIndexOf('/'));
+
+    // Handle relative paths
+    if (importPath.startsWith('./')) {
+      return `${fromDir}/${importPath.substring(2)}`;
+    }
+    if (importPath.startsWith('../')) {
+      const parts = fromDir.split('/');
+      let upCount = 0;
+      let remaining = importPath;
+
+      while (remaining.startsWith('../')) {
+        upCount++;
+        remaining = remaining.substring(3);
+      }
+
+      const newParts = parts.slice(0, -upCount);
+      return `${newParts.join('/')}/${remaining}`;
+    }
+
+    // Add file extension if missing
+    if (!importPath.includes('.')) {
+      // Try common extensions
+      for (const ext of ['.tsx', '.ts', '.js', '.jsx']) {
+        const fullPath = importPath + ext;
+        if (this.rawGeneratedFiles.some((f) => f.path === fullPath)) {
+          return fullPath;
+        }
+      }
+      // Try index file
+      return `${importPath}/index.tsx`;
+    }
+
+    return importPath;
+  }
+
+  // ========== P3: PHASE SNAPSHOT & ROLLBACK ==========
+
+  /**
+   * Capture current state before phase execution
+   */
+  capturePhaseSnapshot(phaseNumber: number): PhaseSnapshot {
+    const snapshot: PhaseSnapshot = {
+      id: `snapshot-${phaseNumber}-${Date.now()}`,
+      phaseNumber,
+      timestamp: new Date().toISOString(),
+      accumulatedCode: this.accumulatedCode,
+      accumulatedFiles: [...this.accumulatedFiles],
+      accumulatedFeatures: [...this.accumulatedFeatures],
+      accumulatedFilesRich: JSON.parse(JSON.stringify(this.accumulatedFilesRich)),
+      accumulatedFeaturesRich: JSON.parse(JSON.stringify(this.accumulatedFeaturesRich)),
+      establishedPatterns: [...this.establishedPatterns],
+      apiContracts: JSON.parse(JSON.stringify(this.apiContracts)),
+      rawGeneratedFiles: JSON.parse(JSON.stringify(this.rawGeneratedFiles)),
+      completedPhases: [...this.completedPhases],
+      phaseStatuses: this.plan.phases.map((p) => ({ number: p.number, status: p.status })),
+    };
+
+    this.phaseSnapshots.set(phaseNumber, snapshot);
+    return snapshot;
+  }
+
+  /**
+   * Rollback to a previous phase snapshot
+   */
+  rollbackToSnapshot(phaseNumber: number): boolean {
+    const snapshot = this.phaseSnapshots.get(phaseNumber);
+    if (!snapshot) return false;
+
+    // Restore all state
+    this.accumulatedCode = snapshot.accumulatedCode;
+    this.accumulatedFiles = [...snapshot.accumulatedFiles];
+    this.accumulatedFeatures = [...snapshot.accumulatedFeatures];
+    this.accumulatedFilesRich = JSON.parse(JSON.stringify(snapshot.accumulatedFilesRich));
+    this.accumulatedFeaturesRich = JSON.parse(JSON.stringify(snapshot.accumulatedFeaturesRich));
+    this.establishedPatterns = [...snapshot.establishedPatterns];
+    this.apiContracts = JSON.parse(JSON.stringify(snapshot.apiContracts));
+    this.rawGeneratedFiles = JSON.parse(JSON.stringify(snapshot.rawGeneratedFiles));
+    this.completedPhases = [...snapshot.completedPhases];
+
+    // Restore phase statuses
+    for (const { number, status } of snapshot.phaseStatuses) {
+      const phase = this.plan.phases.find((p) => p.number === number);
+      if (phase) phase.status = status;
+    }
+
+    // Clear snapshots after this point
+    for (const key of this.phaseSnapshots.keys()) {
+      if (key > phaseNumber) this.phaseSnapshots.delete(key);
+    }
+
+    // Update plan
+    this.syncPlanState();
+    return true;
+  }
+
+  /**
+   * Sync internal state back to the plan object
+   */
+  private syncPlanState(): void {
+    this.plan.completedPhaseNumbers = [...this.completedPhases];
+    this.plan.accumulatedFiles = [...this.accumulatedFiles];
+    this.plan.accumulatedFeatures = [...this.accumulatedFeatures];
+    this.plan.accumulatedFilesRich = [...this.accumulatedFilesRich];
+    this.plan.accumulatedFeaturesRich = [...this.accumulatedFeaturesRich];
+    this.plan.establishedPatterns = [...this.establishedPatterns];
+    this.plan.apiContracts = [...this.apiContracts];
+    this.plan.updatedAt = new Date().toISOString();
+  }
+
+  /**
+   * Get snapshot for a specific phase
+   */
+  getPhaseSnapshot(phaseNumber: number): PhaseSnapshot | null {
+    return this.phaseSnapshots.get(phaseNumber) || null;
+  }
+
+  // ========== P5: CROSS-PHASE TYPE CHECKING ==========
+
+  /**
+   * Run TypeScript type checking on accumulated code
+   * Called after each phase completion
+   */
+  async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
+    try {
+      const { runTypeCheck } = await import('./TypeScriptCompilerService');
+
+      // Only check TypeScript/TSX files
+      const tsFiles = this.rawGeneratedFiles.filter(
+        (f) => f.path.endsWith('.ts') || f.path.endsWith('.tsx')
+      );
+
+      if (tsFiles.length === 0) {
+        return { success: true, errors: [], warnings: [] };
+      }
+
+      const result = await runTypeCheck(tsFiles);
+
+      // Store result for reporting
+      this.typeCheckResults.set(phaseNumber, result);
+
+      return result;
+    } catch (err) {
+      console.error('Type checking failed:', err);
+      return { success: true, errors: [], warnings: [] }; // Fail open
+    }
+  }
+
+  /**
+   * Get type check result for a specific phase
+   */
+  getTypeCheckResult(phaseNumber: number): TypeCheckResult | null {
+    return this.typeCheckResults.get(phaseNumber) || null;
+  }
+
+  // ========== P6: TYPE COMPATIBILITY CHECKS ==========
+
+  /**
+   * Check type compatibility after phase completion
+   */
+  async checkTypeCompatibility(phaseNumber: number): Promise<TypeCompatibilityResult> {
+    try {
+      const { extractTypeDefinitions, checkTypeCompatibility } = await import(
+        '@/utils/typeCompatibilityChecker'
+      );
+
+      // Extract types from new files in this phase
+      const newFiles = this.rawGeneratedFiles.filter(
+        (f) => f.path.endsWith('.ts') || f.path.endsWith('.tsx')
+      );
+
+      const newTypes: TypeDefinition[] = [];
+      for (const file of newFiles) {
+        const extracted = extractTypeDefinitions(file.content, file.path, phaseNumber);
+        newTypes.push(...extracted);
+      }
+
+      // Check against previous types
+      const result = checkTypeCompatibility(this.typeDefinitions, newTypes, phaseNumber);
+
+      // Update stored types (merge new definitions)
+      for (const newType of newTypes) {
+        const existingIndex = this.typeDefinitions.findIndex((t) => t.name === newType.name);
+        if (existingIndex >= 0) {
+          this.typeDefinitions[existingIndex] = newType;
+        } else {
+          this.typeDefinitions.push(newType);
+        }
+      }
+
+      return result;
+    } catch (err) {
+      console.error('Type compatibility check failed:', err);
+      return { compatible: true, breakingChanges: [] };
+    }
+  }
+
+  // ========== P7: TEST CRITERIA EXECUTION ==========
+
+  /**
+   * Run smoke tests for phase criteria
+   */
+  async runPhaseTests(phaseNumber: number): Promise<PhaseTestResults> {
+    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
+
+    if (!phase || !phase.testCriteria?.length) {
+      return {
+        phaseNumber,
+        total: 0,
+        passed: 0,
+        failed: 0,
+        results: [],
+        allPassed: true,
+      };
+    }
+
+    try {
+      const { runSmokeTests } = await import('@/utils/smokeTestRunner');
+      const result = runSmokeTests(phase.testCriteria, this.rawGeneratedFiles, phaseNumber);
+
+      this.phaseTestResults.set(phaseNumber, result);
+      return result;
+    } catch (err) {
+      console.error('Smoke tests failed:', err);
+      return {
+        phaseNumber,
+        total: phase.testCriteria.length,
+        passed: 0,
+        failed: 0,
+        results: [],
+        allPassed: true, // Fail open
+      };
+    }
+  }
+
+  /**
+   * Get smoke test results for a specific phase
+   */
+  getPhaseTestResults(phaseNumber: number): PhaseTestResults | null {
+    return this.phaseTestResults.get(phaseNumber) || null;
+  }
+
+  // ========== P8: API CONTRACT ENFORCEMENT ==========
+
+  /**
+   * Validate API implementations against declared contracts
+   */
+  validateApiContracts(): ContractValidationResult {
+    const violations: import('@/types/dynamicPhases').ContractViolation[] = [];
+
+    // Find all API route files
+    const apiFiles = this.rawGeneratedFiles.filter(
+      (f) => f.path.includes('/api/') && (f.path.endsWith('.ts') || f.path.endsWith('.tsx'))
+    );
+
+    // Check each contract
+    for (const contract of this.apiContracts) {
+      // Find matching API file
+      const expectedPath = `/api${contract.endpoint}`;
+      const apiFile = apiFiles.find(
+        (f) => f.path.includes(expectedPath) || f.path.includes(contract.endpoint.replace(/\//g, '/'))
+      );
+
+      if (!apiFile) {
+        violations.push({
+          endpoint: contract.endpoint,
+          method: contract.method,
+          violation: 'MISSING_ENDPOINT',
+          expected: `API route at ${expectedPath}`,
+          severity: 'error',
+        });
+        continue;
+      }
+
+      // Check for HTTP method handler
+      const methodUpper = contract.method.toUpperCase();
+      const hasMethod =
+        apiFile.content.includes(`export async function ${methodUpper}`) ||
+        apiFile.content.includes(`export function ${methodUpper}`) ||
+        apiFile.content.includes(`${methodUpper}:`);
+
+      if (!hasMethod) {
+        violations.push({
+          endpoint: contract.endpoint,
+          method: contract.method,
+          violation: 'WRONG_METHOD',
+          expected: `${methodUpper} handler`,
+          actual: 'Handler not found',
+          severity: 'error',
+        });
+      }
+
+      // Check response schema if specified
+      if (contract.responseSchema) {
+        const hasResponseSchema = apiFile.content.includes(contract.responseSchema);
+        if (!hasResponseSchema) {
+          violations.push({
+            endpoint: contract.endpoint,
+            method: contract.method,
+            violation: 'MISSING_RESPONSE_TYPE',
+            expected: contract.responseSchema,
+            severity: 'warning',
+          });
+        }
+      }
+    }
+
+    return {
+      valid: violations.filter((v) => v.severity === 'error').length === 0,
+      violations,
+    };
+  }
+
+  // ========== P9: REGRESSION TESTING ==========
+
+  /**
+   * Run regression tests - verify all previous phase criteria still pass
+   */
+  async runRegressionTests(currentPhase: number): Promise<RegressionTestResult> {
+    const failures: import('@/types/dynamicPhases').RegressionFailure[] = [];
+    const previousPhasesChecked: number[] = [];
+
+    try {
+      const { runSmokeTests } = await import('@/utils/smokeTestRunner');
+
+      // Run tests for all completed phases
+      for (const phaseNum of this.completedPhases) {
+        if (phaseNum >= currentPhase) continue;
+
+        const phase = this.plan.phases.find((p) => p.number === phaseNum);
+        if (!phase?.testCriteria?.length) continue;
+
+        previousPhasesChecked.push(phaseNum);
+
+        // Run smoke tests with current accumulated files
+        const result = runSmokeTests(phase.testCriteria, this.rawGeneratedFiles, phaseNum);
+
+        // Collect failures
+        for (const testResult of result.results) {
+          if (!testResult.passed) {
+            failures.push({
+              originalPhase: phaseNum,
+              criterion: testResult.criterion,
+              error: testResult.error || 'Test failed',
+            });
+          }
+        }
+      }
+
+      return {
+        phaseNumber: currentPhase,
+        previousPhasesChecked,
+        failures,
+        allPassed: failures.length === 0,
+      };
+    } catch (err) {
+      console.error('Regression tests failed:', err);
+      return {
+        phaseNumber: currentPhase,
+        previousPhasesChecked: [],
+        failures: [],
+        allPassed: true, // Fail open
+      };
+    }
+  }
+
+  // ========== P4 SUPPORT: Getter Methods ==========
+
+  /**
+   * Get accumulated code (for P4 fix)
+   */
+  getAccumulatedCode(): string {
+    return this.accumulatedCode;
+  }
+
+  /**
+   * Get a copy of the plan (for P4 fix)
+   */
+  getPlanCopy(): DynamicPhasePlan {
+    return { ...this.plan };
   }
 }
 

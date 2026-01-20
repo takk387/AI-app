@@ -60,7 +60,7 @@ function ColorSwatch({ color, label }: { color: string; label: string }) {
 
 export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
   const { design } = snapshot;
-  const globalStyles = design.globalStyles;
+  const globalStyles = design?.globalStyles;
   const colors = globalStyles?.colors;
   const typography = globalStyles?.typography;
 
@@ -157,7 +157,7 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
             { key: 'hasSidebar', label: 'Sidebar' },
             { key: 'hasFooter', label: 'Footer' },
           ].map(({ key, label }) => {
-            const value = design.structure?.[key as keyof typeof design.structure];
+            const value = design?.structure?.[key as keyof NonNullable<typeof design>['structure']];
             return (
               <div
                 key={key}
@@ -173,7 +173,7 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
             );
           })}
         </div>
-        {design.basePreferences && (
+        {design?.basePreferences && (
           <div className="mt-2 text-xs text-slate-500">
             Style: {design.basePreferences.style} | Layout: {design.basePreferences.layout}
           </div>

@@ -97,7 +97,9 @@
       "Bash(for f in \"src/hooks/useResponsivePreview.ts\" \"src/components/layout-builder/InteractionEditor.tsx\" \"src/data/interactionPresets.ts\" \"src/components/layout-builder/HistoryTimeline.tsx\" \"src/components/layout-builder/VoiceInput.tsx\" \"src/services/TemplateService.ts\" \"src/services/LayoutExportService.ts\" \"src/hooks/useAppBuilderSync.ts\" \"src/services/AccessibilityChecker.ts\" \"src/components/layout-builder/A11yWarnings.tsx\" \"src/components/layout-builder/ErrorRecovery.tsx\")",
       "Bash(git log:*)",
       "Bash(findstr:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(timeout:*)",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []

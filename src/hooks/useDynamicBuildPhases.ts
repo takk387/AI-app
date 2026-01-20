@@ -81,6 +81,9 @@ export interface UseDynamicBuildPhasesReturn {
   runFinalQualityCheck: () => Promise<void>;
   setReviewStrictness: (strictness: ReviewStrictness) => void;
 
+  // Phase integrity actions (P3)
+  rollbackToPhase: (phaseNumber: number) => boolean;
+
   // Phase execution helpers
   getExecutionContext: (phaseNumber: number) => PhaseExecutionContext | null;
   getExecutionPrompt: (phaseNumber: number) => string | null;
@@ -134,9 +137,6 @@ export function useDynamicBuildPhases(
   });
   const [isReviewing, setIsReviewing] = useState(false);
   const [reviewStrictness, setReviewStrictnessState] = useState<ReviewStrictness>('standard');
-
-  // Force re-render trigger for manager state changes
-  const [, forceUpdate] = useState({});
 
   // Cleanup on unmount
   useEffect(() => {
@@ -206,7 +206,7 @@ export function useDynamicBuildPhases(
    */
   const startPhase = useCallback(
     (phaseNumber: number) => {
-      if (!mountedRef.current || !plan) return;
+      if (!mountedRef.current || !plan || !manager) return;
 
       const phase = plan.phases.find((p) => p.number === phaseNumber);
       if (!phase) {
@@ -214,15 +214,17 @@ export function useDynamicBuildPhases(
         return;
       }
 
+      // P3: Capture snapshot before starting phase (for rollback capability)
+      manager.capturePhaseSnapshot(phaseNumber);
+
       // Update phase status
       phase.status = 'in-progress';
       setPlan({ ...plan, currentPhaseNumber: phaseNumber });
       setIsBuilding(true);
 
       onPhaseStart?.(phase);
-      forceUpdate({});
     },
-    [plan, onPhaseStart, onError]
+    [plan, manager, onPhaseStart, onError]
   );
 
   /**
@@ -275,8 +277,6 @@ export function useDynamicBuildPhases(
           setIsBuilding(false);
           onBuildComplete?.(updatedPlan);
         }
-
-        forceUpdate({});
       } catch (error) {
         onError?.(error as Error);
       }
@@ -294,7 +294,6 @@ export function useDynamicBuildPhases(
       manager.skipPhase(phaseNumber);
       const updatedPlan = manager.getPlan();
       setPlan({ ...updatedPlan });
-      forceUpdate({});
     },
     [plan, manager]
   );
@@ -309,7 +308,25 @@ export function useDynamicBuildPhases(
       manager.resetPhase(phaseNumber);
       const updatedPlan = manager.getPlan();
       setPlan({ ...updatedPlan });
-      forceUpdate({});
+    },
+    [plan, manager]
+  );
+
+  /**
+   * P3: Rollback to state before a specific phase
+   * Restores all accumulated state to the snapshot taken before the phase started
+   */
+  const rollbackToPhase = useCallback(
+    (phaseNumber: number): boolean => {
+      if (!mountedRef.current || !plan || !manager) return false;
+
+      const success = manager.rollbackToSnapshot(phaseNumber);
+      if (success) {
+        const updatedPlan = manager.getPlan();
+        setPlan({ ...updatedPlan });
+        setAccumulatedCodeState(manager.getAccumulatedCode());
+      }
+      return success;
     },
     [plan, manager]
   );
@@ -559,6 +576,9 @@ export function useDynamicBuildPhases(
     runPhaseQualityCheck,
     runFinalQualityCheck,
     setReviewStrictness,
+
+    // Phase integrity actions
+    rollbackToPhase,
 
     // Execution helpers
     getExecutionContext,

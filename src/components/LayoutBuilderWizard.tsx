@@ -18,15 +18,13 @@ import { ChatInput } from '@/components/layout-builder';
 interface LayoutBuilderWizardProps {
   isOpen: boolean;
   onClose: () => void;
-  appConcept: AppConcept; // Injected from the Wizard
-  apiKey: string; // Passed from environment
+  appConcept?: AppConcept | null; // Optional - can generate layouts from just an image
 }
 
 export function LayoutBuilderWizard({
   isOpen,
   onClose,
   appConcept,
-  apiKey,
 }: LayoutBuilderWizardProps) {
   // --- STATE: THE TRUTH ---
   const [manifest, setManifest] = useState<LayoutManifest | null>(null);
@@ -38,9 +36,12 @@ export function LayoutBuilderWizard({
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string>('');
 
-  // --- SERVICES ---
-  const architect = React.useMemo(() => new ArchitectService(apiKey), [apiKey]);
-  const builder = React.useMemo(() => new BuilderService(apiKey), [apiKey]);
+  // --- STATE: FILE UPLOAD ---
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // --- SERVICES (API keys handled server-side) ---
+  const architect = React.useMemo(() => new ArchitectService(), []);
+  const builder = React.useMemo(() => new BuilderService(), []);
   const { success, error } = useToast();
 
   // --- UX FEATURES: Undo/Redo, Draft Recovery, Auto-Save ---
@@ -88,7 +89,7 @@ export function LayoutBuilderWizard({
         if (canUndo) handleUndo();
       }
       // Ctrl+Y or Cmd+Shift+Z (Mac)
-      if (((e.ctrlKey || e.metaKey) && e.key === 'y') || 
+      if (((e.ctrlKey || e.metaKey) && e.key === 'y') ||
           ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')) {
         e.preventDefault();
         if (canRedo) handleRedo();
@@ -121,6 +122,11 @@ export function LayoutBuilderWizard({
     }
   }, [recoverDraft, addToHistory, success]);
 
+  // --- FILE UPLOAD HANDLER ---
+  const handleFileSelect = useCallback((file: File | null) => {
+    setUploadedFile(file);
+  }, []);
+
   // --- INITIALIZATION (The "Architect" Phase) ---
   const handleInitialGeneration = async (prompt: string, videoFile?: File) => {
     setIsGenerating(true);
@@ -152,7 +158,9 @@ export function LayoutBuilderWizard({
   const handleChatInput = async (message: string) => {
     if (!manifest) {
       // If no layout exists, this message starts the generation
-      await handleInitialGeneration(message);
+      await handleInitialGeneration(message, uploadedFile || undefined);
+      // Clear the uploaded file after generation
+      setUploadedFile(null);
       return;
     }
 
@@ -291,6 +299,8 @@ export function LayoutBuilderWizard({
               isLoading={isGenerating}
               isCapturing={false}
               hasSelection={!!selectedNodeId}
+              onFileSelect={handleFileSelect}
+              selectedFile={uploadedFile}
             />
           </div>
         </div>
@@ -303,7 +313,7 @@ export function LayoutBuilderWizard({
               <span className="text-xs text-slate-500">Active Metaphor:</span>
               <span className="text-xs text-white font-medium">{activeMetaphor}</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {/* Undo/Redo Buttons */}
               <button
@@ -326,9 +336,9 @@ export function LayoutBuilderWizard({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
                 </svg>
               </button>
-              
+
               <div className="w-px h-6 bg-white/10 mx-1"></div>
-              
+
               <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
                 ✕
               </button>

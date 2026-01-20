@@ -20,6 +20,7 @@ import type {
   FeatureSpecification,
   WorkflowSpecification,
   PhaseConceptContext,
+  ImportInfo,
 } from '@/types/dynamicPhases';
 import type { ArchitectureSpec, BackendPhaseSpec } from '@/types/architectureSpec';
 import { LayoutManifest } from '@/types/schema';
@@ -2055,6 +2056,7 @@ export class DynamicPhaseGenerator {
       exports: string[];
       dependencies: string[];
       summary: string;
+      imports: ImportInfo[];
     }>;
     apiContracts: Array<{
       endpoint: string;
@@ -2071,6 +2073,7 @@ export class DynamicPhaseGenerator {
       exports: string[];
       dependencies: string[];
       summary: string;
+      imports: ImportInfo[];
     }> = [];
     const apiContracts: Array<{
       endpoint: string;
@@ -2091,6 +2094,9 @@ export class DynamicPhaseGenerator {
       // Extract imports/dependencies
       const dependencies = this.extractImports(file.content);
 
+      // Extract rich imports for validation (P2)
+      const imports = this.extractImportsRich(file.content);
+
       // Generate summary
       const summary = this.generateFileSummary(file);
 
@@ -2100,6 +2106,7 @@ export class DynamicPhaseGenerator {
         exports,
         dependencies,
         summary,
+        imports,
       });
 
       // Extract API contracts if it's an API route
@@ -2215,6 +2222,45 @@ export class DynamicPhaseGenerator {
     }
 
     return [...new Set(dependencies)].slice(0, 15);
+  }
+
+  /**
+   * Extract rich import information including relative imports
+   * Used for import/export validation (P2)
+   */
+  private extractImportsRich(content: string): ImportInfo[] {
+    const imports: ImportInfo[] = [];
+
+    // Named imports: import { X, Y } from 'path'
+    const namedImportRegex = /import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g;
+    let namedMatch: RegExpExecArray | null;
+    while ((namedMatch = namedImportRegex.exec(content)) !== null) {
+      const symbols = namedMatch[1]
+        .split(',')
+        .map((s) => s.trim().split(/\s+as\s+/)[0].trim())
+        .filter((s) => s.length > 0);
+      imports.push({
+        symbols,
+        from: namedMatch[2],
+        isRelative: namedMatch[2].startsWith('.'),
+      });
+    }
+
+    // Default imports: import X from 'path'
+    const defaultImportRegex = /import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/g;
+    let defaultMatch: RegExpExecArray | null;
+    while ((defaultMatch = defaultImportRegex.exec(content)) !== null) {
+      // Skip if already captured by named import regex
+      if (!imports.some((i) => i.from === defaultMatch![2])) {
+        imports.push({
+          symbols: [`default:${defaultMatch[1]}`],
+          from: defaultMatch[2],
+          isRelative: defaultMatch[2].startsWith('.'),
+        });
+      }
+    }
+
+    return imports;
   }
 
   /**
