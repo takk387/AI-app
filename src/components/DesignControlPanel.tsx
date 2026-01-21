@@ -190,7 +190,7 @@ function ColorPicker({
   value?: string;
   onChange: (value: string) => void;
 }) {
-  const defaultColor = '#3B82F6';
+  const defaultColor = '#6B7280'; // Neutral gray - actual colors are AI-generated
 
   return (
     <div className="flex items-center justify-between">
@@ -555,25 +555,25 @@ export function DesignControlPanel({
 
               <ColorPicker
                 label="Success"
-                value={colorSettings?.success || '#22c55e'}
+                value={colorSettings?.success || '#6B7280'}
                 onChange={(v) => handleColorSettingChange('success', v)}
               />
 
               <ColorPicker
                 label="Warning"
-                value={colorSettings?.warning || '#eab308'}
+                value={colorSettings?.warning || '#6B7280'}
                 onChange={(v) => handleColorSettingChange('warning', v)}
               />
 
               <ColorPicker
                 label="Error"
-                value={colorSettings?.error || '#ef4444'}
+                value={colorSettings?.error || '#6B7280'}
                 onChange={(v) => handleColorSettingChange('error', v)}
               />
 
               <ColorPicker
                 label="Info"
-                value={colorSettings?.info || '#3b82f6'}
+                value={colorSettings?.info || '#6B7280'}
                 onChange={(v) => handleColorSettingChange('info', v)}
               />
             </div>

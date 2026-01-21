@@ -64,10 +64,10 @@ function generateColorSectionMd(colors: ColorSettings): string {
     { name: 'Text', value: colors.text, usage: 'Primary text content' },
     { name: 'Text Muted', value: colors.textMuted, usage: 'Secondary text, captions' },
     { name: 'Border', value: colors.border, usage: 'Dividers, input borders' },
-    { name: 'Success', value: colors.success || '#22C55E', usage: 'Success states, confirmations' },
-    { name: 'Warning', value: colors.warning || '#F59E0B', usage: 'Warning states, cautions' },
-    { name: 'Error', value: colors.error || '#EF4444', usage: 'Error states, destructive actions' },
-    { name: 'Info', value: colors.info || '#3B82F6', usage: 'Informational states' },
+    { name: 'Success', value: colors.success || '#6B7280', usage: 'Success states, confirmations' },
+    { name: 'Warning', value: colors.warning || '#6B7280', usage: 'Warning states, cautions' },
+    { name: 'Error', value: colors.error || '#6B7280', usage: 'Error states, destructive actions' },
+    { name: 'Info', value: colors.info || '#6B7280', usage: 'Informational states' },
   ];
 
   let md = '## Colors\n\n';
@@ -280,10 +280,10 @@ function generateColorSwatchesHtml(colors: ColorSettings): string {
     { name: 'Text', value: colors.text },
     { name: 'Text Muted', value: colors.textMuted },
     { name: 'Border', value: colors.border },
-    { name: 'Success', value: colors.success || '#22C55E' },
-    { name: 'Warning', value: colors.warning || '#F59E0B' },
-    { name: 'Error', value: colors.error || '#EF4444' },
-    { name: 'Info', value: colors.info || '#3B82F6' },
+    { name: 'Success', value: colors.success || '#6B7280' },
+    { name: 'Warning', value: colors.warning || '#6B7280' },
+    { name: 'Error', value: colors.error || '#6B7280' },
+    { name: 'Info', value: colors.info || '#6B7280' },
   ];
 
   let html = '<div class="color-grid">\n';
@@ -365,7 +365,7 @@ export function generateHtmlDocs(design: Partial<LayoutDesign>): GeneratedDocs {
 
   const bgColor = colors?.background || '#ffffff';
   const textColor = colors?.text || '#000000';
-  const primaryColor = colors?.primary || '#3b82f6';
+  const primaryColor = colors?.primary || '#6B7280';
   const surfaceColor = colors?.surface || '#f8fafc';
 
   const html = `<!DOCTYPE html>

@@ -49,8 +49,8 @@ interface ColorPickerMenuProps {
  */
 export function ColorPickerMenu({
   primaryColor,
-  secondaryColor = '#6366F1',
-  accentColor = '#F59E0B',
+  secondaryColor = '#9CA3AF',
+  accentColor = '#6B7280',
   onColorChange,
 }: ColorPickerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);

@@ -217,7 +217,7 @@ function ThemePreview({ colors, isDark }: { colors: Partial<ColorSettings>; isDa
           </span>
           <div
             className="px-3 py-1 rounded text-xs font-medium text-white"
-            style={{ backgroundColor: colors.primary || '#3B82F6' }}
+            style={{ backgroundColor: colors.primary || '#6B7280' }}
           >
             Button
           </div>
@@ -247,8 +247,8 @@ function ThemePreview({ colors, isDark }: { colors: Partial<ColorSettings>; isDa
           <span
             className="px-2 py-0.5 text-[10px] rounded"
             style={{
-              backgroundColor: `${colors.success || '#10B981'}20`,
-              color: colors.success || '#10B981',
+              backgroundColor: `${colors.success || '#6B7280'}20`,
+              color: colors.success || '#6B7280',
             }}
           >
             Success
@@ -256,8 +256,8 @@ function ThemePreview({ colors, isDark }: { colors: Partial<ColorSettings>; isDa
           <span
             className="px-2 py-0.5 text-[10px] rounded"
             style={{
-              backgroundColor: `${colors.error || '#EF4444'}20`,
-              color: colors.error || '#EF4444',
+              backgroundColor: `${colors.error || '#6B7280'}20`,
+              color: colors.error || '#6B7280',
             }}
           >
             Error

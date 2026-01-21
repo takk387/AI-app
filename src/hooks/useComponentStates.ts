@@ -214,9 +214,9 @@ const DEFAULT_INPUT_SPEC: InputSpec = {
       boxShadow: '0 0 0 3px rgba(107, 114, 128, 0.2)',
     },
     error: {
-      background: 'rgba(239, 68, 68, 0.1)',
+      background: 'rgba(107, 114, 128, 0.1)',
       color: '#F8FAFC',
-      borderColor: '#EF4444',
+      borderColor: '#6B7280',
       borderWidth: '1px',
       boxShadow: 'none',
     },

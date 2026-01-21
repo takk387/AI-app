@@ -1,9 +1,14 @@
 /**
- * Design Patterns - Pre-built Expert Design Templates
+ * Design Patterns - Structural Design Templates
  *
  * These patterns represent common professional design aesthetics that can be
- * applied to layouts. Each pattern includes complete style specifications
- * for colors, typography, spacing, and effects.
+ * applied to layouts. Each pattern includes style specifications for
+ * typography, spacing, and effects.
+ *
+ * IMPORTANT: Colors in these patterns are IGNORED during application.
+ * All colors should be AI-generated based on user input or extracted from
+ * uploaded images. The color values here are for reference only and will
+ * NOT be applied to designs. See applyPatternToDesign() for implementation.
  */
 
 import type {
@@ -628,6 +633,10 @@ export function getAllPatterns(): DesignPattern[] {
 
 /**
  * Apply a design pattern to an existing LayoutDesign
+ *
+ * IMPORTANT: This function intentionally does NOT apply colors from patterns.
+ * Colors should be AI-generated based on user input or extracted from images.
+ * Only typography, spacing, effects, and structural properties are applied.
  */
 export function applyPatternToDesign(
   design: Partial<LayoutDesign>,
@@ -637,10 +646,9 @@ export function applyPatternToDesign(
     ...design,
     globalStyles: {
       ...design.globalStyles,
-      colors: {
-        ...design.globalStyles?.colors,
-        ...pattern.globalStyles.colors,
-      },
+      // NOTE: Colors are intentionally NOT applied from patterns
+      // Colors should come from AI generation or image extraction
+      colors: design.globalStyles?.colors,
       typography: {
         ...design.globalStyles?.typography,
         ...pattern.globalStyles.typography,

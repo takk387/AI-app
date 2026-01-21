@@ -156,7 +156,7 @@ function generateGlobalVariants(
         colors: baseColors
           ? {
               ...baseColors,
-              primary: adjustBrightness(baseColors.primary || '#3B82F6', 10),
+              primary: adjustBrightness(baseColors.primary || '#6B7280', 10),
             }
           : undefined,
       } as GlobalStyles,
@@ -229,8 +229,8 @@ function generateGlobalVariants(
         colors: baseColors
           ? {
               ...baseColors,
-              primary: shiftHue(baseColors.primary || '#3B82F6', 30), // Shift toward orange
-              accent: '#F59E0B',
+              primary: shiftHue(baseColors.primary || '#6B7280', 30), // Shift toward warmer tones
+              accent: baseColors.accent || '#6B7280',
             }
           : undefined,
       } as GlobalStyles,
@@ -268,10 +268,10 @@ function generateGlobalVariants(
           ...baseDesign.globalStyles,
           colors: {
             ...baseColors,
-            background: '#0F172A',
-            surface: '#1E293B',
-            text: '#F8FAFC',
-            textMuted: '#94A3B8',
+            background: '#374151',
+            surface: '#4B5563',
+            text: '#F9FAFB',
+            textMuted: '#D1D5DB',
           },
           effects: {
             ...baseEffects,
@@ -315,8 +315,8 @@ function generateGlobalVariants(
         colors: baseColors
           ? {
               ...baseColors,
-              primary: '#8B5CF6', // Purple
-              accent: '#EC4899', // Pink
+              primary: '#6B7280', // Neutral gray - AI generates actual colors
+              accent: '#9CA3AF', // Neutral gray - AI generates actual colors
             }
           : undefined,
       } as GlobalStyles,

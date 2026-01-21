@@ -95,7 +95,7 @@ export function buildImagePrompts(context: ImagePromptContext): GeneratedPrompts
   const theme = VISUAL_THEMES[appType] || VISUAL_THEMES.general;
   const aesthetic = STYLE_AESTHETICS[style] || STYLE_AESTHETICS.modern;
   const colorMode = COLOR_MODES[colorScheme === 'dark' ? 'dark' : 'light'];
-  const primaryColor = colors?.primary || '#3B82F6';
+  const primaryColor = colors?.primary || '#6B7280';
 
   return {
     hero: buildHeroPrompt(
@@ -361,8 +361,8 @@ export function buildIllustrationPrompt(
 
 Style: ${aesthetic}, modern digital illustration
 Color palette:
-- Primary: ${designContext.primaryColor || '#3B82F6'}
-- Secondary: ${designContext.secondaryColor || '#6366F1'}
+- Primary: ${designContext.primaryColor || '#6B7280'}
+- Secondary: ${designContext.secondaryColor || '#9CA3AF'}
 - Background compatible with ${designContext.colorScheme} mode
 
 Requirements:

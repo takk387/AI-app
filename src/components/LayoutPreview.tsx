@@ -38,18 +38,18 @@ interface ImageGenerationState {
 
 type ViewMode = 'mobile' | 'tablet' | 'desktop';
 
-/** Default primary color used throughout the app */
-const DEFAULT_PRIMARY_COLOR = '#2ECC71';
+/** Default primary color used throughout the app - neutral gray to avoid color contamination */
+const DEFAULT_PRIMARY_COLOR = '#6B7280';
 
 /** Current year for copyright - extracted to avoid creating Date on every render */
 const CURRENT_YEAR = new Date().getFullYear();
 
-/** Default status colors for semantic states */
+/** Default status colors for semantic states - neutral gray to avoid color contamination */
 const DEFAULT_STATUS_COLORS = {
-  success: '#22c55e',
-  warning: '#eab308',
-  error: '#ef4444',
-  info: '#2ECC71',
+  success: '#6B7280',
+  warning: '#6B7280',
+  error: '#6B7280',
+  info: '#6B7280',
 } as const;
 
 /** Status type for list items and badges */
@@ -1699,8 +1699,8 @@ export function LayoutPreview({
   const [animationDemoIndex, setAnimationDemoIndex] = useState(0);
   const [showSectionPanel, setShowSectionPanel] = useState(false);
   const [internalShowGridOverlay, setInternalShowGridOverlay] = useState(false);
-  const [secondaryColor, setSecondaryColor] = useState('#10b981'); // Emerald-500 - complements the green theme
-  const [accentColor, setAccentColor] = useState('#34d399'); // Emerald-400 - lighter green accent
+  const [secondaryColor, setSecondaryColor] = useState('#9CA3AF'); // Neutral gray - AI generates actual colors
+  const [accentColor, setAccentColor] = useState('#6B7280'); // Neutral gray - AI generates actual colors
 
   // Use external grid overlay state if provided, otherwise use internal
   const showGridOverlay = externalShowGridOverlay ?? internalShowGridOverlay;
@@ -2118,7 +2118,7 @@ export function LayoutPreview({
             className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
             style={
               viewMode === 'mobile'
-                ? { backgroundColor: '#22c55e', color: '#ffffff' }
+                ? { backgroundColor: '#6B7280', color: '#ffffff' }
                 : { color: 'var(--text-muted)' }
             }
             title="Mobile view (375x667)"
@@ -2131,7 +2131,7 @@ export function LayoutPreview({
             className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
             style={
               viewMode === 'tablet'
-                ? { backgroundColor: '#22c55e', color: '#ffffff' }
+                ? { backgroundColor: '#6B7280', color: '#ffffff' }
                 : { color: 'var(--text-muted)' }
             }
             title="Tablet view (768x1024)"
@@ -2144,7 +2144,7 @@ export function LayoutPreview({
             className="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
             style={
               viewMode === 'desktop'
-                ? { backgroundColor: '#22c55e', color: '#ffffff' }
+                ? { backgroundColor: '#6B7280', color: '#ffffff' }
                 : { color: 'var(--text-muted)' }
             }
             title="Desktop view (full width)"

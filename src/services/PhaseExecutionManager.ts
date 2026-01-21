@@ -179,10 +179,10 @@ Do NOT deviate from these values. Do NOT substitute colors, spacing, or effects.
 - Text: ${globalStyles.colors.text} -> text-[${globalStyles.colors.text}] or var(--color-text)
 - Text Muted: ${globalStyles.colors.textMuted} -> text-[${globalStyles.colors.textMuted}] or var(--color-text-muted)
 - Border: ${globalStyles.colors.border} -> border-[${globalStyles.colors.border}] or var(--color-border)
-- Success: ${globalStyles.colors.success || '#22C55E'}
-- Warning: ${globalStyles.colors.warning || '#F59E0B'}
-- Error: ${globalStyles.colors.error || '#EF4444'}
-- Info: ${globalStyles.colors.info || '#3B82F6'}
+- Success: ${globalStyles.colors.success || '#6B7280'}
+- Warning: ${globalStyles.colors.warning || '#6B7280'}
+- Error: ${globalStyles.colors.error || '#6B7280'}
+- Info: ${globalStyles.colors.info || '#6B7280'}
 
 ### Spacing System (USE EXACT TAILWIND CLASSES)
 - Density: ${globalStyles.spacing.density} -> Gap: ${density.tailwindGap}, Padding: ${density.tailwindPadding}

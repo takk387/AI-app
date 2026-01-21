@@ -538,7 +538,7 @@ const DESIGN_VOCABULARY: Record<string, VocabularyEntry> = {
   saas: {
     design: {
       globalStyles: {
-        colors: { primary: '#3B82F6' },
+        // Colors removed - should be AI-generated based on user input
         effects: { borderRadius: 'lg', shadows: 'medium' },
       },
       basePreferences: { style: 'professional' },

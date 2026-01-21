@@ -191,7 +191,7 @@ function checkPrimaryColorAccessibility(
   issues: AccessibilityIssue[],
   passed: PassedCheck[]
 ): void {
-  const primary = colors.primary || '#3B82F6';
+  const primary = colors.primary || '#6B7280'; // Neutral gray fallback
   const background = colors.background || '#FFFFFF';
 
   // Check if primary color works as button text would need white/black text

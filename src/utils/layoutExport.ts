@@ -209,10 +209,10 @@ export function exportToCSSVariables(design: LayoutDesign): string {
     `  --color-text: ${colors.text};`,
     `  --color-text-muted: ${colors.textMuted};`,
     `  --color-border: ${colors.border};`,
-    `  --color-success: ${colors.success || '#22C55E'};`,
-    `  --color-warning: ${colors.warning || '#F59E0B'};`,
-    `  --color-error: ${colors.error || '#EF4444'};`,
-    `  --color-info: ${colors.info || '#3B82F6'};`,
+    `  --color-success: ${colors.success || '#6B7280'};`,
+    `  --color-warning: ${colors.warning || '#6B7280'};`,
+    `  --color-error: ${colors.error || '#6B7280'};`,
+    `  --color-info: ${colors.info || '#6B7280'};`,
     '',
     '  /* Spacing */',
     `  --spacing-density: ${spacingPresetToValue(spacing.density)};`,
@@ -260,9 +260,9 @@ export function exportToShadcnTheme(design: LayoutDesign): string {
   const input = hexToHSL(colors.border);
   const ring = hexToHSL(colors.primary);
 
-  // Status colors
-  const destructive = hexToHSL(colors.error || '#EF4444');
-  const destructiveForeground = getForegroundHSL(colors.error || '#EF4444');
+  // Status colors - neutral gray fallbacks
+  const destructive = hexToHSL(colors.error || '#6B7280');
+  const destructiveForeground = getForegroundHSL(colors.error || '#6B7280');
 
   // Get border radius value
   const radiusMap: Record<string, string> = {
@@ -313,8 +313,8 @@ export function exportToShadcnTheme(design: LayoutDesign): string {
     --chart-1: ${hexToHSL(colors.primary)};
     --chart-2: ${hexToHSL(colors.secondary || colors.primary)};
     --chart-3: ${hexToHSL(colors.accent || colors.primary)};
-    --chart-4: ${hexToHSL(colors.success || '#22C55E')};
-    --chart-5: ${hexToHSL(colors.warning || '#F59E0B')};
+    --chart-4: ${hexToHSL(colors.success || '#6B7280')};
+    --chart-5: ${hexToHSL(colors.warning || '#6B7280')};
   }
 
   .dark {
@@ -340,8 +340,8 @@ export function exportToShadcnTheme(design: LayoutDesign): string {
     --chart-1: ${hexToHSL(colors.primary)};
     --chart-2: ${hexToHSL(colors.secondary || colors.primary)};
     --chart-3: ${hexToHSL(colors.accent || colors.primary)};
-    --chart-4: ${hexToHSL(colors.success || '#22C55E')};
-    --chart-5: ${hexToHSL(colors.warning || '#F59E0B')};
+    --chart-4: ${hexToHSL(colors.success || '#6B7280')};
+    --chart-5: ${hexToHSL(colors.warning || '#6B7280')};
   }
 }
 
@@ -396,10 +396,10 @@ export function exportToTailwindConfig(design: LayoutDesign): string {
           surface: colors.surface,
           border: colors.border,
           muted: colors.textMuted,
-          success: colors.success || '#22C55E',
-          warning: colors.warning || '#F59E0B',
-          error: colors.error || '#EF4444',
-          info: colors.info || '#3B82F6',
+          success: colors.success || '#6B7280',
+          warning: colors.warning || '#6B7280',
+          error: colors.error || '#6B7280',
+          info: colors.info || '#6B7280',
         },
         spacing: {
           density: spacingPresetToValue(spacing.density),
@@ -475,17 +475,17 @@ export function exportToFigmaTokens(design: LayoutDesign): object {
       },
       border: { value: colors.border, type: 'color', description: 'Border color' },
       success: {
-        value: colors.success || '#22C55E',
+        value: colors.success || '#6B7280',
         type: 'color',
         description: 'Success state color',
       },
       warning: {
-        value: colors.warning || '#F59E0B',
+        value: colors.warning || '#6B7280',
         type: 'color',
         description: 'Warning state color',
       },
-      error: { value: colors.error || '#EF4444', type: 'color', description: 'Error state color' },
-      info: { value: colors.info || '#3B82F6', type: 'color', description: 'Info state color' },
+      error: { value: colors.error || '#6B7280', type: 'color', description: 'Error state color' },
+      info: { value: colors.info || '#6B7280', type: 'color', description: 'Info state color' },
     },
     typography: {
       fontFamily: {

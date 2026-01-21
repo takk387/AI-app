@@ -181,19 +181,14 @@ const layoutTypeConfigs: Record<string, DeepPartial<LayoutDesign>> = {
 
 /**
  * Category-specific style configurations
+ *
+ * NOTE: Colors are intentionally NOT included - they should be AI-generated
+ * based on user input or extracted from uploaded images.
+ * Only effects and typography settings are defined here.
  */
 const categoryStyles: Record<string, DeepPartial<LayoutDesign['globalStyles']>> = {
   admin: {
-    colors: {
-      primary: '#3B82F6',
-      secondary: '#6366F1',
-      accent: '#10B981',
-      background: '#0F172A',
-      surface: '#1E293B',
-      text: '#F1F5F9',
-      textMuted: '#94A3B8',
-      border: '#334155',
-    },
+    // Colors removed - should be AI-generated
     effects: {
       borderRadius: 'md',
       shadows: 'subtle',
@@ -203,16 +198,7 @@ const categoryStyles: Record<string, DeepPartial<LayoutDesign['globalStyles']>> 
     },
   },
   content: {
-    colors: {
-      primary: '#059669',
-      secondary: '#0D9488',
-      accent: '#F59E0B',
-      background: '#FFFFFF',
-      surface: '#F8FAFC',
-      text: '#1E293B',
-      textMuted: '#64748B',
-      border: '#E2E8F0',
-    },
+    // Colors removed - should be AI-generated
     typography: {
       fontFamily: 'Inter',
       headingWeight: 'bold',
@@ -224,16 +210,7 @@ const categoryStyles: Record<string, DeepPartial<LayoutDesign['globalStyles']>> 
     },
   },
   marketing: {
-    colors: {
-      primary: '#8B5CF6',
-      secondary: '#EC4899',
-      accent: '#06B6D4',
-      background: '#0F0F23',
-      surface: '#1A1A2E',
-      text: '#FFFFFF',
-      textMuted: '#A1A1AA',
-      border: '#27273F',
-    },
+    // Colors removed - should be AI-generated
     effects: {
       borderRadius: 'xl',
       shadows: 'strong',
@@ -243,16 +220,7 @@ const categoryStyles: Record<string, DeepPartial<LayoutDesign['globalStyles']>> 
     },
   },
   saas: {
-    colors: {
-      primary: '#6366F1',
-      secondary: '#8B5CF6',
-      accent: '#22D3EE',
-      background: '#0F172A',
-      surface: '#1E293B',
-      text: '#F1F5F9',
-      textMuted: '#94A3B8',
-      border: '#334155',
-    },
+    // Colors removed - should be AI-generated
     effects: {
       borderRadius: 'lg',
       shadows: 'medium',
@@ -262,16 +230,7 @@ const categoryStyles: Record<string, DeepPartial<LayoutDesign['globalStyles']>> 
     },
   },
   commerce: {
-    colors: {
-      primary: '#059669',
-      secondary: '#0D9488',
-      accent: '#F59E0B',
-      background: '#FFFFFF',
-      surface: '#F9FAFB',
-      text: '#111827',
-      textMuted: '#6B7280',
-      border: '#E5E7EB',
-    },
+    // Colors removed - should be AI-generated
     effects: {
       borderRadius: 'md',
       shadows: 'subtle',
@@ -321,12 +280,13 @@ export function mapArchitectureToLayout(template: FullTemplate): DeepPartial<Lay
         ...categoryStyle.typography,
       },
       colors: {
-        primary: '#3B82F6',
-        background: '#0F172A',
-        surface: '#1E293B',
-        text: '#F1F5F9',
-        textMuted: '#94A3B8',
-        border: '#334155',
+        // Neutral gray defaults - actual colors should be AI-generated
+        primary: '#6B7280',
+        background: '#F9FAFB',
+        surface: '#FFFFFF',
+        text: '#374151',
+        textMuted: '#6B7280',
+        border: '#E5E7EB',
         ...categoryStyle.colors,
       },
       spacing: {

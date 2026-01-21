@@ -432,20 +432,21 @@ export function useDesignReplication(
       if (analysis && 'colors' in analysis && analysis.colors) {
         const colors = analysis.colors as CompleteDesignAnalysis['colors'];
         const currentStyles = updatedDesign.globalStyles ?? defaultGlobalStyles;
+        // Use neutral gray fallbacks - actual colors should come from image analysis
         updatedDesign.globalStyles = {
           ...currentStyles,
           colors: {
-            primary: colors.primary || '#6366f1',
-            secondary: colors.secondary || '#8b5cf6',
-            accent: colors.accent || '#ec4899',
-            background: colors.background || '#0f172a',
-            surface: colors.surface || '#1e293b',
-            text: colors.text || '#f8fafc',
-            textMuted: colors.textMuted || '#94a3b8',
-            border: colors.border || '#334155',
-            success: colors.success || '#22c55e',
-            warning: colors.warning || '#eab308',
-            error: colors.error || '#ef4444',
+            primary: colors.primary || '#6B7280',
+            secondary: colors.secondary || '#9CA3AF',
+            accent: colors.accent || '#6B7280',
+            background: colors.background || '#F9FAFB',
+            surface: colors.surface || '#FFFFFF',
+            text: colors.text || '#374151',
+            textMuted: colors.textMuted || '#6B7280',
+            border: colors.border || '#E5E7EB',
+            success: colors.success || '#6B7280',
+            warning: colors.warning || '#6B7280',
+            error: colors.error || '#6B7280',
           },
         };
       }
@@ -478,8 +479,8 @@ export function useDesignReplication(
               primary: colors[0],
               secondary: colors[1] || colors[0],
               accent: colors[2] || colors[0],
-              background: colors[3] || currentStyles.colors?.background || '#1a1a2e',
-              surface: colors[4] || currentStyles.colors?.surface || '#16213e',
+              background: colors[3] || currentStyles.colors?.background || '#F9FAFB',
+              surface: colors[4] || currentStyles.colors?.surface || '#FFFFFF',
             },
           };
         }

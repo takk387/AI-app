@@ -1125,11 +1125,11 @@ ${contextSection}
 - Has Footer: ${structure?.hasFooter ?? true}
 
 **Colors:**
-- Primary: ${colors?.primary || '#3B82F6'}
+- Primary: ${colors?.primary || '#6B7280'}
 - Secondary: ${colors?.secondary || 'Not set'}
-- Background: ${colors?.background || '#0F172A'}
-- Surface: ${colors?.surface || '#1E293B'}
-- Text: ${colors?.text || '#F8FAFC'}
+- Background: ${colors?.background || '#F9FAFB'}
+- Surface: ${colors?.surface || '#FFFFFF'}
+- Text: ${colors?.text || '#374151'}
 
 **Typography:**
 - Font: ${typography?.fontFamily || 'Inter'}

@@ -272,8 +272,8 @@ function categorizeColors(colors: ExtractedColor[], isDark: boolean): ColorPalet
   const sortedAccentCandidates = [...accentCandidates].sort((a, b) => b.percentage - a.percentage);
 
   // Primary: largest area color that has some saturation (not pure white/black/gray)
-  // If no saturated colors, fall back to largest area overall
-  const primary = sortedAccentCandidates[0]?.hex || byArea[0]?.hex || '#3B82F6';
+  // If no saturated colors, fall back to largest area overall, then neutral gray
+  const primary = sortedAccentCandidates[0]?.hex || byArea[0]?.hex || '#6B7280';
 
   // Accent: most saturated color for visual pop
   const accent = bySaturation[0]?.hex || primary;
@@ -409,21 +409,21 @@ function processImageData(imageData: ImageData, numColors: number): ExtractionRe
   const pixels = samplePixels(imageData.data, 2000);
 
   if (pixels.length === 0) {
-    // Return default palette if no valid pixels
+    // Return neutral gray palette if no valid pixels - actual colors should come from AI
     return {
       colors: [],
       palette: {
-        primary: '#3B82F6',
-        secondary: '#8B5CF6',
-        accent: '#EC4899',
-        background: '#0F172A',
-        surface: '#1E293B',
-        text: '#F8FAFC',
-        textMuted: '#94A3B8',
-        border: '#334155',
+        primary: '#6B7280',
+        secondary: '#9CA3AF',
+        accent: '#6B7280',
+        background: '#F9FAFB',
+        surface: '#FFFFFF',
+        text: '#374151',
+        textMuted: '#6B7280',
+        border: '#E5E7EB',
       },
-      dominantColor: '#3B82F6',
-      isDarkImage: true,
+      dominantColor: '#6B7280',
+      isDarkImage: false,
     };
   }
 
@@ -468,7 +468,7 @@ function processImageData(imageData: ImageData, numColors: number): ExtractionRe
   return {
     colors,
     palette,
-    dominantColor: colors[0]?.hex || '#3B82F6',
+    dominantColor: colors[0]?.hex || '#6B7280',
     isDarkImage,
   };
 }

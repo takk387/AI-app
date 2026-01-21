@@ -300,12 +300,13 @@ function lintTailwindClasses(node: UISpecNode): UISpecNode {
  */
 function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutManifest {
   // Preserve colors extracted from user's uploaded image/video
+  // Fallback to neutral grays if no original colors exist
   const preservedColors = originalManifest?.designSystem?.colors ?? {
-    primary: '#3b82f6',
-    secondary: '#6b7280',
-    background: '#f3f4f6',
-    surface: '#ffffff',
-    text: '#111827',
+    primary: '#6B7280',
+    secondary: '#9CA3AF',
+    background: '#F9FAFB',
+    surface: '#FFFFFF',
+    text: '#374151',
   };
 
   const preservedFonts = originalManifest?.designSystem?.fonts ?? {

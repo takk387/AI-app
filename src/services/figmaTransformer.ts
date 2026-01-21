@@ -87,9 +87,9 @@ function inferColorRoles(colors: FigmaExtractedColor[]): ColorSettings {
     return saturation > 0.2;
   });
 
-  const primary = getMostFrequent(saturatedFills, '#6366F1');
+  const primary = getMostFrequent(saturatedFills, '#6B7280');
   const secondary =
-    saturatedFills.length > 1 ? saturatedFills[1].hex : getMostFrequent(fillColors, '#EC4899');
+    saturatedFills.length > 1 ? saturatedFills[1].hex : getMostFrequent(fillColors, '#9CA3AF');
   const accent = saturatedFills.length > 2 ? saturatedFills[2].hex : primary;
   const border = getMostFrequent(strokeColors, '#E5E7EB');
   const surface =
@@ -105,10 +105,10 @@ function inferColorRoles(colors: FigmaExtractedColor[]): ColorSettings {
     text,
     textMuted,
     border,
-    success: '#22C55E',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    success: '#6B7280', // Neutral gray - actual colors from Figma design
+    warning: '#6B7280',
+    error: '#6B7280',
+    info: '#6B7280',
   };
 }
 

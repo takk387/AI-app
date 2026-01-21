@@ -1445,6 +1445,8 @@ export interface LayoutChatResponse {
 // Default Values
 // ============================================================================
 
+// NOTE: These defaults use neutral grays - actual colors are AI-generated based on user input
+// Do NOT add hardcoded blue (#3B82F6) or other branded colors here
 export const defaultGlobalStyles: GlobalStyles = {
   typography: {
     fontFamily: 'Inter, system-ui, sans-serif',
@@ -1456,14 +1458,14 @@ export const defaultGlobalStyles: GlobalStyles = {
     letterSpacing: 'normal',
   },
   colors: {
-    primary: '#3B82F6',
-    secondary: '#6366F1',
-    accent: '#F59E0B',
-    background: '#0F172A',
-    surface: '#1E293B',
-    text: '#F8FAFC',
-    textMuted: '#94A3B8',
-    border: '#334155',
+    primary: '#6B7280', // Neutral gray - AI will generate actual colors
+    secondary: '#9CA3AF',
+    accent: '#6B7280',
+    background: '#F9FAFB', // Light neutral background
+    surface: '#FFFFFF',
+    text: '#374151',
+    textMuted: '#6B7280',
+    border: '#E5E7EB',
   },
   spacing: {
     density: 'normal',
@@ -1508,7 +1510,7 @@ export const defaultLayoutDesign: LayoutDesign = {
   updatedAt: new Date().toISOString(),
   basePreferences: {
     style: 'modern',
-    colorScheme: 'dark',
+    colorScheme: 'light', // Neutral default - AI will adjust based on user input
     layout: 'single-page',
   },
   globalStyles: defaultGlobalStyles,

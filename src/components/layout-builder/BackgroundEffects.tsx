@@ -79,7 +79,7 @@ function ParticlesEffect({ config }: { config: ParticlesConfig }) {
   const initParticles = useCallback(
     (width: number, height: number) => {
       const count = config.count ?? getParticleCount(config.intensity);
-      const colors = config.colors || ['#6366f1', '#8b5cf6', '#a855f7'];
+      const colors = config.colors || ['#6B7280', '#9CA3AF', '#D1D5DB'];
       const speed = config.speed ?? 1;
       const sizeRange = config.sizeRange || [2, 6];
 
@@ -235,7 +235,7 @@ function FloatingShapesEffect({ config }: { config: FloatingShapesConfig }) {
 
   const items = useMemo(() => {
     const count = config.count ?? getParticleCount(config.intensity);
-    const colors = config.colors || ['#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
+    const colors = config.colors || ['#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
     const shapes = config.shapes || ['circle', 'square', 'blob'];
     const speed = config.speed ?? 1;
 
@@ -343,7 +343,7 @@ function FloatingShapesEffect({ config }: { config: FloatingShapesConfig }) {
 // ============================================================================
 
 function GradientAnimationEffect({ config }: { config: GradientAnimationConfig }) {
-  const colors = config.colors || ['#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
+  const colors = config.colors || ['#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
   const speed = config.speed ?? 1;
   const opacity = config.opacity ?? 0.6;
   const animationType = config.animationType || 'shift';
@@ -430,7 +430,7 @@ function ParallaxDotsEffect({ config }: { config: BackgroundEffectConfig }) {
 
   const dotLayers = useMemo(() => {
     const intensity = getIntensityValue(config.intensity);
-    const colors = config.colors || ['#6366f1', '#8b5cf6'];
+    const colors = config.colors || ['#6B7280', '#9CA3AF'];
 
     return [
       { size: 2, spacing: 30, speed: 0.5, color: colors[0] },
@@ -476,7 +476,7 @@ function MeshGradientEffect({ config }: { config: BackgroundEffectConfig }) {
   const duration = 20 / speed;
 
   const blobs = useMemo(() => {
-    const colors = config.colors || ['#6366f1', '#8b5cf6', '#a855f7', '#ec4899'];
+    const colors = config.colors || ['#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
 
     return colors.map((color, i) => ({
       color,
@@ -530,7 +530,7 @@ function MeshGradientEffect({ config }: { config: BackgroundEffectConfig }) {
 // ============================================================================
 
 function AuroraEffect({ config }: { config: AuroraConfig }) {
-  const colors = config.colors || ['#22d3ee', '#6366f1', '#a855f7', '#22c55e'];
+  const colors = config.colors || ['#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
   const waves = config.waves ?? 3;
   const speed = config.speed ?? 1;
   const opacity = config.opacity ?? 0.4;
@@ -574,7 +574,7 @@ function AuroraEffect({ config }: { config: AuroraConfig }) {
 // ============================================================================
 
 function WavesEffect({ config }: { config: WavesConfig }) {
-  const colors = config.colors || ['#6366f1', '#8b5cf6', '#a855f7'];
+  const colors = config.colors || ['#6B7280', '#9CA3AF', '#D1D5DB'];
   const layers = config.layers ?? 3;
   const speed = config.speed ?? 1;
   const opacity = config.opacity ?? 0.3;

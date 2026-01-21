@@ -421,24 +421,25 @@ Use this as a starting point and expand with full details.`;
         sourceType: 'image',
         confidence: quickAnalysis?.confidence || 0.85,
         ...analysis,
-        // Ensure required nested structures exist
+        // Use ONLY Gemini-extracted colors - no hardcoded fallbacks that contaminate the design
+        // Neutral grays used only when Gemini doesn't extract a specific color
         colors: {
           palette: [],
-          primary: '#3B82F6',
-          secondary: '#6366F1',
-          accent: '#F59E0B',
-          background: '#FFFFFF',
-          surface: '#F8FAFC',
-          text: '#1E293B',
-          textMuted: '#64748B',
-          border: '#E2E8F0',
-          success: '#22C55E',
-          warning: '#F59E0B',
-          error: '#EF4444',
-          info: '#3B82F6',
+          primary: '#6B7280', // Neutral gray - will be overridden by Gemini extraction
+          secondary: '#9CA3AF',
+          accent: '#6B7280',
+          background: '#F9FAFB',
+          surface: '#FFFFFF',
+          text: '#374151',
+          textMuted: '#6B7280',
+          border: '#E5E7EB',
+          success: '#6B7280',
+          warning: '#6B7280',
+          error: '#6B7280',
+          info: '#6B7280',
           gradients: [],
           overlays: [],
-          ...analysis.colors,
+          ...analysis.colors, // Gemini's extracted colors override all defaults
         },
         typography: {
           headingFont: {

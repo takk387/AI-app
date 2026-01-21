@@ -102,9 +102,9 @@ function buildColorSection(colors: GlobalStyles['colors']): string {
 | \`--color-text\` | \`${colors.text}\` | Primary text |
 | \`--color-text-muted\` | \`${colors.textMuted}\` | Secondary text, labels |
 | \`--color-border\` | \`${colors.border}\` | Borders, dividers |
-| \`--color-success\` | \`${colors.success || '#22C55E'}\` | Success states |
-| \`--color-warning\` | \`${colors.warning || '#F59E0B'}\` | Warning states |
-| \`--color-error\` | \`${colors.error || '#EF4444'}\` | Error states |
+| \`--color-success\` | \`${colors.success || '#6B7280'}\` | Success states |
+| \`--color-warning\` | \`${colors.warning || '#6B7280'}\` | Warning states |
+| \`--color-error\` | \`${colors.error || '#6B7280'}\` | Error states |
 
 **Tailwind Usage**:
 - Background: \`bg-[var(--color-primary)]\`
@@ -250,9 +250,9 @@ Include these in your \`globals.css\`:
   --color-text: ${globalStyles.colors.text};
   --color-text-muted: ${globalStyles.colors.textMuted};
   --color-border: ${globalStyles.colors.border};
-  --color-success: ${globalStyles.colors.success || '#22C55E'};
-  --color-warning: ${globalStyles.colors.warning || '#F59E0B'};
-  --color-error: ${globalStyles.colors.error || '#EF4444'};
+  --color-success: ${globalStyles.colors.success || '#6B7280'};
+  --color-warning: ${globalStyles.colors.warning || '#6B7280'};
+  --color-error: ${globalStyles.colors.error || '#6B7280'};
 
   /* Typography */
   --font-family: ${globalStyles.typography.fontFamily};

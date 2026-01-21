@@ -277,10 +277,10 @@ export function generateColorCSSVariables(colors: {
   --color-text: ${colors.text};
   --color-text-muted: ${colors.textMuted};
   --color-border: ${colors.border};
-  --color-success: ${colors.success || '#22C55E'};
-  --color-warning: ${colors.warning || '#F59E0B'};
-  --color-error: ${colors.error || '#EF4444'};
-  --color-info: ${colors.info || '#3B82F6'};`;
+  --color-success: ${colors.success || '#6B7280'};
+  --color-warning: ${colors.warning || '#6B7280'};
+  --color-error: ${colors.error || '#6B7280'};
+  --color-info: ${colors.info || '#6B7280'};`;
 }
 
 /**

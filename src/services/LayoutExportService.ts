@@ -221,22 +221,23 @@ class LayoutExportServiceClass {
     // Map font weight settings to numeric values
     const weightMap = { light: 300, normal: 400, medium: 500, semibold: 600, bold: 700 };
 
+    // Neutral gray fallbacks - actual colors should be AI-generated
     return {
       colors: {
-        primary: colors?.primary || '#2ECC71',
-        secondary: colors?.secondary || '#C9A227',
-        accent: colors?.accent || '#F5A6C8',
-        background: colors?.background || '#0f172a',
-        surface: colors?.surface || '#1e293b',
+        primary: colors?.primary || '#6B7280',
+        secondary: colors?.secondary || '#9CA3AF',
+        accent: colors?.accent || '#6B7280',
+        background: colors?.background || '#F9FAFB',
+        surface: colors?.surface || '#FFFFFF',
         text: {
-          primary: colors?.text || '#f8fafc',
-          secondary: colors?.textMuted || '#cbd5e1',
-          muted: colors?.textMuted || '#64748b',
+          primary: colors?.text || '#374151',
+          secondary: colors?.textMuted || '#6B7280',
+          muted: colors?.textMuted || '#9CA3AF',
         },
-        border: colors?.border || '#334155',
-        error: colors?.error || '#ef4444',
-        warning: colors?.warning || '#f59e0b',
-        success: colors?.success || '#22c55e',
+        border: colors?.border || '#E5E7EB',
+        error: colors?.error || '#6B7280',
+        warning: colors?.warning || '#6B7280',
+        success: colors?.success || '#6B7280',
       },
       spacing: spacingScale,
       typography: {
