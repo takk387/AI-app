@@ -154,14 +154,354 @@ export function LayoutBuilderWizard({
     }
   };
 
-  // --- THE VIBE CODING LOOP (The "Refine" Workflow) ---
-  const handleChatInput = async (message: string) => {
-    if (!manifest) {
-      // If no layout exists, this message starts the generation
-      await handleInitialGeneration(message, uploadedFile || undefined);
-      // Clear the uploaded file after generation
-      setUploadedFile(null);
-      return;
+  // DEBUG: Log design changes to verify Gemini analysis is being applied
+  useEffect(() => {
+    console.log('[LayoutBuilderWizard] Design updated:', {
+      colors: design.globalStyles?.colors,
+      structure: design.structure,
+      layout: previewPreferences.layout,
+      colorScheme: previewPreferences.colorScheme,
+    });
+  }, [
+    design.globalStyles?.colors,
+    design.structure,
+    previewPreferences.layout,
+    previewPreferences.colorScheme,
+  ]);
+
+  // Handle suggested action clicks
+  const handleAction = useCallback(
+    (action: string) => {
+      switch (action) {
+        case 'capture_preview':
+          capturePreview();
+          break;
+        case 'upload_reference':
+          fileInputRef.current?.click();
+          break;
+        case 'toggle_theme':
+          updateDesign({
+            basePreferences: {
+              ...design.basePreferences,
+              colorScheme: design.basePreferences?.colorScheme === 'dark' ? 'light' : 'dark',
+            } as typeof design.basePreferences,
+          });
+          break;
+        case 'save_design':
+          saveDesign();
+          break;
+        case 'apply_to_concept':
+          applyToAppConcept();
+          onApplyToAppConcept?.();
+          break;
+      }
+    },
+    [capturePreview, updateDesign, design, saveDesign, applyToAppConcept, onApplyToAppConcept]
+  );
+
+  // Handle element selection from LayoutPreview (receives string ID, creates minimal SelectedElementInfo)
+  const handleElementSelect = useCallback(
+    (elementId: string | null) => {
+      if (elementId === null) {
+        setSelectedElement(null);
+      } else {
+        // Create minimal SelectedElementInfo from just the ID
+        // Full info will be populated when Click + Talk overlay is used
+        setSelectedElement({
+          id: elementId,
+          type: 'custom',
+          bounds: { x: 0, y: 0, width: 0, height: 0 },
+          currentProperties: {},
+          allowedActions: [],
+          displayName: elementId,
+        });
+      }
+    },
+    [setSelectedElement]
+  );
+
+  // Handle effects settings change from DesignControlPanel
+  const handleEffectsChange = useCallback(
+    (effects: Partial<EffectsSettings>) => {
+      const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+      updateDesign({
+        globalStyles: {
+          ...currentStyles,
+          effects: {
+            ...currentStyles.effects,
+            ...effects,
+          } as EffectsSettings,
+        },
+      });
+    },
+    [updateDesign, design.globalStyles]
+  );
+
+  // Handle color settings change from DesignControlPanel
+  const handleColorSettingsChange = useCallback(
+    (colors: Partial<ColorSettings>) => {
+      const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+      updateDesign({
+        globalStyles: {
+          ...currentStyles,
+          colors: {
+            ...currentStyles.colors,
+            ...colors,
+          } as ColorSettings,
+        },
+      });
+    },
+    [updateDesign, design.globalStyles]
+  );
+
+  // Handle primary color change from DesignControlPanel
+  const handlePrimaryColorChange = useCallback(
+    (color: string) => {
+      const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+      updateDesign({
+        globalStyles: {
+          ...currentStyles,
+          colors: {
+            ...currentStyles.colors,
+            primary: color,
+          } as ColorSettings,
+        },
+      });
+    },
+    [updateDesign, design.globalStyles]
+  );
+
+  // Handle typography settings change from DesignControlPanel
+  const handleTypographyChange = useCallback(
+    (typography: Partial<TypographySettings>) => {
+      const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+      updateDesign({
+        globalStyles: {
+          ...currentStyles,
+          typography: {
+            ...currentStyles.typography,
+            ...typography,
+          } as TypographySettings,
+        },
+      });
+    },
+    [updateDesign, design.globalStyles]
+  );
+
+  // Handle spacing settings change from DesignControlPanel
+  const handleSpacingChange = useCallback(
+    (spacing: Partial<SpacingSettings>) => {
+      const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+      updateDesign({
+        globalStyles: {
+          ...currentStyles,
+          spacing: {
+            ...currentStyles.spacing,
+            ...spacing,
+          } as SpacingSettings,
+        },
+      });
+    },
+    [updateDesign, design.globalStyles]
+  );
+
+  // Handle accessibility auto-fix
+  const handleAccessibilityFix = useCallback(
+    (fixes: Partial<ColorSettings>) => {
+      const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+      updateDesign({
+        globalStyles: {
+          ...currentStyles,
+          colors: {
+            ...currentStyles.colors,
+            ...fixes,
+          } as ColorSettings,
+        },
+      });
+      success('Accessibility fixes applied');
+    },
+    [updateDesign, design.globalStyles, success]
+  );
+
+  // Handle reference image upload with compression
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        error('Please select an image file');
+        e.target.value = '';
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        error('Image must be less than 10MB');
+        e.target.value = '';
+        return;
+      }
+
+      try {
+        // Compress the image
+        const { dataUrl, originalSize, compressedSize } = await compressImage(file);
+
+        addReferenceImage(dataUrl);
+
+        // Extract colors from the reference image
+        try {
+          const colorResult = await extractColorsFromImage(dataUrl);
+          setExtractedColors(colorResult);
+          setShowExtractedColors(true);
+        } catch {
+          // Non-critical - continue without extracted colors
+        }
+
+        // Show compression info if significant size reduction
+        const reduction = ((originalSize - compressedSize) / originalSize) * 100;
+        if (reduction > 10) {
+          success(
+            `Image added (${formatBytes(originalSize)} → ${formatBytes(compressedSize)}, ${Math.round(reduction)}% smaller)`
+          );
+        } else {
+          success('Reference image added');
+        }
+      } catch {
+        error('Failed to process image. Please try another file.');
+      }
+
+      // Reset input
+      e.target.value = '';
+    },
+    [addReferenceImage, error, success]
+  );
+
+  // Apply extracted colors to design
+  const handleApplyExtractedColors = useCallback(() => {
+    if (!extractedColors) return;
+
+    const { palette } = extractedColors;
+    const currentStyles = design.globalStyles ?? defaultGlobalStyles;
+
+    updateDesign({
+      globalStyles: {
+        ...currentStyles,
+        colors: {
+          ...currentStyles.colors,
+          primary: palette.primary,
+          secondary: palette.secondary,
+          accent: palette.accent,
+          background: palette.background,
+          surface: palette.surface,
+          text: palette.text,
+          textMuted: palette.textMuted,
+          border: palette.border,
+        },
+      },
+    });
+
+    setShowExtractedColors(false);
+    success('Applied extracted colors from reference image');
+  }, [extractedColors, updateDesign, design.globalStyles, success]);
+
+  // Handle architecture template selection (from App Concept blueprints)
+  const handleArchitectureTemplateSelect = useCallback(
+    (template: FullTemplate) => {
+      // Map the architecture template to layout design
+      const layoutDesign = mapArchitectureToLayout(template);
+      updateDesign(layoutDesign as Partial<LayoutDesign>);
+      setShowArchitectureTemplates(false);
+
+      // Generate and send an initial message based on the template
+      const initialPrompt = generateArchitecturePrompt(template);
+      sendMessage(initialPrompt);
+
+      success(`Applied "${template.name}" architecture blueprint`);
+    },
+    [updateDesign, sendMessage, success]
+  );
+
+  // Handle component pattern selection (sends suggested message to chat)
+  const handleComponentPatternSelect = useCallback(
+    (pattern: ComponentPattern) => {
+      // Send the suggested message to the chat
+      sendMessage(pattern.suggestedMessage);
+      setShowComponentLibrary(false);
+    },
+    [sendMessage]
+  );
+
+  // Handle export - JSON (original)
+  const handleExportJSON = useCallback(() => {
+    exportDesign(false);
+    success('Design exported as JSON');
+    setShowExportMenu(false);
+  }, [exportDesign, success]);
+
+  // Handle export - CSS Variables
+  const handleExportCSS = useCallback(() => {
+    const css = exportToCSSVariables(design as LayoutDesign);
+    downloadExport(css, `${design.name || 'design'}-variables.css`, 'text/css');
+    success('CSS variables exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - Tailwind Config
+  const handleExportTailwind = useCallback(() => {
+    const config = exportToTailwindConfig(design as LayoutDesign);
+    downloadExport(config, 'tailwind.config.js', 'application/javascript');
+    success('Tailwind config exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - React Component
+  const handleExportReact = useCallback(() => {
+    const component = exportToReactComponent(design as LayoutDesign);
+    const filename = `${(design.name || 'Layout').replace(/[^a-zA-Z0-9]/g, '')}.tsx`;
+    downloadExport(component, filename, 'text/typescript');
+    success('React component exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - Design Tokens
+  const handleExportTokens = useCallback(() => {
+    const tokens = exportToFigmaTokens(design as LayoutDesign);
+    downloadExport(JSON.stringify(tokens, null, 2), 'design-tokens.json', 'application/json');
+    success('Design tokens exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - shadcn/ui Theme
+  const handleExportShadcn = useCallback(() => {
+    const shadcnTheme = exportToShadcnTheme(design as LayoutDesign);
+    downloadExport(shadcnTheme, 'globals.css', 'text/css');
+    success('shadcn/ui theme exported');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - Documentation (Markdown)
+  const handleExportDocsMarkdown = useCallback(() => {
+    const docs = generateDesignDocs(design, 'markdown');
+    downloadDocs(docs, `${design.name || 'design-system'}.md`);
+    success('Documentation exported as Markdown');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle export - Documentation (HTML)
+  const handleExportDocsHtml = useCallback(() => {
+    const docs = generateDesignDocs(design, 'html');
+    downloadDocs(docs, `${design.name || 'design-system'}.html`);
+    success('Documentation exported as HTML');
+    setShowExportMenu(false);
+  }, [design, success]);
+
+  // Handle copy CSS to clipboard
+  const handleCopyCSS = useCallback(async () => {
+    const css = exportToCSSVariables(design as LayoutDesign);
+    const copied = await copyToClipboard(css);
+    if (copied) {
+      success('CSS variables copied to clipboard');
+    } else {
+      error('Failed to copy to clipboard');
     }
 
     setIsGenerating(true);
