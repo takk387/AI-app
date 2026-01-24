@@ -27,7 +27,7 @@ import { createClient, isSupabaseConfigured } from '@/utils/supabase/client';
 import { ProjectDocumentationService } from '@/services/ProjectDocumentationService';
 import type { ProjectDocumentation } from '@/types/projectDocumentation';
 import type { AppConcept } from '@/types/appConcept';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { ChatMessage } from '@/types/aiBuilderTypes';
 
@@ -60,7 +60,7 @@ interface UseProjectDocumentationReturn {
     chatMessages: ChatMessage[],
     partialConcept?: Partial<AppConcept>
   ) => Promise<void>;
-  captureLayoutSnapshot: (layout: LayoutDesign, previewImageUrl?: string) => Promise<void>;
+  captureLayoutSnapshot: (manifest: LayoutManifest, previewImageUrl?: string) => Promise<void>;
   capturePlanSnapshot: (plan: DynamicPhasePlan) => Promise<void>;
   recordPhaseStart: (
     phaseNumber: number,
@@ -432,12 +432,12 @@ export function useProjectDocumentation(
 
   // Capture layout snapshot
   const captureLayoutSnapshot = useCallback(
-    async (layout: LayoutDesign, previewImageUrl?: string) => {
+    async (manifest: LayoutManifest, previewImageUrl?: string) => {
       if (!currentDocumentation) return;
 
       setIsSavingDocumentation(true);
       try {
-        const result = await service.captureLayoutSnapshot(currentDocumentation.id, layout, {
+        const result = await service.captureLayoutSnapshot(currentDocumentation.id, manifest, {
           previewImageUrl,
         });
 

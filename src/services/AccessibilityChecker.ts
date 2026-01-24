@@ -1,9 +1,4 @@
-import type {
-  LayoutDesign,
-  ColorSettings,
-  TypographySettings,
-  EffectsSettings,
-} from '@/types/layoutDesign';
+import type { LayoutManifest, UISpecNode } from '@/types/schema';
 
 /**
  * Accessibility issue severity levels
@@ -79,25 +74,30 @@ interface RGB {
 /**
  * AccessibilityChecker Service
  *
- * Validates LayoutDesign against WCAG 2.1 guidelines.
+ * Validates LayoutManifest against WCAG 2.1 guidelines.
  * Checks color contrast, touch targets, focus indicators, and more.
  */
 class AccessibilityCheckerClass {
   private issueIdCounter = 0;
 
   /**
-   * Run full accessibility check on a layout design
+   * Run full accessibility check on a layout manifest
    */
-  check(design: Partial<LayoutDesign>): A11yCheckResult {
+  checkLayout(manifest: LayoutManifest | null | undefined): A11yCheckResult {
     this.issueIdCounter = 0;
     const issues: A11yIssue[] = [];
 
-    // Run all checks
-    issues.push(...this.checkColorContrast(design));
-    issues.push(...this.checkTouchTargets(design));
-    issues.push(...this.checkFocusIndicators(design));
-    issues.push(...this.checkTextSize(design));
-    issues.push(...this.checkMotion(design));
+    if (!manifest) {
+      return this.buildEmptyResult();
+    }
+
+    // Run checks on globals (design system)
+    issues.push(...this.checkColorContrast(manifest));
+
+    // Run checks on the node tree
+    if (manifest.root) {
+      issues.push(...this.checkNodeTree(manifest.root));
+    }
 
     // Calculate summary
     const summary = {
@@ -131,11 +131,24 @@ class AccessibilityCheckerClass {
   }
 
   /**
-   * Check color contrast ratios
+   * Build empty result for null manifest
    */
-  private checkColorContrast(design: Partial<LayoutDesign>): A11yIssue[] {
+  private buildEmptyResult(): A11yCheckResult {
+    return {
+      passed: true,
+      score: 100,
+      issues: [],
+      summary: { errors: 0, warnings: 0, info: 0 },
+      wcagCompliance: { levelA: true, levelAA: true, levelAAA: true },
+    };
+  }
+
+  /**
+   * Check color contrast ratios from manifest globals
+   */
+  private checkColorContrast(manifest: LayoutManifest): A11yIssue[] {
     const issues: A11yIssue[] = [];
-    const colors: Partial<ColorSettings> = design.globalStyles?.colors || {};
+    const colors = manifest.designSystem?.colors || {};
 
     // Check text on background
     if (colors.text && colors.background) {
@@ -225,130 +238,80 @@ class AccessibilityCheckerClass {
   }
 
   /**
-   * Check touch target sizes
+   * Check the UISpecNode tree for accessibility issues
    */
-  private checkTouchTargets(design: Partial<LayoutDesign>): A11yIssue[] {
+  private checkNodeTree(node: UISpecNode): A11yIssue[] {
     const issues: A11yIssue[] = [];
-    const spacing = design.globalStyles?.spacing;
 
-    // Check if density is compact (may indicate small touch targets)
-    if (spacing?.density === 'compact') {
-      issues.push({
-        id: this.generateId(),
-        category: 'touch-target',
-        severity: 'warning',
-        wcagLevel: 'AA',
-        wcagCriteria: '2.5.5 Target Size',
-        title: 'Compact spacing may affect touch targets',
-        description: 'Compact density may result in touch targets smaller than 44x44 pixels.',
-        element: 'Global Spacing',
-        currentValue: 'compact',
-        requiredValue: '44px minimum touch targets',
-        suggestion: 'Consider using normal or relaxed density for better touch accessibility.',
-        canAutoFix: false,
-      });
+    // Check image nodes for alt text
+    if (node.type === 'image') {
+      if (!node.attributes?.alt) {
+        issues.push({
+          id: this.generateId(),
+          category: 'alt-text',
+          severity: 'error',
+          wcagLevel: 'A',
+          wcagCriteria: '1.1.1 Non-text Content',
+          title: 'Image missing alt text',
+          description: 'Images must have alternative text for screen readers.',
+          element: `Image (${node.id})`,
+          currentValue: 'No alt attribute',
+          requiredValue: 'Descriptive alt text',
+          suggestion: 'Add an alt attribute describing the image content.',
+          canAutoFix: false,
+        });
+      }
     }
 
-    return issues;
-  }
+    // Check button nodes for accessible text
+    if (node.type === 'button') {
+      const hasText = node.attributes?.text || node.children?.some(c => c.type === 'text');
 
-  /**
-   * Check focus indicators
-   */
-  private checkFocusIndicators(design: Partial<LayoutDesign>): A11yIssue[] {
-    const issues: A11yIssue[] = [];
-    const effects: Partial<EffectsSettings> = design.globalStyles?.effects || {};
-
-    // Check if animations are disabled (may affect focus indicators)
-    if (effects.animations === 'none') {
-      issues.push({
-        id: this.generateId(),
-        category: 'focus-indicator',
-        severity: 'info',
-        wcagLevel: 'AA',
-        wcagCriteria: '2.4.7 Focus Visible',
-        title: 'Ensure focus indicators are visible',
-        description: 'With animations disabled, ensure static focus indicators are clear.',
-        element: 'Global Focus Style',
-        currentValue: 'animations: none',
-        requiredValue: 'Visible focus ring with 3:1 contrast',
-        suggestion: 'Add a visible focus ring style (e.g., blue outline or ring).',
-        canAutoFix: false,
-      });
+      if (!hasText) {
+        issues.push({
+          id: this.generateId(),
+          category: 'semantic',
+          severity: 'error',
+          wcagLevel: 'A',
+          wcagCriteria: '4.1.2 Name, Role, Value',
+          title: 'Button missing accessible name',
+          description: 'Buttons must have text content for screen readers.',
+          element: `Button (${node.id})`,
+          currentValue: 'No accessible name',
+          requiredValue: 'Button text content',
+          suggestion: 'Add text content to the button.',
+          canAutoFix: false,
+        });
+      }
     }
 
-    return issues;
-  }
+    // Check input nodes for labels
+    if (node.type === 'input') {
+      const hasLabel = node.attributes?.placeholder || node.attributes?.name;
 
-  /**
-   * Check text sizes
-   */
-  private checkTextSize(design: Partial<LayoutDesign>): A11yIssue[] {
-    const issues: A11yIssue[] = [];
-    const typography: Partial<TypographySettings> = design.globalStyles?.typography || {};
-
-    // Check if body size is too small
-    if (typography.bodySize === 'xs') {
-      issues.push({
-        id: this.generateId(),
-        category: 'text-size',
-        severity: 'warning',
-        wcagLevel: 'AA',
-        wcagCriteria: '1.4.4 Resize Text',
-        title: 'Base text size may be too small',
-        description: 'Extra small text can be difficult to read for users with visual impairments.',
-        element: 'Body Font Size',
-        currentValue: 'xs',
-        requiredValue: 'sm or larger',
-        suggestion: 'Consider using at least sm (small) as the body font size.',
-        canAutoFix: false,
-      });
+      if (!hasLabel) {
+        issues.push({
+          id: this.generateId(),
+          category: 'form-labels',
+          severity: 'warning',
+          wcagLevel: 'A',
+          wcagCriteria: '1.3.1 Info and Relationships',
+          title: 'Input may be missing label',
+          description: 'Form inputs should have associated labels or placeholder.',
+          element: `Input (${node.id})`,
+          currentValue: 'No label found',
+          requiredValue: 'Placeholder or name attribute',
+          suggestion: 'Add a placeholder or name attribute.',
+          canAutoFix: false,
+        });
+      }
     }
 
-    // Check line height
-    if (typography.lineHeight === 'tight') {
-      issues.push({
-        id: this.generateId(),
-        category: 'text-size',
-        severity: 'warning',
-        wcagLevel: 'AAA',
-        wcagCriteria: '1.4.12 Text Spacing',
-        title: 'Line height could be improved',
-        description: 'Tight line spacing can make text harder to read.',
-        element: 'Line Height',
-        currentValue: 'tight',
-        requiredValue: 'normal or relaxed',
-        suggestion: 'Increase line height to normal or relaxed for better readability.',
-        canAutoFix: false,
-      });
-    }
-
-    return issues;
-  }
-
-  /**
-   * Check motion and animation settings
-   */
-  private checkMotion(design: Partial<LayoutDesign>): A11yIssue[] {
-    const issues: A11yIssue[] = [];
-    const effects: Partial<EffectsSettings> = design.globalStyles?.effects || {};
-
-    // Check for playful animations
-    if (effects.animations === 'playful') {
-      issues.push({
-        id: this.generateId(),
-        category: 'motion',
-        severity: 'info',
-        wcagLevel: 'AA',
-        wcagCriteria: '2.3.3 Animation from Interactions',
-        title: 'Consider reduced motion preferences',
-        description: 'Playful animations may be distracting for some users.',
-        element: 'Animations',
-        currentValue: 'playful',
-        requiredValue: 'Respect prefers-reduced-motion',
-        suggestion: 'Add support for prefers-reduced-motion media query to reduce animations.',
-        canAutoFix: false,
-      });
+    // Recursively check children
+    if (node.children) {
+      for (const child of node.children) {
+        issues.push(...this.checkNodeTree(child));
+      }
     }
 
     return issues;

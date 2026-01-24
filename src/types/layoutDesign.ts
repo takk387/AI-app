@@ -3,7 +3,9 @@
  * Complete design specification for the Layout Builder feature
  */
 
-import type { VisualAnalysis } from '@/services/GeminiLayoutService';
+// VisualAnalysis was from deleted GeminiLayoutService
+// Using a generic record type for backward compatibility
+type VisualAnalysis = Record<string, unknown>;
 
 // ============================================================================
 // Component Design Types

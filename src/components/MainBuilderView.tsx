@@ -273,13 +273,13 @@ export function MainBuilderView() {
   ]);
 
   // App Builder Sync - bidirectional sync between Layout Builder and App Builder
-  const appBuilderSync = useAppBuilderSync(appConcept?.layoutDesign || null, {
+  const appBuilderSync = useAppBuilderSync(appConcept?.layoutManifest || null, {
     autoSync: true,
     debounceMs: 1500,
-    onSyncComplete: (exportedLayout) => {
+    onSyncComplete: (tokens) => {
       console.log('[AppBuilderSync] Layout synced:', {
-        componentCount: exportedLayout.components.length,
-        hasTokens: !!exportedLayout.tokens,
+        hasColors: !!tokens.colors,
+        hasTypography: !!tokens.typography,
       });
     },
     onSyncError: (error) => {
@@ -569,7 +569,7 @@ export function MainBuilderView() {
                   onViewComponent={() => setActiveTab('preview')}
                   streamingProgress={streaming.progress}
                   isStreamingActive={streaming.isStreaming}
-                  hasLayoutDesign={!!appConcept?.layoutDesign}
+                  hasLayoutDesign={!!appConcept?.layoutManifest}
                   onCapturePreview={async () => {
                     try {
                       const result = await captureLayoutPreview('sandpack-preview');

@@ -8,7 +8,7 @@
  */
 
 import type { AppConcept, Feature, TechnicalRequirements, UserRole } from '@/types/appConcept';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type {
   FeatureDomain,
   FeatureClassification,
@@ -23,7 +23,6 @@ import type {
   ImportInfo,
 } from '@/types/dynamicPhases';
 import type { ArchitectureSpec, BackendPhaseSpec } from '@/types/architectureSpec';
-import { LayoutManifest } from '@/types/schema';
 
 import {
   COMPLEX_FEATURE_PATTERNS as complexPatterns,
@@ -913,10 +912,10 @@ export class DynamicPhaseGenerator {
     // Phase 1: ALWAYS start with Setup
     phases.push(this.createSetupPhase(phaseNumber++, concept));
 
-    // Phase 2: Design System (if layoutDesign exists) - creates design tokens and base components
+    // Phase 2: Design System (if layoutManifest exists) - creates design tokens and base components
     // This ensures all subsequent phases have access to the complete design specification
-    if (concept.layoutDesign) {
-      phases.push(this.createDesignSystemPhase(phaseNumber++, concept, concept.layoutDesign));
+    if (concept.layoutManifest) {
+      phases.push(this.createDesignSystemPhase(phaseNumber++, concept, concept.layoutManifest));
     }
 
     // Phase 2/3: Database (if needed) - always comes early
@@ -1197,78 +1196,65 @@ export class DynamicPhaseGenerator {
         'Page has proper title and meta description',
       ],
       status: 'pending',
-      // Include concept context for execution (including layoutDesign for design-aware styling)
+      // Include concept context for execution (including layoutManifest for design-aware styling)
       conceptContext: {
         purpose: concept.purpose,
         targetUsers: concept.targetUsers,
         uiPreferences: concept.uiPreferences,
-        layoutDesign: concept.layoutDesign, // Include layout design for setup phase
+        layoutManifest: concept.layoutManifest, // Include layout manifest for setup phase
         roles: concept.roles,
       },
     };
   }
 
   /**
-   * Create the Design System phase (when layoutDesign exists)
+   * Create the Design System phase (when layoutManifest exists)
    * This phase creates design tokens, component variants, and layout components
    * ensuring all subsequent phases have access to the complete design specification
    */
   private createDesignSystemPhase(
     phaseNumber: number,
     concept: AppConcept,
-    layoutDesign: LayoutDesign
+    layoutManifest: LayoutManifest
   ): DynamicPhase {
-    const { globalStyles, components, responsive } = layoutDesign;
+    const designSystem = layoutManifest.designSystem || { colors: {}, fonts: { heading: 'Inter', body: 'Inter' } };
+    const colors = designSystem.colors || {};
+    const fonts = designSystem.fonts || { heading: 'Inter', body: 'Inter' };
 
     // Build detailed design context for the phase description
     const designDetails: string[] = [];
-    if (globalStyles.typography) {
-      designDetails.push(
-        `Typography: ${globalStyles.typography.fontFamily}, ${globalStyles.typography.headingSize} headings`
-      );
+    if (fonts.heading || fonts.body) {
+      designDetails.push(`Typography: ${fonts.heading} headings, ${fonts.body} body`);
     }
-    if (globalStyles.colors) {
-      designDetails.push(
-        `Colors: primary ${globalStyles.colors.primary}, ${Object.keys(globalStyles.colors).length} color tokens`
-      );
-    }
-    if (globalStyles.spacing) {
-      designDetails.push(
-        `Spacing: ${globalStyles.spacing.density} density, ${globalStyles.spacing.containerWidth} container`
-      );
-    }
-    if (globalStyles.effects) {
-      designDetails.push(
-        `Effects: ${globalStyles.effects.borderRadius} radius, ${globalStyles.effects.shadows} shadows`
-      );
+    if (Object.keys(colors).length > 0) {
+      const primaryColor = colors.primary || colors.background || '#6B7280';
+      designDetails.push(`Colors: primary ${primaryColor}, ${Object.keys(colors).length} color tokens`);
     }
 
-    // List components to be created
-    const componentsList: string[] = [];
-    if (components.header?.visible) componentsList.push('Header');
-    if (components.sidebar?.visible) componentsList.push('Sidebar');
-    if (components.hero?.visible) componentsList.push('Hero');
-    if (components.cards) componentsList.push('Cards');
-    if (components.lists) componentsList.push('Lists');
-    if (components.stats?.visible) componentsList.push('Stats');
-    if (components.footer?.visible) componentsList.push('Footer');
-    if (components.navigation) componentsList.push('Navigation');
+    // Extract detected features from manifest
+    const detectedFeatures = layoutManifest.detectedFeatures || [];
+    const componentsList = detectedFeatures.filter(f =>
+      ['header', 'footer', 'sidebar', 'hero', 'cards', 'navigation', 'form'].some(c => f.toLowerCase().includes(c))
+    );
+
+    const primaryColor = colors.primary || '#6B7280';
+    const backgroundColor = colors.background || '#FFFFFF';
+    const textColor = colors.text || '#374151';
+    const borderColor = colors.border || '#E5E7EB';
 
     return {
       number: phaseNumber,
       name: 'Design System Setup',
-      description: `Create complete design system based on layout specifications for "${concept.name}". ${designDetails.join('. ')}. Components: ${componentsList.join(', ')}. CRITICAL: Use EXACT colors and values from the design specification - do not substitute.`,
+      description: `Create complete design system based on layout manifest for "${concept.name}". ${designDetails.join('. ')}. Detected features: ${detectedFeatures.slice(0, 5).join(', ')}. CRITICAL: Use EXACT colors and values from the design specification.`,
       domain: 'ui-component',
       features: [
-        `CRITICAL: Create globals.css with EXACT CSS variables: --color-primary: ${globalStyles.colors.primary}; --color-background: ${globalStyles.colors.background}; --color-surface: ${globalStyles.colors.surface}; --color-text: ${globalStyles.colors.text}; --color-border: ${globalStyles.colors.border};`,
-        `Tailwind theme extension in tailwind.config.ts extending colors with primary: "${globalStyles.colors.primary}", background: "${globalStyles.colors.background}", surface: "${globalStyles.colors.surface}"`,
-        `Typography: font-family "${globalStyles.typography.fontFamily}", headings ${globalStyles.typography.headingWeight}, body ${globalStyles.typography.bodyWeight}`,
-        `Color palette: primary ${globalStyles.colors.primary}, secondary ${globalStyles.colors.secondary || globalStyles.colors.primary}, accent ${globalStyles.colors.accent || globalStyles.colors.primary}`,
-        `Spacing: ${globalStyles.spacing.density} density, ${globalStyles.spacing.containerWidth} container (${globalStyles.spacing.containerWidth === 'narrow' ? 'max-w-3xl' : globalStyles.spacing.containerWidth === 'standard' ? 'max-w-5xl' : globalStyles.spacing.containerWidth === 'wide' ? 'max-w-7xl' : 'max-w-full'})`,
-        `Effects: ${globalStyles.effects.borderRadius} radius (${globalStyles.effects.borderRadius === 'none' ? 'rounded-none' : globalStyles.effects.borderRadius === 'sm' ? 'rounded-sm' : globalStyles.effects.borderRadius === 'md' ? 'rounded-md' : globalStyles.effects.borderRadius === 'lg' ? 'rounded-lg' : globalStyles.effects.borderRadius === 'xl' ? 'rounded-xl' : 'rounded-full'}), ${globalStyles.effects.shadows} shadows`,
-        ...componentsList.map((c) => `${c} component matching exact design specs`),
-        `Responsive: mobile ${responsive.mobileBreakpoint}px (sm:), tablet ${responsive.tabletBreakpoint}px (lg:)`,
-        'Layout structure with design-specified header, content, and footer arrangement',
+        `CRITICAL: Create globals.css with CSS variables: --color-primary: ${primaryColor}; --color-background: ${backgroundColor}; --color-text: ${textColor}; --color-border: ${borderColor};`,
+        `Tailwind theme extension in tailwind.config.ts with primary: "${primaryColor}", background: "${backgroundColor}"`,
+        `Typography: heading font "${fonts.heading}", body font "${fonts.body}"`,
+        `Color palette: ${Object.entries(colors).map(([k, v]) => `${k}: ${v}`).join(', ')}`,
+        ...componentsList.map((c) => `${c} component matching design specs`),
+        'Responsive layout with mobile-first approach',
+        'Layout structure based on UISpecNode tree',
       ],
       featureDetails: [],
       estimatedTokens: 4500, // Design system is substantial
@@ -1278,20 +1264,20 @@ export class DynamicPhaseGenerator {
       testCriteria: [
         'Design tokens are accessible via CSS variables',
         'Tailwind classes match design specifications',
-        `Typography renders with ${globalStyles.typography.fontFamily} font`,
-        `Primary color ${globalStyles.colors.primary} is applied correctly`,
+        `Typography renders with ${fonts.heading} font for headings`,
+        `Primary color ${primaryColor} is applied correctly`,
         'All layout components render with correct styling',
-        `Responsive breakpoints work at ${responsive.mobileBreakpoint}px and ${responsive.tabletBreakpoint}px`,
+        'Responsive breakpoints work correctly',
         'No style conflicts or overrides',
       ],
       status: 'pending',
-      // CRITICAL: Include full layoutDesign for code generation
+      // CRITICAL: Include full layoutManifest for code generation
       conceptContext: {
         purpose: concept.purpose,
         targetUsers: concept.targetUsers,
         uiPreferences: concept.uiPreferences,
         roles: concept.roles,
-        layoutDesign: layoutDesign, // Full design specification
+        layoutManifest: layoutManifest, // Full design specification
       },
     };
   }
@@ -1360,12 +1346,12 @@ export class DynamicPhaseGenerator {
         'No console warnings or errors',
       ],
       status: 'pending',
-      // Include full concept context (including layoutDesign for design-aware animations)
+      // Include full concept context (including layoutManifest for design-aware animations)
       conceptContext: {
         purpose: concept.purpose,
         targetUsers: concept.targetUsers,
         uiPreferences: concept.uiPreferences,
-        layoutDesign: concept.layoutDesign, // Include layout design for polish animations
+        layoutManifest: concept.layoutManifest, // Include layout manifest for polish animations
         roles: concept.roles,
         conversationContext: concept.conversationContext,
       },
@@ -1416,13 +1402,13 @@ export class DynamicPhaseGenerator {
       dependencyNames: [],
       testCriteria: this.generateTestCriteria(features, domain),
       status: 'pending',
-      // Include concept context if available (including layoutDesign for design-aware styling)
+      // Include concept context if available (including layoutManifest for design-aware styling)
       conceptContext: concept
         ? {
             purpose: concept.purpose,
             targetUsers: concept.targetUsers,
             uiPreferences: concept.uiPreferences,
-            layoutDesign: concept.layoutDesign, // CRITICAL: Include layout design for all phases
+            layoutManifest: concept.layoutManifest, // CRITICAL: Include layout manifest for all phases
             roles: concept.roles,
             dataModels: concept.technical.dataModels,
           }

@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * DesignTab - Displays layout design snapshot with preview
+ * DesignTab - Displays layout manifest snapshot with preview
+ * Updated for Gemini 3 LayoutManifest structure
  */
 
 import React, { useState } from 'react';
@@ -59,10 +60,11 @@ function ColorSwatch({ color, label }: { color: string; label: string }) {
 }
 
 export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
-  const { design } = snapshot;
-  const globalStyles = design?.globalStyles;
-  const colors = globalStyles?.colors;
-  const typography = globalStyles?.typography;
+  // Extract design system from layoutManifest (Gemini 3 structure)
+  const manifest = snapshot.layoutManifest;
+  const designSystem = manifest?.designSystem;
+  const colors = designSystem?.colors || {};
+  const fonts = designSystem?.fonts;
 
   return (
     <div className="p-4">
@@ -104,104 +106,64 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
       </div>
 
       {/* Color Palette */}
-      {colors && (
+      {Object.keys(colors).length > 0 && (
         <Section icon={<PaletteIcon size={16} />} title="Colors">
           <div className="grid grid-cols-2 gap-3 bg-slate-800/30 rounded-lg p-3">
-            {colors.primary && <ColorSwatch color={colors.primary} label="Primary" />}
-            {colors.secondary && <ColorSwatch color={colors.secondary} label="Secondary" />}
-            {colors.accent && <ColorSwatch color={colors.accent} label="Accent" />}
-            {colors.background && <ColorSwatch color={colors.background} label="Background" />}
-            {colors.surface && <ColorSwatch color={colors.surface} label="Surface" />}
-            {colors.text && <ColorSwatch color={colors.text} label="Text" />}
+            {Object.entries(colors).map(([key, value]) => (
+              <ColorSwatch key={key} color={value} label={key.charAt(0).toUpperCase() + key.slice(1)} />
+            ))}
           </div>
         </Section>
       )}
 
       {/* Typography */}
-      {typography && (
+      {fonts && (
         <Section icon={<LayoutIcon size={16} />} title="Typography">
           <div className="space-y-2 bg-slate-800/30 rounded-lg p-3">
-            {typography.fontFamily && (
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Font Family</span>
-                <span className="text-slate-300 font-medium">{typography.fontFamily}</span>
-              </div>
-            )}
-            {typography.headingFont && (
+            {fonts.heading && (
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Heading Font</span>
-                <span className="text-slate-300 font-medium">{typography.headingFont}</span>
+                <span className="text-slate-300 font-medium">{fonts.heading}</span>
               </div>
             )}
-            {typography.headingSize && (
+            {fonts.body && (
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Heading Size</span>
-                <span className="text-slate-300 font-medium">{typography.headingSize}</span>
-              </div>
-            )}
-            {typography.bodySize && (
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Body Size</span>
-                <span className="text-slate-300 font-medium">{typography.bodySize}</span>
+                <span className="text-slate-500">Body Font</span>
+                <span className="text-slate-300 font-medium">{fonts.body}</span>
               </div>
             )}
           </div>
         </Section>
       )}
 
-      {/* Layout Structure */}
-      <Section icon={<LayoutIcon size={16} />} title="Structure">
-        <div className="grid grid-cols-3 gap-2 bg-slate-800/30 rounded-lg p-3">
-          {[
-            { key: 'hasHeader', label: 'Header' },
-            { key: 'hasSidebar', label: 'Sidebar' },
-            { key: 'hasFooter', label: 'Footer' },
-          ].map(({ key, label }) => {
-            const value = design?.structure?.[key as keyof NonNullable<typeof design>['structure']];
-            return (
-              <div
-                key={key}
-                className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs ${
-                  value ? 'bg-garden-500/10 text-garden-400' : 'bg-slate-800/50 text-slate-600'
-                }`}
+      {/* Layout Structure - Show detected features */}
+      {manifest?.detectedFeatures && manifest.detectedFeatures.length > 0 && (
+        <Section icon={<LayoutIcon size={16} />} title="Detected Features">
+          <div className="flex flex-wrap gap-2 bg-slate-800/30 rounded-lg p-3">
+            {manifest.detectedFeatures.map((feature) => (
+              <span
+                key={feature}
+                className="px-2 py-1 text-xs bg-garden-500/10 text-garden-400 rounded"
               >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${value ? 'bg-garden-400' : 'bg-slate-600'}`}
-                />
-                {label}
-              </div>
-            );
-          })}
-        </div>
-        {design?.basePreferences && (
-          <div className="mt-2 text-xs text-slate-500">
-            Style: {design.basePreferences.style} | Layout: {design.basePreferences.layout}
+                {feature}
+              </span>
+            ))}
           </div>
-        )}
-      </Section>
+        </Section>
+      )}
 
-      {/* Effects */}
-      {globalStyles?.effects && (
-        <Section icon={<SparklesIcon size={16} />} title="Effects" defaultExpanded={false}>
+      {/* Manifest Info */}
+      {manifest && (
+        <Section icon={<SparklesIcon size={16} />} title="Manifest Info" defaultExpanded={false}>
           <div className="space-y-1 bg-slate-800/30 rounded-lg p-3 text-xs">
-            {globalStyles.effects.borderRadius && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Border Radius</span>
-                <span className="text-slate-300">{globalStyles.effects.borderRadius}</span>
-              </div>
-            )}
-            {globalStyles.effects.shadows && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Shadows</span>
-                <span className="text-slate-300">{globalStyles.effects.shadows}</span>
-              </div>
-            )}
-            {globalStyles.effects.animations && (
-              <div className="flex justify-between">
-                <span className="text-slate-500">Animations</span>
-                <span className="text-slate-300">{globalStyles.effects.animations}</span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-slate-500">ID</span>
+              <span className="text-slate-300 font-mono">{manifest.id}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Version</span>
+              <span className="text-slate-300">{manifest.version}</span>
+            </div>
           </div>
         </Section>
       )}

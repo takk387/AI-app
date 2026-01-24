@@ -80,7 +80,7 @@ async function getCodeReviewService(): Promise<CodeReviewServiceType> {
   }
   return codeReviewService;
 }
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
 import { getCodeContextService, CodeContextService } from './CodeContextService';
 import type { CodeContextSnapshot } from '@/types/codeContext';
@@ -113,35 +113,16 @@ import {
 } from '@/utils/designTokenMappings';
 
 // ============================================================================
-// LAYOUT DESIGN FORMATTING
+// LAYOUT MANIFEST FORMATTING
 // ============================================================================
 
 /**
- * Format a complete LayoutDesign into a detailed prompt section
- * This ensures ALL design specifications reach the code generation
- * with concrete CSS/Tailwind mappings for exact implementation
+ * Format a LayoutManifest into a detailed prompt section for code generation
+ * Extracts design tokens from manifest.designSystem and provides implementation guidance
  */
-export function formatLayoutDesignForPrompt(design: LayoutDesign): string {
-  const { globalStyles, components, structure, responsive } = design;
-
-  // Get concrete CSS/Tailwind values
-  const borderRadius = borderRadiusMap[globalStyles.effects.borderRadius] || borderRadiusMap.lg;
-  const shadow = shadowMap[globalStyles.effects.shadows] || shadowMap.medium;
-  const blur = blurMap[globalStyles.effects.blur] || blurMap.none;
-  const density = spacingDensityMap[globalStyles.spacing.density] || spacingDensityMap.normal;
-  const sectionPad = sectionPaddingMap[globalStyles.spacing.sectionPadding] || sectionPaddingMap.lg;
-  const container =
-    containerWidthMap[globalStyles.spacing.containerWidth] || containerWidthMap.standard;
-  const gap = componentGapMap[globalStyles.spacing.componentGap] || componentGapMap.md;
-  const headingWeight =
-    fontWeightMap[globalStyles.typography.headingWeight] || fontWeightMap.semibold;
-  const bodyWeight = fontWeightMap[globalStyles.typography.bodyWeight] || fontWeightMap.normal;
-  const headingSize = headingSizeMap[globalStyles.typography.headingSize] || headingSizeMap.lg;
-  const bodySize = bodySizeMap[globalStyles.typography.bodySize] || bodySizeMap.base;
-  const lineHeight = lineHeightMap[globalStyles.typography.lineHeight] || lineHeightMap.normal;
-  const letterSpacing =
-    letterSpacingMap[globalStyles.typography.letterSpacing] || letterSpacingMap.normal;
-  const animation = animationMap[globalStyles.effects.animations] || animationMap.smooth;
+export function formatLayoutManifestForPrompt(manifest: LayoutManifest): string {
+  const colors = manifest.designSystem?.colors || {};
+  const fonts = manifest.designSystem?.fonts || { heading: 'Inter', body: 'Inter' };
 
   let prompt = `## CRITICAL: Design Fidelity Requirements
 
@@ -150,280 +131,57 @@ Do NOT deviate from these values. Do NOT substitute colors, spacing, or effects.
 
 **MANDATORY RULES:**
 1. Use the EXACT hex colors provided - do not substitute or approximate
-2. Apply the EXACT border radius, shadow, and spacing values using the Tailwind classes listed
-3. Follow component visibility and configuration settings precisely
-4. Match typography weights, sizes, and spacing exactly
-5. Create CSS variables in globals.css for design tokens
-6. Use the provided Tailwind classes - do not use arbitrary values when mapped classes exist
+2. Apply consistent border radius, shadow, and spacing
+3. Match typography and font settings exactly
+4. Create CSS variables in globals.css for design tokens
 
 ---
 
-## Complete Design System Specifications
+## Design System Specifications
 
-### Typography (USE EXACT VALUES)
-- Font Family: ${globalStyles.typography.fontFamily}
-- Heading Font: ${globalStyles.typography.headingFont || globalStyles.typography.fontFamily}
-- Heading Weight: ${globalStyles.typography.headingWeight} -> ${headingWeight.tailwind} (CSS: ${headingWeight.css})
-- Body Weight: ${globalStyles.typography.bodyWeight} -> ${bodyWeight.tailwind} (CSS: ${bodyWeight.css})
-- Heading Sizes: h1=${headingSize.h1}, h2=${headingSize.h2}, h3=${headingSize.h3}, h4=${headingSize.h4}
-- Body Size: ${globalStyles.typography.bodySize} -> ${bodySize.tailwind} (CSS: ${bodySize.css})
-- Line Height: ${globalStyles.typography.lineHeight} -> ${lineHeight.tailwind} (CSS: ${lineHeight.css})
-- Letter Spacing: ${globalStyles.typography.letterSpacing} -> ${letterSpacing.tailwind} (CSS: ${letterSpacing.css})
+### Typography
+- Heading Font: ${fonts.heading || 'Inter, system-ui, sans-serif'}
+- Body Font: ${fonts.body || 'Inter, system-ui, sans-serif'}
 
 ### Color Palette (USE EXACT HEX VALUES)
-- Primary: ${globalStyles.colors.primary} -> Use as bg-[${globalStyles.colors.primary}] or var(--color-primary)
-- Secondary: ${globalStyles.colors.secondary || globalStyles.colors.primary} -> var(--color-secondary)
-- Accent: ${globalStyles.colors.accent || globalStyles.colors.primary} -> var(--color-accent)
-- Background: ${globalStyles.colors.background} -> bg-[${globalStyles.colors.background}] or var(--color-background)
-- Surface: ${globalStyles.colors.surface} -> bg-[${globalStyles.colors.surface}] or var(--color-surface)
-- Text: ${globalStyles.colors.text} -> text-[${globalStyles.colors.text}] or var(--color-text)
-- Text Muted: ${globalStyles.colors.textMuted} -> text-[${globalStyles.colors.textMuted}] or var(--color-text-muted)
-- Border: ${globalStyles.colors.border} -> border-[${globalStyles.colors.border}] or var(--color-border)
-- Success: ${globalStyles.colors.success || '#6B7280'}
-- Warning: ${globalStyles.colors.warning || '#6B7280'}
-- Error: ${globalStyles.colors.error || '#6B7280'}
-- Info: ${globalStyles.colors.info || '#6B7280'}
-
-### Spacing System (USE EXACT TAILWIND CLASSES)
-- Density: ${globalStyles.spacing.density} -> Gap: ${density.tailwindGap}, Padding: ${density.tailwindPadding}
-- Container Width: ${globalStyles.spacing.containerWidth} -> ${container.tailwind} (CSS: ${container.css})
-- Section Padding: ${globalStyles.spacing.sectionPadding} -> ${sectionPad.tailwind} (CSS: ${sectionPad.css})
-- Component Gap: ${globalStyles.spacing.componentGap} -> ${gap.tailwind} (CSS: ${gap.css})
-
-### Effects (USE EXACT TAILWIND CLASSES)
-- Border Radius: ${globalStyles.effects.borderRadius} -> ${borderRadius.tailwind} (CSS: ${borderRadius.css})
-- Shadows: ${globalStyles.effects.shadows} -> ${shadow.tailwind}
-- Animations: ${globalStyles.effects.animations} -> duration: ${animation.duration}, easing: ${animation.easing}
-- Blur: ${globalStyles.effects.blur} -> ${blur.tailwind || 'none'}
-- Gradients: ${globalStyles.effects.gradients ? 'ENABLED - use gradient backgrounds where appropriate' : 'DISABLED - use solid colors only'}
-
-### Layout Structure
-- Type: ${structure.type}
-- Has Header: ${structure.hasHeader}
-- Has Sidebar: ${structure.hasSidebar}
-- Has Footer: ${structure.hasFooter}
-- Sidebar Position: ${structure.sidebarPosition}
-- Header Type: ${structure.headerType}
-- Content Layout: ${structure.contentLayout}
-- Main Content Width: ${structure.mainContentWidth}
-
-### Responsive Settings
-- Mobile Breakpoint: ${responsive.mobileBreakpoint}px (sm:)
-- Tablet Breakpoint: ${responsive.tabletBreakpoint}px (lg:)
-- Mobile Layout: ${responsive.mobileLayout}
-- Mobile Header: ${responsive.mobileHeader}
-- Hide Sidebar on Mobile: ${responsive.hideSidebarOnMobile}
-- Stack Cards on Mobile: ${responsive.stackCardsOnMobile}
+- Primary: ${colors.primary || '#6B7280'} -> var(--color-primary)
+- Secondary: ${colors.secondary || '#9CA3AF'} -> var(--color-secondary)
+- Accent: ${colors.accent || '#6B7280'} -> var(--color-accent)
+- Background: ${colors.background || '#F9FAFB'} -> var(--color-background)
+- Surface: ${colors.surface || '#FFFFFF'} -> var(--color-surface)
+- Text: ${colors.text || '#374151'} -> var(--color-text)
+- Text Muted: ${colors.textMuted || '#6B7280'} -> var(--color-text-muted)
+- Border: ${colors.border || '#E5E7EB'} -> var(--color-border)
+- Success: ${colors.success || '#10B981'}
+- Warning: ${colors.warning || '#F59E0B'}
+- Error: ${colors.error || '#EF4444'}
 
 ---
 
 ## CSS Variables Setup (CREATE THIS IN globals.css)
 
 \`\`\`css
-${generateGlobalsCSSContent({ globalStyles })}
+:root {
+  --color-primary: ${colors.primary || '#6B7280'};
+  --color-secondary: ${colors.secondary || '#9CA3AF'};
+  --color-accent: ${colors.accent || '#6B7280'};
+  --color-background: ${colors.background || '#F9FAFB'};
+  --color-surface: ${colors.surface || '#FFFFFF'};
+  --color-text: ${colors.text || '#374151'};
+  --color-text-muted: ${colors.textMuted || '#6B7280'};
+  --color-border: ${colors.border || '#E5E7EB'};
+  --font-heading: ${fonts.heading || 'Inter, system-ui, sans-serif'};
+  --font-body: ${fonts.body || 'Inter, system-ui, sans-serif'};
+}
 \`\`\`
 
----
-
-## Component Implementation Guide
 `;
-
-  // Add component specifications with implementation hints
-  if (components.header) {
-    const headerHeight = headerHeightMap[components.header.height] || headerHeightMap['standard'];
-    const headerStyle = headerStyleMap[components.header.style] || headerStyleMap['solid'];
-
-    prompt += `
-### Header Component (${components.header.visible ? 'VISIBLE' : 'HIDDEN'})
-**Configuration:**
-- Height: ${components.header.height} -> ${headerHeight.tailwind} (CSS: ${headerHeight.css})
-- Style: ${components.header.style}
-- Logo Position: ${components.header.logoPosition}
-- Navigation Position: ${components.header.navPosition}
-- Has Search: ${components.header.hasSearch}
-- Has CTA: ${components.header.hasCTA}${components.header.hasCTA ? ` (Text: "${components.header.ctaText || 'Get Started'}", Style: ${components.header.ctaStyle || 'filled'})` : ''}
-
-**Implementation Classes:**
-\`\`\`
-Header: ${headerHeight.tailwind} ${headerStyle}
-Logo: ${components.header.logoPosition === 'left' ? 'mr-auto' : components.header.logoPosition === 'center' ? 'mx-auto' : 'ml-auto'}
-Nav: ${components.header.navPosition === 'right' ? 'ml-auto' : components.header.navPosition === 'center' ? 'mx-auto' : 'mr-auto'}
-CTA: bg-[var(--color-primary)] text-white px-4 py-2 ${borderRadius.tailwind}
-\`\`\`
-`;
-  }
-
-  if (components.sidebar && components.sidebar.visible) {
-    const sidebarWidth = sidebarWidthMap[components.sidebar.width] || sidebarWidthMap['standard'];
-
-    prompt += `
-### Sidebar Component (VISIBLE)
-**Configuration:**
-- Position: ${components.sidebar.position}
-- Width: ${components.sidebar.width} -> ${sidebarWidth.tailwind} (CSS: ${sidebarWidth.css})
-- Collapsible: ${components.sidebar.collapsible}
-- Default Collapsed: ${components.sidebar.defaultCollapsed}
-- Style: ${components.sidebar.style}
-- Icon Only: ${components.sidebar.iconOnly}
-
-**Implementation Classes:**
-\`\`\`
-Sidebar: ${sidebarWidth.tailwind} ${components.sidebar.position === 'left' ? 'left-0' : 'right-0'} bg-[var(--color-surface)] border-${components.sidebar.position === 'left' ? 'r' : 'l'} border-[var(--color-border)]
-${components.sidebar.collapsible ? `Collapsed: w-16` : ''}
-\`\`\`
-`;
-  }
-
-  if (components.hero && components.hero.visible) {
-    const heroHeight = heroHeightMap[components.hero.height] || heroHeightMap['standard'];
-    const heroLayout = heroLayoutMap[components.hero.layout] || heroLayoutMap['centered'];
-
-    prompt += `
-### Hero Component (VISIBLE)
-**Configuration:**
-- Height: ${components.hero.height} -> ${heroHeight.tailwind} (CSS: ${heroHeight.css})
-- Layout: ${components.hero.layout}
-- Has Image: ${components.hero.hasImage}${components.hero.hasImage ? ` (Position: ${components.hero.imagePosition || 'background'})` : ''}
-- Has Subtitle: ${components.hero.hasSubtitle}
-- Has CTA: ${components.hero.hasCTA}${components.hero.hasCTA ? ` (Count: ${components.hero.ctaCount})` : ''}
-
-**Implementation Classes:**
-\`\`\`
-Hero Section: ${heroHeight.tailwind} ${heroLayout} ${sectionPad.tailwind}
-Title: ${headingSize.h1} ${headingWeight.tailwind}
-Subtitle: ${bodySize.tailwind} text-[var(--color-text-muted)]
-CTA Button: bg-[var(--color-primary)] text-white px-6 py-3 ${borderRadius.tailwind} ${shadow.tailwind}
-\`\`\`
-`;
-  }
-
-  if (components.navigation) {
-    prompt += `
-### Navigation Component
-**Configuration:**
-- Style: ${components.navigation.style}
-- Position: ${components.navigation.position}
-- Item Style: ${components.navigation.itemStyle}
-- Show Icons: ${components.navigation.showIcons}
-- Show Labels: ${components.navigation.showLabels}
-- Max Visible Items: ${components.navigation.maxVisibleItems}
-`;
-  }
-
-  if (components.cards) {
-    const cardStyle = cardStyleMap[components.cards.style] || cardStyleMap['elevated'];
-    const cardHover =
-      cardHoverEffectMap[components.cards.hoverEffect] || cardHoverEffectMap['lift'];
-
-    prompt += `
-### Cards Component
-**Configuration:**
-- Style: ${components.cards.style}
-- Image Position: ${components.cards.imagePosition}
-- Show Badge: ${components.cards.showBadge}
-- Show Footer: ${components.cards.showFooter}
-- Hover Effect: ${components.cards.hoverEffect}
-- Aspect Ratio: ${components.cards.aspectRatio}
-
-**Implementation Classes:**
-\`\`\`
-Card Container: ${cardStyle} ${borderRadius.tailwind} overflow-hidden ${cardHover}
-Card Image: ${components.cards.imagePosition === 'top' ? 'w-full aspect-video object-cover' : components.cards.imagePosition === 'left' ? 'w-1/3 object-cover' : ''}
-Card Content: ${density.tailwindPadding}
-Card Title: ${headingSize.h4} ${headingWeight.tailwind}
-Card Badge: bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-2 py-1 text-xs ${borderRadius.tailwind}
-\`\`\`
-`;
-  }
-
-  if (components.lists) {
-    const listStyle = listStyleMap[components.lists.style] || listStyleMap['bordered'];
-    const listDensity = listDensityMap[components.lists.density] || listDensityMap['normal'];
-
-    prompt += `
-### Lists Component
-**Configuration:**
-- Style: ${components.lists.style}
-- Show Dividers: ${components.lists.showDividers}
-- Show Avatar: ${components.lists.showAvatar}
-- Show Meta: ${components.lists.showMeta}
-- Show Actions: ${components.lists.showActions}
-- Density: ${components.lists.density}
-
-**Implementation Classes:**
-\`\`\`
-List Container: ${listStyle}
-List Item: ${listDensity.tailwind} px-4 ${components.lists.showDividers ? 'border-b border-[var(--color-border)]' : ''}
-Item Title: ${headingWeight.tailwind}
-Item Meta: text-sm text-[var(--color-text-muted)]
-\`\`\`
-`;
-  }
-
-  if (components.stats && components.stats.visible) {
-    prompt += `
-### Stats Component (VISIBLE)
-**Configuration:**
-- Layout: ${components.stats.layout}
-- Style: ${components.stats.style}
-- Show Icons: ${components.stats.showIcons}
-- Show Trend: ${components.stats.showTrend}
-- Columns: ${components.stats.columns}
-
-**Implementation Classes:**
-\`\`\`
-Stats Grid: grid grid-cols-2 md:grid-cols-${components.stats.columns} ${gap.tailwind}
-Stat Card: ${components.stats.style === 'cards' ? `bg-[var(--color-surface)] ${borderRadius.tailwind} ${density.tailwindPadding} ${shadow.tailwind}` : ''}
-Stat Value: ${headingSize.h2} ${headingWeight.tailwind}
-Stat Label: text-sm text-[var(--color-text-muted)]
-\`\`\`
-`;
-  }
-
-  if (components.footer && components.footer.visible) {
-    const footerStyle = footerStyleMap[components.footer.style] || footerStyleMap['minimal'];
-    const footerCols = footerColumnsMap[components.footer.columns] || footerColumnsMap[1];
-
-    prompt += `
-### Footer Component (VISIBLE)
-**Configuration:**
-- Style: ${components.footer.style}
-- Columns: ${components.footer.columns}
-- Show Social: ${components.footer.showSocial}
-- Show Newsletter: ${components.footer.showNewsletter}
-- Show Copyright: ${components.footer.showCopyright}
-- Position: ${components.footer.position}
-
-**Implementation Classes:**
-\`\`\`
-Footer: bg-[var(--color-surface)] border-t border-[var(--color-border)] ${footerStyle}
-Footer Grid: grid ${footerCols} ${gap.tailwind}
-Footer Link: text-[var(--color-text-muted)] hover:text-[var(--color-text)]
-Copyright: text-sm text-[var(--color-text-muted)]
-\`\`\`
-`;
-  }
-
-  // Add design pattern context if available
-  if (design.basePreferences) {
-    prompt += `
----
-
-## Design Style Context
-- Overall Style: ${design.basePreferences.style}
-- Color Scheme: ${design.basePreferences.colorScheme}
-- Layout Type: ${design.basePreferences.layout}
-
-**Style Guidelines:**
-${design.basePreferences.style === 'minimalist' ? '- Keep designs clean with ample whitespace\n- Use subtle effects, avoid heavy shadows\n- Limit color usage to primary + neutrals' : ''}
-${design.basePreferences.style === 'modern' ? '- Use contemporary design patterns\n- Balance whitespace with content\n- Apply subtle animations for interactivity' : ''}
-${design.basePreferences.style === 'playful' ? '- Use vibrant colors and rounded corners\n- Add playful micro-interactions\n- Consider gradient backgrounds' : ''}
-${design.basePreferences.style === 'professional' ? '- Maintain formal, business-appropriate aesthetics\n- Use structured layouts with clear hierarchy\n- Prefer subtle over flashy effects' : ''}
-`;
-  }
 
   return prompt;
 }
+
+// Legacy placeholder to prevent breaking imports that may reference the old function
+export const formatLayoutDesignForPrompt = formatLayoutManifestForPrompt;
 
 // ============================================================================
 // EXTENDED CONTEXT TYPE
@@ -615,16 +373,16 @@ Users in roles: **${context.relevantRoles.join(', ')}**
 `;
   }
 
-  // Design preferences context - use full LayoutDesign if available
+  // Design preferences context - use full LayoutManifest if available
   // This is CRITICAL for ensuring design specifications reach code generation
-  if (context.phaseConceptContext?.layoutDesign) {
-    // Full layout design available - use complete specifications
-    prompt += formatLayoutDesignForPrompt(context.phaseConceptContext.layoutDesign);
+  if (context.phaseConceptContext?.layoutManifest) {
+    // Full layout manifest available - use complete specifications
+    prompt += formatLayoutManifestForPrompt(context.phaseConceptContext.layoutManifest);
     prompt += `
 `;
-  } else if (context.fullConcept?.layoutDesign) {
-    // Layout design in full concept - use complete specifications
-    prompt += formatLayoutDesignForPrompt(context.fullConcept.layoutDesign);
+  } else if (context.fullConcept?.layoutManifest) {
+    // Layout manifest in full concept - use complete specifications
+    prompt += formatLayoutManifestForPrompt(context.fullConcept.layoutManifest);
     prompt += `
 `;
   } else if (context.fullConcept?.uiPreferences) {
@@ -1041,7 +799,7 @@ export class PhaseExecutionManager {
         purpose: concept.purpose,
         targetUsers: concept.targetUsers,
         uiPreferences: concept.uiPreferences,
-        layoutDesign: concept.layoutDesign, // CRITICAL: Include layout design for code generation
+        layoutManifest: concept.layoutManifest, // CRITICAL: Include layout manifest for code generation
         roles: concept.roles,
         conversationContext: concept.conversationContext,
         dataModels: concept.technical.dataModels,

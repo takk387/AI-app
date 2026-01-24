@@ -4,10 +4,9 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import {
   LayoutExportService,
-  type LayoutExport,
   type DesignTokens,
 } from '@/services/LayoutExportService';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { AppConcept } from '@/types/appConcept';
 
 interface UseAppBuilderSyncOptions {
@@ -16,7 +15,7 @@ interface UseAppBuilderSyncOptions {
   /** Debounce delay for auto-sync in ms */
   debounceMs?: number;
   /** Callback when sync completes */
-  onSyncComplete?: (exportedLayout: LayoutExport) => void;
+  onSyncComplete?: (tokens: DesignTokens) => void;
   /** Callback on sync error */
   onSyncError?: (error: Error) => void;
 }
@@ -28,16 +27,14 @@ interface UseAppBuilderSyncReturn {
   lastSyncedAt: Date | null;
   /** Whether there are pending changes to sync */
   hasPendingChanges: boolean;
-  /** Exported layout data */
-  exportedLayout: LayoutExport | null;
-  /** Design tokens */
+  /** Design tokens extracted from layout */
   designTokens: DesignTokens | null;
   /** Sync current layout to app builder */
   syncToAppBuilder: () => Promise<void>;
   /** Import layout from app concept */
   importFromAppConcept: (appConcept: AppConcept) => void;
   /** Export layout for use in app */
-  exportLayout: (format: 'react' | 'css' | 'tailwind' | 'figma') => string;
+  exportLayout: (format: 'css' | 'tailwind' | 'json') => string;
   /** Clear synced data */
   clearSync: () => void;
 }
@@ -46,11 +43,13 @@ interface UseAppBuilderSyncReturn {
  * useAppBuilderSync Hook
  *
  * Manages bidirectional synchronization between the Layout Builder
- * and the main App Builder. Exports design tokens, components,
- * and configuration for consistent app generation.
+ * and the main App Builder. Exports design tokens and configuration
+ * for consistent app generation.
+ *
+ * Updated for LayoutManifest (Gemini 3 system).
  */
 export function useAppBuilderSync(
-  layoutDesign: Partial<LayoutDesign> | null,
+  layoutManifest: LayoutManifest | null,
   options: UseAppBuilderSyncOptions = {}
 ): UseAppBuilderSyncReturn {
   const { autoSync = false, debounceMs = 1000, onSyncComplete, onSyncError } = options;
@@ -58,61 +57,58 @@ export function useAppBuilderSync(
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
-  const [exportedLayout, setExportedLayout] = useState<LayoutExport | null>(null);
   const [designTokens, setDesignTokens] = useState<DesignTokens | null>(null);
 
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const lastDesignRef = useRef<string>('');
+  const lastManifestRef = useRef<string>('');
 
   // Get app store methods
   const updateAppConceptField = useAppStore((state) => state.updateAppConceptField);
 
   /**
-   * Sync layout design to app builder
+   * Sync layout manifest to app builder
    */
   const syncToAppBuilder = useCallback(async () => {
-    if (!layoutDesign) return;
+    if (!layoutManifest) return;
 
     setIsSyncing(true);
 
     try {
-      // Export layout using the service
-      const exported = LayoutExportService.export(layoutDesign);
+      // Extract design tokens using the service
+      const tokens = LayoutExportService.extractDesignTokens(layoutManifest);
 
       // Update state
-      setExportedLayout(exported);
-      setDesignTokens(exported.tokens);
+      setDesignTokens(tokens);
       setLastSyncedAt(new Date());
       setHasPendingChanges(false);
 
-      // Update app concept with layout design
-      updateAppConceptField('layoutDesign', layoutDesign as LayoutDesign);
+      // Update app concept with layout manifest
+      updateAppConceptField('layoutManifest', layoutManifest);
 
-      // Store the current design hash
-      lastDesignRef.current = JSON.stringify(layoutDesign);
+      // Store the current manifest hash
+      lastManifestRef.current = JSON.stringify(layoutManifest);
 
       // Callback
-      onSyncComplete?.(exported);
+      onSyncComplete?.(tokens);
     } catch (error) {
       console.error('Sync error:', error);
       onSyncError?.(error as Error);
     } finally {
       setIsSyncing(false);
     }
-  }, [layoutDesign, updateAppConceptField, onSyncComplete, onSyncError]);
+  }, [layoutManifest, updateAppConceptField, onSyncComplete, onSyncError]);
 
   /**
    * Import layout from an existing app concept
    */
   const importFromAppConcept = useCallback((appConcept: AppConcept) => {
-    if (!appConcept.layoutDesign) {
-      console.warn('App concept has no layout design to import');
+    if (!appConcept.layoutManifest) {
+      console.warn('App concept has no layout manifest to import');
       return;
     }
 
-    // The layout design from app concept can be used directly
-    // This is handled by the parent component setting the layoutDesign
-    const tokens = LayoutExportService.extractDesignTokens(appConcept.layoutDesign);
+    // Extract tokens from the manifest
+    const tokens = LayoutExportService.extractDesignTokens(appConcept.layoutManifest);
     setDesignTokens(tokens);
     setHasPendingChanges(false);
   }, []);
@@ -121,63 +117,55 @@ export function useAppBuilderSync(
    * Export layout in different formats
    */
   const exportLayout = useCallback(
-    (format: 'react' | 'css' | 'tailwind' | 'figma'): string => {
-      if (!layoutDesign) return '';
+    (format: 'css' | 'tailwind' | 'json'): string => {
+      if (!layoutManifest) return '';
+
+      const tokens = LayoutExportService.extractDesignTokens(layoutManifest);
 
       switch (format) {
-        case 'react': {
-          const exported = LayoutExportService.export(layoutDesign);
-          return exported.components.map((c) => c.code).join('\n\n// ---\n\n');
-        }
-        case 'css': {
-          const tokens = LayoutExportService.extractDesignTokens(layoutDesign);
+        case 'css':
           return LayoutExportService.generateCSSVariables(tokens);
-        }
-        case 'tailwind': {
-          const tokens = LayoutExportService.extractDesignTokens(layoutDesign);
+        case 'tailwind':
           return LayoutExportService.generateTailwindConfig(tokens);
-        }
-        case 'figma': {
-          return LayoutExportService.exportForFigma(layoutDesign);
-        }
+        case 'json':
+          return LayoutExportService.exportTokensAsJSON(layoutManifest);
         default:
           return '';
       }
     },
-    [layoutDesign]
+    [layoutManifest]
   );
 
   /**
    * Clear synced data
    */
   const clearSync = useCallback(() => {
-    setExportedLayout(null);
     setDesignTokens(null);
     setLastSyncedAt(null);
     setHasPendingChanges(false);
-    lastDesignRef.current = '';
+    lastManifestRef.current = '';
   }, []);
 
   /**
    * Track pending changes
    */
   useEffect(() => {
-    if (!layoutDesign) {
+    if (!layoutManifest) {
       setHasPendingChanges(false);
       return;
     }
 
-    const currentDesign = JSON.stringify(layoutDesign);
-    if (currentDesign !== lastDesignRef.current && lastDesignRef.current !== '') {
+    const currentManifest = JSON.stringify(layoutManifest);
+    if (currentManifest !== lastManifestRef.current && lastManifestRef.current !== '') {
       setHasPendingChanges(true);
     }
-  }, [layoutDesign]);
+  }, [layoutManifest]);
 
   /**
    * Auto-sync with debounce
    */
   useEffect(() => {
-    if (!autoSync || !layoutDesign || !hasPendingChanges) return;
+    if (!autoSync || !layoutManifest || !hasPendingChanges) return;
 
     // Clear previous timeout
     if (debounceRef.current) {
@@ -194,23 +182,22 @@ export function useAppBuilderSync(
         clearTimeout(debounceRef.current);
       }
     };
-  }, [autoSync, layoutDesign, hasPendingChanges, debounceMs, syncToAppBuilder]);
+  }, [autoSync, layoutManifest, hasPendingChanges, debounceMs, syncToAppBuilder]);
 
   /**
-   * Extract initial tokens when layout design is provided
+   * Extract initial tokens when layout manifest is provided
    */
   useEffect(() => {
-    if (layoutDesign && !designTokens) {
-      const tokens = LayoutExportService.extractDesignTokens(layoutDesign);
+    if (layoutManifest && !designTokens) {
+      const tokens = LayoutExportService.extractDesignTokens(layoutManifest);
       setDesignTokens(tokens);
     }
-  }, [layoutDesign, designTokens]);
+  }, [layoutManifest, designTokens]);
 
   return {
     isSyncing,
     lastSyncedAt,
     hasPendingChanges,
-    exportedLayout,
     designTokens,
     syncToAppBuilder,
     importFromAppConcept,

@@ -10,7 +10,7 @@ import { getDalleService, type DesignContext, getImageCost } from './dalleServic
 import { getDalleRateLimiter } from '@/utils/dalleRateLimiter';
 import { detectAppType } from '@/utils/imagePromptBuilder';
 import { generateLayoutFallbackImages } from '@/utils/imageAssets';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 
 // ============================================================================
 // Type Definitions
@@ -56,28 +56,27 @@ const DEFAULT_OPTIONS: AppImageGenerationOptions = {
 // ============================================================================
 
 /**
- * Build design context from LayoutDesign or fallback to defaults
+ * Build design context from LayoutManifest or fallback to defaults
  */
-function buildDesignContext(design?: LayoutDesign): DesignContext {
-  if (!design) {
+function buildDesignContext(manifest?: LayoutManifest): DesignContext {
+  if (!manifest) {
     return {
       colorScheme: 'dark',
       style: 'modern',
     };
   }
 
+  // Extract colors from manifest designSystem
+  const colors = manifest.designSystem?.colors || {};
+  const bgColor = colors.background || '#1a1a1a';
+  // Determine color scheme from background luminance
+  const isLight = bgColor.toLowerCase().includes('fff') || bgColor.toLowerCase().includes('f9f');
+
   return {
-    colorScheme: design.basePreferences?.colorScheme === 'light' ? 'light' : 'dark',
-    style: design.basePreferences?.style || 'modern',
-    primaryColor: design.globalStyles?.colors?.primary,
-    mood:
-      design.basePreferences?.style === 'playful'
-        ? 'fun and energetic'
-        : design.basePreferences?.style === 'minimalist'
-          ? 'calm and focused'
-          : design.basePreferences?.style === 'professional'
-            ? 'trustworthy and reliable'
-            : 'modern and innovative',
+    colorScheme: isLight ? 'light' : 'dark',
+    style: 'modern',
+    primaryColor: colors.primary,
+    mood: 'modern and innovative',
   };
 }
 
@@ -90,7 +89,7 @@ function buildDesignContext(design?: LayoutDesign): DesignContext {
  *
  * This function orchestrates the complete image generation process:
  * 1. Checks rate limits and DALL-E availability
- * 2. Builds design context from LayoutDesign
+ * 2. Builds design context from LayoutManifest
  * 3. Generates hero, card, and background images
  * 4. Falls back to free services if DALL-E unavailable
  * 5. Tracks costs and generation time
@@ -98,7 +97,7 @@ function buildDesignContext(design?: LayoutDesign): DesignContext {
 export async function generateImagesForApp(
   appName: string,
   appDescription: string,
-  design: LayoutDesign | undefined,
+  layoutManifest: LayoutManifest | undefined,
   features: string[],
   options: AppImageGenerationOptions = {}
 ): Promise<AppImageGenerationResult> {
@@ -116,7 +115,7 @@ export async function generateImagesForApp(
   }
 
   // Build design context
-  const designContext = buildDesignContext(design);
+  const designContext = buildDesignContext(layoutManifest);
   const appType = detectAppType(appDescription);
 
   // Add app type to design context

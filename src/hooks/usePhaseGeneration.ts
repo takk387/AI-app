@@ -6,7 +6,7 @@ import type {
   UserRole,
 } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 import {
   segmentConversation,
@@ -50,7 +50,7 @@ interface WizardState {
 interface UsePhaseGenerationOptions {
   wizardState: WizardState;
   messages: Message[];
-  importedLayoutDesign: LayoutDesign | null;
+  importedLayoutManifest: LayoutManifest | null;
   phasePlan: DynamicPhasePlan | null;
   setPhasePlan: React.Dispatch<React.SetStateAction<DynamicPhasePlan | null>>;
   onShowToast: (opts: { type: 'success' | 'info' | 'error'; message: string }) => void;
@@ -75,7 +75,7 @@ interface UsePhaseGenerationReturn {
 export function usePhaseGeneration({
   wizardState,
   messages,
-  importedLayoutDesign,
+  importedLayoutManifest,
   phasePlan,
   setPhasePlan,
   onShowToast,
@@ -294,7 +294,7 @@ Does this look good? You can:
           roles: convertRolesToUserRoles(),
           workflows: extractWorkflowsFromConversation(),
           conversationContext: buildConversationContext(),
-          layoutDesign: importedLayoutDesign || undefined,
+          layoutManifest: importedLayoutManifest || undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -369,7 +369,7 @@ Does this look good? You can:
     [
       wizardState,
       messages,
-      importedLayoutDesign,
+      importedLayoutManifest,
       phasePlan,
       setPhasePlan,
       onShowToast,

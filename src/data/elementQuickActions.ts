@@ -3,9 +3,37 @@
  *
  * Maps element types to context-aware quick actions for Click + Talk mode.
  * Each action has a label (shown to user) and a prompt (sent to AI).
+ *
+ * MIGRATED to Gemini 3: ElementType defined locally instead of importing from layoutDesign
  */
 
-import type { ElementType } from '@/types/layoutDesign';
+/**
+ * Element types for UI components
+ * Defined locally to avoid dependency on legacy layoutDesign.ts
+ */
+export type ElementType =
+  | 'header'
+  | 'footer'
+  | 'sidebar'
+  | 'hero'
+  | 'section'
+  | 'card'
+  | 'button'
+  | 'text'
+  | 'heading'
+  | 'image'
+  | 'nav'
+  | 'list'
+  | 'form'
+  | 'input'
+  | 'container'
+  | 'link'
+  | 'icon'
+  | 'video'
+  | 'modal'
+  | 'tabs'
+  | 'menu'
+  | 'custom';
 
 export interface QuickAction {
   /** Display label shown to user */

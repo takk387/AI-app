@@ -6,14 +6,14 @@
  * we focus on testing the exported interfaces and helper functions.
  */
 
-import { formatLayoutDesignForPrompt, type OperationResult } from '../PhaseExecutionManager';
+import { formatLayoutManifestForPrompt, type OperationResult } from '../PhaseExecutionManager';
 import type {
   DynamicPhasePlan,
   DynamicPhase,
   PhaseExecutionContext,
   PhaseExecutionResult,
 } from '@/types/dynamicPhases';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { AppConcept } from '@/types/appConcept';
 
 // ============================================================================
@@ -100,19 +100,54 @@ function createMockPhasePlan(): DynamicPhasePlan {
   };
 }
 
-function createMockLayoutDesign(): LayoutDesign {
+function createMockLayoutManifest(): LayoutManifest {
   return {
     id: 'layout-123',
-    name: 'Test Layout',
-    version: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    basePreferences: {
-      style: 'modern',
-      colorScheme: 'dark',
-      layout: 'dashboard',
+    version: '1.0.0',
+    root: {
+      id: 'root',
+      type: 'container',
+      semanticTag: 'root',
+      attributes: {},
+      styles: {
+        tailwindClasses: 'min-h-screen flex flex-col bg-background text-text',
+      },
+      children: [
+        {
+          id: 'header',
+          type: 'container',
+          semanticTag: 'header',
+          attributes: {},
+          styles: { tailwindClasses: 'w-full bg-surface border-b border-border sticky top-0' },
+        },
+        {
+          id: 'main',
+          type: 'container',
+          semanticTag: 'main',
+          attributes: {},
+          styles: { tailwindClasses: 'flex flex-1' },
+          children: [
+            {
+              id: 'sidebar',
+              type: 'container',
+              semanticTag: 'sidebar',
+              attributes: {},
+              styles: { tailwindClasses: 'w-64 bg-surface border-r border-border' },
+            },
+            {
+              id: 'content',
+              type: 'container',
+              semanticTag: 'content-section',
+              attributes: {},
+              styles: { tailwindClasses: 'flex-1 p-8' },
+            },
+          ],
+        },
+      ],
     },
-    globalStyles: {
+    definitions: {},
+    detectedFeatures: ['dashboard', 'sidebar', 'header'],
+    designSystem: {
       colors: {
         primary: '#3B82F6',
         secondary: '#6366F1',
@@ -123,55 +158,10 @@ function createMockLayoutDesign(): LayoutDesign {
         textMuted: '#9CA3AF',
         border: '#374151',
       },
-      typography: {
-        fontFamily: 'Inter',
-        headingFont: 'Inter',
-        headingWeight: 'semibold',
-        bodyWeight: 'normal',
-        headingSize: 'lg',
-        bodySize: 'base',
-        lineHeight: 'normal',
-        letterSpacing: 'normal',
+      fonts: {
+        heading: 'Inter',
+        body: 'Inter',
       },
-      spacing: {
-        density: 'normal',
-        sectionPadding: 'lg',
-        containerWidth: 'standard',
-        componentGap: 'md',
-      },
-      effects: {
-        borderRadius: 'lg',
-        shadows: 'medium',
-        blur: 'none',
-        gradients: false,
-        animations: 'smooth',
-      },
-    },
-    components: {},
-    structure: {
-      type: 'dashboard',
-      hasHeader: true,
-      hasSidebar: true,
-      hasFooter: true,
-      sidebarPosition: 'left',
-      headerType: 'fixed',
-      contentLayout: 'full-width',
-      mainContentWidth: 'full',
-    },
-    responsive: {
-      mobileBreakpoint: 640,
-      tabletBreakpoint: 1024,
-      mobileLayout: 'stack',
-      mobileHeader: 'hamburger',
-      hideSidebarOnMobile: true,
-      stackCardsOnMobile: true,
-    },
-    referenceMedia: [],
-    conversationContext: {
-      messageCount: 0,
-      keyDecisions: [],
-      userPreferences: [],
-      lastUpdated: new Date().toISOString(),
     },
   };
 }
@@ -312,9 +302,9 @@ describe('PhaseExecutionContext Interface', () => {
     expect(context.totalPhases).toBe(3);
   });
 
-  test('supports layout design via fullConcept', () => {
+  test('supports layout manifest via fullConcept', () => {
     const phase = createMockPhase();
-    const mockLayoutDesign = createMockLayoutDesign();
+    const mockLayoutManifest = createMockLayoutManifest();
     const context: PhaseExecutionContext = {
       phaseNumber: 1,
       phaseName: 'Setup',
@@ -338,12 +328,12 @@ describe('PhaseExecutionContext Interface', () => {
       },
       totalPhases: 1,
       fullConcept: {
-        layoutDesign: mockLayoutDesign,
+        layoutManifest: mockLayoutManifest,
       },
     };
 
-    expect(context.fullConcept?.layoutDesign).toBeDefined();
-    expect(context.fullConcept?.layoutDesign?.globalStyles.colors.primary).toBe('#3B82F6');
+    expect(context.fullConcept?.layoutManifest).toBeDefined();
+    expect(context.fullConcept?.layoutManifest?.designSystem.colors.primary).toBe('#3B82F6');
   });
 
   test('supports previous phase code', () => {
@@ -381,69 +371,41 @@ describe('PhaseExecutionContext Interface', () => {
 // UTILITY FUNCTION TESTS
 // ============================================================================
 
-describe('formatLayoutDesignForPrompt', () => {
-  test('formats layout design into prompt string', () => {
-    const design = createMockLayoutDesign();
+describe('formatLayoutManifestForPrompt', () => {
+  test('formats layout manifest into prompt string', () => {
+    const manifest = createMockLayoutManifest();
 
-    const formatted = formatLayoutDesignForPrompt(design);
+    const formatted = formatLayoutManifestForPrompt(manifest);
 
     expect(formatted).toBeDefined();
     expect(typeof formatted).toBe('string');
   });
 
   test('includes color specifications', () => {
-    const design = createMockLayoutDesign();
+    const manifest = createMockLayoutManifest();
 
-    const formatted = formatLayoutDesignForPrompt(design);
+    const formatted = formatLayoutManifestForPrompt(manifest);
 
     expect(formatted).toContain('#3B82F6'); // Primary color
     expect(formatted).toContain('#111827'); // Background color
   });
 
   test('includes typography specifications', () => {
-    const design = createMockLayoutDesign();
+    const manifest = createMockLayoutManifest();
 
-    const formatted = formatLayoutDesignForPrompt(design);
+    const formatted = formatLayoutManifestForPrompt(manifest);
 
     expect(formatted).toContain('Inter'); // Font family
-    expect(formatted).toContain('semibold'); // Heading weight
   });
 
-  test('includes spacing specifications', () => {
-    const design = createMockLayoutDesign();
+  test('includes detected features', () => {
+    const manifest = createMockLayoutManifest();
 
-    const formatted = formatLayoutDesignForPrompt(design);
+    const formatted = formatLayoutManifestForPrompt(manifest);
 
-    expect(formatted).toContain('Spacing'); // Section header
-    expect(formatted).toContain('normal'); // Density
-  });
-
-  test('includes effects specifications', () => {
-    const design = createMockLayoutDesign();
-
-    const formatted = formatLayoutDesignForPrompt(design);
-
-    expect(formatted).toContain('Border Radius');
-    expect(formatted).toContain('Shadows');
-  });
-
-  test('includes structure specifications', () => {
-    const design = createMockLayoutDesign();
-
-    const formatted = formatLayoutDesignForPrompt(design);
-
-    expect(formatted).toContain('dashboard'); // Structure type
-    expect(formatted).toContain('Header');
-    expect(formatted).toContain('Sidebar');
-  });
-
-  test('includes responsive settings', () => {
-    const design = createMockLayoutDesign();
-
-    const formatted = formatLayoutDesignForPrompt(design);
-
-    expect(formatted).toContain('640'); // Mobile breakpoint
-    expect(formatted).toContain('1024'); // Tablet breakpoint
+    expect(formatted).toContain('dashboard');
+    expect(formatted).toContain('sidebar');
+    expect(formatted).toContain('header');
   });
 });
 

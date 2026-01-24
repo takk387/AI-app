@@ -4,11 +4,20 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import PreviewContainer from './PreviewContainer';
 import { useToast } from './Toast';
-import { DeviceToolbar } from './preview';
+import { DeviceToolbar, type ResponsivePreviewState } from './preview';
 import { FileTree } from './ui/FileTree';
-import { useResponsivePreview } from '@/hooks/useResponsivePreview';
 import { useSettings } from '@/hooks/useSettings';
 import { logger } from '@/utils/logger';
+
+// ============================================================================
+// DEVICE PRESETS
+// ============================================================================
+
+const DEVICE_PRESETS: Record<string, { width: number; height: number }> = {
+  desktop: { width: 1280, height: 800 },
+  tablet: { width: 820, height: 1180 },
+  phone: { width: 390, height: 844 },
+};
 
 interface AppFile {
   path: string;
@@ -40,8 +49,20 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
   const captureFunc = useRef<(() => Promise<string | null>) | null>(null);
   const { showToast } = useToast();
 
-  // Responsive preview state - simplified to just desktop/phone
-  const { state: responsiveState, selectDevicePreset } = useResponsivePreview();
+  // Responsive preview state - inline implementation after useResponsivePreview removal
+  const [devicePreset, setDevicePreset] = useState<string>('desktop');
+  const responsiveState: ResponsivePreviewState = useMemo(() => {
+    const preset = DEVICE_PRESETS[devicePreset] || DEVICE_PRESETS.desktop;
+    return {
+      width: preset.width,
+      height: preset.height,
+      devicePreset,
+      orientation: 'portrait' as const,
+    };
+  }, [devicePreset]);
+  const selectDevicePreset = useCallback((presetId: string) => {
+    setDevicePreset(presetId);
+  }, []);
 
   // Local state for console visibility
   const { updatePreviewSettings } = useSettings();

@@ -95,13 +95,13 @@ export function AppNavigation({
 
   // Get completed steps from store
   const appConcept = useAppStore((state) => state.appConcept);
-  const currentLayoutDesign = useAppStore((state) => state.currentLayoutDesign);
+  const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
   const newAppStagePlan = useAppStore((state) => state.newAppStagePlan);
 
   // Determine completed steps based on state
   const completedSteps = {
     1: !!appConcept, // Wizard completed if appConcept exists
-    2: !!currentLayoutDesign, // Design completed if layout exists
+    2: !!currentLayoutManifest, // Design completed if layout exists
     3: !!newAppStagePlan, // Build completed if stage plan exists
     4: false, // Builder is the final destination
   };

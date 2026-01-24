@@ -61,11 +61,6 @@
       "path": ".claude/rules/conversation-wizard.md"
     },
     {
-      "name": "Layout Builder",
-      "description": "Layout builder patterns with visual design and AI vision",
-      "path": ".claude/rules/layout-builder.md"
-    },
-    {
       "name": "Services Layer",
       "description": "Service layer patterns for context extraction, phase generation, and parsing",
       "path": ".claude/rules/services-layer.md"

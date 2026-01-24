@@ -13,7 +13,7 @@ import { useGeminiLayoutState, categorizeError } from '@/hooks/useGeminiLayoutSt
 import { LayoutMessage } from '@/types/layoutDesign';
 
 // --- UI COMPONENTS ---
-import { ChatInput } from '@/components/layout-builder';
+import { ChatInput } from '@/components/ChatInput';
 
 interface LayoutBuilderWizardProps {
   isOpen: boolean;
@@ -36,8 +36,8 @@ export function LayoutBuilderWizard({
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string>('');
 
-  // --- STATE: FILE UPLOAD ---
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  // --- STATE: FILE UPLOAD (Now supports multiple files) ---
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   // --- SERVICES (API keys handled server-side) ---
   const architect = React.useMemo(() => new ArchitectService(), []);
@@ -55,9 +55,8 @@ export function LayoutBuilderWizard({
     recoverDraft,
     discardDraft,
     enableAutoSave,
-    clearAutoSave,
   } = useGeminiLayoutState({
-    onDraftRecovered: (draft) => {
+    onDraftRecovered: () => {
       // Show toast notification
       success('Draft recovered! Click "Recover" to restore your work.');
     },
@@ -122,19 +121,35 @@ export function LayoutBuilderWizard({
     }
   }, [recoverDraft, addToHistory, success]);
 
-  // --- FILE UPLOAD HANDLER ---
-  const handleFileSelect = useCallback((file: File | null) => {
-    setUploadedFile(file);
+  // --- FILE UPLOAD HANDLER (Now supports array) ---
+  const handleFileSelect = useCallback((files: File[]) => {
+    // Limit to 4 images + 1 video
+    const images = files.filter(f => f.type.startsWith('image/')).slice(0, 4);
+    const video = files.find(f => f.type.startsWith('video/'));
+    setUploadedFiles(video ? [...images, video] : images);
   }, []);
 
   // --- INITIALIZATION (The "Architect" Phase) ---
-  const handleInitialGeneration = async (prompt: string, videoFile?: File) => {
+  const handleInitialGeneration = async (prompt: string, mediaFiles?: File[]) => {
     setIsGenerating(true);
     setLoadingStage('Architecting Structure...');
 
+    // If user uploaded files but no text, provide a default replication prompt
+    const effectivePrompt = prompt.trim() ||
+      (mediaFiles && mediaFiles.length > 0
+        ? 'Create an exact replica of this layout. Match all colors, components, spacing, and styling precisely.'
+        : '');
+
+    if (!effectivePrompt && (!mediaFiles || mediaFiles.length === 0)) {
+      error('Please provide a description or upload reference images');
+      setIsGenerating(false);
+      setLoadingStage('');
+      return;
+    }
+
     try {
       // 1. Architect creates the Structure (Deep Think)
-      const newManifest = await architect.generateLayoutManifest(appConcept, prompt, videoFile);
+      const newManifest = await architect.generateLayoutManifest(appConcept, effectivePrompt, mediaFiles);
 
       setLoadingStage('Applying Base Vibe...');
 
@@ -145,7 +160,7 @@ export function LayoutBuilderWizard({
       addToHistory(styledResult.manifest); // Add to undo history
       setActiveMetaphor(styledResult.metaphor);
       success('Layout generated successfully!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorInfo = categorizeError(err);
       error(errorInfo.message);
     } finally {
@@ -158,9 +173,9 @@ export function LayoutBuilderWizard({
   const handleChatInput = async (message: string) => {
     if (!manifest) {
       // If no layout exists, this message starts the generation
-      await handleInitialGeneration(message, uploadedFile || undefined);
-      // Clear the uploaded file after generation
-      setUploadedFile(null);
+      await handleInitialGeneration(message, uploadedFiles.length > 0 ? uploadedFiles : undefined);
+      // Clear the uploaded files after generation
+      setUploadedFiles([]);
       return;
     }
 
@@ -189,7 +204,7 @@ export function LayoutBuilderWizard({
         setActiveMetaphor(result.metaphor);
         success('Global vibe applied.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorInfo = categorizeError(err);
       error(errorInfo.message);
     } finally {
@@ -266,8 +281,9 @@ export function LayoutBuilderWizard({
           <div className="flex-1 p-4 overflow-y-auto">
             {!manifest && (
               <div className="text-slate-400 text-center mt-20">
-                <p className="mb-2">Describe your layout or upload a video.</p>
-                <p className="text-xs opacity-50">"Create a dashboard for mechanic shops..."</p>
+                <p className="mb-2">Describe your layout or upload reference images.</p>
+                <p className="text-xs opacity-50">Upload multiple images and say:</p>
+                <p className="text-xs opacity-50 italic">"Use layout from Image 1, colors from Image 2"</p>
               </div>
             )}
             {/* History could go here */}
@@ -300,7 +316,7 @@ export function LayoutBuilderWizard({
               isCapturing={false}
               hasSelection={!!selectedNodeId}
               onFileSelect={handleFileSelect}
-              selectedFile={uploadedFile}
+              selectedFiles={uploadedFiles}
             />
           </div>
         </div>
