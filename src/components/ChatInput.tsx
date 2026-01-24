@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { getModelIndicator, type ModelRouting } from '@/utils/modelRouter';
 
 interface ChatInputProps {
   onSend: (text: string, includeCapture: boolean) => void;
@@ -9,9 +8,7 @@ interface ChatInputProps {
   isLoading: boolean;
   isCapturing: boolean;
   hasSelection: boolean;
-  /** The last model that was used for a response */
-  lastModelUsed?: ModelRouting | null;
-  /** Whether images are currently attached (affects routing preview) */
+  /** Whether images are currently attached */
   hasImages?: boolean;
   /** Callback when a file is selected for upload */
   onFileSelect?: (file: File | null) => void;
@@ -20,7 +17,8 @@ interface ChatInputProps {
 }
 
 /**
- * Chat input component
+ * Chat input component for Layout Builder
+ * Migrated from layout-builder/ directory
  */
 export function ChatInput({
   onSend,
@@ -28,7 +26,6 @@ export function ChatInput({
   isLoading,
   isCapturing,
   hasSelection,
-  lastModelUsed,
   hasImages,
   onFileSelect,
   selectedFile,
@@ -44,9 +41,6 @@ export function ChatInput({
     // Reset input so same file can be selected again
     e.target.value = '';
   };
-
-  // Get model indicator for display
-  const modelIndicator = lastModelUsed ? getModelIndicator(lastModelUsed) : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,21 +211,9 @@ export function ChatInput({
           </span>
         )}
 
-        {/* Model indicator */}
-        {modelIndicator && !hasSelection && (
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="text-sm" title={`Last response from ${modelIndicator.label}`}>
-              {modelIndicator.emoji}
-            </span>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              {modelIndicator.label}
-            </span>
-          </div>
-        )}
-
         {/* Image routing hint */}
         {(hasImages || includeCapture || selectedFile) && !isLoading && (
-          <div className="ml-2 flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1">
             <span className="text-xs" style={{ color: 'var(--gold-primary)' }}>Visual analysis enabled</span>
           </div>
         )}

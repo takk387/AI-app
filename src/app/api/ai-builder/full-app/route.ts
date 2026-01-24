@@ -16,7 +16,8 @@ import {
 } from './generation-logic';
 import { isMockAIEnabled, mockFullAppResponse } from '@/utils/mockAI';
 import { logAPI } from '@/utils/debug';
-import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
+// TODO: Migrate generateDesignFilesArray to LayoutManifest
+// import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 
 // Vercel serverless function config
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
       generateImages,
       imageQuality,
       maxImages,
-      layoutDesign,
+      layoutManifest,
       appFeatures,
       // NEW: Architecture specification from BackendArchitectureAgent
       architectureSpec,
@@ -167,13 +168,13 @@ MODIFICATION MODE for "${currentAppName}":
 }${currentAppContext}`;
 
     // Build compressed prompt using modular sections from src/prompts/
-    // Pass layoutDesign to inject design tokens into the prompt
     // Pass architectureSpec to inject AI-generated backend architecture
+    // Note: layoutManifest design token injection is pending migration to new type
     const systemPrompt = buildFullAppPrompt(
       baseInstructions,
       hasImage,
       isModification,
-      layoutDesign,
+      undefined, // layoutDesign - pending migration to LayoutManifest
       undefined, // techStack - not used directly, architecture spec is preferred
       architectureSpec
     );
@@ -280,12 +281,12 @@ MODIFICATION MODE for "${currentAppName}":
           imageOptions:
             generateImages !== false
               ? {
-                  generateImages: generateImages ?? !!layoutDesign, // Default: true if layoutDesign exists
+                  generateImages: generateImages ?? !!layoutManifest, // Default: true if layoutManifest exists
                   imageQuality: imageQuality || 'medium',
                   maxImages: maxImages || 4,
                   appName: currentAppName,
                   appDescription: prompt,
-                  layoutDesign: layoutDesign,
+                  layoutManifest: layoutManifest,
                   features: appFeatures,
                 }
               : undefined,
@@ -391,33 +392,9 @@ MODIFICATION MODE for "${currentAppName}":
     const autoFixedCount = result.autoFixedCount;
     const images = result.images;
 
-    // Inject design system files if layoutDesign is provided
-    if (layoutDesign) {
-      const designFiles = generateDesignFilesArray(layoutDesign);
-      // Merge design files with generated files, replacing any existing globals.css or tailwind.config
-      const existingPaths = new Set(files.map((f: { path: string }) => f.path));
-      const filesToAdd = designFiles.filter((df) => !existingPaths.has(df.path));
-      const filesToReplace = designFiles.filter((df) => existingPaths.has(df.path));
-
-      // Replace existing files with design system versions
-      files = files.map((f: { path: string; content: string; description?: string }) => {
-        const replacement = filesToReplace.find((df) => df.path === f.path);
-        if (replacement) {
-          return { ...f, content: replacement.content, description: `Design system: ${f.path}` };
-        }
-        return f;
-      });
-
-      // Add new design files
-      files = [
-        ...filesToAdd.map((df) => ({
-          path: df.path,
-          content: df.content,
-          description: `Design system: ${df.path}`,
-        })),
-        ...files,
-      ];
-    }
+    // TODO: Design system file injection pending migration to LayoutManifest
+    // The generateDesignFilesArray function was removed with the legacy layout builder
+    // When re-implementing, use LayoutManifest.designSystem to generate CSS variables
 
     const validationWarnings =
       validationErrors.length > 0

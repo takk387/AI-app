@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { AppConcept, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 
 /**
  * Architecture generation hook for wizard components
@@ -37,7 +37,7 @@ interface WizardState {
 
 interface UseArchitectureGenerationOptions {
   wizardState: WizardState;
-  importedLayoutDesign: LayoutDesign | null;
+  importedLayoutManifest: LayoutManifest | null;
   onShowToast: (opts: { type: 'success' | 'info' | 'error'; message: string }) => void;
   onAddMessage: (message: Message) => void;
   // Callback when architecture generation completes successfully
@@ -55,7 +55,7 @@ interface UseArchitectureGenerationReturn {
 
 export function useArchitectureGeneration({
   wizardState,
-  importedLayoutDesign,
+  importedLayoutManifest,
   onShowToast,
   onAddMessage,
   onArchitectureComplete,
@@ -124,7 +124,7 @@ export function useArchitectureGeneration({
           permissions: [],
         })),
         workflows: wizardState.workflows,
-        layoutDesign: importedLayoutDesign || undefined,
+        layoutManifest: importedLayoutManifest || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -185,7 +185,7 @@ export function useArchitectureGeneration({
     }
   }, [
     wizardState,
-    importedLayoutDesign,
+    importedLayoutManifest,
     needsBackend,
     onShowToast,
     onAddMessage,

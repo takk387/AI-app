@@ -13,7 +13,7 @@ import { useGeminiLayoutState, categorizeError } from '@/hooks/useGeminiLayoutSt
 import { LayoutMessage } from '@/types/layoutDesign';
 
 // --- UI COMPONENTS ---
-import { ChatInput } from '@/components/layout-builder';
+import { ChatInput } from '@/components/ChatInput';
 
 interface LayoutBuilderWizardProps {
   isOpen: boolean;

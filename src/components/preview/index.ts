@@ -6,7 +6,7 @@
  */
 
 export { DeviceFrame, type DeviceFrameProps, type DeviceType } from './DeviceFrame';
-export { DeviceToolbar, type DeviceToolbarProps } from './DeviceToolbar';
+export { DeviceToolbar, type DeviceToolbarProps, type ResponsivePreviewState } from './DeviceToolbar';
 export { TouchSimulator, type TouchSimulatorProps } from './TouchSimulator';
 export { ConsolePanel, type ConsolePanelProps } from './ConsolePanel';
 

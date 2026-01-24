@@ -37,7 +37,7 @@ import type {
   CompareVersions,
 } from '@/types/aiBuilderTypes';
 import type { AppConcept, ImplementationPlan } from '@/types/appConcept';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { PhaseId } from '@/types/buildPhases';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { FileMetadata, StorageStats } from '@/types/storage';
@@ -193,9 +193,9 @@ interface DataSlice {
   isValidating: boolean;
   // Image upload
   uploadedImage: string | null;
-  // Layout Builder
-  currentLayoutDesign: LayoutDesign | null;
-  savedLayoutDesigns: LayoutDesign[];
+  // Layout Builder (Gemini 3 system uses LayoutManifest)
+  currentLayoutManifest: LayoutManifest | null;
+  savedLayoutManifests: LayoutManifest[];
   // Dynamic Phase Plan
   dynamicPhasePlan: DynamicPhasePlan | null;
   // Actions
@@ -215,11 +215,11 @@ interface DataSlice {
   setSelectedPhaseId: (phaseId: PhaseId | null) => void;
   setIsValidating: (isValidating: boolean) => void;
   setUploadedImage: (image: string | null) => void;
-  // Layout Builder actions
-  setCurrentLayoutDesign: (design: LayoutDesign | null) => void;
-  setSavedLayoutDesigns: (designs: LayoutDesign[]) => void;
-  addSavedLayoutDesign: (design: LayoutDesign) => void;
-  removeSavedLayoutDesign: (id: string) => void;
+  // Layout Builder actions (Gemini 3 system uses LayoutManifest)
+  setCurrentLayoutManifest: (manifest: LayoutManifest | null) => void;
+  setSavedLayoutManifests: (manifests: LayoutManifest[]) => void;
+  addSavedLayoutManifest: (manifest: LayoutManifest) => void;
+  removeSavedLayoutManifest: (id: string) => void;
   // App Concept field updates
   updateAppConceptField: (path: string, value: unknown) => void;
   // Dynamic Phase Plan action
@@ -465,8 +465,8 @@ export const useAppStore = create<AppState>()(
       selectedPhaseId: null as PhaseId | null,
       isValidating: false,
       uploadedImage: null as string | null,
-      currentLayoutDesign: null as LayoutDesign | null,
-      savedLayoutDesigns: [] as LayoutDesign[],
+      currentLayoutManifest: null as LayoutManifest | null,
+      savedLayoutManifests: [] as LayoutManifest[],
       dynamicPhasePlan: null as DynamicPhasePlan | null,
 
       setPendingChange: (change) => set({ pendingChange: change }),
@@ -486,15 +486,15 @@ export const useAppStore = create<AppState>()(
       setSelectedPhaseId: (phaseId) => set({ selectedPhaseId: phaseId }),
       setIsValidating: (isValidating) => set({ isValidating }),
       setUploadedImage: (image) => set({ uploadedImage: image }),
-      setCurrentLayoutDesign: (design) => set({ currentLayoutDesign: design }),
-      setSavedLayoutDesigns: (designs) => set({ savedLayoutDesigns: designs }),
-      addSavedLayoutDesign: (design) =>
+      setCurrentLayoutManifest: (manifest) => set({ currentLayoutManifest: manifest }),
+      setSavedLayoutManifests: (manifests) => set({ savedLayoutManifests: manifests }),
+      addSavedLayoutManifest: (manifest) =>
         set((state) => ({
-          savedLayoutDesigns: [...state.savedLayoutDesigns, design],
+          savedLayoutManifests: [...state.savedLayoutManifests, manifest],
         })),
-      removeSavedLayoutDesign: (id) =>
+      removeSavedLayoutManifest: (id) =>
         set((state) => ({
-          savedLayoutDesigns: state.savedLayoutDesigns.filter((d) => d.id !== id),
+          savedLayoutManifests: state.savedLayoutManifests.filter((m) => m.id !== id),
         })),
       updateAppConceptField: (path, value) =>
         set((state) => {
@@ -662,8 +662,8 @@ export const useLayoutBuilderState = () =>
   useAppStore(
     useShallow((state) => ({
       showLayoutBuilder: state.showLayoutBuilder,
-      currentLayoutDesign: state.currentLayoutDesign,
-      savedLayoutDesigns: state.savedLayoutDesigns,
+      currentLayoutManifest: state.currentLayoutManifest,
+      savedLayoutManifests: state.savedLayoutManifests,
     }))
   );
 

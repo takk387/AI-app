@@ -69,7 +69,7 @@ export function SideDrawer({
 
   // State clearing for new project
   const setAppConcept = useAppStore((state) => state.setAppConcept);
-  const setCurrentLayoutDesign = useAppStore((state) => state.setCurrentLayoutDesign);
+  const setCurrentLayoutManifest = useAppStore((state) => state.setCurrentLayoutManifest);
   const setNewAppStagePlan = useAppStore((state) => state.setNewAppStagePlan);
   const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
   const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
@@ -77,7 +77,7 @@ export function SideDrawer({
   const handleStartNewProject = () => {
     // Clear all project state INCLUDING currentComponent (critical for modal to show)
     setAppConcept(null);
-    setCurrentLayoutDesign(null);
+    setCurrentLayoutManifest(null);
     setNewAppStagePlan(null);
     setDynamicPhasePlan(null);
     setCurrentComponent(null);

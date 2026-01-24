@@ -17,7 +17,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import { useToast } from '@/components/Toast';
 import { LoaderIcon } from './ui/Icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -164,12 +164,12 @@ What would you like to build?`,
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showAllMessages, setShowAllMessages] = useState(false);
-  const [importedLayoutDesign, setImportedLayoutDesign] = useState<LayoutDesign | null>(
-    initialConcept?.layoutDesign || null
+  const [importedLayoutManifest, setImportedLayoutManifest] = useState<LayoutManifest | null>(
+    initialConcept?.layoutManifest || null
   );
 
-  // Get current layout design from store
-  const currentLayoutDesign = useAppStore((state) => state.currentLayoutDesign);
+  // Get current layout manifest from store
+  const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
 
   // Message windowing - limit rendered messages for performance
   const MAX_VISIBLE_MESSAGES = 100;
@@ -196,7 +196,7 @@ What would you like to build?`,
   const { architectureSpec, isGeneratingArchitecture, generateArchitecture, clearArchitecture } =
     useArchitectureGeneration({
       wizardState,
-      importedLayoutDesign,
+      importedLayoutManifest,
       onShowToast: showToast,
       onAddMessage: handleAddMessage,
     });
@@ -211,7 +211,7 @@ What would you like to build?`,
   } = usePhaseGeneration({
     wizardState,
     messages,
-    importedLayoutDesign,
+    importedLayoutManifest,
     phasePlan,
     setPhasePlan,
     onShowToast: showToast,
@@ -428,8 +428,8 @@ What would you like to build?`,
               workflows: extractWorkflowsFromConversation(),
               // Preserve full conversation context for detail retention
               conversationContext: buildConversationContext(),
-              // Include imported layout design for pixel-perfect styling
-              layoutDesign: importedLayoutDesign || undefined,
+              // Include imported layout manifest for pixel-perfect styling
+              layoutManifest: importedLayoutManifest || undefined,
               // Include generated backend architecture for build phase
               architectureSpec: architectureSpec || undefined,
               createdAt: new Date().toISOString(),
@@ -470,7 +470,7 @@ What would you like to build?`,
       convertRolesToUserRoles,
       extractWorkflowsFromConversation,
       buildConversationContext,
-      importedLayoutDesign,
+      importedLayoutManifest,
     ]
   );
 
@@ -544,18 +544,18 @@ What would you like to build?`,
         {/* Header */}
         <WizardHeader
           appName={wizardState.name}
-          currentLayoutDesign={currentLayoutDesign}
-          importedLayoutDesign={importedLayoutDesign}
+          currentLayoutManifest={currentLayoutManifest}
+          importedLayoutManifest={importedLayoutManifest}
           onImportLayout={() => {
-            setImportedLayoutDesign(currentLayoutDesign);
+            setImportedLayoutManifest(currentLayoutManifest);
             showToast({
               type: 'success',
-              message: 'Layout design imported! Your app will use these exact styles.',
+              message: 'Layout imported! Your app will use these exact styles.',
             });
           }}
           onRemoveLayout={() => {
-            setImportedLayoutDesign(null);
-            showToast({ type: 'info', message: 'Layout design removed' });
+            setImportedLayoutManifest(null);
+            showToast({ type: 'info', message: 'Layout removed' });
           }}
           onCancel={onCancel}
         />

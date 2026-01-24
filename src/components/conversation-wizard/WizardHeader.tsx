@@ -1,12 +1,12 @@
 'use client';
 
 import { WandIcon, PaletteIcon, XIcon } from '@/components/ui/Icons';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 
 interface WizardHeaderProps {
   appName?: string;
-  currentLayoutDesign: LayoutDesign | null;
-  importedLayoutDesign: LayoutDesign | null;
+  currentLayoutManifest: LayoutManifest | null;
+  importedLayoutManifest: LayoutManifest | null;
   onImportLayout: () => void;
   onRemoveLayout: () => void;
   onCancel: () => void;
@@ -17,8 +17,8 @@ interface WizardHeaderProps {
  */
 export function WizardHeader({
   appName,
-  currentLayoutDesign,
-  importedLayoutDesign,
+  currentLayoutManifest,
+  importedLayoutManifest,
   onImportLayout,
   onRemoveLayout,
   onCancel,
@@ -43,7 +43,7 @@ export function WizardHeader({
       </div>
       <div className="flex items-center gap-2">
         {/* Import Layout Design Button */}
-        {currentLayoutDesign && !importedLayoutDesign && (
+        {currentLayoutManifest && !importedLayoutManifest && (
           <button
             onClick={onImportLayout}
             className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gold-600/20 text-gold-300 hover:bg-gold-600/30 rounded-lg border border-gold-500/30 transition-colors"
@@ -53,10 +53,10 @@ export function WizardHeader({
           </button>
         )}
         {/* Show imported layout indicator */}
-        {importedLayoutDesign && (
+        {importedLayoutManifest && (
           <div className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600/20 text-green-300 rounded-lg border border-green-500/30">
             <PaletteIcon size={16} />
-            <span>{importedLayoutDesign.name || 'Layout'}</span>
+            <span>Layout Imported</span>
             <button onClick={onRemoveLayout} className="ml-1 hover:text-green-100">
               <XIcon size={14} />
             </button>

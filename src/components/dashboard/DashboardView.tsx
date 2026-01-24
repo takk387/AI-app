@@ -35,7 +35,7 @@ export function DashboardView() {
 
   // Store actions for clearing state before new project
   const setAppConcept = useAppStore((state) => state.setAppConcept);
-  const setCurrentLayoutDesign = useAppStore((state) => state.setCurrentLayoutDesign);
+  const setCurrentLayoutManifest = useAppStore((state) => state.setCurrentLayoutManifest);
   const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
   const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
 
@@ -57,7 +57,7 @@ export function DashboardView() {
   const handleNewProject = () => {
     // Clear project state INCLUDING currentComponent (critical for modal to show)
     setAppConcept(null);
-    setCurrentLayoutDesign(null);
+    setCurrentLayoutManifest(null);
     setDynamicPhasePlan(null);
     setCurrentComponent(null);
     // Navigate to AI Builder (naming modal will appear)

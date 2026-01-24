@@ -10,7 +10,8 @@ import { MODIFICATION_EXAMPLES } from './modify/examples-compressed';
 import { FRONTEND_RULES_COMPRESSED } from './full-app/frontend-rules-compressed';
 import { FULLSTACK_RULES_COMPRESSED } from './full-app/fullstack-rules-compressed';
 import { FULLAPP_EXAMPLES_COMPRESSED } from './full-app/examples-compressed';
-import { buildDesignTokenPrompt } from './designTokenPrompt';
+// TODO: Migrate buildDesignTokenPrompt to LayoutManifest
+// import { buildDesignTokenPrompt } from './designTokenPrompt';
 import {
   CODE_QUALITY_STANDARDS,
   FORM_UX_STANDARDS,
@@ -22,7 +23,7 @@ import {
 } from './production-standards';
 import { getBackendTemplates, formatArchitectureSpec } from './full-app/backend-templates';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { TechnicalRequirements } from '@/types/appConcept';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 
@@ -85,7 +86,7 @@ CRITICAL REMINDERS:
  * @param baseInstructions - Base system instructions
  * @param includeImageContext - Whether to include image analysis context
  * @param isModification - Whether this is a modification of existing code
- * @param layoutDesign - Optional layout design for design token instructions
+ * @param layoutManifest - Optional layout manifest for design token instructions (TODO: migrate buildDesignTokenPrompt)
  * @param techStack - Optional technical requirements (fallback if no architectureSpec)
  * @param architectureSpec - Optional AI-generated architecture specification (preferred)
  */
@@ -93,7 +94,7 @@ export function buildFullAppPrompt(
   baseInstructions: string,
   includeImageContext: boolean = false,
   isModification: boolean = false,
-  layoutDesign?: LayoutDesign,
+  layoutManifest?: LayoutManifest,
   techStack?: TechnicalRequirements,
   architectureSpec?: ArchitectureSpec
 ): string {
@@ -115,16 +116,19 @@ MODIFICATION MODE:
 `.trim()
     : '';
 
-  // Build design token instructions if layoutDesign is provided
-  const designTokenContext = layoutDesign
+  // Build design token instructions if layoutManifest is provided
+  // TODO: Migrate buildDesignTokenPrompt to use LayoutManifest structure
+  const designTokenContext = layoutManifest
     ? `
-${buildDesignTokenPrompt(layoutDesign)}
-
 ⚠️ DESIGN SYSTEM ENFORCEMENT:
-- A globals.css file with CSS variables will be auto-generated
+- Use the design system colors from the layout manifest
+- Primary: ${layoutManifest.designSystem?.colors?.primary || '#6B7280'}
+- Background: ${layoutManifest.designSystem?.colors?.background || '#F9FAFB'}
+- Text: ${layoutManifest.designSystem?.colors?.text || '#374151'}
+- Heading Font: ${layoutManifest.designSystem?.fonts?.heading || 'Inter'}
+- Body Font: ${layoutManifest.designSystem?.fonts?.body || 'Inter'}
 - Use var(--color-*), var(--border-radius), var(--shadow) in ALL components
 - Do NOT use hardcoded Tailwind colors like bg-blue-500 or text-gray-900
-- Use bg-[var(--color-primary)], text-[var(--color-text)], etc.
 `
     : '';
 
@@ -173,7 +177,7 @@ ${FULLAPP_EXAMPLES_COMPRESSED}
 
 REMEMBER:
 - Complete code (never truncate mid-line/tag/string)
-- ${layoutDesign ? 'Use CSS variables from design system (var(--color-*), etc.)' : 'Tailwind CSS for styling'}
+- ${layoutManifest ? 'Use CSS variables from design system (var(--color-*), etc.)' : 'Tailwind CSS for styling'}
 - Include setup instructions
 `.trim();
 }

@@ -21,8 +21,9 @@ import {
   type PhaseContext,
   type Phase,
 } from '../full-app/generation-logic';
-import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
-import type { LayoutDesign } from '@/types/layoutDesign';
+// TODO: Migrate generateDesignFilesArray to LayoutManifest
+// import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
+import type { LayoutManifest } from '@/types/schema';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 import type { SerializedPhaseContext } from '@/types/dynamicPhases';
 import { runAgenticGeneration } from '@/utils/agenticCodeGeneration';
@@ -175,7 +176,7 @@ export async function POST(request: Request) {
         isPhaseBuilding,
         phaseContext: rawPhaseContext,
         currentAppState,
-        layoutDesign,
+        layoutManifest,
         architectureSpec,
         phaseContexts,
         useAgenticValidation, // Option A: Enable tool-based validation during generation
@@ -201,7 +202,7 @@ export async function POST(request: Request) {
           appType?: string;
           files?: Array<{ path: string; content: string }>;
         };
-        layoutDesign?: LayoutDesign;
+        layoutManifest?: LayoutManifest;
         architectureSpec?: ArchitectureSpec;
         phaseContexts?: Record<string, SerializedPhaseContext>;
         useAgenticValidation?: boolean; // Option A: Enable tool-based validation during generation
@@ -384,7 +385,7 @@ MODIFICATION MODE for "${currentAppName}":
         baseInstructions,
         hasImage,
         isModification,
-        layoutDesign,
+        layoutManifest,
         undefined, // techStack - not used directly, architecture spec is preferred
         architectureSpec
       );
@@ -684,32 +685,11 @@ MODIFICATION MODE for "${currentAppName}":
 
           perfTracker.checkpoint('validation_complete');
 
-          // Inject design system files if layoutDesign is provided
-          if (layoutDesign) {
-            const designFiles = generateDesignFilesArray(layoutDesign);
-            const existingPaths = new Set(files.map((f) => f.path));
-            const filesToAdd = designFiles.filter((df) => !existingPaths.has(df.path));
-            const filesToReplace = designFiles.filter((df) => existingPaths.has(df.path));
-
-            for (let i = 0; i < files.length; i++) {
-              const replacement = filesToReplace.find((df) => df.path === files[i].path);
-              if (replacement) {
-                files[i] = {
-                  ...files[i],
-                  content: replacement.content,
-                  description: `Design system: ${files[i].path}`,
-                };
-              }
-            }
-
-            files.unshift(
-              ...filesToAdd.map((df) => ({
-                path: df.path,
-                content: df.content,
-                description: `Design system: ${df.path}`,
-              }))
-            );
-          }
+          // TODO: Design system file injection pending migration to LayoutManifest
+          // if (layoutManifest) {
+          //   const designFiles = generateDesignFilesArray(layoutManifest);
+          //   ... (disabled until generateDesignFilesArray is migrated)
+          // }
 
           // Parse dependencies
           const dependencies: Record<string, string> = {};
@@ -1110,34 +1090,11 @@ MODIFICATION MODE for "${currentAppName}":
 
       perfTracker.checkpoint('validation_complete');
 
-      // Inject design system files if layoutDesign is provided
-      if (layoutDesign) {
-        const designFiles = generateDesignFilesArray(layoutDesign);
-        const existingPaths = new Set(files.map((f) => f.path));
-        const filesToAdd = designFiles.filter((df) => !existingPaths.has(df.path));
-        const filesToReplace = designFiles.filter((df) => existingPaths.has(df.path));
-
-        // Replace existing files with design system versions
-        for (let i = 0; i < files.length; i++) {
-          const replacement = filesToReplace.find((df) => df.path === files[i].path);
-          if (replacement) {
-            files[i] = {
-              ...files[i],
-              content: replacement.content,
-              description: `Design system: ${files[i].path}`,
-            };
-          }
-        }
-
-        // Add new design files at the beginning
-        files.unshift(
-          ...filesToAdd.map((df) => ({
-            path: df.path,
-            content: df.content,
-            description: `Design system: ${df.path}`,
-          }))
-        );
-      }
+      // TODO: Design system file injection pending migration to LayoutManifest
+      // if (layoutManifest) {
+      //   const designFiles = generateDesignFilesArray(layoutManifest);
+      //   ... (disabled until generateDesignFilesArray is migrated)
+      // }
 
       // Parse dependencies
       const dependencies: Record<string, string> = {};

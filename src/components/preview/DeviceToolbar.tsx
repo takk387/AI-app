@@ -1,11 +1,21 @@
 'use client';
 
 import React from 'react';
-import type { ResponsivePreviewState } from '@/hooks/useResponsivePreview';
 
 // ============================================================================
 // TYPES
 // ============================================================================
+
+/**
+ * Responsive preview state for device simulation
+ * Defined locally after useResponsivePreview hook was removed
+ */
+export interface ResponsivePreviewState {
+  width: number;
+  height: number | 'auto';
+  devicePreset: string | null;
+  orientation: 'portrait' | 'landscape';
+}
 
 export interface DeviceToolbarProps {
   state: ResponsivePreviewState;

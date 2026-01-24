@@ -15,7 +15,7 @@ import type {
   UserRole,
   Workflow,
 } from './appConcept';
-import type { LayoutDesign } from './layoutDesign';
+import type { LayoutManifest } from './schema';
 import type { DynamicPhasePlan } from './dynamicPhases';
 import type { ChatMessage } from './aiBuilderTypes';
 import type { ArchitectureSpec } from './architectureSpec';
@@ -77,9 +77,8 @@ export interface LayoutSnapshot {
   capturedAt: string;
   source: 'layout-builder' | 'import' | 'ai-generated';
 
-  // Design data (legacy LayoutDesign or new LayoutManifest)
-  design?: LayoutDesign;
-  layoutManifest?: any; // LayoutManifest from schema.ts (avoiding circular dep)
+  // Design data - LayoutManifest from Gemini 3 system
+  layoutManifest?: LayoutManifest;
 
   // Visual preview
   previewImageUrl?: string; // Supabase storage URL
@@ -233,7 +232,7 @@ export interface CaptureRequest {
   userId: string;
   data: {
     concept?: Partial<ConceptSnapshot>;
-    layout?: LayoutDesign;
+    layout?: LayoutManifest;
     plan?: DynamicPhasePlan;
     phaseResult?: Partial<PhaseExecutionRecord>;
     previewImageUrl?: string;

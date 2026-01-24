@@ -8,11 +8,51 @@
  */
 
 import React, { useMemo } from 'react';
-import type { AnalysisPhaseState, AnalysisProgressState } from '@/hooks/useAnalysisProgress';
 
 // ============================================================================
-// TYPES
+// TYPES (defined locally after useAnalysisProgress hook removal)
 // ============================================================================
+
+type PhaseStatus = 'pending' | 'in_progress' | 'completed' | 'error' | 'skipped';
+
+interface SubPhaseState {
+  id: string;
+  label: string;
+  status: PhaseStatus;
+  progress: number;
+}
+
+export interface AnalysisPhaseState {
+  id: string;
+  label: string;
+  status: PhaseStatus;
+  progress: number;
+  message?: string;
+  subPhases: SubPhaseState[];
+  elapsedTime?: number;
+  duration?: string;
+  error?: string;
+}
+
+interface QuickAnalysisResult {
+  dominantColors?: Array<{ hex: string; usage?: string }>;
+  primaryFont?: string;
+  layoutType?: string;
+}
+
+export interface AnalysisProgressState {
+  currentPhase: string;
+  phases: AnalysisPhaseState[];
+  overallProgress: number;
+  isAnalyzing: boolean;
+  hasError: boolean;
+  errorMessage?: string;
+  elapsedTime: number;
+  estimatedTimeRemaining?: string;
+  canCancel?: boolean;
+  quickAnalysis?: QuickAnalysisResult;
+  error?: string;
+}
 
 interface AnalysisProgressIndicatorProps {
   state: AnalysisProgressState;

@@ -11,7 +11,7 @@ import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/util
 import type { ErrorCategory } from '@/utils/analytics';
 import { generateImagesForApp } from '@/services/AppImageGenerator';
 import { injectImageUrls } from '@/utils/imageUrlInjector';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -32,7 +32,7 @@ export interface GenerationContext {
     maxImages?: number;
     appName?: string;
     appDescription?: string;
-    layoutDesign?: LayoutDesign;
+    layoutManifest?: LayoutManifest;
     features?: string[];
   };
 }
@@ -703,7 +703,7 @@ export async function generateFullApp(
       const images = await generateImagesForApp(
         imageOptions.appName || name,
         imageOptions.appDescription || descriptionText,
-        imageOptions.layoutDesign,
+        imageOptions.layoutManifest,
         features,
         {
           generateHero: true,

@@ -13,7 +13,7 @@ import type {
   UserRole,
   Workflow,
 } from '@/types/appConcept';
-import type { LayoutDesign } from '@/types/layoutDesign';
+import type { LayoutManifest } from '@/types/schema';
 import type { ArchitectureSpec, APIRouteSpec, BackendFileSpec } from '@/types/architectureSpec';
 
 // ============================================================================
@@ -146,10 +146,10 @@ export interface PhaseConceptContext {
   validationRules?: ValidationRule[];
   uiPatterns?: UIPattern[];
 
-  // CRITICAL: Full layout design specification for design-aware code generation
+  // CRITICAL: Full layout manifest specification for design-aware code generation
   // This preserves ALL design details (typography, colors, spacing, components)
   // that would otherwise be lost in the UIPreferences simplification
-  layoutDesign?: LayoutDesign;
+  layoutManifest?: LayoutManifest;
 }
 
 /**
@@ -411,8 +411,8 @@ export interface PhaseExecutionContext {
       name: string;
       fields: Array<{ name: string; type: string; required: boolean }>;
     }>;
-    // Full layout design for design-aware code generation
-    layoutDesign?: LayoutDesign;
+    // Full layout manifest for design-aware code generation
+    layoutManifest?: LayoutManifest;
     // User workflows for multi-step process generation
     workflows?: Workflow[];
   };

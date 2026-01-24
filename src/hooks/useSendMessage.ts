@@ -19,7 +19,7 @@ import type {
   AppVersion,
 } from '@/types/aiBuilderTypes';
 import type { AppConcept } from '@/types/appConcept';
-import type { LayoutDesign, DesignChange } from '@/types/layoutDesign';
+import type { LayoutMessage } from '@/types/layoutDesign';
 import type { PhaseExecutionResult, DynamicPhasePlan } from '@/types/dynamicPhases';
 import {
   compressConversation,
@@ -438,7 +438,7 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         isModification: false,
         image: uploadedImage || undefined,
         hasImage: !!uploadedImage,
-        layoutDesign: appConcept?.layoutDesign || undefined,
+        layoutManifest: appConcept?.layoutManifest || undefined,
         architectureSpec: dynamicBuildPhases.plan?.architectureSpec || undefined,
         phaseContexts: dynamicBuildPhases.plan?.phaseContexts || undefined,
       };
@@ -534,7 +534,7 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         currentAppState: JSON.parse(currentComponent.code),
         image: uploadedImage || undefined,
         hasImage: !!uploadedImage,
-        layoutDesign: appConcept?.layoutDesign || undefined,
+        layoutManifest: appConcept?.layoutManifest || undefined,
         architectureSpec: dynamicBuildPhases.plan?.architectureSpec || undefined,
         phaseContexts: dynamicBuildPhases.plan?.phaseContexts || undefined,
       };
@@ -639,119 +639,17 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
 
     /**
      * Handle design trigger from builder expert
+     * Note: Legacy design-chat API has been removed. Design is now handled through the Layout Builder Wizard.
      */
     async function handleDesignTrigger(prompt: string) {
-      let previewScreenshot: string | undefined;
-      try {
-        const captureResult = await captureLayoutPreview('sandpack-preview');
-        if (captureResult.success && captureResult.dataUrl) {
-          previewScreenshot = captureResult.dataUrl;
-        }
-      } catch (captureError) {
-        console.warn('Failed to capture preview for design chat:', captureError);
-      }
-
-      const designRequestBody = {
-        message: prompt,
-        conversationHistory: chatMessages.slice(-50).map((m) => ({
-          role: m.role === 'user' ? 'user' : 'assistant',
-          content: m.content,
-        })),
-        previewScreenshot,
-        currentLayoutDesign: appConcept?.layoutDesign || undefined,
-      };
-
-      const designingMessage: ChatMessage = {
+      // Design chat API has been removed in favor of the Layout Builder Wizard
+      const infoMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: '🎨 **Updating design...**\n\nAnalyzing your layout and applying changes.',
+        content: `🎨 **Design Changes**\n\nTo modify the design, please use the **Layout Builder** in the Design step. The inline design chat has been replaced with the more powerful visual Layout Builder.\n\nYour request: "${prompt.slice(0, 100)}${prompt.length > 100 ? '...' : ''}"`,
         timestamp: new Date().toISOString(),
       };
-      setChatMessages((prev) => [...prev, designingMessage]);
-
-      try {
-        const designResponse = await fetch('/api/builder/design-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(designRequestBody),
-        });
-
-        const designData = await designResponse.json();
-
-        if (designData?.error) {
-          throw new Error(designData.error);
-        }
-
-        // Update appConcept.layoutDesign with merged design
-        if (designData?.updatedDesign && Object.keys(designData.updatedDesign).length > 0) {
-          const currentLayoutDesign = (appConcept?.layoutDesign || {}) as Partial<LayoutDesign>;
-          const updatedDesign = designData.updatedDesign as Partial<LayoutDesign>;
-          const mergedDesign = {
-            ...currentLayoutDesign,
-            ...updatedDesign,
-            globalStyles: {
-              ...currentLayoutDesign?.globalStyles,
-              ...updatedDesign?.globalStyles,
-              colors: {
-                ...currentLayoutDesign?.globalStyles?.colors,
-                ...updatedDesign?.globalStyles?.colors,
-              },
-              typography: {
-                ...currentLayoutDesign?.globalStyles?.typography,
-                ...updatedDesign?.globalStyles?.typography,
-              },
-              spacing: {
-                ...currentLayoutDesign?.globalStyles?.spacing,
-                ...updatedDesign?.globalStyles?.spacing,
-              },
-              effects: {
-                ...currentLayoutDesign?.globalStyles?.effects,
-                ...updatedDesign?.globalStyles?.effects,
-              },
-            },
-          } as LayoutDesign;
-
-          if (appConcept) {
-            setAppConcept({
-              ...appConcept,
-              layoutDesign: mergedDesign,
-              updatedAt: new Date().toISOString(),
-            });
-          }
-        }
-
-        // Build response message
-        let responseContent = designData?.message || 'Design updated successfully.';
-
-        if (designData?.designChanges && designData.designChanges.length > 0) {
-          const changesSummary = (designData.designChanges as DesignChange[])
-            .slice(0, 5)
-            .map((c: DesignChange) => `• **${c.property}**: ${c.reason}`)
-            .join('\n');
-          responseContent += `\n\n**Changes applied:**\n${changesSummary}`;
-        }
-
-        if (designData?.toolsUsed && designData.toolsUsed.length > 0) {
-          responseContent += `\n\n_Tools used: ${designData.toolsUsed.join(', ')}_`;
-        }
-
-        const designResultMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content: responseContent,
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, designResultMessage]);
-      } catch (designError) {
-        console.error('Design chat error:', designError);
-        const errorMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content: `❌ Failed to update design: ${designError instanceof Error ? designError.message : 'Unknown error'}. Please try again.`,
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, errorMessage]);
-      }
+      setChatMessages((prev) => [...prev, infoMessage]);
     }
 
     /**
