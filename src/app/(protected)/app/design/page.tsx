@@ -43,11 +43,7 @@ export default function DesignPage() {
       transition={{ duration: 0.3 }}
       className="h-[calc(100vh-56px)] md:h-[calc(100vh-56px)]"
     >
-      <LayoutBuilderWizard
-        isOpen={true}
-        onClose={handleClose}
-        appConcept={appConcept}
-      />
+      <LayoutBuilderWizard isOpen={true} onClose={handleClose} appConcept={appConcept} />
     </motion.div>
   );
 }

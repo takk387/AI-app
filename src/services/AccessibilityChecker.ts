@@ -265,7 +265,7 @@ class AccessibilityCheckerClass {
 
     // Check button nodes for accessible text
     if (node.type === 'button') {
-      const hasText = node.attributes?.text || node.children?.some(c => c.type === 'text');
+      const hasText = node.attributes?.text || node.children?.some((c) => c.type === 'text');
 
       if (!hasText) {
         issues.push({

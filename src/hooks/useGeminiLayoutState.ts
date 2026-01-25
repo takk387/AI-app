@@ -1,11 +1,11 @@
 /**
  * useGeminiLayoutState Hook
- * 
+ *
  * Provides essential state management for Gemini 3 Layout Builder:
  * - Undo/Redo functionality
  * - Draft auto-save to localStorage
  * - Error retry logic
- * 
+ *
  * This is a minimal implementation focused on critical UX features.
  */
 
@@ -222,23 +222,26 @@ export function useGeminiLayoutState(options: UseGeminiLayoutStateOptions = {}) 
   /**
    * Add a manifest to history
    */
-  const addToHistory = useCallback((manifest: LayoutManifest | null) => {
-    setManifestHistory((history) => {
-      // Truncate any redo states
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(manifest);
-      
-      // Limit history size
-      if (newHistory.length > MAX_HISTORY_SIZE) {
-        newHistory.shift();
-        setHistoryIndex((prev) => prev - 1);
+  const addToHistory = useCallback(
+    (manifest: LayoutManifest | null) => {
+      setManifestHistory((history) => {
+        // Truncate any redo states
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push(manifest);
+
+        // Limit history size
+        if (newHistory.length > MAX_HISTORY_SIZE) {
+          newHistory.shift();
+          setHistoryIndex((prev) => prev - 1);
+          return newHistory;
+        }
+
         return newHistory;
-      }
-      
-      return newHistory;
-    });
-    setHistoryIndex((prev) => prev + 1);
-  }, [historyIndex]);
+      });
+      setHistoryIndex((prev) => prev + 1);
+    },
+    [historyIndex]
+  );
 
   /**
    * Undo the last change

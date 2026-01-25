@@ -2,10 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import {
-  LayoutExportService,
-  type DesignTokens,
-} from '@/services/LayoutExportService';
+import { LayoutExportService, type DesignTokens } from '@/services/LayoutExportService';
 import type { LayoutManifest } from '@/types/schema';
 import type { AppConcept } from '@/types/appConcept';
 

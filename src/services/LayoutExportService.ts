@@ -94,7 +94,10 @@ class LayoutExportServiceClass {
   extractDesignTokens(manifest: LayoutManifest | null | undefined): DesignTokens {
     const designSystem = manifest?.designSystem;
     const colors = designSystem?.colors || {};
-    const fonts = designSystem?.fonts || { heading: 'Inter, system-ui, sans-serif', body: 'Inter, system-ui, sans-serif' };
+    const fonts = designSystem?.fonts || {
+      heading: 'Inter, system-ui, sans-serif',
+      body: 'Inter, system-ui, sans-serif',
+    };
 
     // Default spacing scale
     const defaultSpacing = {

@@ -12,8 +12,19 @@ export const VOID_ELEMENT_TYPES: readonly ComponentType[] = ['image', 'input'] a
  * Used by Engine.tsx for runtime rendering decisions.
  */
 export const HTML_VOID_TAGS = [
-  'img', 'input', 'br', 'hr', 'meta', 'link',
-  'area', 'base', 'col', 'embed', 'source', 'track', 'wbr',
+  'img',
+  'input',
+  'br',
+  'hr',
+  'meta',
+  'link',
+  'area',
+  'base',
+  'col',
+  'embed',
+  'source',
+  'track',
+  'wbr',
 ] as const;
 
 export interface SanitizeResult {
@@ -142,5 +153,7 @@ export function hasVoidElementViolations(manifest: LayoutManifest): boolean {
   };
 
   if (checkNode(manifest.root)) return true;
-  return Object.values(manifest.definitions ?? {}).filter(Boolean).some(checkNode);
+  return Object.values(manifest.definitions ?? {})
+    .filter(Boolean)
+    .some(checkNode);
 }

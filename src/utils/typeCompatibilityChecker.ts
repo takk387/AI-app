@@ -31,8 +31,7 @@ export function extractTypeDefinitions(
   const definitions: TypeDefinition[] = [];
 
   // Interface extraction (handles extends)
-  const interfaceRegex =
-    /(?:export\s+)?interface\s+(\w+)\s*(?:extends\s+[\w,\s]+)?\s*\{([^}]+)\}/g;
+  const interfaceRegex = /(?:export\s+)?interface\s+(\w+)\s*(?:extends\s+[\w,\s]+)?\s*\{([^}]+)\}/g;
   let match;
 
   while ((match = interfaceRegex.exec(content)) !== null) {
@@ -155,8 +154,7 @@ export function checkTypeCompatibility(
       // Check for type changes
       if (prevProp.type !== newProp.type) {
         // Allow widening (adding union types)
-        const isWidening =
-          newProp.type.includes(prevProp.type) || newProp.type.includes('|');
+        const isWidening = newProp.type.includes(prevProp.type) || newProp.type.includes('|');
         breakingChanges.push({
           typeName: newType.name,
           file: newType.file,

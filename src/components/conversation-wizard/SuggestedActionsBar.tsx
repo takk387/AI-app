@@ -1,6 +1,10 @@
 'use client';
 
-import { getQuickActionsForElement, type QuickAction, type ElementType } from '@/data/elementQuickActions';
+import {
+  getQuickActionsForElement,
+  type QuickAction,
+  type ElementType,
+} from '@/data/elementQuickActions';
 
 interface SuggestedAction {
   label: string;

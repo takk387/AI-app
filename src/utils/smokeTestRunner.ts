@@ -211,7 +211,10 @@ const TEST_MATCHERS: TestMatcher[] = [
 
   // "Data persists correctly"
   (criterion, context) => {
-    if (!criterion.toLowerCase().includes('persist') && !criterion.toLowerCase().includes('storage'))
+    if (
+      !criterion.toLowerCase().includes('persist') &&
+      !criterion.toLowerCase().includes('storage')
+    )
       return null;
 
     const hasPersistence = context.files.some(
@@ -309,9 +312,7 @@ const TEST_MATCHERS: TestMatcher[] = [
 
     const hasTypes =
       typeFiles.length > 0 ||
-      context.files.some(
-        (f) => f.content.includes('interface ') || f.content.includes('type ')
-      );
+      context.files.some((f) => f.content.includes('interface ') || f.content.includes('type '));
 
     return {
       criterion,
@@ -382,8 +383,7 @@ export function runSmokeTests(
  */
 function extractExports(content: string): string[] {
   const exports: string[] = [];
-  const exportRegex =
-    /export\s+(?:default\s+)?(?:function|const|class|interface|type)\s+(\w+)/g;
+  const exportRegex = /export\s+(?:default\s+)?(?:function|const|class|interface|type)\s+(\w+)/g;
   let match;
   while ((match = exportRegex.exec(content)) !== null) {
     exports.push(match[1]);

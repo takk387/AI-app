@@ -3,8 +3,15 @@ import { z } from 'zod';
 // --- TYPES ---
 
 export type ComponentType =
-  | 'container' | 'text' | 'image' | 'button' | 'input'
-  | 'list' | 'icon' | 'video' | 'component-reference';
+  | 'container'
+  | 'text'
+  | 'image'
+  | 'button'
+  | 'input'
+  | 'list'
+  | 'icon'
+  | 'video'
+  | 'component-reference';
 
 export interface UISpecNode {
   id: string;
@@ -17,7 +24,7 @@ export interface UISpecNode {
   styles: {
     tailwindClasses: string;
     customCSS?: string;
-    motion?: { initial: any; animate: any; };
+    motion?: { initial: any; animate: any };
   };
 
   // DATA LAYER (For Content)
@@ -56,23 +63,37 @@ export interface LayoutManifest {
 
 // --- ZOD VALIDATION (Self-Healing Triggers) ---
 
-export const UISpecNodeSchema: z.ZodType<any> = z.lazy(() => z.object({
-  id: z.string(),
-  type: z.enum(['container', 'text', 'image', 'button', 'input', 'list', 'icon', 'video', 'component-reference']),
-  semanticTag: z.string(),
-  styles: z.object({
-    tailwindClasses: z.string(),
-    customCSS: z.string().optional(),
-    motion: z.any().optional(),
-  }),
-  attributes: z.record(z.string(), z.any()),
-  state: z.object({
-    isLoading: z.boolean().optional(),
-    isHidden: z.boolean().optional(),
-    trigger: z.enum(['hover', 'click', 'load']).optional()
-  }).optional(),
-  children: z.array(UISpecNodeSchema).optional()
-}));
+export const UISpecNodeSchema: z.ZodType<any> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    type: z.enum([
+      'container',
+      'text',
+      'image',
+      'button',
+      'input',
+      'list',
+      'icon',
+      'video',
+      'component-reference',
+    ]),
+    semanticTag: z.string(),
+    styles: z.object({
+      tailwindClasses: z.string(),
+      customCSS: z.string().optional(),
+      motion: z.any().optional(),
+    }),
+    attributes: z.record(z.string(), z.any()),
+    state: z
+      .object({
+        isLoading: z.boolean().optional(),
+        isHidden: z.boolean().optional(),
+        trigger: z.enum(['hover', 'click', 'load']).optional(),
+      })
+      .optional(),
+    children: z.array(UISpecNodeSchema).optional(),
+  })
+);
 
 export const LayoutManifestSchema = z.object({
   id: z.string(),
@@ -82,6 +103,6 @@ export const LayoutManifestSchema = z.object({
   detectedFeatures: z.array(z.string()),
   designSystem: z.object({
     colors: z.record(z.string(), z.string()),
-    fonts: z.object({ heading: z.string(), body: z.string() })
-  })
+    fonts: z.object({ heading: z.string(), body: z.string() }),
+  }),
 });

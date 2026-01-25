@@ -110,7 +110,11 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
         <Section icon={<PaletteIcon size={16} />} title="Colors">
           <div className="grid grid-cols-2 gap-3 bg-slate-800/30 rounded-lg p-3">
             {Object.entries(colors).map(([key, value]) => (
-              <ColorSwatch key={key} color={value} label={key.charAt(0).toUpperCase() + key.slice(1)} />
+              <ColorSwatch
+                key={key}
+                color={value}
+                label={key.charAt(0).toUpperCase() + key.slice(1)}
+              />
             ))}
           </div>
         </Section>

@@ -1,4 +1,4 @@
-import { LayoutManifest, UISpecNode } from "@/types/schema";
+import { LayoutManifest, UISpecNode } from '@/types/schema';
 
 /**
  * BuilderService - Client-side service for vibe coding operations.
@@ -16,15 +16,18 @@ export class BuilderService {
    * Prevents generic templates by locking in the "Physical Vibe" first.
    * Returns both the styled manifest and the metaphor for use in refineElement.
    */
-  async applyVibe(manifest: LayoutManifest, userPrompt: string): Promise<{ manifest: LayoutManifest; metaphor: string }> {
+  async applyVibe(
+    manifest: LayoutManifest,
+    userPrompt: string
+  ): Promise<{ manifest: LayoutManifest; metaphor: string }> {
     const response = await fetch('/api/builder/vibe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'applyVibe',
         manifest,
-        prompt: userPrompt
-      })
+        prompt: userPrompt,
+      }),
     });
 
     if (!response.ok) {
@@ -52,8 +55,8 @@ export class BuilderService {
         action: 'refineElement',
         node,
         prompt: instruction,
-        metaphor: currentMetaphor
-      })
+        metaphor: currentMetaphor,
+      }),
     });
 
     if (!response.ok) {

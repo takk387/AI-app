@@ -1,6 +1,14 @@
 import type { LayoutManifest } from '@/types/schema';
 
-export type AppType = 'dashboard' | 'ecommerce' | 'social' | 'productivity' | 'portfolio' | 'blog' | 'analytics' | 'general';
+export type AppType =
+  | 'dashboard'
+  | 'ecommerce'
+  | 'social'
+  | 'productivity'
+  | 'portfolio'
+  | 'blog'
+  | 'analytics'
+  | 'general';
 
 /**
  * Detect app type from description
@@ -8,7 +16,8 @@ export type AppType = 'dashboard' | 'ecommerce' | 'social' | 'productivity' | 'p
 export function detectAppType(description: string): AppType {
   const lower = description.toLowerCase();
   if (lower.includes('dashboard') || lower.includes('admin')) return 'dashboard';
-  if (lower.includes('shop') || lower.includes('store') || lower.includes('ecommerce')) return 'ecommerce';
+  if (lower.includes('shop') || lower.includes('store') || lower.includes('ecommerce'))
+    return 'ecommerce';
   if (lower.includes('social') || lower.includes('community')) return 'social';
   if (lower.includes('task') || lower.includes('productivity')) return 'productivity';
   if (lower.includes('portfolio')) return 'portfolio';

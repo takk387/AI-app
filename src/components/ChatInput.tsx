@@ -107,7 +107,9 @@ export function ChatInput({
                 className="flex items-center gap-2 px-2 py-1 rounded text-xs"
                 style={{
                   background: isVideo ? 'rgba(59, 130, 246, 0.2)' : 'rgba(234, 179, 8, 0.2)',
-                  border: isVideo ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(234, 179, 8, 0.3)',
+                  border: isVideo
+                    ? '1px solid rgba(59, 130, 246, 0.3)'
+                    : '1px solid rgba(234, 179, 8, 0.3)',
                   color: isVideo ? 'rgb(147, 197, 253)' : 'rgb(253, 224, 71)',
                 }}
               >
@@ -136,7 +138,8 @@ export function ChatInput({
           disabled={isLoading}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:opacity-80'}`}
           style={{
-            background: selectedFiles.length > 0 ? 'var(--gold-primary, #eab308)' : 'var(--bg-secondary)',
+            background:
+              selectedFiles.length > 0 ? 'var(--gold-primary, #eab308)' : 'var(--bg-secondary)',
             color: selectedFiles.length > 0 ? 'white' : 'var(--text-secondary)',
           }}
         >
@@ -249,15 +252,17 @@ export function ChatInput({
         )}
 
         {/* Image routing hint */}
-        {(hasImages || includeCapture || selectedFiles.length > 0) && !isLoading && !hasSelection && (
-          <div className="ml-auto flex items-center gap-1">
-            <span className="text-xs" style={{ color: 'var(--gold-primary)' }}>
-              {selectedFiles.length > 1
-                ? `${selectedFiles.length} references - use "Image 1", "Image 2" in your prompt`
-                : 'Visual analysis enabled'}
-            </span>
-          </div>
-        )}
+        {(hasImages || includeCapture || selectedFiles.length > 0) &&
+          !isLoading &&
+          !hasSelection && (
+            <div className="ml-auto flex items-center gap-1">
+              <span className="text-xs" style={{ color: 'var(--gold-primary)' }}>
+                {selectedFiles.length > 1
+                  ? `${selectedFiles.length} references - use "Image 1", "Image 2" in your prompt`
+                  : 'Visual analysis enabled'}
+              </span>
+            </div>
+          )}
       </div>
 
       {/* Input area */}
