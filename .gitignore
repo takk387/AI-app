@@ -37,6 +37,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Auto-generated files
+src/config/versions.generated.ts
+
 # IDE
 .vscode/
 .idea/
