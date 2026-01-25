@@ -75,6 +75,9 @@ export async function POST(request: Request) {
         // Self-Healing Pass - pass original manifest to preserve design system on fallback
         const validatedManifest = await validateAndFix(model, sanitizedManifest, manifest);
 
+        // Structure validation - log warnings if header is missing
+        validateLayoutStructure(validatedManifest);
+
         return NextResponse.json({ manifest: validatedManifest, metaphor: generatedMetaphor });
       } catch (e) {
         console.error('Vibe Coding Failed:', e);
@@ -347,12 +350,25 @@ function lintTailwindClasses(node: UISpecNode): UISpecNode {
   const VOID_ELEMENT_TYPES = ['image', 'input'];
   const isVoidElement = VOID_ELEMENT_TYPES.includes(node.type);
 
+  // Logged filtering: catch nodes that are silently removed
+  const filteredChildren = isVoidElement
+    ? undefined
+    : node.children
+        ?.filter((c, i) => {
+          if (!c) {
+            console.warn(
+              `[lintTailwindClasses] Removed falsy child at index ${i} in node "${node.id}"`
+            );
+            return false;
+          }
+          return true;
+        })
+        .map((c) => lintTailwindClasses(c));
+
   return {
     ...node,
     styles: { ...node.styles, tailwindClasses: cleanClasses },
-    children: isVoidElement
-      ? undefined
-      : node.children?.filter(Boolean).map((c) => lintTailwindClasses(c)),
+    children: filteredChildren,
   };
 }
 
@@ -436,6 +452,34 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
       fonts: preservedFonts,
     },
   };
+}
+
+/**
+ * Validates that the manifest has expected layout structure.
+ * Logs warnings if header/nav is missing or if unexpected structure detected.
+ * This helps debug cases where Gemini generates flat structures without proper hierarchy.
+ */
+function validateLayoutStructure(manifest: LayoutManifest): void {
+  const root = manifest.root;
+
+  if (!root.children || root.children.length === 0) {
+    console.warn('[vibe] WARNING: Root has no children - layout may be malformed');
+    return;
+  }
+
+  const firstChild = root.children[0];
+  const headerTags = ['header', 'navigation', 'nav', 'navbar', 'site-header', 'top-bar'];
+  const hasHeader = headerTags.some((tag) => firstChild.semanticTag?.toLowerCase().includes(tag));
+
+  if (!hasHeader) {
+    console.warn(
+      `[vibe] WARNING: First child semanticTag "${firstChild.semanticTag}" does not look like a header. Expected one of: ${headerTags.join(', ')}`
+    );
+  }
+
+  // Log structure summary for debugging
+  const structureSummary = root.children.map((c) => c.semanticTag).join(' → ');
+  console.log('[vibe] Layout structure:', structureSummary);
 }
 
 export async function GET() {

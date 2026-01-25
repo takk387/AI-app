@@ -144,23 +144,49 @@ COMPONENT DENSITY TARGETS:
 
 For EVERY visible element in the image, create a corresponding node.`;
 
-    const systemPrompt = `
+    // ========================================
+    // PHASE 8: RESTRUCTURED MULTIMODAL PROMPT
+    // Images come EARLY, spatial instructions come AFTER images
+    // ========================================
+
+    // PART 1: Brief pre-image context (keep it short so image is near the start)
+    const preImageContext = `
 ROLE: Expert Frontend Architect specializing in UI replication and composition.
 ${contextLine}${imageContextLine}
-${colorInjectionLine}
-${componentTargets}
 
-TASK: Generate a complete LayoutManifest based on the user's specific instructions.
+TASK: Analyze the reference image(s) provided below to generate a complete LayoutManifest.
+Pay close attention to the visual layout structure - the image(s) will appear next.
+`;
 
-USER INTENT HANDLING - Follow the user's instructions precisely:
-- REPLICA: If user wants an exact copy, replicate every visible element, spacing, and style.
-- SELECTIVE: If user specifies "only the header" or "just the buttons", extract ONLY those elements.
-- MERGE: If user provides multiple images and says "hero from image 1, footer from image 2", combine them accurately.
-- STYLE TRANSFER: If user says "structure from A, colors from B", apply the style transfer.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parts: any[] = [{ text: preImageContext }];
 
-${
-  hasMultipleImages
-    ? `
+    // PART 2: Add images IMMEDIATELY after brief context (critical for spatial anchoring)
+    if (images && images.length > 0) {
+      console.log(`Processing ${images.length} image(s) for analysis...`);
+
+      images.forEach((img, index) => {
+        parts.push({
+          inlineData: {
+            mimeType: img.mimeType,
+            data: img.base64,
+          },
+        });
+        parts.push({
+          text: `[IMAGE ${index + 1}] - Filename: ${img.name}`,
+        });
+      });
+
+      if (images.length > 1) {
+        parts.push({
+          text: `You have been provided ${images.length} reference images. The user's request may specify which elements to take from which image.`,
+        });
+      }
+    }
+
+    // PART 3: Detailed analysis instructions AFTER the image (so spatial rules anchor to visual content)
+    const multiImageRules = hasMultipleImages
+      ? `
 MULTI-IMAGE EXTRACTION RULES:
 1. If user says "replicate Image 1" → Extract ALL elements, colors, and structure from Image 1
 2. If user says "buttons from Image 1, colors from Image 2" →
@@ -176,23 +202,29 @@ MULTI-IMAGE EXTRACTION RULES:
    - Spacing and proportions
    - Typography (font styles, sizes)
 `
-    : ''
-}
+      : '';
 
-ALWAYS follow the user's explicit instructions. If they say "make it exactly like this", prioritize fidelity over simplification.
+    const postImageInstructions = `
+NOW ANALYZE THE IMAGE(S) ABOVE using these protocols:
 
-${
-  images && images.length > 0
-    ? `
+${colorInjectionLine}
+
+${componentTargets}
+
+${multiImageRules}
+
+USER INTENT HANDLING - Follow the user's instructions precisely:
+- REPLICA: If user wants an exact copy, replicate every visible element, spacing, and style.
+- SELECTIVE: If user specifies "only the header" or "just the buttons", extract ONLY those elements.
+- MERGE: If user provides multiple images and says "hero from image 1, footer from image 2", combine them accurately.
+- STYLE TRANSFER: If user says "structure from A, colors from B", apply the style transfer.
+
 IMAGE ANALYSIS - EXACT REPLICATION REQUIRED:
 1. Extract the EXACT color palette from the image(s) (hex values for primary, secondary, background, surface, text)
 2. Identify EVERY visible UI component (headers, buttons, cards, forms, navigation, etc.)
 3. Capture the precise spacing, padding, and layout structure
 4. Note typography: font families, sizes, weights visible in the image
 5. The output LayoutManifest MUST faithfully replicate the design - every element, every color, every spacing value
-`
-    : ''
-}
 
 TEMPORAL INFERENCE RULES (Video Only):
 - INFER STATE: If a spinner appears, set 'state.isLoading = true'.
@@ -223,43 +255,11 @@ UISpecNode REQUIRED FIELDS (every node MUST have ALL of these):
 VOID ELEMENTS (image, input) MUST NOT have children arrays.
 
 OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omissions.
-    `;
+`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parts: any[] = [{ text: systemPrompt }];
+    parts.push({ text: postImageInstructions });
 
-    // Handle images - send inline as base64 with indexed labels
-    if (images && images.length > 0) {
-      console.log(`Processing ${images.length} image(s) for analysis...`);
-
-      images.forEach((img, index) => {
-        // Add the image inline
-        parts.push({
-          inlineData: {
-            mimeType: img.mimeType,
-            data: img.base64,
-          },
-        });
-        // Add indexed label for the AI to reference
-        parts.push({
-          text: `[IMAGE ${index + 1}] - Reference this as "Image ${index + 1}" in your analysis. Filename: ${img.name}`,
-        });
-      });
-
-      // Add specific analysis instructions after all images
-      if (images.length > 1) {
-        parts.push({
-          text: `
-MULTI-IMAGE ANALYSIS:
-You have been provided ${images.length} reference images, labeled "Image 1" through "Image ${images.length}".
-The user's request below may specify which elements to take from which image.
-If no specific instructions, default to using Image 1 as the primary reference.
-`,
-        });
-      }
-    }
-
-    // Add user prompt
+    // PART 4: User prompt LAST
     if (userPrompt) {
       parts.push({ text: `USER REQUEST: ${userPrompt}` });
     }

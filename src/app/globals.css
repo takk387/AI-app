@@ -644,3 +644,14 @@ html {
   background: var(--blossom-text);
   color: white;
 }
+
+/* ============================================
+   Layout Builder Canvas Background
+   ============================================ */
+
+/* Canvas background for layout preview - neutral dark that works with any color scheme */
+.bg-dots-pattern {
+  background-color: #0f172a; /* slate-900 - dark neutral canvas */
+  background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

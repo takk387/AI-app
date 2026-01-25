@@ -146,16 +146,27 @@ export const Engine: React.FC<EngineProps> = ({
       {...filterDOMAttributes(node.attributes)}
     >
       {node.attributes?.text}
-      {node.children?.filter(Boolean).map((c) => (
-        <Engine
-          key={c.id}
-          node={c}
-          definitions={definitions}
-          onSelect={onSelect}
-          selectedId={selectedId}
-          editable={editable}
-        />
-      ))}
+      {node.children
+        ?.filter((c, i) => {
+          if (!c) {
+            // Debug logging: find out if we are losing nodes here
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`[Engine] Filtered falsy child at index ${i} in node "${node.id}"`);
+            }
+            return false;
+          }
+          return true;
+        })
+        .map((c) => (
+          <Engine
+            key={c.id}
+            node={c}
+            definitions={definitions}
+            onSelect={onSelect}
+            selectedId={selectedId}
+            editable={editable}
+          />
+        ))}
     </MotionTag>
   );
 };
@@ -231,6 +242,7 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
         color: colors.text || 'var(--text)',
         minHeight: '100%',
         width: '100%',
+        position: 'relative' as const, // Ensures proper stacking context for overlays
       }) as React.CSSProperties,
     [cssVariables, colors]
   );
