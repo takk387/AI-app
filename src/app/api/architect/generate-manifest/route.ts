@@ -199,19 +199,31 @@ ROOT BACKGROUND:
 - The Root Container MUST have "bg-background" class
 - This ensures the extracted background color is applied
 
-SECTION BACKGROUNDS (SCAN IMAGE CAREFULLY):
-- If the image shows a DARK header/hero → use "bg-primary" or "bg-secondary"
-- If a section has a COLORED background → use "bg-primary", "bg-secondary", or "bg-accent"
-- If a section has a LIGHT/WHITE background → use "bg-background" or "bg-surface"
-- If a card/panel is ELEVATED → use "bg-surface"
-- If the image has GRADIENT backgrounds → combine classes like "bg-gradient-to-b from-primary to-secondary"
+SECTION BACKGROUND DETECTION (MANDATORY - SCAN EACH ZONE):
+1. HEADER ZONE: Look at the top 0-15% of the image
+   - If header has a DISTINCT color → "bg-primary" or "bg-secondary"
+   - If header blends with page → "bg-transparent" or "bg-background"
 
-TEXT CONTRAST:
-- On dark backgrounds (bg-primary, bg-secondary) → use "text-white" or "text-background"
-- On light backgrounds (bg-background, bg-surface) → use "text-text"
-- For subtle text → use "text-text-muted" or "text-white/70"
+2. HERO ZONE: Look at the 15-50% region
+   - If hero has DARK/COLORED background → "bg-primary text-white"
+   - If hero has LIGHT background → "bg-background text-text"
+   - If hero has GRADIENT → "bg-gradient-to-br from-primary to-secondary"
 
-NEVER leave sections without explicit background classes - analyze the image and apply colors!
+3. CONTENT ZONES: Look at the 50-90% region
+   - Each visually distinct section MUST have its own bg- class
+   - Alternating sections should alternate between "bg-background" and "bg-surface"
+
+4. FOOTER ZONE: Look at the bottom 90-100%
+   - If footer is DARK → "bg-primary text-white" or "bg-secondary text-white"
+   - If footer is LIGHT → "bg-surface text-text"
+
+VISUAL CONTRAST RULES:
+- Dark background (visually dark in image) → ALWAYS pair with "text-white"
+- Light background (visually light) → ALWAYS pair with "text-text"
+- Colored background (primary/secondary/accent) → Check brightness, use "text-white" for dark colors
+- Cards/panels → "bg-surface" with "shadow-md" or "shadow-lg"
+
+CRITICAL: Every container with children MUST have an explicit bg- class. Do NOT leave any section without a background!
 
 ${multiImageRules}
 
@@ -252,6 +264,18 @@ NAVIGATION SPACING PROTOCOL (CRITICAL):
 - NEVER place nav items directly adjacent without gap/spacing classes
 - Example nav container: { "styles": { "tailwindClasses": "flex items-center justify-between px-6 py-4" } }
 - Example nav links group: { "styles": { "tailwindClasses": "flex items-center gap-6" } }
+
+TEXT_SPACING_PROTOCOL (CRITICAL):
+- Text containers MUST use spacing classes between child elements
+- For vertical text layouts: use "flex flex-col gap-4" or "space-y-4"
+- For horizontal text/inline: use "flex items-center gap-2" or "space-x-2"
+- Headlines should have: "leading-tight" or "leading-snug" plus "mb-2" or "mb-4"
+- Body text should have: "leading-relaxed" or "leading-normal"
+- Paragraphs need bottom margin: "mb-4" or "mb-6"
+- NEVER place text nodes directly adjacent without parent container spacing
+- Example text container: { "styles": { "tailwindClasses": "flex flex-col gap-4" } }
+- Example headline: { "type": "text", "styles": { "tailwindClasses": "text-4xl font-bold leading-tight mb-4" } }
+- Example paragraph: { "type": "text", "styles": { "tailwindClasses": "text-lg leading-relaxed mb-4" } }
 
 VOID ELEMENTS (image, input, icon) MUST NOT have children arrays.
 
