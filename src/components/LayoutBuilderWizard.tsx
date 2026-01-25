@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/useToast';
 
 // --- GEMINI 3 IMPORTS ---
-import { Engine } from '@/components/Engine';
+import { LayoutPreview } from '@/components/Engine';
 import { ArchitectService } from '@/services/ArchitectService';
 import { BuilderService } from '@/services/BuilderService';
 import { LayoutManifest, UISpecNode } from '@/types/schema';
@@ -430,12 +430,13 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
                 <p className="text-white text-sm">{loadingStage}</p>
               </div>
             ) : manifest ? (
-              <div className="w-full max-w-6xl min-h-[800px] bg-background shadow-2xl rounded-xl overflow-hidden relative transition-all duration-300">
-                {/* THE ENGINE INSTANCE */}
-                <Engine
-                  node={manifest.root}
-                  definitions={manifest.definitions}
-                  onSelect={(id) => setSelectedNodeId(id)}
+              <div className="w-full max-w-6xl min-h-[800px] shadow-2xl rounded-xl overflow-hidden relative transition-all duration-300">
+                {/* THE ENGINE INSTANCE - Wrapped with LayoutPreview for CSS variable injection */}
+                <LayoutPreview
+                  manifest={manifest}
+                  onSelectNode={(id) => setSelectedNodeId(id)}
+                  selectedNodeId={selectedNodeId ?? undefined}
+                  editMode={true}
                 />
 
                 {/* Loading Overlay for Vibe Coding */}
