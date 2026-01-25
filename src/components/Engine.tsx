@@ -47,7 +47,7 @@ export const Engine: React.FC<EngineProps> = ({
 
   if (node.type === 'component-reference' && node.attributes.componentId) {
     const def = definitions[node.attributes.componentId];
-    if (def)
+    if (def) {
       return (
         <Engine
           node={def}
@@ -57,6 +57,16 @@ export const Engine: React.FC<EngineProps> = ({
           editable={editable}
         />
       );
+    }
+    // FALLBACK: Log warning and render placeholder instead of nothing
+    console.warn(
+      `[Engine] Missing definition for component-reference: "${node.attributes.componentId}"`
+    );
+    return (
+      <div className="p-2 border border-dashed border-orange-400 bg-orange-50 text-orange-700 text-sm rounded">
+        Missing component: {node.attributes.componentId}
+      </div>
+    );
   }
 
   const tagMap: Record<string, string> = {
@@ -66,6 +76,14 @@ export const Engine: React.FC<EngineProps> = ({
     input: 'input',
     list: 'div',
     image: 'img',
+    // Semantic HTML elements for better structure
+    header: 'header',
+    footer: 'footer',
+    nav: 'nav',
+    section: 'section',
+    article: 'article',
+    aside: 'aside',
+    main: 'main',
   };
   const Tag = tagMap[node.type] || 'div';
   const MotionTag = motionComponents[Tag] || motion.div;
@@ -217,42 +235,66 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
   selectedNodeId,
   editMode = false,
 }) => {
-  const cssVariables: Record<string, string> = {};
   const colors = manifest.designSystem?.colors ?? {};
-
-  Object.entries(colors).forEach(([key, value]) => {
-    if (value) {
-      cssVariables[`--${key}`] = value;
-      // Also add kebab-case for textMuted compatibility
-      if (key === 'textMuted') cssVariables['--text-muted'] = value;
-    }
-  });
-
   const fonts = manifest.designSystem?.fonts ?? { heading: 'sans-serif', body: 'sans-serif' };
-  cssVariables['--font-heading'] = fonts.heading;
-  cssVariables['--font-body'] = fonts.body;
 
-  // CRITICAL FIX: Inline background + text color fallback
-  // This ensures the background renders even if Tailwind classes are missing or purged
-  const wrapperStyle = useMemo(
-    () =>
-      ({
-        ...cssVariables,
-        backgroundColor: colors.background || 'var(--background)',
-        color: colors.text || 'var(--text)',
-        minHeight: '100%',
-        width: '100%',
-        position: 'relative' as const, // Ensures proper stacking context for overlays
-      }) as React.CSSProperties,
-    [cssVariables, colors]
-  );
+  // SAFE FALLBACKS: Use hex colors instead of var() which might not be defined
+  const safeBackground = colors.background || '#ffffff';
+  const safeColor = colors.text || '#000000';
+
+  // Build CSS variables and wrapper style in useMemo (must be called before any early returns)
+  const wrapperStyle = useMemo(() => {
+    const cssVars: Record<string, string> = {};
+
+    Object.entries(colors).forEach(([key, value]) => {
+      if (value) {
+        cssVars[`--${key}`] = value;
+        if (key === 'textMuted') cssVars['--text-muted'] = value;
+      }
+    });
+
+    cssVars['--font-heading'] = fonts.heading;
+    cssVars['--font-body'] = fonts.body;
+
+    return {
+      ...cssVars,
+      backgroundColor: safeBackground,
+      color: safeColor,
+      minHeight: '100%',
+      width: '100%',
+      position: 'relative' as const,
+    } as React.CSSProperties;
+  }, [colors, fonts, safeBackground, safeColor]);
+
+  // Debug logging for blank preview diagnosis (after hooks)
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log('[LayoutPreview] Rendering with manifest:', {
+      hasRoot: !!manifest.root,
+      rootType: manifest.root?.type,
+      rootChildrenCount: manifest.root?.children?.length ?? 0,
+      definitionsCount: Object.keys(manifest.definitions || {}).length,
+      hasColors: !!manifest.designSystem?.colors,
+    });
+  }
+
+  // Guard against missing manifest data (after all hooks)
+  if (!manifest.root) {
+    // eslint-disable-next-line no-console
+    console.error('[LayoutPreview] ERROR: manifest.root is missing');
+    return (
+      <div className="p-4 text-red-500 bg-red-50 rounded border border-red-200">
+        Invalid manifest: missing root node. Please regenerate.
+      </div>
+    );
+  }
 
   return (
     <EngineErrorBoundary>
       <div style={wrapperStyle}>
         <Engine
           node={manifest.root}
-          definitions={manifest.definitions}
+          definitions={manifest.definitions || {}}
           onSelect={onSelectNode}
           selectedId={selectedNodeId}
           editable={editMode}

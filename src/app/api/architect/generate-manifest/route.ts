@@ -317,14 +317,30 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omis
     const result = await model.generateContent(parts);
     const responseText = result.response.text();
 
+    // Helper to strip Markdown code blocks (Gemini sometimes wraps JSON in ```json...```)
+    const cleanJson = (text: string): string => {
+      return text
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+    };
+
     let manifest: LayoutManifest;
     try {
-      manifest = JSON.parse(responseText);
+      const cleanedJson = cleanJson(responseText);
+      manifest = JSON.parse(cleanedJson);
     } catch {
+      console.error('[generate-manifest] Failed to parse JSON:', responseText.slice(0, 500));
       return NextResponse.json(
         { error: 'Failed to parse AI response as JSON', rawResponse: responseText },
         { status: 500 }
       );
+    }
+
+    // Ensure root.children is always an array (Gemini may return undefined)
+    if (manifest.root && !Array.isArray(manifest.root.children)) {
+      console.log('[generate-manifest] Defaulting root.children to empty array');
+      manifest.root.children = [];
     }
 
     // HARD OVERWRITE: Force extracted colors into manifest - don't trust AI
