@@ -277,7 +277,7 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
 
     return {
       ...cssVars,
-      backgroundColor: safeBackground,
+      backgroundColor: 'var(--background)',
       color: safeColor,
       minHeight: '100%',
       width: '100%',

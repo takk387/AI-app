@@ -280,7 +280,7 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-[95vw] h-[90vh] bg-slate-900 rounded-2xl flex overflow-hidden border border-white/10">
+      <div className="w-[95vw] h-[90vh] bg-slate-900 rounded-2xl flex border border-white/10">
         {/* Draft Recovery Banner */}
         {hasDraftToRecover && (
           <div className="absolute top-0 left-0 right-0 z-50 bg-amber-600 text-white px-4 py-2 flex items-center justify-between">
@@ -423,7 +423,7 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
           </div>
 
           {/* The Render Area */}
-          <div className="flex-1 overflow-auto p-8 flex items-center justify-center bg-dots-pattern">
+          <div className="flex-1 overflow-auto p-8 flex items-start justify-center bg-dots-pattern py-8">
             {isGenerating && !manifest ? (
               <div className="flex flex-col items-center gap-4">
                 <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
