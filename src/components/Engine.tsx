@@ -151,6 +151,17 @@ export const Engine: React.FC<EngineProps> = ({
     );
   }
 
+  const childNodes =
+    node.children?.filter((c, i) => {
+      if (!c) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Engine] Filtered falsy child at index ${i} in node "${node.id}"`);
+        }
+        return false;
+      }
+      return true;
+    }) ?? [];
+
   return (
     <MotionTag
       className={node.styles?.tailwindClasses ?? ''}
@@ -164,27 +175,16 @@ export const Engine: React.FC<EngineProps> = ({
       {...filterDOMAttributes(node.attributes)}
     >
       {node.attributes?.text}
-      {node.children
-        ?.filter((c, i) => {
-          if (!c) {
-            // Debug logging: find out if we are losing nodes here
-            if (process.env.NODE_ENV === 'development') {
-              console.warn(`[Engine] Filtered falsy child at index ${i} in node "${node.id}"`);
-            }
-            return false;
-          }
-          return true;
-        })
-        .map((c) => (
-          <Engine
-            key={c.id}
-            node={c}
-            definitions={definitions}
-            onSelect={onSelect}
-            selectedId={selectedId}
-            editable={editable}
-          />
-        ))}
+      {childNodes.map((c) => (
+        <Engine
+          key={c.id}
+          node={c}
+          definitions={definitions}
+          onSelect={onSelect}
+          selectedId={selectedId}
+          editable={editable}
+        />
+      ))}
     </MotionTag>
   );
 };
@@ -263,6 +263,7 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
       minHeight: '100%',
       width: '100%',
       position: 'relative' as const,
+      isolation: 'isolate' as const, // Creates stacking context for z-index
     } as React.CSSProperties;
   }, [colors, fonts, safeBackground, safeColor]);
 
@@ -289,6 +290,10 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
     );
   }
 
+  // Check if root has any meaningful content
+  const hasContent = manifest.root.children && manifest.root.children.length > 0;
+  const hasText = manifest.root.attributes?.text;
+
   return (
     <EngineErrorBoundary>
       <div style={wrapperStyle}>
@@ -299,6 +304,18 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
           selectedId={selectedNodeId}
           editable={editMode}
         />
+        {/* Debug: Show when manifest appears empty */}
+        {!hasContent && !hasText && process.env.NODE_ENV === 'development' && (
+          <div className="absolute top-4 left-4 p-3 bg-yellow-500 text-black text-xs rounded shadow-lg z-50">
+            <strong>Debug:</strong> Root has no children or text content.
+            <br />
+            Root type: {manifest.root.type}
+            <br />
+            Root id: {manifest.root.id}
+            <br />
+            Classes: {manifest.root.styles?.tailwindClasses || 'none'}
+          </div>
+        )}
       </div>
     </EngineErrorBoundary>
   );

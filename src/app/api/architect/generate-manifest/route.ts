@@ -104,45 +104,7 @@ CRITICAL RULES:
 ❌ DO NOT use generic Tailwind colors like bg-slate-900, text-gray-600`
       : '';
 
-    // Layout structure and component detection protocol
-    const componentTargets = `
-LAYOUT_STRUCTURE_PROTOCOL (CRITICAL):
-Analyze the image from TOP to BOTTOM in this order:
-
-1. **HEADER DETECTION (Top 15% of image)**:
-   - Look for navigation bar, logo, menu items, search bar, user avatar.
-   - Create a container with semanticTag "header" or "navigation".
-   - All nav items should be type: "button".
-
-2. **HERO DETECTION (Below header, top 30-50% of image)**:
-   - Look for large headlines, subheadlines, hero images, CTA buttons.
-   - Create a container with semanticTag "hero-section".
-   - CTA buttons MUST be type: "button".
-
-3. **CONTENT DETECTION (Middle sections)**:
-   - Cards, features, testimonials, pricing tables.
-   - Each distinct section gets its own container.
-
-4. **FOOTER DETECTION (Bottom 10-15% of image)**:
-   - Links, social icons, copyright text.
-   - Create a container with semanticTag "footer".
-
-BUTTON_DETECTION_PROTOCOL:
-- ANY rectangular element that looks interactive = type: "button"
-- Navigation links, CTAs, "Sign Up", "Login", "Get Started" = type: "button"
-- Do NOT use "text" nodes for buttons - they must be type: "button"
-- If in doubt, make it a button.
-
-BACKGROUND VISUAL RULE:
-- The ROOT container MUST have "bg-background" in tailwindClasses
-- If header has different color, use "bg-surface" or "bg-primary" for that node
-
-COMPONENT DENSITY TARGETS:
-- Landing Page: 15-20 distinct components
-- Dashboard: 25-35 distinct components
-- Complex App: 40+ distinct components
-
-For EVERY visible element in the image, create a corresponding node.`;
+    // Note: Component targets now integrated into SPATIAL PROTOCOL in postImageInstructions
 
     // ========================================
     // PHASE 8: RESTRUCTURED MULTIMODAL PROMPT
@@ -204,32 +166,38 @@ MULTI-IMAGE EXTRACTION RULES:
 `
       : '';
 
+    // GEMINI FIX: Explicit SPATIAL PROTOCOL with zone percentages
     const postImageInstructions = `
-NOW ANALYZE THE IMAGE(S) ABOVE using these protocols:
+NOW ANALYZE THE IMAGE(S) ABOVE using this SPATIAL PROTOCOL (Read Top-to-Bottom):
+
+1. **HEADER ZONE (Top 0-15%)**:
+   - SCAN for: Logo, Nav Links, Hamburger Menu, "Sign In" buttons.
+   - ACTION: Create a "container" with semanticTag "header".
+   - CONSTRAINT: This MUST be the first child of the root.
+
+2. **HERO ZONE (Top 15-50%)**:
+   - SCAN for: Large Headlines, Subtext, Primary CTA Buttons, Hero Image.
+   - ACTION: Create a "container" with semanticTag "hero".
+   - CONSTRAINT: All CTA buttons MUST be type: "button" (not text).
+
+3. **CONTENT ZONE (Middle 50-90%)**:
+   - SCAN for: Feature Grids, Cards, Lists, Testimonials.
+   - ACTION: Group distinct visual sections into separate containers.
+
+4. **FOOTER ZONE (Bottom 90-100%)**:
+   - SCAN for: Copyright, Links, Social Icons.
+   - ACTION: Create a "container" with semanticTag "footer".
 
 ${colorInjectionLine}
 
-${componentTargets}
+BUTTON_DETECTION_PROTOCOL:
+- Any element that looks clickable (Pills, Rectangles with text) IS A BUTTON.
+- Use type: "button" for these. DO NOT simplify to text.
+
+BACKGROUND VISUAL RULE:
+- The Root Container MUST have the class "bg-background" to apply the extracted color.
 
 ${multiImageRules}
-
-USER INTENT HANDLING - Follow the user's instructions precisely:
-- REPLICA: If user wants an exact copy, replicate every visible element, spacing, and style.
-- SELECTIVE: If user specifies "only the header" or "just the buttons", extract ONLY those elements.
-- MERGE: If user provides multiple images and says "hero from image 1, footer from image 2", combine them accurately.
-- STYLE TRANSFER: If user says "structure from A, colors from B", apply the style transfer.
-
-IMAGE ANALYSIS - EXACT REPLICATION REQUIRED:
-1. Extract the EXACT color palette from the image(s) (hex values for primary, secondary, background, surface, text)
-2. Identify EVERY visible UI component (headers, buttons, cards, forms, navigation, etc.)
-3. Capture the precise spacing, padding, and layout structure
-4. Note typography: font families, sizes, weights visible in the image
-5. The output LayoutManifest MUST faithfully replicate the design - every element, every color, every spacing value
-
-TEMPORAL INFERENCE RULES (Video Only):
-- INFER STATE: If a spinner appears, set 'state.isLoading = true'.
-- INFER TRANSITIONS: If a menu slides/fades, set 'state.isHidden = true' and 'styles.motion' props.
-- INFER TRIGGERS: If an element reacts to a cursor, set 'state.trigger = hover'.
 
 REQUIRED OUTPUT SCHEMA - Every field is MANDATORY:
 {

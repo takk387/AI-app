@@ -10,6 +10,18 @@
    ============================================ */
 
 :root {
+  /* CRITICAL: Default variables for SEMANTIC TAILWIND CLASSES */
+  /* These are overwritten by LayoutPreview when rendering generated layouts */
+  --background: #F6F9F2;
+  --surface: #FEFCF8;
+  --primary: #2ECC71;
+  --secondary: #C9A227;
+  --accent: #FFB8CA;
+  --text: #1A3D26;
+  --text-muted: #5A7D64;
+  --textMuted: #5A7D64;
+  --border: #E6ECDF;
+
   /* Light theme - Garden/Nature inspired */
   --bg-primary: #F6F9F2;
   --bg-secondary: #FEFCF8;

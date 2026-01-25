@@ -102,10 +102,22 @@ export class ArchitectService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('[ArchitectService] API error:', errorData);
       throw new Error(errorData.error || `API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
+
+    if (!data.manifest) {
+      console.error('[ArchitectService] No manifest in response');
+      throw new Error('API returned no manifest');
+    }
+
+    if (!data.manifest.root) {
+      console.error('[ArchitectService] Manifest has no root');
+      throw new Error('Manifest has no root node');
+    }
+
     return data.manifest;
   }
 }
