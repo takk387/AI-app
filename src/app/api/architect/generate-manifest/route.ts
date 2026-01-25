@@ -220,7 +220,14 @@ UISpecNode REQUIRED FIELDS (every node MUST have ALL of these):
 - attributes: {} (can be empty object, but MUST exist)
 - children?: UISpecNode[] (only for non-void elements)
 
-VOID ELEMENTS (image, input) MUST NOT have children arrays.
+ICON PROTOCOL (CRITICAL):
+- NEVER create a text node with words like "icon", "menu", "search" - these are NOT icons
+- ALWAYS use type: "icon" for icon elements
+- Set attributes.src to a valid Lucide icon name: "Menu", "Search", "User", "Heart", "Star", "ChevronDown", "ChevronRight", "X", "Check", "Plus", "Minus", "Settings", "Home", "Mail", "Phone", "MapPin", "Github", "Twitter", "Facebook", "Instagram", "ArrowRight", "ArrowLeft", "ExternalLink"
+- Example: { "type": "icon", "attributes": { "src": "Menu" }, "styles": { "tailwindClasses": "w-6 h-6" } }
+- If unsure which icon, use "HelpCircle"
+
+VOID ELEMENTS (image, input, icon) MUST NOT have children arrays.
 
 IMAGE URL RULE:
 - For image nodes, use placeholder URLs like "https://placehold.co/400x300/e2e8f0/64748b?text=Image"

@@ -521,8 +521,23 @@ export async function extractColorsFromFile(file: File): Promise<ExtractionResul
         });
         resolve(result);
       } catch (error) {
-        console.error('⚠️ COLOR EXTRACTION FAILED - Layout will use AI vision fallback:', error);
-        reject(error);
+        console.error('⚠️ COLOR EXTRACTION FAILED - Using dark fallback palette:', error);
+        // Resolve with a dark fallback palette instead of rejecting
+        resolve({
+          colors: [],
+          palette: {
+            primary: '#3b82f6',
+            secondary: '#64748b',
+            accent: '#f59e0b',
+            background: '#0f172a',
+            surface: '#1e293b',
+            text: '#f8fafc',
+            textMuted: '#94a3b8',
+            border: '#334155',
+          },
+          dominantColor: '#0f172a',
+          isDarkImage: true,
+        });
       }
     };
     reader.onerror = () => {

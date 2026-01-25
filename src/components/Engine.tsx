@@ -107,7 +107,10 @@ export const Engine: React.FC<EngineProps> = ({
   const isVoidElement = voidElements.includes(Tag);
 
   if (node.type === 'icon' && node.attributes?.src) {
-    const IconCmp = (Icons as any)[node.attributes.src] || Icons.HelpCircle;
+    const iconName = node.attributes.src;
+    // Handle case-insensitive matching: "menu" -> "Menu"
+    const pascalName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
+    const IconCmp = (Icons as any)[iconName] || (Icons as any)[pascalName] || Icons.HelpCircle;
     return <IconCmp className={node.styles?.tailwindClasses ?? ''} />;
   }
 
@@ -277,7 +280,7 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
 
     return {
       ...cssVars,
-      backgroundColor: 'var(--background)',
+      backgroundColor: 'var(--background, #ffffff)',
       color: safeColor,
       minHeight: '100%',
       width: '100%',
