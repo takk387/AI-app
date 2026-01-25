@@ -104,7 +104,7 @@ export const HeaderDropdown: React.FC<HeaderDropdownProps> = ({
             w-full px-3 py-2 text-sm flex items-center gap-3 transition-colors
             ${
               item.variant === 'danger'
-                ? 'text-red-400 hover:text-red-300 hover:bg-red-950/50'
+                ? 'text-error-400 hover:text-error-300 hover:bg-error-950/50'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }
             ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

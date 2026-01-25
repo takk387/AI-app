@@ -54,10 +54,10 @@ export function WizardHeader({
         )}
         {/* Show imported layout indicator */}
         {importedLayoutManifest && (
-          <div className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600/20 text-green-300 rounded-lg border border-green-500/30">
+          <div className="flex items-center gap-2 px-3 py-1.5 text-sm bg-success-600/20 text-success-300 rounded-lg border border-success-500/30">
             <PaletteIcon size={16} />
             <span>Layout Imported</span>
-            <button onClick={onRemoveLayout} className="ml-1 hover:text-green-100">
+            <button onClick={onRemoveLayout} className="ml-1 hover:text-success-100">
               <XIcon size={14} />
             </button>
           </div>

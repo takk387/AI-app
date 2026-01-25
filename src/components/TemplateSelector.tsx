@@ -52,11 +52,11 @@ export function TemplateSelector({ onSelect, onSkip, userDescription }: Template
   const getComplexityColor = (complexity: TemplateComplexity) => {
     switch (complexity) {
       case 'simple':
-        return 'bg-green-500/20 text-green-300 border-green-500/30';
+        return 'bg-success-500/20 text-success-300 border-success-500/30';
       case 'moderate':
-        return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+        return 'bg-warning-500/20 text-warning-300 border-warning-500/30';
       case 'complex':
-        return 'bg-red-500/20 text-red-300 border-red-500/30';
+        return 'bg-error-500/20 text-error-300 border-error-500/30';
     }
   };
 

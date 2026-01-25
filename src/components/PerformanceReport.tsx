@@ -46,33 +46,33 @@ const getMetricStatus = (
 const getStatusColor = (status: 'good' | 'ok' | 'poor'): string => {
   switch (status) {
     case 'good':
-      return 'text-green-400';
+      return 'text-success-400';
     case 'ok':
-      return 'text-yellow-400';
+      return 'text-warning-400';
     case 'poor':
-      return 'text-red-400';
+      return 'text-error-400';
   }
 };
 
 const getStatusBgColor = (status: 'good' | 'ok' | 'poor'): string => {
   switch (status) {
     case 'good':
-      return 'bg-green-500/20 border-green-500/30';
+      return 'bg-success-500/20 border-success-500/30';
     case 'ok':
-      return 'bg-yellow-500/20 border-yellow-500/30';
+      return 'bg-warning-500/20 border-warning-500/30';
     case 'poor':
-      return 'bg-red-500/20 border-red-500/30';
+      return 'bg-error-500/20 border-error-500/30';
   }
 };
 
 const getImpactColor = (impact: string): string => {
   switch (impact) {
     case 'critical':
-      return 'bg-red-500/20 text-red-300 border-red-500/30';
+      return 'bg-error-500/20 text-error-300 border-error-500/30';
     case 'high':
       return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
     case 'medium':
-      return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+      return 'bg-warning-500/20 text-warning-300 border-warning-500/30';
     case 'low':
       return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     default:
@@ -109,7 +109,11 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, unit, metricKey, 
       <div className="mt-2 w-full bg-slate-700/50 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all ${
-            status === 'good' ? 'bg-green-500' : status === 'ok' ? 'bg-yellow-500' : 'bg-red-500'
+            status === 'good'
+              ? 'bg-success-500'
+              : status === 'ok'
+                ? 'bg-warning-500'
+                : 'bg-error-500'
           }`}
           style={{ width: `${progressValue}%` }}
         />
@@ -341,9 +345,9 @@ export function PerformanceReport({
                                     <span
                                       className={`text-xs ${
                                         issue.type === 'error'
-                                          ? 'text-red-400'
+                                          ? 'text-error-400'
                                           : issue.type === 'warning'
-                                            ? 'text-yellow-400'
+                                            ? 'text-warning-400'
                                             : 'text-garden-400'
                                       }`}
                                     >

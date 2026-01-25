@@ -61,7 +61,7 @@ export function InspectorPanel({
           {selectedElements.length > 0 && (
             <button
               onClick={onClearAll}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              className="text-xs text-error-400 hover:text-error-300 transition-colors"
             >
               Clear All
             </button>

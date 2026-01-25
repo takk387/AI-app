@@ -221,7 +221,7 @@ export function LibraryModal({
                               e.stopPropagation();
                               onExportComponent(comp);
                             }}
-                            className="btn-icon p-1.5 text-green-400 hover:text-green-300"
+                            className="btn-icon p-1.5 text-success-400 hover:text-success-300"
                             title="Export & Deploy"
                             disabled={exportingAppId === comp.id}
                           >
@@ -238,7 +238,7 @@ export function LibraryModal({
                                 onDeleteComponent(comp.id);
                               }
                             }}
-                            className="btn-icon p-1.5 text-red-400 hover:text-red-300"
+                            className="btn-icon p-1.5 text-error-400 hover:text-error-300"
                             title="Delete app"
                           >
                             <TrashIcon size={16} />

@@ -182,10 +182,10 @@ export default function ReviewSidebar({
                         <span
                           className={
                             change.action === 'create'
-                              ? 'text-green-400'
+                              ? 'text-success-400'
                               : change.action === 'delete'
-                                ? 'text-red-400'
-                                : 'text-yellow-400'
+                                ? 'text-error-400'
+                                : 'text-warning-400'
                           }
                         >
                           {change.action}
@@ -195,8 +195,8 @@ export default function ReviewSidebar({
                       {/* Approval Progress */}
                       <div className="mt-2">
                         <div className="flex items-center gap-1 text-xs">
-                          <span className="text-green-400">{progress.approved}✓</span>
-                          <span className="text-red-400">{progress.rejected}✗</span>
+                          <span className="text-success-400">{progress.approved}✓</span>
+                          <span className="text-error-400">{progress.rejected}✗</span>
                           <span className="text-slate-400">{progress.pending}?</span>
                           <span className="text-slate-500">/ {progress.total} hunks</span>
                         </div>
@@ -204,13 +204,13 @@ export default function ReviewSidebar({
                         <div className="h-1 bg-slate-700 rounded-full mt-1 overflow-hidden flex">
                           {progress.approved > 0 && (
                             <div
-                              className="h-full bg-green-500"
+                              className="h-full bg-success-500"
                               style={{ width: `${(progress.approved / progress.total) * 100}%` }}
                             />
                           )}
                           {progress.rejected > 0 && (
                             <div
-                              className="h-full bg-red-500"
+                              className="h-full bg-error-500"
                               style={{ width: `${(progress.rejected / progress.total) * 100}%` }}
                             />
                           )}

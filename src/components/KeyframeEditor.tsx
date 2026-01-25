@@ -501,7 +501,7 @@ export function KeyframeEditor({
           {onDelete && canDelete && (
             <button
               onClick={onDelete}
-              className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+              className="p-1.5 rounded-lg bg-error-500/20 text-error-400 hover:bg-error-500/30 transition-colors"
               title="Delete"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

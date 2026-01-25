@@ -66,12 +66,12 @@ export default function CommentThread({
             • {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
           </span>
           {unresolvedCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-xs">
+            <span className="px-1.5 py-0.5 rounded bg-warning-500/20 text-warning-400 text-xs">
               {unresolvedCount} unresolved
             </span>
           )}
           {needsAttentionCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-xs">
+            <span className="px-1.5 py-0.5 rounded bg-error-500/20 text-error-400 text-xs">
               {needsAttentionCount} needs attention
             </span>
           )}
@@ -93,7 +93,7 @@ export default function CommentThread({
               comment.resolved
                 ? 'opacity-60'
                 : comment.needsAttention
-                  ? 'bg-red-500/10 border-l-2 border-red-500'
+                  ? 'bg-error-500/10 border-l-2 border-error-500'
                   : ''
             }`}
           >
@@ -105,9 +105,9 @@ export default function CommentThread({
                   <span className="text-xs text-slate-500">
                     {formatTimestamp(comment.timestamp)}
                   </span>
-                  {comment.resolved && <span className="text-xs text-green-400">✓ Resolved</span>}
+                  {comment.resolved && <span className="text-xs text-success-400">✓ Resolved</span>}
                   {comment.needsAttention && (
-                    <span className="text-xs text-red-400">⚠️ Needs Attention</span>
+                    <span className="text-xs text-error-400">⚠️ Needs Attention</span>
                   )}
                 </div>
 
@@ -123,8 +123,8 @@ export default function CommentThread({
                   onClick={() => onResolveComment(comment.id)}
                   className={`p-1 rounded text-xs transition-colors ${
                     comment.resolved
-                      ? 'text-yellow-400 hover:text-yellow-300'
-                      : 'text-green-400 hover:text-green-300'
+                      ? 'text-warning-400 hover:text-warning-300'
+                      : 'text-success-400 hover:text-success-300'
                   }`}
                   title={comment.resolved ? 'Unresolve' : 'Resolve'}
                 >
@@ -134,7 +134,7 @@ export default function CommentThread({
                   onClick={() => onMarkNeedsAttention(comment.id, !comment.needsAttention)}
                   className={`p-1 rounded text-xs transition-colors ${
                     comment.needsAttention
-                      ? 'text-red-400 hover:text-red-300'
+                      ? 'text-error-400 hover:text-error-300'
                       : 'text-slate-400 hover:text-slate-300'
                   }`}
                   title={comment.needsAttention ? 'Remove attention flag' : 'Mark needs attention'}
@@ -147,7 +147,7 @@ export default function CommentThread({
                       onDeleteComment(comment.id);
                     }
                   }}
-                  className="p-1 rounded text-xs text-slate-400 hover:text-red-400 transition-colors"
+                  className="p-1 rounded text-xs text-slate-400 hover:text-error-400 transition-colors"
                   title="Delete comment"
                 >
                   🗑️

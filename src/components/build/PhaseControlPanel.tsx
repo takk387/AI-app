@@ -59,7 +59,7 @@ export function PhaseControlPanel({
         {isBuilding && (
           <div
             className={`px-2 py-1 rounded-full text-xs font-medium ${
-              isPaused ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+              isPaused ? 'bg-warning-500/20 text-warning-400' : 'bg-success-500/20 text-success-400'
             }`}
           >
             {isPaused ? 'Paused' : 'Building...'}
@@ -82,7 +82,7 @@ export function PhaseControlPanel({
             {isPaused ? (
               <button
                 onClick={onResumeBuild}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-success-600 hover:bg-success-500 text-white font-medium transition-all flex items-center justify-center gap-2"
               >
                 <span>▶️</span>
                 <span>Resume</span>
@@ -90,7 +90,7 @@ export function PhaseControlPanel({
             ) : (
               <button
                 onClick={onPauseBuild}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-warning-600 hover:bg-warning-500 text-white font-medium transition-all flex items-center justify-center gap-2"
               >
                 <span>⏸️</span>
                 <span>Pause</span>
@@ -139,7 +139,7 @@ export function PhaseControlPanel({
               (currentDynamicPhase.implementedFeatures &&
                 currentDynamicPhase.implementedFeatures.length > 0)) && (
               <div className="mt-3 pt-3 border-t border-white/10">
-                <div className="text-xs font-medium text-green-400 mb-1 flex items-center gap-1">
+                <div className="text-xs font-medium text-success-400 mb-1 flex items-center gap-1">
                   <span>✅</span>
                   <span>Built:</span>
                 </div>
@@ -191,7 +191,7 @@ export function PhaseControlPanel({
           {phases.map((phase) => {
             const isCurrentPhase = phase.id === progress.currentPhaseId;
             const statusColors = {
-              completed: 'text-green-400',
+              completed: 'text-success-400',
               'in-progress': 'text-garden-400',
               skipped: 'text-slate-500',
               pending: 'text-slate-400',

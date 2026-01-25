@@ -70,9 +70,9 @@ export default function EnhancedDiffViewer({
   const getLineNumberClass = (type: DiffLine['type']): string => {
     switch (type) {
       case 'added':
-        return 'text-green-400';
+        return 'text-success-400';
       case 'removed':
-        return 'text-red-400';
+        return 'text-error-400';
       default:
         return 'text-slate-500';
     }
@@ -125,16 +125,16 @@ export default function EnhancedDiffViewer({
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <span className="flex items-center gap-1 text-green-400">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            <span className="flex items-center gap-1 text-success-400">
+              <span className="w-2 h-2 bg-success-500 rounded-full"></span>
               {hunks.reduce(
                 (sum, h) => sum + h.lines.filter((l) => l.type === 'added').length,
                 0
               )}{' '}
               added
             </span>
-            <span className="flex items-center gap-1 text-red-400">
-              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+            <span className="flex items-center gap-1 text-error-400">
+              <span className="w-2 h-2 bg-error-500 rounded-full"></span>
               {hunks.reduce(
                 (sum, h) => sum + h.lines.filter((l) => l.type === 'removed').length,
                 0
@@ -166,8 +166,8 @@ export default function EnhancedDiffViewer({
                 <div className="grid grid-cols-2 divide-x divide-white/10">
                   {/* Original (Left) */}
                   <div className="min-w-0">
-                    <div className="px-3 py-1.5 bg-red-500/10 border-b border-white/5">
-                      <span className="text-xs text-red-400 font-medium">Original</span>
+                    <div className="px-3 py-1.5 bg-error-500/10 border-b border-white/5">
+                      <span className="text-xs text-error-400 font-medium">Original</span>
                     </div>
                     <div className="font-mono text-xs">
                       {hunk.lines.map((line, idx) => (
@@ -175,7 +175,7 @@ export default function EnhancedDiffViewer({
                           key={`orig-${idx}`}
                           className={`flex ${
                             line.type === 'removed'
-                              ? 'bg-red-500/20'
+                              ? 'bg-error-500/20'
                               : line.type === 'added'
                                 ? 'opacity-0 h-0 overflow-hidden'
                                 : 'bg-transparent'
@@ -193,11 +193,11 @@ export default function EnhancedDiffViewer({
                           {line.type !== 'added' && (
                             <span
                               className={`flex-1 px-3 py-0.5 whitespace-pre ${
-                                line.type === 'removed' ? 'text-red-300' : 'text-slate-300'
+                                line.type === 'removed' ? 'text-error-300' : 'text-slate-300'
                               }`}
                             >
                               {line.type === 'removed' && (
-                                <span className="text-red-500 mr-1">-</span>
+                                <span className="text-error-500 mr-1">-</span>
                               )}
                               {line.content}
                             </span>
@@ -209,8 +209,8 @@ export default function EnhancedDiffViewer({
 
                   {/* Modified (Right) */}
                   <div className="min-w-0">
-                    <div className="px-3 py-1.5 bg-green-500/10 border-b border-white/5">
-                      <span className="text-xs text-green-400 font-medium">Modified</span>
+                    <div className="px-3 py-1.5 bg-success-500/10 border-b border-white/5">
+                      <span className="text-xs text-success-400 font-medium">Modified</span>
                     </div>
                     <div className="font-mono text-xs">
                       {hunk.lines.map((line, idx) => (
@@ -218,7 +218,7 @@ export default function EnhancedDiffViewer({
                           key={`mod-${idx}`}
                           className={`flex group ${
                             line.type === 'added'
-                              ? 'bg-green-500/20'
+                              ? 'bg-success-500/20'
                               : line.type === 'removed'
                                 ? 'opacity-0 h-0 overflow-hidden'
                                 : 'bg-transparent'
@@ -237,12 +237,12 @@ export default function EnhancedDiffViewer({
                             <>
                               <span
                                 className={`flex-1 px-3 py-0.5 whitespace-pre cursor-pointer hover:bg-white/5 ${
-                                  line.type === 'added' ? 'text-green-300' : 'text-slate-300'
+                                  line.type === 'added' ? 'text-success-300' : 'text-slate-300'
                                 }`}
                                 onClick={() => handleLineClick(hunk.id, line.number)}
                               >
                                 {line.type === 'added' && (
-                                  <span className="text-green-500 mr-1">+</span>
+                                  <span className="text-success-500 mr-1">+</span>
                                 )}
                                 {line.content}
                               </span>

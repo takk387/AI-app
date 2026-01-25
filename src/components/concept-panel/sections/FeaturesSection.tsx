@@ -63,17 +63,17 @@ export function FeaturesSection({ appConcept, onUpdate, readOnly = false }: Feat
         {/* Priority summary */}
         <div className="flex gap-1 ml-auto">
           {highCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-red-500/20 text-red-300 rounded">
+            <span className="px-1.5 py-0.5 text-[10px] bg-error-500/20 text-error-300 rounded">
               {highCount}
             </span>
           )}
           {mediumCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-yellow-500/20 text-yellow-300 rounded">
+            <span className="px-1.5 py-0.5 text-[10px] bg-warning-500/20 text-warning-300 rounded">
               {mediumCount}
             </span>
           )}
           {lowCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-green-500/20 text-green-300 rounded">
+            <span className="px-1.5 py-0.5 text-[10px] bg-success-500/20 text-success-300 rounded">
               {lowCount}
             </span>
           )}

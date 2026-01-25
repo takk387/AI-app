@@ -65,25 +65,25 @@ export function ReviewStatusIndicator({
       case 'passed':
         return {
           icon: '✅',
-          bgColor: 'bg-green-500/20',
-          textColor: 'text-green-400',
-          borderColor: 'border-green-500/30',
+          bgColor: 'bg-success-500/20',
+          textColor: 'text-success-400',
+          borderColor: 'border-success-500/30',
           animate: false,
         };
       case 'warning':
         return {
           icon: '⚠️',
-          bgColor: 'bg-yellow-500/20',
-          textColor: 'text-yellow-400',
-          borderColor: 'border-yellow-500/30',
+          bgColor: 'bg-warning-500/20',
+          textColor: 'text-warning-400',
+          borderColor: 'border-warning-500/30',
           animate: false,
         };
       case 'failed':
         return {
           icon: '❌',
-          bgColor: 'bg-red-500/20',
-          textColor: 'text-red-400',
-          borderColor: 'border-red-500/30',
+          bgColor: 'bg-error-500/20',
+          textColor: 'text-error-400',
+          borderColor: 'border-error-500/30',
           animate: false,
         };
     }
@@ -182,11 +182,11 @@ export function ReviewStatusBadge({
       case 'checking':
         return { bg: 'bg-garden-500/20', text: 'text-garden-400', icon: '🔍' };
       case 'passed':
-        return { bg: 'bg-green-500/20', text: 'text-green-400', icon: '✅' };
+        return { bg: 'bg-success-500/20', text: 'text-success-400', icon: '✅' };
       case 'warning':
-        return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', icon: '⚠️' };
+        return { bg: 'bg-warning-500/20', text: 'text-warning-400', icon: '⚠️' };
       case 'failed':
-        return { bg: 'bg-red-500/20', text: 'text-red-400', icon: '❌' };
+        return { bg: 'bg-error-500/20', text: 'text-error-400', icon: '❌' };
     }
   };
 

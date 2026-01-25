@@ -122,7 +122,7 @@ export function DeviceToolbar({
             {isCapturing ? (
               <span className="animate-spin">⟳</span>
             ) : captureSuccess ? (
-              <span className="text-green-400">✓</span>
+              <span className="text-success-400">✓</span>
             ) : (
               <span>📷</span>
             )}
@@ -147,7 +147,7 @@ export function DeviceToolbar({
           onClick={onToggleConsole}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
             showConsole
-              ? 'bg-green-600/20 text-green-300 border border-green-500/30'
+              ? 'bg-success-600/20 text-success-300 border border-success-500/30'
               : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
           }`}
           title={showConsole ? 'Hide console' : 'Show console'}

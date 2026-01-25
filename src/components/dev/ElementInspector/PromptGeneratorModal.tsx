@@ -80,9 +80,9 @@ export function PromptGeneratorModal({
                 px-6 py-2 rounded-lg font-medium transition-all
                 ${
                   copyStatus === 'copied'
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-success-500 text-white'
                     : copyStatus === 'error'
-                      ? 'bg-red-500 text-white'
+                      ? 'bg-error-500 text-white'
                       : 'bg-gradient-to-r from-garden-500 to-gold-600 hover:from-garden-600 hover:to-gold-700 text-white shadow-lg'
                 }
               `}

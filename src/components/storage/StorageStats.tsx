@@ -39,8 +39,8 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
 
   // Get progress bar color based on usage
   const getProgressColor = (): string => {
-    if (isCritical) return 'bg-red-500';
-    if (isWarning) return 'bg-yellow-500';
+    if (isCritical) return 'bg-error-500';
+    if (isWarning) return 'bg-warning-500';
     return 'bg-garden-500';
   };
 
@@ -98,12 +98,12 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
 
       {/* Warning Messages */}
       {isCritical && (
-        <div className="mb-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+        <div className="mb-3 p-3 rounded-lg bg-error-500/10 border border-error-500/30">
           <div className="flex items-start gap-2">
-            <span className="text-red-400 text-lg">🚨</span>
+            <span className="text-error-400 text-lg">🚨</span>
             <div>
-              <p className="text-red-200 text-xs font-medium mb-1">Storage Almost Full!</p>
-              <p className="text-red-200/70 text-xs">
+              <p className="text-error-200 text-xs font-medium mb-1">Storage Almost Full!</p>
+              <p className="text-error-200/70 text-xs">
                 You&apos;re using {usagePercentage.toFixed(1)}% of your storage. Delete some files
                 or upgrade to continue uploading.
               </p>
@@ -113,12 +113,12 @@ export function StorageStats({ stats, onUpgrade }: StorageStatsProps) {
       )}
 
       {isWarning && !isCritical && (
-        <div className="mb-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+        <div className="mb-3 p-3 rounded-lg bg-warning-500/10 border border-warning-500/30">
           <div className="flex items-start gap-2">
-            <span className="text-yellow-400 text-lg">⚠️</span>
+            <span className="text-warning-400 text-lg">⚠️</span>
             <div>
-              <p className="text-yellow-200 text-xs font-medium mb-1">Storage Running Low</p>
-              <p className="text-yellow-200/70 text-xs">
+              <p className="text-warning-200 text-xs font-medium mb-1">Storage Running Low</p>
+              <p className="text-warning-200/70 text-xs">
                 You&apos;ve used {usagePercentage.toFixed(1)}% of your storage quota.
               </p>
             </div>

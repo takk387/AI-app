@@ -81,13 +81,13 @@ export default function ReviewSummary({
         <div className="h-3 bg-slate-700 rounded-full overflow-hidden flex">
           {approvedHunks > 0 && (
             <div
-              className="h-full bg-green-500 transition-all"
+              className="h-full bg-success-500 transition-all"
               style={{ width: `${approvalPercentage}%` }}
             />
           )}
           {rejectedHunks > 0 && (
             <div
-              className="h-full bg-red-500 transition-all"
+              className="h-full bg-error-500 transition-all"
               style={{ width: `${rejectionPercentage}%` }}
             />
           )}
@@ -101,14 +101,14 @@ export default function ReviewSummary({
 
         {/* Stats */}
         <div className="flex items-center justify-between mt-3 text-xs">
-          <div className="flex items-center gap-1 text-green-400">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+          <div className="flex items-center gap-1 text-success-400">
+            <span className="w-2 h-2 bg-success-500 rounded-full"></span>
             <span>
               {approvedHunks} Approved ({approvalPercentage}%)
             </span>
           </div>
-          <div className="flex items-center gap-1 text-red-400">
-            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+          <div className="flex items-center gap-1 text-error-400">
+            <span className="w-2 h-2 bg-error-500 rounded-full"></span>
             <span>
               {rejectedHunks} Rejected ({rejectionPercentage}%)
             </span>
@@ -138,13 +138,13 @@ export default function ReviewSummary({
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500"
+                    className="h-full bg-success-500"
                     style={{
                       width: `${data.hunks > 0 ? (data.approved / data.hunks) * 100 : 0}%`,
                     }}
                   />
                 </div>
-                <span className="text-xs text-green-400">
+                <span className="text-xs text-success-400">
                   {data.approved}/{data.hunks}
                 </span>
               </div>
@@ -155,12 +155,12 @@ export default function ReviewSummary({
 
       {/* Warnings */}
       {(hasHighRisk || hasBreakingChanges) && (
-        <div className="p-4 border-b border-white/10 bg-yellow-500/10">
+        <div className="p-4 border-b border-white/10 bg-warning-500/10">
           <div className="flex items-start gap-2">
             <span className="text-xl">⚠️</span>
             <div className="flex-1">
-              <h4 className="text-yellow-400 font-medium text-sm mb-1">Review Carefully</h4>
-              <ul className="text-xs text-yellow-300/80 space-y-1">
+              <h4 className="text-warning-400 font-medium text-sm mb-1">Review Carefully</h4>
+              <ul className="text-xs text-warning-300/80 space-y-1">
                 {hasHighRisk && (
                   <li>• This includes high-risk changes that may affect critical functionality</li>
                 )}
@@ -185,7 +185,7 @@ export default function ReviewSummary({
             ⚛️ {impactAnalysis.componentsAffected.length} components
           </span>
           {impactAnalysis.suggestedTests.length > 0 && (
-            <span className="text-green-400">
+            <span className="text-success-400">
               🧪 {impactAnalysis.suggestedTests.length} suggested tests
             </span>
           )}
@@ -199,7 +199,7 @@ export default function ReviewSummary({
           disabled={!canApply}
           className={`w-full px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
             canApply
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-green-500/20'
+              ? 'bg-gradient-to-r from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 text-white shadow-lg hover:shadow-success-500/20'
               : 'bg-slate-700 text-slate-500 cursor-not-allowed'
           }`}
         >

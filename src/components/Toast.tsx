@@ -44,9 +44,9 @@ const toastIcons: Record<ToastType, string> = {
  * Toast notification styles by type
  */
 const toastStyles: Record<ToastType, string> = {
-  success: 'bg-green-500/20 border-green-500/30 text-green-200',
-  error: 'bg-red-500/20 border-red-500/30 text-red-200',
-  warning: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-200',
+  success: 'bg-success-500/20 border-success-500/30 text-success-200',
+  error: 'bg-error-500/20 border-error-500/30 text-error-200',
+  warning: 'bg-warning-500/20 border-warning-500/30 text-warning-200',
   info: 'bg-garden-500/20 border-garden-500/30 text-garden-200',
 };
 

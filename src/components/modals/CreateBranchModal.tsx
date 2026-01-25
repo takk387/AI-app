@@ -124,7 +124,7 @@ export function CreateBranchModal({
                 htmlFor="branch-name"
                 className="block text-sm font-medium text-slate-300 mb-1.5"
               >
-                Branch Name <span className="text-red-400">*</span>
+                Branch Name <span className="text-error-400">*</span>
               </label>
               <input
                 id="branch-name"
@@ -142,13 +142,13 @@ export function CreateBranchModal({
                   disabled:opacity-50 disabled:cursor-not-allowed
                   ${
                     error
-                      ? 'border-red-500/50 focus:ring-red-500/30'
+                      ? 'border-error-500/50 focus:ring-error-500/30'
                       : 'border-slate-700 focus:ring-gold-500/30 focus:border-gold-500'
                   }
                 `}
               />
               {error && (
-                <div className="flex items-center gap-1.5 mt-1.5 text-sm text-red-400">
+                <div className="flex items-center gap-1.5 mt-1.5 text-sm text-error-400">
                   <AlertCircleIcon size={14} />
                   <span>{error}</span>
                 </div>

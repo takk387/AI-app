@@ -51,12 +51,12 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
 
   const getChangeTypeColor = (type: DiffChange['type']) => {
     const colors = {
-      ADD_IMPORT: 'text-green-400',
+      ADD_IMPORT: 'text-success-400',
       INSERT_AFTER: 'text-garden-400',
       INSERT_BEFORE: 'text-garden-400',
-      REPLACE: 'text-yellow-400',
-      DELETE: 'text-red-400',
-      APPEND: 'text-green-400',
+      REPLACE: 'text-warning-400',
+      DELETE: 'text-error-400',
+      APPEND: 'text-success-400',
     };
     return colors[type];
   };
@@ -73,8 +73,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
   const getActionColor = (action: FileDiff['action']) => {
     const colors = {
       MODIFY: 'border-garden-500/30 bg-garden-500/10',
-      CREATE: 'border-green-500/30 bg-green-500/10',
-      DELETE: 'border-red-500/30 bg-red-500/10',
+      CREATE: 'border-success-500/30 bg-success-500/10',
+      DELETE: 'border-error-500/30 bg-error-500/10',
     };
     return colors[action];
   };
@@ -125,10 +125,10 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
       </div>
 
       {/* Info Banner */}
-      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+      <div className="bg-warning-500/10 border border-warning-500/30 rounded-lg p-3">
         <div className="flex items-start gap-2">
           <span className="text-lg">💡</span>
-          <div className="text-sm text-yellow-200/90">
+          <div className="text-sm text-warning-200/90">
             <span className="font-medium">Smart modifications:</span> Only the specific code you
             requested will be changed. Everything else stays exactly the same.
           </div>
@@ -198,8 +198,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                         {(change.type === 'ADD_IMPORT' || change.type === 'APPEND') &&
                           change.content && (
                             <div className="mt-2">
-                              <div className="text-xs text-green-400 mb-1">+ Adding:</div>
-                              <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-green-300">
+                              <div className="text-xs text-success-400 mb-1">+ Adding:</div>
+                              <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-success-300">
                                 <code>
                                   {change.content.substring(0, 200)}
                                   {change.content.length > 200 ? '...' : ''}
@@ -212,8 +212,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                           <div className="mt-2 space-y-2">
                             {change.searchFor && (
                               <div>
-                                <div className="text-xs text-red-400 mb-1">- Removing:</div>
-                                <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-red-300 line-through">
+                                <div className="text-xs text-error-400 mb-1">- Removing:</div>
+                                <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-error-300 line-through">
                                   <code>
                                     {change.searchFor.substring(0, 100)}
                                     {change.searchFor.length > 100 ? '...' : ''}
@@ -223,8 +223,8 @@ export default function DiffPreview({ summary, files, onApprove, onReject }: Dif
                             )}
                             {change.replaceWith && (
                               <div>
-                                <div className="text-xs text-green-400 mb-1">+ Adding:</div>
-                                <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-green-300">
+                                <div className="text-xs text-success-400 mb-1">+ Adding:</div>
+                                <pre className="text-xs bg-black/40 rounded p-2 overflow-x-auto text-success-300">
                                   <code>
                                     {change.replaceWith.substring(0, 100)}
                                     {change.replaceWith.length > 100 ? '...' : ''}

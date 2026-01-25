@@ -98,10 +98,10 @@ export function DeploymentModal({
   const getStatusColor = () => {
     switch (deploymentStatus) {
       case 'ready':
-        return 'text-green-400';
+        return 'text-success-400';
       case 'error':
       case 'canceled':
-        return 'text-red-400';
+        return 'text-error-400';
       default:
         return 'text-garden-400';
     }
@@ -169,7 +169,7 @@ export function DeploymentModal({
                         {isLoadingIntegrations ? (
                           <p className="text-sm text-slate-500">Loading...</p>
                         ) : isVercelConnected ? (
-                          <p className="text-sm text-green-400">
+                          <p className="text-sm text-success-400">
                             Connected as {vercelAccount?.name}
                           </p>
                         ) : (
@@ -180,7 +180,7 @@ export function DeploymentModal({
                     {isVercelConnected ? (
                       <button
                         onClick={disconnectVercel}
-                        className="px-3 py-1.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-sm text-error-400 hover:text-error-300 hover:bg-error-900/20 rounded-lg transition-colors"
                       >
                         Disconnect
                       </button>
@@ -222,17 +222,17 @@ export function DeploymentModal({
                       <div
                         className={`p-4 rounded-lg border ${
                           deploymentStatus === 'ready'
-                            ? 'bg-green-900/20 border-green-800'
+                            ? 'bg-success-900/20 border-success-800'
                             : deploymentStatus === 'error'
-                              ? 'bg-red-900/20 border-red-800'
+                              ? 'bg-error-900/20 border-error-800'
                               : 'bg-garden-900/20 border-garden-800'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           {deploymentStatus === 'ready' ? (
-                            <CheckCircleIcon size={20} className="text-green-400" />
+                            <CheckCircleIcon size={20} className="text-success-400" />
                           ) : deploymentStatus === 'error' ? (
-                            <AlertCircleIcon size={20} className="text-red-400" />
+                            <AlertCircleIcon size={20} className="text-error-400" />
                           ) : (
                             <RefreshIcon
                               size={20}
@@ -285,7 +285,7 @@ export function DeploymentModal({
 
                 {/* Error Display */}
                 {error && (
-                  <div className="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm flex items-start gap-2">
+                  <div className="p-3 bg-error-900/20 border border-error-800 rounded-lg text-error-400 text-sm flex items-start gap-2">
                     <AlertCircleIcon size={16} className="mt-0.5 flex-shrink-0" />
                     <span>{error}</span>
                   </div>
@@ -316,9 +316,9 @@ export function DeploymentModal({
                 {deploymentInstructions && (
                   <>
                     {/* Success Message */}
-                    <div className="bg-green-600/10 border-l-2 border-green-500 rounded-lg p-4">
+                    <div className="bg-success-600/10 border-l-2 border-success-500 rounded-lg p-4">
                       <div className="flex items-start gap-3">
-                        <CheckCircleIcon size={20} className="text-green-400 mt-0.5" />
+                        <CheckCircleIcon size={20} className="text-success-400 mt-0.5" />
                         <div>
                           <h3 className="text-slate-100 font-medium mb-1">Download Started</h3>
                           <p className="text-sm text-slate-400">
@@ -447,7 +447,7 @@ export function DeploymentModal({
               )}
               {activeTab === 'one-click' && isVercelConnected && (
                 <>
-                  <CheckCircleIcon size={14} className="text-green-400" />
+                  <CheckCircleIcon size={14} className="text-success-400" />
                   <span>Ready to deploy</span>
                 </>
               )}

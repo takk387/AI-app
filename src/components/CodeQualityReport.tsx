@@ -13,27 +13,27 @@ export interface CodeQualityReportProps {
 
 // Helper functions for determining score-based text and background colors
 const getScoreColor = (score: number): string => {
-  if (score >= 90) return 'text-green-400';
-  if (score >= 70) return 'text-yellow-400';
+  if (score >= 90) return 'text-success-400';
+  if (score >= 70) return 'text-warning-400';
   if (score >= 50) return 'text-orange-400';
-  return 'text-red-400';
+  return 'text-error-400';
 };
 
 const getScoreBgColor = (score: number): string => {
-  if (score >= 90) return 'bg-green-500/20 border-green-500/30';
-  if (score >= 70) return 'bg-yellow-500/20 border-yellow-500/30';
+  if (score >= 90) return 'bg-success-500/20 border-success-500/30';
+  if (score >= 70) return 'bg-warning-500/20 border-warning-500/30';
   if (score >= 50) return 'bg-orange-500/20 border-orange-500/30';
-  return 'bg-red-500/20 border-red-500/30';
+  return 'bg-error-500/20 border-error-500/30';
 };
 
 const getSeverityColor = (severity: string): string => {
   switch (severity) {
     case 'critical':
-      return 'bg-red-500/20 text-red-300 border-red-500/30';
+      return 'bg-error-500/20 text-error-300 border-error-500/30';
     case 'high':
       return 'bg-orange-500/20 text-orange-300 border-orange-500/30';
     case 'medium':
-      return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+      return 'bg-warning-500/20 text-warning-300 border-warning-500/30';
     case 'low':
       return 'bg-garden-500/20 text-garden-300 border-garden-500/30';
     default:
@@ -56,12 +56,12 @@ const MetricCard: React.FC<{ label: string; score: number; icon: string }> = ({
       <div
         className={`h-1.5 rounded-full transition-all ${
           score >= 90
-            ? 'bg-green-500'
+            ? 'bg-success-500'
             : score >= 70
-              ? 'bg-yellow-500'
+              ? 'bg-warning-500'
               : score >= 50
                 ? 'bg-orange-500'
-                : 'bg-red-500'
+                : 'bg-error-500'
         }`}
         style={{ width: `${score}%` }}
       />
@@ -173,8 +173,8 @@ export function CodeQualityReport({
                 <div
                   className={`px-4 py-2 rounded-full border ${
                     report.passed
-                      ? 'bg-green-500/20 border-green-500/30 text-green-300'
-                      : 'bg-red-500/20 border-red-500/30 text-red-300'
+                      ? 'bg-success-500/20 border-success-500/30 text-success-300'
+                      : 'bg-error-500/20 border-error-500/30 text-error-300'
                   }`}
                 >
                   {report.passed ? '✓ Quality Check Passed' : '✗ Quality Check Failed'}
@@ -236,9 +236,9 @@ export function CodeQualityReport({
                                     <span
                                       className={`text-xs ${
                                         issue.type === 'error'
-                                          ? 'text-red-400'
+                                          ? 'text-error-400'
                                           : issue.type === 'warning'
-                                            ? 'text-yellow-400'
+                                            ? 'text-warning-400'
                                             : 'text-garden-400'
                                       }`}
                                     >

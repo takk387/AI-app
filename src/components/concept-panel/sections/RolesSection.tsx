@@ -107,7 +107,7 @@ export function RolesSection({ appConcept, onUpdate, readOnly = false }: RolesSe
                     <button
                       type="button"
                       onClick={() => handleDeleteRole(roleIndex)}
-                      className="ml-auto p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      className="ml-auto p-1 text-slate-500 hover:text-error-400 transition-colors"
                       title="Delete role"
                     >
                       <TrashIcon size={14} />
@@ -134,7 +134,7 @@ export function RolesSection({ appConcept, onUpdate, readOnly = false }: RolesSe
                         <button
                           type="button"
                           onClick={() => handleDeleteCapability(roleIndex, capIndex)}
-                          className="p-0.5 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                          className="p-0.5 text-slate-600 hover:text-error-400 opacity-0 group-hover:opacity-100 transition-all"
                         >
                           <TrashIcon size={12} />
                         </button>

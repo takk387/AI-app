@@ -145,8 +145,8 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
   // Handle parse error or missing files
   if (!appData || !appData.files || !Array.isArray(appData.files) || appData.files.length === 0) {
     return (
-      <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl">
-        <p className="text-red-400">
+      <div className="p-6 bg-error-500/10 border border-error-500/20 rounded-xl">
+        <p className="text-error-400">
           {!appData ? 'Error parsing app data' : 'No files found in app data'}
         </p>
       </div>
@@ -178,7 +178,7 @@ export default function FullAppPreview({ appDataJson, onScreenshot }: FullAppPre
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-success-400 animate-pulse"></span>
               <span>Fully Interactive</span>
             </div>
 

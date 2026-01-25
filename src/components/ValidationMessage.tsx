@@ -19,7 +19,7 @@ export function ValidationMessage({ error, className = '' }: ValidationMessagePr
   return (
     <div
       className={`flex items-center gap-2 text-sm mt-1.5 animate-fade-in-up ${
-        isWarning ? 'text-yellow-400' : 'text-red-400'
+        isWarning ? 'text-warning-400' : 'text-error-400'
       } ${className}`}
     >
       <span className="flex-shrink-0">{isWarning ? '⚠️' : '❌'}</span>
@@ -47,14 +47,14 @@ export function CharacterCounter({ current, limit, className = '' }: CharacterCo
       <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-300 ${
-            isOverLimit ? 'bg-red-500' : isNearLimit ? 'bg-yellow-500' : 'bg-garden-500'
+            isOverLimit ? 'bg-error-500' : isNearLimit ? 'bg-warning-500' : 'bg-garden-500'
           }`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
       </div>
       <span
         className={`text-xs font-medium tabular-nums ${
-          isOverLimit ? 'text-red-400' : isNearLimit ? 'text-yellow-400' : 'text-slate-400'
+          isOverLimit ? 'text-error-400' : isNearLimit ? 'text-warning-400' : 'text-slate-400'
         }`}
       >
         {current}/{limit}
@@ -95,12 +95,12 @@ export function ValidatedField({
     <div className={`space-y-2 ${className}`}>
       <label className="flex items-center gap-1.5 text-sm font-medium text-slate-200">
         <span>{label}</span>
-        {required && <span className="text-red-400 text-xs">*</span>}
+        {required && <span className="text-error-400 text-xs">*</span>}
       </label>
 
       <div
         className={`rounded-lg transition-all duration-200 ${
-          hasError ? 'ring-2 ring-red-500/50' : hasWarning ? 'ring-2 ring-yellow-500/50' : ''
+          hasError ? 'ring-2 ring-error-500/50' : hasWarning ? 'ring-2 ring-warning-500/50' : ''
         }`}
       >
         {children}
@@ -134,13 +134,17 @@ export function ValidationSummary({ errors, className = '' }: ValidationSummaryP
   return (
     <div
       className={`rounded-xl border p-4 ${
-        errorCount > 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-yellow-500/10 border-yellow-500/30'
+        errorCount > 0
+          ? 'bg-error-500/10 border-error-500/30'
+          : 'bg-warning-500/10 border-warning-500/30'
       } ${className}`}
     >
       <div className="flex items-start gap-3">
         <span className="text-xl flex-shrink-0">{errorCount > 0 ? '❌' : '⚠️'}</span>
         <div className="flex-1">
-          <h4 className={`font-medium mb-2 ${errorCount > 0 ? 'text-red-200' : 'text-yellow-200'}`}>
+          <h4
+            className={`font-medium mb-2 ${errorCount > 0 ? 'text-error-200' : 'text-warning-200'}`}
+          >
             {errorCount > 0
               ? `${errorCount} error${errorCount === 1 ? '' : 's'} found`
               : `${warningCount} warning${warningCount === 1 ? '' : 's'}`}
@@ -149,7 +153,7 @@ export function ValidationSummary({ errors, className = '' }: ValidationSummaryP
             {errors.map((error, index) => (
               <li
                 key={`${error.field}-${index}`}
-                className={`text-sm ${error.type === 'error' ? 'text-red-300' : 'text-yellow-300'}`}
+                className={`text-sm ${error.type === 'error' ? 'text-error-300' : 'text-warning-300'}`}
               >
                 • {error.message}
               </li>

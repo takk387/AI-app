@@ -25,7 +25,7 @@ export function SelectedElementCard({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-gray-800/50">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-green-500/20 text-green-400 text-xs rounded-full">
+          <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-success-500/20 text-success-400 text-xs rounded-full">
             {index}
           </span>
           <span className="text-sm text-white truncate font-mono">{element.displayName}</span>
@@ -40,10 +40,10 @@ export function SelectedElementCard({
           </button>
           <button
             onClick={onRemove}
-            className="p-1 hover:bg-red-500/20 rounded transition-colors"
+            className="p-1 hover:bg-error-500/20 rounded transition-colors"
             title="Remove"
           >
-            <span className="text-red-400 text-xs">✕</span>
+            <span className="text-error-400 text-xs">✕</span>
           </button>
         </div>
       </div>
@@ -79,7 +79,7 @@ export function SelectedElementCard({
           {/* Selector Path */}
           <div>
             <span className="text-gray-500 block mb-1">Selector:</span>
-            <code className="text-green-400 block bg-gray-900 px-2 py-1 rounded text-[10px] break-all">
+            <code className="text-success-400 block bg-gray-900 px-2 py-1 rounded text-[10px] break-all">
               {element.selectorPath}
             </code>
           </div>

@@ -206,7 +206,7 @@ export function FileUploader({
             </h4>
             <button
               onClick={() => setSelectedFiles([])}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              className="text-xs text-error-400 hover:text-error-300 transition-colors"
             >
               Clear All
             </button>
@@ -225,7 +225,7 @@ export function FileUploader({
                 </div>
                 <button
                   onClick={() => removeFile(index)}
-                  className="px-2 py-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="px-2 py-1 rounded text-slate-400 hover:text-error-400 hover:bg-error-500/10 transition-all"
                   aria-label={`Remove ${file.name}`}
                 >
                   ✕

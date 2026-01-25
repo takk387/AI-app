@@ -80,8 +80,8 @@ export function FeatureCard({ feature, onUpdate, onDelete, readOnly = false }: F
               onClick={handleDelete}
               className={`p-1 rounded transition-colors ${
                 showDeleteConfirm
-                  ? 'bg-red-500/20 text-red-400'
-                  : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-red-400'
+                  ? 'bg-error-500/20 text-error-400'
+                  : 'text-slate-500 opacity-0 group-hover:opacity-100 hover:text-error-400'
               }`}
               title={showDeleteConfirm ? 'Click again to confirm' : 'Delete feature'}
             >

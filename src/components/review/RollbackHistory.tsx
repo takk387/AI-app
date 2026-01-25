@@ -104,7 +104,7 @@ export default function RollbackHistory({
                     <span
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                         idx === 0
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          ? 'bg-success-500/20 text-success-400 border border-success-500/30'
                           : 'bg-slate-700 text-slate-400'
                       }`}
                     >
@@ -118,7 +118,7 @@ export default function RollbackHistory({
                           {point.label}
                         </span>
                         {idx === 0 && (
-                          <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">
+                          <span className="text-xs bg-success-500/20 text-success-400 px-1.5 py-0.5 rounded">
                             Latest
                           </span>
                         )}
@@ -133,13 +133,15 @@ export default function RollbackHistory({
                         {point.metadata.approvedHunks !== undefined && (
                           <>
                             <span>•</span>
-                            <span className="text-green-400">✓ {point.metadata.approvedHunks}</span>
+                            <span className="text-success-400">
+                              ✓ {point.metadata.approvedHunks}
+                            </span>
                           </>
                         )}
                         {point.metadata.rejectedHunks !== undefined && (
                           <>
                             <span>•</span>
-                            <span className="text-red-400">✗ {point.metadata.rejectedHunks}</span>
+                            <span className="text-error-400">✗ {point.metadata.rejectedHunks}</span>
                           </>
                         )}
                       </div>
@@ -169,7 +171,7 @@ export default function RollbackHistory({
                       onClick={() => handleRollback(point.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         confirmingRollback === point.id
-                          ? 'bg-yellow-500 text-black animate-pulse'
+                          ? 'bg-warning-500 text-black animate-pulse'
                           : 'bg-garden-500/20 text-garden-400 hover:bg-garden-500/30 border border-garden-500/30'
                       }`}
                     >
@@ -181,7 +183,7 @@ export default function RollbackHistory({
                           onDeletePoint(point.id);
                         }
                       }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-error-400 hover:bg-error-500/10 transition-all"
                       title="Delete restore point"
                     >
                       🗑️

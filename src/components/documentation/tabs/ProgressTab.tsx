@@ -29,13 +29,13 @@ interface PhaseCardProps {
 function StatusIcon({ status }: { status: PhaseExecutionRecord['status'] }) {
   switch (status) {
     case 'completed':
-      return <CheckCircleIcon size={20} className="text-green-400" />;
+      return <CheckCircleIcon size={20} className="text-success-400" />;
     case 'failed':
-      return <XIcon size={20} className="text-red-400" />;
+      return <XIcon size={20} className="text-error-400" />;
     case 'in-progress':
       return <LoaderIcon size={20} className="text-garden-400" />;
     case 'skipped':
-      return <AlertTriangleIcon size={20} className="text-yellow-400" />;
+      return <AlertTriangleIcon size={20} className="text-warning-400" />;
     default:
       return <ClockIcon size={20} className="text-slate-500" />;
   }
@@ -60,9 +60,9 @@ function PhaseCard({ execution }: PhaseCardProps) {
     <div
       className={`bg-slate-800/30 rounded-lg border ${
         execution.status === 'failed'
-          ? 'border-red-500/30'
+          ? 'border-error-500/30'
           : execution.status === 'completed'
-            ? 'border-green-500/20'
+            ? 'border-success-500/20'
             : 'border-slate-800'
       }`}
     >
@@ -118,7 +118,7 @@ function PhaseCard({ execution }: PhaseCardProps) {
                     key={i}
                     className={`px-1.5 py-0.5 rounded text-xs ${
                       implemented
-                        ? 'bg-green-500/20 text-green-400'
+                        ? 'bg-success-500/20 text-success-400'
                         : 'bg-slate-700/50 text-slate-400'
                     }`}
                   >
@@ -150,13 +150,13 @@ function PhaseCard({ execution }: PhaseCardProps) {
           {/* Errors */}
           {execution.errors && execution.errors.length > 0 && (
             <div className="mb-3">
-              <div className="text-xs font-medium text-red-400 mb-1 flex items-center gap-1">
+              <div className="text-xs font-medium text-error-400 mb-1 flex items-center gap-1">
                 <XIcon size={12} />
                 Errors
               </div>
-              <div className="bg-red-500/10 rounded p-2 max-h-24 overflow-y-auto">
+              <div className="bg-error-500/10 rounded p-2 max-h-24 overflow-y-auto">
                 {execution.errors.map((error, i) => (
-                  <div key={i} className="text-xs text-red-400">
+                  <div key={i} className="text-xs text-error-400">
                     {error}
                   </div>
                 ))}
@@ -189,7 +189,7 @@ function BuildStatusBanner({ status }: { status: BuildStatus }) {
     ready: {
       icon: <CheckCircleIcon size={16} />,
       text: 'Ready to build',
-      className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+      className: 'bg-warning-500/10 text-warning-400 border-warning-500/20',
     },
     building: {
       icon: <LoaderIcon size={16} />,
@@ -199,12 +199,12 @@ function BuildStatusBanner({ status }: { status: BuildStatus }) {
     completed: {
       icon: <CheckCircleIcon size={16} />,
       text: 'Build completed successfully',
-      className: 'bg-green-500/10 text-green-400 border-green-500/20',
+      className: 'bg-success-500/10 text-success-400 border-success-500/20',
     },
     failed: {
       icon: <XIcon size={16} />,
       text: 'Build failed',
-      className: 'bg-red-500/10 text-red-400 border-red-500/20',
+      className: 'bg-error-500/10 text-error-400 border-error-500/20',
     },
     paused: {
       icon: <ClockIcon size={16} />,
@@ -251,12 +251,12 @@ export function ProgressTab({ executions, buildStatus }: ProgressTabProps) {
         <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${
-              failed > 0 ? 'bg-gradient-to-r from-green-500 to-red-500' : 'bg-green-500'
+              failed > 0 ? 'bg-gradient-to-r from-success-500 to-error-500' : 'bg-success-500'
             }`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        {failed > 0 && <div className="text-xs text-red-400 mt-1">{failed} phase(s) failed</div>}
+        {failed > 0 && <div className="text-xs text-error-400 mt-1">{failed} phase(s) failed</div>}
       </div>
 
       {/* Phase Cards */}

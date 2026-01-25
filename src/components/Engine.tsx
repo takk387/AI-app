@@ -191,7 +191,7 @@ class EngineErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-4 text-red-500 bg-red-50 rounded border border-red-200">
+        <div className="p-4 text-error-500 bg-error-50 rounded border border-error-200">
           Failed to render layout. Please try regenerating.
         </div>
       );

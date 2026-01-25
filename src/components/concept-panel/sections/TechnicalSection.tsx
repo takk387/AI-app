@@ -116,7 +116,7 @@ export function TechnicalSection({
             checked={!!tech.needsDatabase}
             onChange={(checked) => handleUpdate('needsDatabase', checked)}
             readOnly={readOnly}
-            colorClass="bg-green-500/20 text-green-300"
+            colorClass="bg-success-500/20 text-success-300"
           />
 
           <TechToggle

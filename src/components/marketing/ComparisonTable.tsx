@@ -121,8 +121,8 @@ function FeatureCell({ value }: { value: boolean | string }) {
   if (value === true) {
     return (
       <div className="flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-          <CheckIcon size={14} className="text-green-400" />
+        <div className="w-6 h-6 rounded-full bg-success-500/20 flex items-center justify-center">
+          <CheckIcon size={14} className="text-success-400" />
         </div>
       </div>
     );

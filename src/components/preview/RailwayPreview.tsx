@@ -228,9 +228,9 @@ export function RailwayPreview({
     return (
       <div className={`flex flex-col ${className}`}>
         <div className="flex flex-col items-center justify-center p-8 bg-slate-800 rounded-lg flex-1">
-          <div className="w-12 h-12 rounded-full bg-red-900/50 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-error-900/50 flex items-center justify-center mb-4">
             <svg
-              className="w-6 h-6 text-red-400"
+              className="w-6 h-6 text-error-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -243,7 +243,7 @@ export function RailwayPreview({
               />
             </svg>
           </div>
-          <div className="text-red-400 text-lg font-medium mb-2">Deployment Failed</div>
+          <div className="text-error-400 text-lg font-medium mb-2">Deployment Failed</div>
           <div className="text-slate-400 text-sm text-center max-w-md">{error.message}</div>
           <button
             onClick={() => window.location.reload()}
@@ -342,7 +342,7 @@ export function RailwayPreview({
             />
             {/* URL bar */}
             <div className="absolute top-0 left-0 right-0 bg-slate-900/90 backdrop-blur-sm px-3 py-1.5 flex items-center gap-2 border-b border-slate-700">
-              <div className="w-2 h-2 rounded-full bg-green-500" title="Connected" />
+              <div className="w-2 h-2 rounded-full bg-success-500" title="Connected" />
               <span className="text-slate-400 text-xs font-mono truncate flex-1">{previewUrl}</span>
               <a
                 href={previewUrl}
@@ -394,7 +394,7 @@ function StatusStep({
       <div
         className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
           completed
-            ? 'bg-green-600 text-white'
+            ? 'bg-success-600 text-white'
             : active
               ? 'bg-gold-600 text-white animate-pulse'
               : 'bg-slate-700 text-slate-400'

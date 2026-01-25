@@ -227,20 +227,20 @@ class ErrorBoundary extends Component<Props, State> {
       // Default fallback UI
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-          <div className="max-w-lg w-full bg-slate-800/50 border border-red-500/30 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+          <div className="max-w-lg w-full bg-slate-800/50 border border-error-500/30 rounded-xl p-6 shadow-xl backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-error-500/20 flex items-center justify-center text-2xl">
                 ⚠️
               </div>
               <div>
-                <h2 className="text-xl font-bold text-red-400">Something went wrong</h2>
+                <h2 className="text-xl font-bold text-error-400">Something went wrong</h2>
                 <p className="text-sm text-slate-400">An unexpected error occurred</p>
               </div>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-black/30 rounded-lg border border-red-500/20">
-                <p className="text-sm font-mono text-red-300 break-words">{error.message}</p>
+              <div className="mb-4 p-3 bg-black/30 rounded-lg border border-error-500/20">
+                <p className="text-sm font-mono text-error-300 break-words">{error.message}</p>
               </div>
             )}
 
@@ -279,7 +279,7 @@ class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleCopyError}
               className={`w-full mt-3 px-4 py-2 rounded-lg transition-colors text-sm ${
                 this.state.copied
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-success-600 text-white'
                   : 'bg-slate-700/50 hover:bg-slate-700 text-slate-300'
               }`}
             >

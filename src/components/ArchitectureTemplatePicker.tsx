@@ -27,9 +27,9 @@ interface ArchitectureTemplatePickerProps {
 }
 
 const complexityColors: Record<TemplateComplexity, string> = {
-  simple: 'bg-green-500/20 text-green-400',
-  moderate: 'bg-yellow-500/20 text-yellow-400',
-  complex: 'bg-red-500/20 text-red-400',
+  simple: 'bg-success-500/20 text-success-400',
+  moderate: 'bg-warning-500/20 text-warning-400',
+  complex: 'bg-error-500/20 text-error-400',
 };
 
 const categoryIcons: Record<TemplateCategory, string> = {

@@ -168,8 +168,8 @@ export function ExportModal({
             <div
               className={`mb-4 px-4 py-3 rounded-lg text-sm flex items-center gap-2 ${
                 result.success
-                  ? 'bg-green-900/30 border border-green-700/50 text-green-300'
-                  : 'bg-red-900/30 border border-red-700/50 text-red-300'
+                  ? 'bg-success-900/30 border border-success-700/50 text-success-300'
+                  : 'bg-error-900/30 border border-error-700/50 text-error-300'
               }`}
             >
               {result.success ? (

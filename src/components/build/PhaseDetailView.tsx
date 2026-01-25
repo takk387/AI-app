@@ -63,9 +63,9 @@ export function PhaseDetailView({
   const getTaskStatusColor = (status: PhaseTask['status']) => {
     switch (status) {
       case 'completed':
-        return 'text-green-400 bg-green-500/10';
+        return 'text-success-400 bg-success-500/10';
       case 'failed':
-        return 'text-red-400 bg-red-500/10';
+        return 'text-error-400 bg-error-500/10';
       case 'pending':
       default:
         return 'text-slate-400 bg-white/5';
@@ -88,7 +88,7 @@ export function PhaseDetailView({
               <div
                 className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                   phase.status === 'completed'
-                    ? 'bg-green-500/20'
+                    ? 'bg-success-500/20'
                     : phase.status === 'in-progress'
                       ? 'bg-garden-500/20'
                       : phase.status === 'skipped'
@@ -121,7 +121,7 @@ export function PhaseDetailView({
           {/* Stats */}
           <div className="flex gap-4 mt-4">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
-              <span className="text-green-400">✅</span>
+              <span className="text-success-400">✅</span>
               <span className="text-sm text-slate-300">
                 {completedTasks}/{phase.tasks.length} Tasks
               </span>
@@ -194,11 +194,11 @@ export function PhaseDetailView({
               <div
                 className={`p-4 rounded-lg ${
                   dynamicPhase.status === 'completed'
-                    ? 'bg-green-500/10 border border-green-500/30'
+                    ? 'bg-success-500/10 border border-success-500/30'
                     : dynamicPhase.status === 'in-progress'
                       ? 'bg-garden-500/10 border border-garden-500/30'
                       : dynamicPhase.status === 'failed'
-                        ? 'bg-red-500/10 border border-red-500/30'
+                        ? 'bg-error-500/10 border border-error-500/30'
                         : 'bg-white/5 border border-white/10'
                 }`}
               >
@@ -265,9 +265,9 @@ export function PhaseDetailView({
                 <div
                   className={`border rounded-lg p-4 ${
                     dynamicPhase.status === 'completed'
-                      ? 'bg-green-500/5 border-green-500/20'
+                      ? 'bg-success-500/5 border-success-500/20'
                       : dynamicPhase.status === 'failed'
-                        ? 'bg-red-500/5 border-red-500/20'
+                        ? 'bg-error-500/5 border-error-500/20'
                         : 'bg-white/5 border-white/10'
                   }`}
                 >
@@ -277,7 +277,7 @@ export function PhaseDetailView({
                     </span>
                     <h4
                       className={`text-sm font-semibold ${
-                        dynamicPhase.status === 'completed' ? 'text-green-400' : 'text-slate-400'
+                        dynamicPhase.status === 'completed' ? 'text-success-400' : 'text-slate-400'
                       }`}
                     >
                       BUILT
@@ -316,8 +316,8 @@ export function PhaseDetailView({
                                 <span
                                   className={
                                     dynamicPhase.status === 'completed'
-                                      ? 'text-green-400'
-                                      : 'text-red-400'
+                                      ? 'text-success-400'
+                                      : 'text-error-400'
                                   }
                                 >
                                   {dynamicPhase.status === 'completed' ? '✓' : '✗'}
@@ -340,7 +340,7 @@ export function PhaseDetailView({
                                 key={idx}
                                 className="text-xs text-slate-400 flex items-start gap-2"
                               >
-                                <span className="text-green-400">📄</span>
+                                <span className="text-success-400">📄</span>
                                 <span className="font-mono">{file}</span>
                               </li>
                             ))}
@@ -350,11 +350,11 @@ export function PhaseDetailView({
 
                       {/* Errors if any */}
                       {dynamicPhase.errors && dynamicPhase.errors.length > 0 && (
-                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                          <div className="text-xs font-medium text-red-400 mb-1">Errors:</div>
+                        <div className="mt-4 p-3 bg-error-500/10 border border-error-500/30 rounded-lg">
+                          <div className="text-xs font-medium text-error-400 mb-1">Errors:</div>
                           <ul className="space-y-1">
                             {dynamicPhase.errors.map((error, idx) => (
-                              <li key={idx} className="text-xs text-red-300">
+                              <li key={idx} className="text-xs text-error-300">
                                 {error}
                               </li>
                             ))}
@@ -397,7 +397,7 @@ export function PhaseDetailView({
                     <div className="text-sm font-medium text-white">{task.name}</div>
                     <div className="text-xs text-slate-400 mt-0.5">{task.description}</div>
                     {task.errors && task.errors.length > 0 && (
-                      <div className="mt-2 text-xs text-red-400 bg-red-500/10 rounded px-2 py-1">
+                      <div className="mt-2 text-xs text-error-400 bg-error-500/10 rounded px-2 py-1">
                         {task.errors.join(', ')}
                       </div>
                     )}
@@ -423,7 +423,9 @@ export function PhaseDetailView({
                 <div
                   key={check.id}
                   className={`flex items-start gap-3 p-3 rounded-lg ${
-                    check.passed ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                    check.passed
+                      ? 'bg-success-500/10 text-success-400'
+                      : 'bg-error-500/10 text-error-400'
                   }`}
                 >
                   <span className="text-lg mt-0.5">{check.passed ? '✅' : '❌'}</span>

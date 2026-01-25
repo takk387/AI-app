@@ -41,10 +41,10 @@ function StatusBadge({ status }: StatusBadgeProps) {
     { label: string; className: string }
   > = {
     planning: { label: 'Planning', className: 'bg-garden-500/20 text-garden-400' },
-    ready: { label: 'Ready', className: 'bg-yellow-500/20 text-yellow-400' },
+    ready: { label: 'Ready', className: 'bg-warning-500/20 text-warning-400' },
     building: { label: 'Building', className: 'bg-gold-500/20 text-gold-400' },
-    completed: { label: 'Completed', className: 'bg-green-500/20 text-green-400' },
-    failed: { label: 'Failed', className: 'bg-red-500/20 text-red-400' },
+    completed: { label: 'Completed', className: 'bg-success-500/20 text-success-400' },
+    failed: { label: 'Failed', className: 'bg-error-500/20 text-error-400' },
     paused: { label: 'Paused', className: 'bg-gray-500/20 text-gray-400' },
   };
 
@@ -82,7 +82,7 @@ function StatsSummary({ documentation }: StatsSummaryProps) {
         <div>
           <div className="text-lg font-semibold text-slate-100">
             {stats.failedPhases > 0 ? (
-              <span className="text-red-400">{stats.failedPhases}</span>
+              <span className="text-error-400">{stats.failedPhases}</span>
             ) : (
               '0'
             )}

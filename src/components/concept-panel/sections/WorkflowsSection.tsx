@@ -113,7 +113,7 @@ export function WorkflowsSection({
                     <button
                       type="button"
                       onClick={() => handleDeleteWorkflow(workflowIndex)}
-                      className="ml-auto p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      className="ml-auto p-1 text-slate-500 hover:text-error-400 transition-colors"
                       title="Delete workflow"
                     >
                       <TrashIcon size={14} />
@@ -154,7 +154,7 @@ export function WorkflowsSection({
                         <button
                           type="button"
                           onClick={() => handleDeleteStep(workflowIndex, stepIndex)}
-                          className="p-0.5 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                          className="p-0.5 text-slate-600 hover:text-error-400 opacity-0 group-hover:opacity-100 transition-all"
                         >
                           <TrashIcon size={12} />
                         </button>

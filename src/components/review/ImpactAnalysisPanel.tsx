@@ -104,7 +104,7 @@ export default function ImpactAnalysisPanel({
                   <span
                     className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
                       tab.id === 'breaking' && tab.count > 0
-                        ? 'bg-red-500/20 text-red-400'
+                        ? 'bg-error-500/20 text-error-400'
                         : 'bg-slate-700 text-slate-400'
                     }`}
                   >
@@ -158,16 +158,16 @@ export default function ImpactAnalysisPanel({
                 {analysis.breakingChanges.length === 0 ? (
                   <div className="text-center py-4">
                     <span className="text-3xl block mb-2">✅</span>
-                    <p className="text-sm text-green-400">No breaking changes detected</p>
+                    <p className="text-sm text-success-400">No breaking changes detected</p>
                   </div>
                 ) : (
                   analysis.breakingChanges.map((change, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20"
+                      className="flex items-start gap-2 px-3 py-2 rounded-lg bg-error-500/10 border border-error-500/20"
                     >
-                      <span className="text-red-400 flex-shrink-0">⚠️</span>
-                      <span className="text-sm text-red-300">{change}</span>
+                      <span className="text-error-400 flex-shrink-0">⚠️</span>
+                      <span className="text-sm text-error-300">{change}</span>
                     </div>
                   ))
                 )}
@@ -184,7 +184,7 @@ export default function ImpactAnalysisPanel({
                       key={idx}
                       className="flex items-start gap-2 px-3 py-2 rounded-lg bg-black/20 border border-white/5"
                     >
-                      <span className="text-green-400 flex-shrink-0">🧪</span>
+                      <span className="text-success-400 flex-shrink-0">🧪</span>
                       <span className="text-sm text-slate-300">{test}</span>
                     </div>
                   ))

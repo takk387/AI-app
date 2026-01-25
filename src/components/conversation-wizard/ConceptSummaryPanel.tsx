@@ -123,10 +123,10 @@ export function ConceptSummaryPanel({
                   <span
                     className={`w-2 h-2 rounded-full ${
                       feature.priority === 'high'
-                        ? 'bg-red-400'
+                        ? 'bg-error-400'
                         : feature.priority === 'medium'
-                          ? 'bg-yellow-400'
-                          : 'bg-green-400'
+                          ? 'bg-warning-400'
+                          : 'bg-success-400'
                     }`}
                   />
                   {feature.name}
@@ -157,7 +157,7 @@ export function ConceptSummaryPanel({
                 </span>
               )}
               {wizardState.technical.needsDatabase && (
-                <span className="px-2 py-0.5 bg-green-600/20 text-green-300 rounded text-xs">
+                <span className="px-2 py-0.5 bg-success-600/20 text-success-300 rounded text-xs">
                   Database
                 </span>
               )}

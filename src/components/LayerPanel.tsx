@@ -206,7 +206,7 @@ function LayerItem({
             e.stopPropagation();
             onRemove();
           }}
-          className="text-slate-600 hover:text-red-400 transition-colors"
+          className="text-slate-600 hover:text-error-400 transition-colors"
           title="Remove layer"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

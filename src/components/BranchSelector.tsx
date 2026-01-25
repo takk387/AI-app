@@ -199,7 +199,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
                       onClick={(e) => handleDeleteClick(e, branch.id)}
                       className="
                         p-1 rounded opacity-0 group-hover:opacity-100
-                        text-slate-500 hover:text-red-400 hover:bg-red-500/10
+                        text-slate-500 hover:text-error-400 hover:bg-error-500/10
                         transition-all
                       "
                       title="Delete branch"
@@ -222,7 +222,7 @@ export const BranchSelector: React.FC<BranchSelectorProps> = ({
                 transition-colors
               "
             >
-              <PlusIcon size={14} className="text-green-400" />
+              <PlusIcon size={14} className="text-success-400" />
               <span>Create New Branch...</span>
             </button>
           </div>

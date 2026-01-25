@@ -18,11 +18,11 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
   const getComplexityColor = (complexity: string) => {
     switch (complexity) {
       case 'simple':
-        return 'bg-green-500/20 text-green-300 border-green-500/30';
+        return 'bg-success-500/20 text-success-300 border-success-500/30';
       case 'moderate':
-        return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+        return 'bg-warning-500/20 text-warning-300 border-warning-500/30';
       case 'complex':
-        return 'bg-red-500/20 text-red-300 border-red-500/30';
+        return 'bg-error-500/20 text-error-300 border-error-500/30';
       default:
         return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     }
@@ -158,19 +158,19 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                     </span>
                   </div>
                   <div
-                    className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsAPI ? 'bg-green-500/10' : 'bg-slate-700/30'}`}
+                    className={`flex items-center gap-2 p-2 rounded-lg ${template.technicalRequirements.needsAPI ? 'bg-success-500/10' : 'bg-slate-700/30'}`}
                   >
                     <span
                       className={
                         template.technicalRequirements.needsAPI
-                          ? 'text-green-400'
+                          ? 'text-success-400'
                           : 'text-slate-500'
                       }
                     >
                       {template.technicalRequirements.needsAPI ? '✓' : '○'}
                     </span>
                     <span
-                      className={`text-sm ${template.technicalRequirements.needsAPI ? 'text-green-200' : 'text-slate-500'}`}
+                      className={`text-sm ${template.technicalRequirements.needsAPI ? 'text-success-200' : 'text-slate-500'}`}
                     >
                       API
                     </span>
@@ -252,7 +252,7 @@ export function TemplatePreview({ template, onClose, onSelect }: TemplatePreview
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             component.priority === 'core'
-                              ? 'bg-green-500/20 text-green-300'
+                              ? 'bg-success-500/20 text-success-300'
                               : 'bg-slate-600/30 text-slate-400'
                           }`}
                         >

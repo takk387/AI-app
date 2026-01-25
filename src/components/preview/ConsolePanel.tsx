@@ -43,8 +43,8 @@ function FilterButton({
 
   const colors: Record<LogFilter, string> = {
     all: 'text-slate-300',
-    error: 'text-red-400',
-    warn: 'text-yellow-400',
+    error: 'text-error-400',
+    warn: 'text-warning-400',
     info: 'text-garden-400',
     log: 'text-slate-400',
   };
@@ -64,9 +64,9 @@ function FilterButton({
         <span
           className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
             filter === 'error'
-              ? 'bg-red-500/20 text-red-300'
+              ? 'bg-error-500/20 text-error-300'
               : filter === 'warn'
-                ? 'bg-yellow-500/20 text-yellow-300'
+                ? 'bg-warning-500/20 text-warning-300'
                 : 'bg-slate-700 text-slate-300'
           }`}
         >
@@ -218,9 +218,9 @@ function CollapsedIndicator({
       onClick={onClick}
       className={`flex flex-col items-center justify-center w-10 h-full border-l transition-colors ${
         hasErrors
-          ? 'border-red-500/50 bg-red-500/10 hover:bg-red-500/20'
+          ? 'border-error-500/50 bg-error-500/10 hover:bg-error-500/20'
           : hasWarnings
-            ? 'border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20'
+            ? 'border-warning-500/50 bg-warning-500/10 hover:bg-warning-500/20'
             : 'border-slate-800 bg-slate-900/50 hover:bg-slate-800'
       }`}
       title="Open console"
@@ -228,12 +228,12 @@ function CollapsedIndicator({
       <span className="text-lg mb-1">📟</span>
 
       {hasErrors && (
-        <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+        <span className="px-1.5 py-0.5 rounded-full bg-error-500 text-white text-[10px] font-bold">
           {errorCount}
         </span>
       )}
       {!hasErrors && hasWarnings && (
-        <span className="px-1.5 py-0.5 rounded-full bg-yellow-500 text-black text-[10px] font-bold">
+        <span className="px-1.5 py-0.5 rounded-full bg-warning-500 text-black text-[10px] font-bold">
           {warnCount}
         </span>
       )}
@@ -379,9 +379,9 @@ function ConsolePanelContent({
   const getLogColor = (type: string) => {
     switch (type) {
       case 'error':
-        return 'text-red-400 bg-red-500/10';
+        return 'text-error-400 bg-error-500/10';
       case 'warn':
-        return 'text-yellow-400 bg-yellow-500/10';
+        return 'text-warning-400 bg-warning-500/10';
       case 'info':
         return 'text-garden-400';
       default:

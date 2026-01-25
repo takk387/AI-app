@@ -222,7 +222,7 @@ export function DebugPanel(): React.ReactElement | null {
                   className={
                     typeof value === 'boolean'
                       ? value
-                        ? 'text-green-400'
+                        ? 'text-success-400'
                         : 'text-gray-500'
                       : 'text-garden-400'
                   }
@@ -267,10 +267,10 @@ export function DebugPanel(): React.ReactElement | null {
                     <span
                       className={`w-2 h-2 rounded-full ${
                         req.status === 'pending'
-                          ? 'bg-yellow-500 animate-pulse'
+                          ? 'bg-warning-500 animate-pulse'
                           : req.status === 'success'
-                            ? 'bg-green-500'
-                            : 'bg-red-500'
+                            ? 'bg-success-500'
+                            : 'bg-error-500'
                       }`}
                     />
                     <span className="text-gray-300">{req.route}</span>
@@ -324,13 +324,13 @@ export function DebugPanel(): React.ReactElement | null {
                   </div>
                   <div className="flex justify-between mb-1">
                     <span className="text-gray-400">Total Output:</span>
-                    <span className="text-green-400">
+                    <span className="text-success-400">
                       {debugStore.tokenUsage.reduce((sum, u) => sum + u.output, 0).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Total Cached:</span>
-                    <span className="text-yellow-400">
+                    <span className="text-warning-400">
                       {debugStore.tokenUsage.reduce((sum, u) => sum + u.cached, 0).toLocaleString()}
                     </span>
                   </div>
@@ -344,9 +344,9 @@ export function DebugPanel(): React.ReactElement | null {
                     </div>
                     <div className="flex gap-3 text-[10px]">
                       <span className="text-garden-400">in: {usage.input}</span>
-                      <span className="text-green-400">out: {usage.output}</span>
+                      <span className="text-success-400">out: {usage.output}</span>
                       {usage.cached > 0 && (
-                        <span className="text-yellow-400">cached: {usage.cached}</span>
+                        <span className="text-warning-400">cached: {usage.cached}</span>
                       )}
                     </div>
                   </div>

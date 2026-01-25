@@ -132,7 +132,7 @@ export function FileFilters({
           {hasActiveFilters && (
             <button
               onClick={onClearFilters}
-              className="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30 hover:text-red-200 text-sm font-medium transition-all"
+              className="px-3 py-1.5 rounded-lg bg-error-500/20 border border-error-500/40 text-error-300 hover:bg-error-500/30 hover:text-error-200 text-sm font-medium transition-all"
               aria-label="Clear all filters"
             >
               Clear Filters

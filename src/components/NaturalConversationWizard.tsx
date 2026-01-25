@@ -673,7 +673,7 @@ What would you like to build?`,
           {/* Error message */}
           {error && (
             <div className="flex justify-center">
-              <div className="bg-red-600/10 text-red-300 rounded-lg px-4 py-2 text-sm border border-red-600/30">
+              <div className="bg-error-600/10 text-error-300 rounded-lg px-4 py-2 text-sm border border-error-600/30">
                 {error}
               </div>
             </div>

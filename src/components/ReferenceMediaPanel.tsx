@@ -100,9 +100,9 @@ function MediaPreview({
       case 'analyzing':
         return <LoaderIcon className="w-4 h-4 animate-spin text-gold-400" />;
       case 'error':
-        return <AlertCircleIcon className="w-4 h-4 text-red-400" />;
+        return <AlertCircleIcon className="w-4 h-4 text-error-400" />;
       case 'ready':
-        return <CheckCircleIcon className="w-4 h-4 text-green-400" />;
+        return <CheckCircleIcon className="w-4 h-4 text-success-400" />;
       default:
         return null;
     }
@@ -171,10 +171,10 @@ function MediaPreview({
             e.stopPropagation();
             onRemove();
           }}
-          className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-full transition-colors"
+          className="p-2 bg-error-500/20 hover:bg-error-500/40 rounded-full transition-colors"
           title="Remove"
         >
-          <TrashIcon className="w-4 h-4 text-red-400" />
+          <TrashIcon className="w-4 h-4 text-error-400" />
         </button>
       </div>
 
@@ -189,8 +189,8 @@ function MediaPreview({
 
       {/* Error Overlay */}
       {item.status === 'error' && item.error && (
-        <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center p-2">
-          <div className="text-xs text-red-300 text-center">{item.error}</div>
+        <div className="absolute inset-0 bg-error-500/20 flex items-center justify-center p-2">
+          <div className="text-xs text-error-300 text-center">{item.error}</div>
         </div>
       )}
     </div>
@@ -495,7 +495,7 @@ export function ReferenceMediaPanel({
           {mediaItems.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="text-xs text-slate-400 hover:text-red-400 transition-colors"
+              className="text-xs text-slate-400 hover:text-error-400 transition-colors"
             >
               Clear All
             </button>
@@ -571,9 +571,9 @@ export function ReferenceMediaPanel({
             </div>
             <button
               onClick={() => handleRemove(selectedIndex)}
-              className="p-1.5 hover:bg-red-500/20 rounded transition-colors"
+              className="p-1.5 hover:bg-error-500/20 rounded transition-colors"
             >
-              <TrashIcon className="w-4 h-4 text-slate-400 hover:text-red-400" />
+              <TrashIcon className="w-4 h-4 text-slate-400 hover:text-error-400" />
             </button>
           </div>
         </div>

@@ -171,9 +171,9 @@ export function BrowserPreview({
       <div className={`flex flex-col ${className}`}>
         <div className="flex flex-col p-6 bg-slate-800 rounded-lg flex-1 overflow-auto">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-full bg-red-900/50 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-error-900/50 flex items-center justify-center">
               <svg
-                className="w-5 h-5 text-red-400"
+                className="w-5 h-5 text-error-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -187,7 +187,7 @@ export function BrowserPreview({
               </svg>
             </div>
             <div>
-              <div className="text-red-400 font-medium">Build Error</div>
+              <div className="text-error-400 font-medium">Build Error</div>
               <div className="text-slate-500 text-sm">
                 {errors.length} error{errors.length !== 1 ? 's' : ''} found
               </div>
@@ -198,7 +198,7 @@ export function BrowserPreview({
             {errors.map((error, i) => (
               <div
                 key={i}
-                className="p-3 bg-red-950/30 border border-red-900/50 rounded-lg text-red-300 text-sm font-mono whitespace-pre-wrap"
+                className="p-3 bg-error-950/30 border border-error-900/50 rounded-lg text-error-300 text-sm font-mono whitespace-pre-wrap"
               >
                 {error}
               </div>
@@ -244,17 +244,17 @@ export function BrowserPreview({
     <div className={`flex flex-col ${className}`}>
       {/* Warnings banner */}
       {warnings.length > 0 && (
-        <div className="mb-2 px-3 py-2 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
-          <div className="text-yellow-300 text-xs font-medium mb-1">
+        <div className="mb-2 px-3 py-2 bg-warning-900/30 border border-warning-700/50 rounded-lg">
+          <div className="text-warning-300 text-xs font-medium mb-1">
             {warnings.length} warning{warnings.length !== 1 ? 's' : ''}
           </div>
           {warnings.slice(0, 3).map((warning, i) => (
-            <div key={i} className="text-yellow-400/70 text-xs truncate">
+            <div key={i} className="text-warning-400/70 text-xs truncate">
               {warning}
             </div>
           ))}
           {warnings.length > 3 && (
-            <div className="text-yellow-500/50 text-xs mt-1">+{warnings.length - 3} more</div>
+            <div className="text-warning-500/50 text-xs mt-1">+{warnings.length - 3} more</div>
           )}
         </div>
       )}
@@ -270,7 +270,7 @@ export function BrowserPreview({
 
         {/* Toolbar */}
         <div className="absolute top-0 left-0 right-0 bg-slate-900/90 backdrop-blur-sm px-3 py-1.5 flex items-center gap-2 border-b border-slate-700">
-          <div className="w-2 h-2 rounded-full bg-green-500" title="Ready" />
+          <div className="w-2 h-2 rounded-full bg-success-500" title="Ready" />
           <span className="text-slate-400 text-xs font-mono flex-1">Browser Preview</span>
 
           {/* Feature indicators */}

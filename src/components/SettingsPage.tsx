@@ -420,7 +420,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
                   />
                 </label>
               </div>
-              {importError && <p className="mt-2 text-sm text-red-400">{importError}</p>}
+              {importError && <p className="mt-2 text-sm text-error-400">{importError}</p>}
             </div>
 
             {/* Reset Sections */}
@@ -446,7 +446,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
 
             {/* Danger Zone */}
             <div className="py-4 border-t border-white/10">
-              <h3 className="text-red-400 font-medium mb-3">Danger Zone</h3>
+              <h3 className="text-error-400 font-medium mb-3">Danger Zone</h3>
               <button
                 type="button"
                 onClick={() => {
@@ -458,7 +458,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
                     resetSettings();
                   }
                 }}
-                className="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-medium transition-all flex items-center gap-2"
+                className="px-4 py-2 rounded-lg bg-error-600/20 hover:bg-error-600/30 border border-error-500/30 text-error-400 font-medium transition-all flex items-center gap-2"
               >
                 <span>⚠️</span> Reset All Settings
               </button>
@@ -507,7 +507,7 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
                       onClose();
                       router.push('/login');
                     }}
-                    className="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-medium transition-all flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg bg-error-600/20 hover:bg-error-600/30 border border-error-500/30 text-error-400 font-medium transition-all flex items-center gap-2"
                   >
                     <span>🚪</span> Log Out
                   </button>
@@ -523,8 +523,8 @@ export function SettingsPage({ isOpen, onClose, initialSection = 'general' }: Se
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       settings.account.apiKeyConfigured
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
+                        ? 'bg-success-500/20 text-success-400'
+                        : 'bg-warning-500/20 text-warning-400'
                     }`}
                   >
                     {settings.account.apiKeyConfigured ? 'Configured' : 'Not Configured'}

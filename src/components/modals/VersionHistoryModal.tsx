@@ -38,7 +38,7 @@ export function VersionHistoryModal({
   const changeTypeColors: Record<string, string> = {
     NEW_APP: 'bg-gold-600/20 text-gold-300',
     MAJOR_CHANGE: 'bg-orange-600/20 text-orange-300',
-    MINOR_CHANGE: 'bg-green-600/20 text-green-300',
+    MINOR_CHANGE: 'bg-success-600/20 text-success-300',
   };
 
   const ChangeTypeIcon: Record<string, React.FC<{ size: number; className?: string }>> = {

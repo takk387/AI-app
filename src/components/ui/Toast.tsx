@@ -36,7 +36,7 @@ interface ToastContainerProps {
 
 function SuccessIcon() {
   return (
-    <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5 text-success-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
     </svg>
   );
@@ -44,7 +44,7 @@ function SuccessIcon() {
 
 function ErrorIcon() {
   return (
-    <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5 text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
@@ -65,7 +65,7 @@ function InfoIcon() {
 
 function WarningIcon() {
   return (
-    <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-5 h-5 text-warning-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -107,11 +107,11 @@ function getStyles(type: ToastVariant): string {
 
   switch (type) {
     case 'success':
-      return `${baseStyles} border-green-500 bg-green-500/10`;
+      return `${baseStyles} border-success-500 bg-success-500/10`;
     case 'error':
-      return `${baseStyles} border-red-500 bg-red-500/10`;
+      return `${baseStyles} border-error-500 bg-error-500/10`;
     case 'warning':
-      return `${baseStyles} border-yellow-500 bg-yellow-500/10`;
+      return `${baseStyles} border-warning-500 bg-warning-500/10`;
     case 'info':
     default:
       return `${baseStyles} border-garden-500 bg-garden-500/10`;

@@ -47,14 +47,14 @@ export function ValidationDashboard({
   };
 
   const getCheckColor = (check: ValidationCheck) => {
-    if (check.passed) return 'bg-green-500/10 border-green-500/30 text-green-400';
+    if (check.passed) return 'bg-success-500/10 border-success-500/30 text-success-400';
     switch (check.type) {
       case 'render':
       case 'functionality':
-        return 'bg-red-500/10 border-red-500/30 text-red-400';
+        return 'bg-error-500/10 border-error-500/30 text-error-400';
       case 'console':
       case 'performance':
-        return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400';
+        return 'bg-warning-500/10 border-warning-500/30 text-warning-400';
       default:
         return 'bg-slate-500/10 border-slate-500/30 text-slate-400';
     }
@@ -89,10 +89,10 @@ export function ValidationDashboard({
           <div
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               allPassed
-                ? 'bg-green-500/20 text-green-400'
+                ? 'bg-success-500/20 text-success-400'
                 : hasFailures
-                  ? 'bg-red-500/20 text-red-400'
-                  : 'bg-yellow-500/20 text-yellow-400'
+                  ? 'bg-error-500/20 text-error-400'
+                  : 'bg-warning-500/20 text-warning-400'
             }`}
           >
             {allPassed ? 'All Passed' : hasFailures ? 'Issues Found' : 'Warnings'}
@@ -129,10 +129,10 @@ export function ValidationDashboard({
 
       {/* Summary */}
       {validationResult && hasFailures && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+        <div className="bg-warning-500/10 border border-warning-500/30 rounded-lg p-3 mb-4">
           <div className="flex items-start gap-2">
             <span className="text-lg">💡</span>
-            <div className="text-sm text-yellow-200">
+            <div className="text-sm text-warning-200">
               {canProceed ? (
                 <>
                   <strong>Warnings detected</strong> - You can proceed, but consider addressing
@@ -174,7 +174,7 @@ export function ValidationDashboard({
             {allPassed || canProceed ? (
               <button
                 onClick={onProceedAnyway}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-success-600 hover:bg-success-500 text-white font-medium transition-all flex items-center justify-center gap-2"
               >
                 <span>✅</span>
                 <span>Proceed</span>
@@ -199,7 +199,7 @@ export function ValidationDashboard({
           <ul className="space-y-1">
             {validationResult.warnings.map((warning, idx) => (
               <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                <span className="text-yellow-400">•</span>
+                <span className="text-warning-400">•</span>
                 <span>{warning}</span>
               </li>
             ))}

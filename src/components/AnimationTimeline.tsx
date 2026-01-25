@@ -660,7 +660,7 @@ export function AnimationTimeline({
             <label className="text-xs text-slate-400">Keyframe at {selectedKeyframe.time}%</label>
             <button
               onClick={handleRemoveKeyframe}
-              className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
+              className="text-xs px-2 py-1 bg-error-500/20 text-error-400 rounded hover:bg-error-500/30"
             >
               Delete
             </button>

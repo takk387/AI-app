@@ -101,7 +101,7 @@ export function PhasePlanSection({
               </div>
               <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-garden-500 to-green-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-garden-500 to-success-500 transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -130,11 +130,11 @@ export function PhasePlanSection({
                   onClick={isClickable ? () => onPhaseClick(phase.number) : undefined}
                   className={`flex items-center gap-2 p-2 rounded-lg transition-colors w-full text-left ${
                     isFailed
-                      ? 'bg-red-500/10 border border-red-500/30'
+                      ? 'bg-error-500/10 border border-error-500/30'
                       : isCurrent
                         ? 'bg-garden-500/10 border border-garden-500/30'
                         : isCompleted
-                          ? 'bg-green-500/5'
+                          ? 'bg-success-500/5'
                           : 'bg-slate-800/30'
                   } ${isClickable ? 'cursor-pointer hover:bg-slate-700/50' : ''}`}
                 >
@@ -142,9 +142,9 @@ export function PhasePlanSection({
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                       isFailed
-                        ? 'bg-red-500/20 text-red-400'
+                        ? 'bg-error-500/20 text-error-400'
                         : isCompleted
-                          ? 'bg-green-500/20 text-green-400'
+                          ? 'bg-success-500/20 text-success-400'
                           : isCurrent
                             ? 'bg-garden-500/20 text-garden-400'
                             : 'bg-slate-700 text-slate-500'
@@ -166,7 +166,7 @@ export function PhasePlanSection({
                     <p
                       className={`text-sm truncate ${
                         isFailed
-                          ? 'text-red-300'
+                          ? 'text-error-300'
                           : isCompleted
                             ? 'text-slate-400 line-through'
                             : isCurrent
@@ -178,7 +178,7 @@ export function PhasePlanSection({
                     </p>
                     {/* Show built summary in ACT mode when available */}
                     {mode === 'act' && builtSummary ? (
-                      <span className="text-[10px] text-green-400/70 truncate block">
+                      <span className="text-[10px] text-success-400/70 truncate block">
                         {builtSummary}
                       </span>
                     ) : phase.domain ? (

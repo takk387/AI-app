@@ -66,11 +66,11 @@ export default function HunkApprovalCard({
   const getTypeColor = () => {
     switch (hunk.type) {
       case 'addition':
-        return 'text-green-400';
+        return 'text-success-400';
       case 'deletion':
-        return 'text-red-400';
+        return 'text-error-400';
       default:
-        return 'text-yellow-400';
+        return 'text-warning-400';
     }
   };
 
@@ -130,8 +130,8 @@ export default function HunkApprovalCard({
         <div className="flex items-center gap-4">
           {/* Line Stats */}
           <div className="flex items-center gap-3 text-xs">
-            {addedLines > 0 && <span className="text-green-400">+{addedLines}</span>}
-            {removedLines > 0 && <span className="text-red-400">-{removedLines}</span>}
+            {addedLines > 0 && <span className="text-success-400">+{addedLines}</span>}
+            {removedLines > 0 && <span className="text-error-400">-{removedLines}</span>}
             {unchangedLines > 0 && (
               <span className="text-slate-500">{unchangedLines} unchanged</span>
             )}
@@ -143,14 +143,14 @@ export default function HunkApprovalCard({
               <>
                 <button
                   onClick={onReject}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-xs font-medium transition-all hover:scale-105"
+                  className="px-3 py-1.5 rounded-lg bg-error-500/20 hover:bg-error-500/30 border border-error-500/30 text-error-400 text-xs font-medium transition-all hover:scale-105"
                   title="Reject this change"
                 >
                   ❌ Reject
                 </button>
                 <button
                   onClick={onApprove}
-                  className="px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400 text-xs font-medium transition-all hover:scale-105"
+                  className="px-3 py-1.5 rounded-lg bg-success-500/20 hover:bg-success-500/30 border border-success-500/30 text-success-400 text-xs font-medium transition-all hover:scale-105"
                   title="Approve this change"
                 >
                   ✅ Approve

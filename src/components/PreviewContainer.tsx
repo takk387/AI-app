@@ -217,7 +217,7 @@ export function PreviewContainer({
   if (!appData) {
     return (
       <div className={`flex items-center justify-center p-8 bg-slate-800 rounded-lg ${className}`}>
-        <div className="text-red-400">Failed to parse app data</div>
+        <div className="text-error-400">Failed to parse app data</div>
       </div>
     );
   }

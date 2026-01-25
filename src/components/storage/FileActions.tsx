@@ -83,7 +83,7 @@ export function FileActions({
                   onBulkDelete();
                 }
               }}
-              className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 rounded-lg bg-error-600 hover:bg-error-700 text-white text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={disabled}
             >
               <span>🗑️</span>

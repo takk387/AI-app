@@ -183,7 +183,7 @@ export function FileCard({
                 e.stopPropagation();
                 onDelete(file);
               }}
-              className="px-3 py-2 rounded-lg bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 text-slate-300 hover:text-red-400 text-xs transition-all"
+              className="px-3 py-2 rounded-lg bg-white/5 hover:bg-error-500/20 border border-white/10 hover:border-error-500/40 text-slate-300 hover:text-error-400 text-xs transition-all"
               title="Delete file"
               aria-label={`Delete ${file.name}`}
             >

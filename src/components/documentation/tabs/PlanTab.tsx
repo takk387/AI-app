@@ -14,10 +14,10 @@ interface PlanTabProps {
 
 function ComplexityBadge({ complexity }: { complexity: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    simple: { label: 'Simple', className: 'bg-green-500/20 text-green-400' },
-    moderate: { label: 'Moderate', className: 'bg-yellow-500/20 text-yellow-400' },
+    simple: { label: 'Simple', className: 'bg-success-500/20 text-success-400' },
+    moderate: { label: 'Moderate', className: 'bg-warning-500/20 text-warning-400' },
     complex: { label: 'Complex', className: 'bg-orange-500/20 text-orange-400' },
-    enterprise: { label: 'Enterprise', className: 'bg-red-500/20 text-red-400' },
+    enterprise: { label: 'Enterprise', className: 'bg-error-500/20 text-error-400' },
   };
 
   const conf = config[complexity] || config.moderate;

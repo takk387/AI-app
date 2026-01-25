@@ -128,7 +128,7 @@ export default function ShareModal({
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-green-400"
+                  className="text-success-400"
                 >
                   <circle cx="12" cy="12" r="10" />
                   <line x1="2" y1="12" x2="22" y2="12" />
@@ -162,7 +162,7 @@ export default function ShareModal({
               onClick={handleToggleShare}
               disabled={isLoading}
               className={`relative w-12 h-6 rounded-full transition-colors ${
-                isPublic ? 'bg-green-600' : 'bg-slate-600'
+                isPublic ? 'bg-success-600' : 'bg-slate-600'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <div
@@ -226,7 +226,7 @@ export default function ShareModal({
 
           {/* Error */}
           {error && (
-            <div className="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+            <div className="p-3 bg-error-900/20 border border-error-800 rounded-lg text-error-400 text-sm">
               {error}
             </div>
           )}

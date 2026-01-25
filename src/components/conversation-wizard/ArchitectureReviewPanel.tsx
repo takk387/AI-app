@@ -346,14 +346,14 @@ function CollapsibleSection({
 function getMethodColor(method: string): string {
   switch (method.toUpperCase()) {
     case 'GET':
-      return 'bg-green-600/20 text-green-300';
+      return 'bg-success-600/20 text-success-300';
     case 'POST':
       return 'bg-garden-600/20 text-garden-300';
     case 'PUT':
     case 'PATCH':
-      return 'bg-yellow-600/20 text-yellow-300';
+      return 'bg-warning-600/20 text-warning-300';
     case 'DELETE':
-      return 'bg-red-600/20 text-red-300';
+      return 'bg-error-600/20 text-error-300';
     default:
       return 'bg-slate-600/20 text-slate-300';
   }

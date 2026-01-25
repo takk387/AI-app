@@ -43,9 +43,9 @@ function Section({ icon, title, children }: SectionProps) {
 
 function PriorityBadge({ priority }: { priority: string }) {
   const config: Record<string, string> = {
-    high: 'bg-red-500/20 text-red-400',
-    medium: 'bg-yellow-500/20 text-yellow-400',
-    low: 'bg-green-500/20 text-green-400',
+    high: 'bg-error-500/20 text-error-400',
+    medium: 'bg-warning-500/20 text-warning-400',
+    low: 'bg-success-500/20 text-success-400',
   };
 
   return (
@@ -120,11 +120,11 @@ export function ConceptTab({ snapshot }: ConceptTabProps) {
               <div
                 key={key}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs ${
-                  value ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800/50 text-zinc-500'
+                  value ? 'bg-success-500/10 text-success-400' : 'bg-zinc-800/50 text-zinc-500'
                 }`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${value ? 'bg-green-400' : 'bg-zinc-600'}`}
+                  className={`w-2 h-2 rounded-full ${value ? 'bg-success-400' : 'bg-zinc-600'}`}
                 />
                 {label}
               </div>
@@ -287,7 +287,7 @@ export function ConceptTab({ snapshot }: ConceptTabProps) {
                 </span>
               )}
               {snapshot.architectureSpec.caching && (
-                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">
+                <span className="px-2 py-0.5 bg-success-500/20 text-success-400 rounded text-xs">
                   Caching
                 </span>
               )}

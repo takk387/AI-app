@@ -19,13 +19,13 @@ export function MockAIBanner(): React.ReactElement | null {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[10000] bg-yellow-400 text-yellow-900 text-center py-1.5 px-4 text-sm font-medium shadow-md">
+    <div className="fixed top-0 left-0 right-0 z-[10000] bg-warning-400 text-warning-900 text-center py-1.5 px-4 text-sm font-medium shadow-md">
       <span className="mr-2">⚠️</span>
       <span>MOCK AI MODE - Responses are fake placeholders</span>
       <span className="mx-2">|</span>
       <span className="opacity-75">
         Disable with:{' '}
-        <code className="bg-yellow-500/30 px-1 rounded">NEXT_PUBLIC_MOCK_AI=false</code>
+        <code className="bg-warning-500/30 px-1 rounded">NEXT_PUBLIC_MOCK_AI=false</code>
       </span>
     </div>
   );

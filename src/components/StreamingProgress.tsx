@@ -60,13 +60,13 @@ function getPhaseColor(phase: ProgressType['phase']): string {
     case 'thinking':
       return 'text-gold-400';
     case 'generating':
-      return 'text-yellow-400';
+      return 'text-warning-400';
     case 'validating':
       return 'text-cyan-400';
     case 'complete':
-      return 'text-green-400';
+      return 'text-success-400';
     case 'error':
-      return 'text-red-400';
+      return 'text-error-400';
     default:
       return 'text-slate-400';
   }
@@ -112,7 +112,7 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
           {progress.isStreaming && onCancel && (
             <button
               onClick={onCancel}
-              className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+              className="text-xs px-2 py-1 rounded bg-error-500/20 text-error-400 hover:bg-error-500/30 transition-colors"
             >
               Cancel
             </button>
@@ -149,7 +149,7 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
             {progress.filesCompleted.slice(-6).map((file, i) => (
               <span
                 key={i}
-                className="text-xs px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20"
+                className="text-xs px-2 py-0.5 rounded bg-success-500/10 text-success-400 border border-success-500/20"
               >
                 {file.split('/').pop()}
               </span>
@@ -166,8 +166,8 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
       {/* Current file being generated */}
       {progress.currentFile && progress.phase === 'generating' && (
         <div className="mt-2 flex items-center gap-2">
-          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-          <span className="text-xs text-yellow-400/80 truncate">{progress.currentFile}</span>
+          <div className="w-2 h-2 bg-warning-400 rounded-full animate-pulse" />
+          <span className="text-xs text-warning-400/80 truncate">{progress.currentFile}</span>
         </div>
       )}
 
@@ -177,7 +177,7 @@ export function StreamingProgress({ progress, onCancel }: StreamingProgressProps
           <span>Input: {progress.stats.inputTokens.toLocaleString()} tokens</span>
           <span>Output: {progress.stats.outputTokens.toLocaleString()} tokens</span>
           {progress.stats.cachedTokens > 0 && (
-            <span className="text-green-400/60">
+            <span className="text-success-400/60">
               Cached: {progress.stats.cachedTokens.toLocaleString()}
             </span>
           )}

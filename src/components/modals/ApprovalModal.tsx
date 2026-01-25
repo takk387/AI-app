@@ -28,8 +28,8 @@ export function ApprovalModal({ isOpen, pendingChange, onApprove, onReject }: Ap
           {/* Modal Header */}
           <div className="px-6 py-4 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-                <AlertTriangleIcon size={20} className="text-yellow-400" />
+              <div className="w-10 h-10 rounded-lg bg-warning-600/20 flex items-center justify-center">
+                <AlertTriangleIcon size={20} className="text-warning-400" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-slate-100">Approve Changes?</h3>
@@ -102,7 +102,7 @@ export function ApprovalModal({ isOpen, pendingChange, onApprove, onReject }: Ap
             </button>
             <button
               onClick={onApprove}
-              className="btn-primary flex-1 py-2.5 bg-green-600 hover:bg-green-700"
+              className="btn-primary flex-1 py-2.5 bg-success-600 hover:bg-success-700"
             >
               <CheckIcon size={16} />
               Approve &amp; Apply

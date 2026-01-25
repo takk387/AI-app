@@ -45,7 +45,7 @@ export function PhaseProgressIndicator({
     }
     switch (status) {
       case 'completed':
-        return 'bg-green-500/20 border-green-500/40';
+        return 'bg-success-500/20 border-success-500/40';
       case 'in-progress':
         return 'bg-garden-500/20 border-garden-500/40 animate-pulse';
       case 'skipped':
@@ -59,7 +59,7 @@ export function PhaseProgressIndicator({
   const getConnectorColor = (status: BuildPhase['status']) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-500';
+        return 'bg-success-500';
       case 'in-progress':
         return 'bg-garden-500';
       default:
@@ -77,7 +77,7 @@ export function PhaseProgressIndicator({
       <div className="space-y-3">
         {/* Compact progress summary */}
         <div className="flex items-center gap-4 text-sm">
-          <span className="text-green-400">✅ {completedCount} done</span>
+          <span className="text-success-400">✅ {completedCount} done</span>
           {inProgressPhase && (
             <span className="text-garden-400">
               ⏳ Phase {inProgressPhase.order}: {inProgressPhase.name}

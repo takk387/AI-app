@@ -228,7 +228,7 @@ export function AppConceptPanel({
             App Concept
           </h2>
           {mode === 'act' && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-green-500/20 text-green-400 rounded">
+            <span className="px-1.5 py-0.5 text-[10px] bg-success-500/20 text-success-400 rounded">
               Building
             </span>
           )}
@@ -365,7 +365,7 @@ export function AppConceptPanel({
             {buildState.isBuilding && !buildState.isPaused && onPauseBuild && (
               <button
                 onClick={onPauseBuild}
-                className="flex-1 py-1.5 px-3 text-xs bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 rounded-lg transition-colors"
+                className="flex-1 py-1.5 px-3 text-xs bg-warning-600/20 text-warning-400 hover:bg-warning-600/30 rounded-lg transition-colors"
               >
                 ⏸️ Pause
               </button>
@@ -373,7 +373,7 @@ export function AppConceptPanel({
             {buildState.isPaused && onResumeBuild && (
               <button
                 onClick={onResumeBuild}
-                className="flex-1 py-1.5 px-3 text-xs bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg transition-colors"
+                className="flex-1 py-1.5 px-3 text-xs bg-success-600/20 text-success-400 hover:bg-success-600/30 rounded-lg transition-colors"
               >
                 ▶️ Resume
               </button>

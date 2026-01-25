@@ -135,7 +135,7 @@ export function SideDrawer({
             onClose();
           },
           badge: currentDocumentation ? (
-            <span className="w-2 h-2 rounded-full bg-green-400" />
+            <span className="w-2 h-2 rounded-full bg-success-400" />
           ) : null,
         },
         {
@@ -352,7 +352,7 @@ export function SideDrawer({
               {user ? (
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl hover:bg-red-600/20 hover:text-red-400 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl hover:bg-error-600/20 hover:text-error-400 transition-colors"
                   style={{ color: 'var(--text-secondary)', background: 'var(--hover-bg)' }}
                 >
                   <LogoutIcon size={18} />

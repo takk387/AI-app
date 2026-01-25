@@ -121,11 +121,11 @@ export function EditableField({
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-500/20 text-red-300 border-red-500/30';
+        return 'bg-error-500/20 text-error-300 border-error-500/30';
       case 'medium':
-        return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30';
+        return 'bg-warning-500/20 text-warning-300 border-warning-500/30';
       case 'low':
-        return 'bg-green-500/20 text-green-300 border-green-500/30';
+        return 'bg-success-500/20 text-success-300 border-success-500/30';
       default:
         return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     }
@@ -191,7 +191,7 @@ export function EditableField({
           <button
             type="button"
             onClick={handleSave}
-            className="p-1 text-green-400 hover:text-green-300 transition-colors"
+            className="p-1 text-success-400 hover:text-success-300 transition-colors"
             title="Save"
           >
             <CheckIcon size={14} />
@@ -199,7 +199,7 @@ export function EditableField({
           <button
             type="button"
             onClick={handleCancel}
-            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+            className="p-1 text-error-400 hover:text-error-300 transition-colors"
             title="Cancel"
           >
             <XIcon size={14} />
