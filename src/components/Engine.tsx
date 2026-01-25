@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { UISpecNode } from '@/types/schema';
 import { motion } from 'framer-motion';
 import * as Icons from 'lucide-react';
@@ -208,21 +208,36 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
 }) => {
   const cssVariables: Record<string, string> = {};
   const colors = manifest.designSystem?.colors ?? {};
+
   Object.entries(colors).forEach(([key, value]) => {
     if (value) {
-      // Map camelCase keys to kebab-case CSS variables
-      // e.g., textMuted → --text-muted (matches Tailwind's text-muted class)
-      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-      cssVariables[`--${cssKey}`] = value;
+      cssVariables[`--${key}`] = value;
+      // Also add kebab-case for textMuted compatibility
+      if (key === 'textMuted') cssVariables['--text-muted'] = value;
     }
   });
+
   const fonts = manifest.designSystem?.fonts ?? { heading: 'sans-serif', body: 'sans-serif' };
   cssVariables['--font-heading'] = fonts.heading;
   cssVariables['--font-body'] = fonts.body;
 
+  // CRITICAL FIX: Inline background + text color fallback
+  // This ensures the background renders even if Tailwind classes are missing or purged
+  const wrapperStyle = useMemo(
+    () =>
+      ({
+        ...cssVariables,
+        backgroundColor: colors.background || 'var(--background)',
+        color: colors.text || 'var(--text)',
+        minHeight: '100%',
+        width: '100%',
+      }) as React.CSSProperties,
+    [cssVariables, colors]
+  );
+
   return (
     <EngineErrorBoundary>
-      <div style={cssVariables as React.CSSProperties}>
+      <div style={wrapperStyle}>
         <Engine
           node={manifest.root}
           definitions={manifest.definitions}

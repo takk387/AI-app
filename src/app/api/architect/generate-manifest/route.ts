@@ -104,17 +104,38 @@ CRITICAL RULES:
 ❌ DO NOT use generic Tailwind colors like bg-slate-900, text-gray-600`
       : '';
 
-    // Component detection protocol for accurate layout replication
+    // Layout structure and component detection protocol
     const componentTargets = `
-BUTTON_DETECTION_PROTOCOL (CRITICAL):
-- SCAN the image for any rectangular element that looks interactive (CTAs, Login, Sign Up, Navigation Links).
-- YOU MUST create a node of type "button" for each of these.
-- DO NOT simplify buttons into "text" or "container" nodes.
+LAYOUT_STRUCTURE_PROTOCOL (CRITICAL):
+Analyze the image from TOP to BOTTOM in this order:
+
+1. **HEADER DETECTION (Top 15% of image)**:
+   - Look for navigation bar, logo, menu items, search bar, user avatar.
+   - Create a container with semanticTag "header" or "navigation".
+   - All nav items should be type: "button".
+
+2. **HERO DETECTION (Below header, top 30-50% of image)**:
+   - Look for large headlines, subheadlines, hero images, CTA buttons.
+   - Create a container with semanticTag "hero-section".
+   - CTA buttons MUST be type: "button".
+
+3. **CONTENT DETECTION (Middle sections)**:
+   - Cards, features, testimonials, pricing tables.
+   - Each distinct section gets its own container.
+
+4. **FOOTER DETECTION (Bottom 10-15% of image)**:
+   - Links, social icons, copyright text.
+   - Create a container with semanticTag "footer".
+
+BUTTON_DETECTION_PROTOCOL:
+- ANY rectangular element that looks interactive = type: "button"
+- Navigation links, CTAs, "Sign Up", "Login", "Get Started" = type: "button"
+- Do NOT use "text" nodes for buttons - they must be type: "button"
 - If in doubt, make it a button.
 
-BACKGROUND VISUAL - MANDATORY:
-The ROOT container MUST include "bg-background" in its tailwindClasses.
-This is REQUIRED to apply the extracted background color.
+BACKGROUND VISUAL RULE:
+- The ROOT container MUST have "bg-background" in tailwindClasses
+- If header has different color, use "bg-surface" or "bg-primary" for that node
 
 COMPONENT DENSITY TARGETS:
 - Landing Page: 15-20 distinct components
@@ -333,17 +354,25 @@ If no specific instructions, default to using Image 1 as the primary reference.
       };
     }
 
-    // POST-PROCESSING: ENSURE ROOT BACKGROUND
-    // If Gemini forgot to add bg-background to root, add it now
+    // POST-PROCESSING: FORCE ROOT BACKGROUND & LAYOUT
+    // Ensures root has proper dimensions and background even if AI forgets
     if (manifest.root) {
-      const currentClasses = manifest.root.styles?.tailwindClasses || '';
-      if (!currentClasses.includes('bg-background')) {
-        console.log('POST-FIX: Adding bg-background to root container');
-        manifest.root.styles = {
-          ...manifest.root.styles,
-          tailwindClasses: `min-h-screen bg-background ${currentClasses}`,
-        };
+      // Ensure styles object exists
+      if (!manifest.root.styles) manifest.root.styles = { tailwindClasses: '' };
+
+      let classes = manifest.root.styles.tailwindClasses || '';
+
+      // Force minimum height and width
+      if (!classes.includes('min-h-screen')) classes = `min-h-screen ${classes}`;
+      if (!classes.includes('w-full')) classes = `w-full ${classes}`;
+
+      // Force background color if missing
+      if (!classes.includes('bg-background')) {
+        console.log('POST-FIX: Injecting missing bg-background class');
+        classes = `${classes} bg-background`;
       }
+
+      manifest.root.styles.tailwindClasses = classes.trim();
     }
 
     // Sanitize manifest: Strip children from void elements (image, input)
