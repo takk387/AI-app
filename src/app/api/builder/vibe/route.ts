@@ -66,7 +66,8 @@ export async function POST(request: Request) {
         console.log('Active Metaphor:', generatedMetaphor);
 
         // PHASE 2: THE SYNTHESIS (Flash UI Persona)
-        const styledManifest = await synthesizeStyles(model, manifest, generatedMetaphor);
+        // Pass user's original prompt so styles respect their intent
+        const styledManifest = await synthesizeStyles(model, manifest, generatedMetaphor, prompt);
 
         // Sanitize void elements before validation
         const { manifest: sanitizedManifest } = sanitizeManifest(styledManifest);
@@ -187,7 +188,8 @@ async function generatePhysicalMetaphor(model: any, userPrompt: string): Promise
 async function synthesizeStyles(
   model: any,
   manifest: LayoutManifest,
-  metaphor: string
+  metaphor: string,
+  userPrompt: string
 ): Promise<LayoutManifest> {
   // Extract colors to inject into prompt context for color fidelity
   const colors = manifest.designSystem?.colors || {};
@@ -198,34 +200,45 @@ async function synthesizeStyles(
 
   const prompt = `
 ROLE: "Flash UI" - Tailwind CSS styling engine.
-TASK: Apply styles to the provided LayoutManifest based on the physical metaphor AND the provided Design System colors.
+TASK: Apply styles to the provided LayoutManifest based on the user's request, physical metaphor, AND the provided Design System colors.
 
-CRITICAL PRIORITY - COLOR FIDELITY:
-You MUST use the specific colors defined in the manifest's Design System.
-Do NOT use generic Tailwind colors (like 'bg-blue-500', 'bg-gray-500') if a custom color is defined.
-Use Tailwind arbitrary values to match exact hex codes from the design system:
-- For primary color (${colors.primary || 'N/A'}) -> use 'bg-[${colors.primary}]' or 'text-[${colors.primary}]'
-- For secondary color (${colors.secondary || 'N/A'}) -> use 'bg-[${colors.secondary}]'
-- For background (${colors.background || 'N/A'}) -> use 'bg-[${colors.background}]'
-- For surface (${colors.surface || 'N/A'}) -> use 'bg-[${colors.surface}]'
-- For text (${colors.text || 'N/A'}) -> use 'text-[${colors.text}]'
-- For border (${colors.border || 'N/A'}) -> use 'border-[${colors.border}]'
+USER'S ORIGINAL REQUEST: "${userPrompt}"
+DERIVED METAPHOR: "${metaphor}"
 
-DESIGN SYSTEM COLORS (USE THESE):
+PRIORITY ORDER:
+1. Follow the user's explicit styling instructions from their request
+2. Apply the metaphor's texture/physics (blur, shadow, border-radius)
+3. PRESERVE the Design System colors - use Tailwind arbitrary values
+
+**COLOR LOCK** - CRITICAL REQUIREMENT:
+You MUST use the EXACT hex codes from the Design System below.
+Do NOT use generic Tailwind colors (bg-white, bg-slate-900, bg-blue-500, text-gray-900, etc.)
+Use ARBITRARY VALUES for ALL colors:
+- Primary (${colors.primary || 'N/A'}) -> 'bg-[${colors.primary}]' or 'text-[${colors.primary}]'
+- Secondary (${colors.secondary || 'N/A'}) -> 'bg-[${colors.secondary}]'
+- Background (${colors.background || 'N/A'}) -> 'bg-[${colors.background}]'
+- Surface (${colors.surface || 'N/A'}) -> 'bg-[${colors.surface}]'
+- Text (${colors.text || 'N/A'}) -> 'text-[${colors.text}]'
+- Text Muted (${colors.textMuted || 'N/A'}) -> 'text-[${colors.textMuted}]'
+- Border (${colors.border || 'N/A'}) -> 'border-[${colors.border}]'
+- Accent (${colors.accent || 'N/A'}) -> 'bg-[${colors.accent}]'
+
+DESIGN SYSTEM COLORS (USE THESE EXACT VALUES):
 ${colorContext || 'No colors defined'}
 
-METAPHOR: "${metaphor}"
-
-STYLE MAPPING (Apply textures/effects, NOT color overrides):
-- Glass/Liquid -> backdrop-blur-xl, bg-opacity-*, border-white/20
+STYLE MAPPING (Apply textures/effects ONLY, not color changes):
+- Glass/Liquid -> backdrop-blur-xl, bg-opacity-80, border-white/20
 - Steel/Metal -> bg-gradient-to-br, shadow-md
 - Neon/Light -> shadow-[0_0_15px_rgba(...)], ring-2
 - Obsidian/Volcanic -> border-0, rounded-none
 - Paper/Matte -> shadow-sm, rounded-lg
+- If user says "dark" -> adjust opacity, add darker overlays (but keep base colors)
+- If user says "bold" -> stronger shadows, thicker borders
+- If user says "minimal" -> less decoration, more whitespace
 
 INSTRUCTIONS:
 1. Apply the Metaphor's texture/physics (blur, shadow, border-radius) using Tailwind
-2. Apply the Design System's COLORS to backgrounds, text, and borders using arbitrary values
+2. Apply the Design System's COLORS using arbitrary values like bg-[#hex] and text-[#hex]
 3. Modify ONLY the styles.tailwindClasses values
 4. Preserve ALL other fields exactly: id, type, semanticTag, attributes, children structure
 5. Return the COMPLETE manifest JSON - do NOT omit any fields

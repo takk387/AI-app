@@ -279,6 +279,33 @@ If no specific instructions, default to using Image 1 as the primary reference.
       );
     }
 
+    // HARD OVERWRITE: Force extracted colors into manifest - don't trust AI
+    // This guarantees color fidelity even if AI ignores prompt instructions
+    if (extractedColors) {
+      console.log('HARD OVERWRITE: Force-applying extracted colors to Architect result');
+
+      // Ensure designSystem exists
+      if (!manifest.designSystem) {
+        manifest.designSystem = { colors: {}, fonts: { heading: 'Inter', body: 'Inter' } };
+      }
+      if (!manifest.designSystem.colors) {
+        manifest.designSystem.colors = {};
+      }
+
+      // Force all extracted colors - these are mathematically accurate from k-means
+      manifest.designSystem.colors = {
+        ...manifest.designSystem.colors, // Keep any AI-detected colors as fallback
+        primary: extractedColors.primary,
+        secondary: extractedColors.secondary,
+        background: extractedColors.background,
+        surface: extractedColors.surface,
+        text: extractedColors.text,
+        textMuted: extractedColors.textMuted || extractedColors.text,
+        border: extractedColors.border,
+        accent: extractedColors.accent,
+      };
+    }
+
     // Sanitize manifest: Strip children from void elements (image, input)
     const {
       manifest: sanitizedManifest,

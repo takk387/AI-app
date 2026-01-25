@@ -174,15 +174,27 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
         detectedPalette
       );
 
-      setLoadingStage('Applying Base Vibe...');
-
       // 2. Builder applies the initial style (Flash UI)
-      const styledResult = await builder.applyVibe(newManifest, activeMetaphor);
+      // CRITICAL: Skip Builder for exact replicas - it destroys Architect's extracted colors
+      const isExactReplica = !prompt.trim(); // No user text = they want the image replicated exactly
 
-      setManifest(styledResult.manifest);
-      addToHistory(styledResult.manifest); // Add to undo history
-      setActiveMetaphor(styledResult.metaphor);
-      success('Layout generated successfully!');
+      if (isExactReplica) {
+        // SKIP BUILDER - Architect already has exact colors/structure from image
+        // The HARD OVERWRITE in generate-manifest/route.ts guarantees color fidelity
+        setManifest(newManifest);
+        addToHistory(newManifest);
+        setActiveMetaphor('Exact Replica');
+        success('Layout replicated from image');
+      } else {
+        // User provided styling instructions - apply them via Builder
+        // Pass effectivePrompt (not activeMetaphor) so Builder knows user's intent
+        setLoadingStage('Applying Style...');
+        const styledResult = await builder.applyVibe(newManifest, effectivePrompt);
+        setManifest(styledResult.manifest);
+        addToHistory(styledResult.manifest);
+        setActiveMetaphor(styledResult.metaphor);
+        success('Layout generated successfully!');
+      }
     } catch (err: unknown) {
       const errorInfo = categorizeError(err);
       error(errorInfo.message);
