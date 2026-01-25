@@ -1,4 +1,5 @@
 import type { LayoutManifest } from '@/types/schema';
+import { DEFAULT_COLORS, NEUTRAL_PALETTE, STATUS_COLORS } from '@/constants/themeDefaults';
 
 /**
  * Design tokens extracted from a LayoutManifest for use in app generation
@@ -130,20 +131,20 @@ class LayoutExportServiceClass {
 
     return {
       colors: {
-        primary: colors.primary || '#6B7280',
-        secondary: colors.secondary || '#9CA3AF',
-        accent: colors.accent || '#6B7280',
-        background: colors.background || '#F9FAFB',
-        surface: colors.surface || '#FFFFFF',
+        primary: colors.primary || DEFAULT_COLORS.primary,
+        secondary: colors.secondary || DEFAULT_COLORS.secondary,
+        accent: colors.accent || DEFAULT_COLORS.accent,
+        background: colors.background || DEFAULT_COLORS.background,
+        surface: colors.surface || DEFAULT_COLORS.surface,
         text: {
-          primary: colors.text || '#374151',
-          secondary: colors.textMuted || '#6B7280',
-          muted: colors.textMuted || '#9CA3AF',
+          primary: colors.text || DEFAULT_COLORS.text,
+          secondary: colors.textMuted || DEFAULT_COLORS.textMuted,
+          muted: colors.textMuted || NEUTRAL_PALETTE.gray400,
         },
-        border: colors.border || '#E5E7EB',
-        error: colors.error || '#EF4444',
-        warning: colors.warning || '#F59E0B',
-        success: colors.success || '#10B981',
+        border: colors.border || DEFAULT_COLORS.border,
+        error: colors.error || STATUS_COLORS.error,
+        warning: colors.warning || STATUS_COLORS.warning,
+        success: colors.success || STATUS_COLORS.success,
       },
       spacing: defaultSpacing,
       typography: {

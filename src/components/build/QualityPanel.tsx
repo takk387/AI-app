@@ -88,11 +88,11 @@ function PipelineProgress({
                 step.status === 'running'
                   ? 'bg-garden-500 animate-pulse'
                   : step.status === 'passed'
-                    ? 'bg-green-500'
+                    ? 'bg-success-500'
                     : step.status === 'failed'
-                      ? 'bg-red-500'
+                      ? 'bg-error-500'
                       : step.status === 'warning'
-                        ? 'bg-yellow-500'
+                        ? 'bg-warning-500'
                         : 'bg-slate-600'
               }`}
             />
@@ -119,9 +119,9 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   const offset = circumference - (score / 100) * circumference;
 
   const getScoreColor = () => {
-    if (score >= 90) return 'text-green-400';
-    if (score >= 70) return 'text-yellow-400';
-    return 'text-red-400';
+    if (score >= 90) return 'text-success-400';
+    if (score >= 70) return 'text-warning-400';
+    return 'text-error-400';
   };
 
   const getStrokeColor = () => {
@@ -262,14 +262,14 @@ export function QualityPanel({
   };
 
   const getValidationCheckColor = (check: ValidationCheck) => {
-    if (check.passed) return 'text-green-400';
+    if (check.passed) return 'text-success-400';
     switch (check.type) {
       case 'render':
       case 'functionality':
-        return 'text-red-400';
+        return 'text-error-400';
       case 'console':
       case 'performance':
-        return 'text-yellow-400';
+        return 'text-warning-400';
       default:
         return 'text-slate-400';
     }
@@ -277,10 +277,10 @@ export function QualityPanel({
 
   const getReviewCategoryStatus = (category: string) => {
     const categoryIssues = issues.filter((i) => i.category.startsWith(category));
-    if (categoryIssues.length === 0) return { icon: '✅', color: 'text-green-400', count: 0 };
+    if (categoryIssues.length === 0) return { icon: '✅', color: 'text-success-400', count: 0 };
     const hasCritical = categoryIssues.some((i) => i.severity === 'critical');
-    if (hasCritical) return { icon: '❌', color: 'text-red-400', count: categoryIssues.length };
-    return { icon: '⚠️', color: 'text-yellow-400', count: categoryIssues.length };
+    if (hasCritical) return { icon: '❌', color: 'text-error-400', count: categoryIssues.length };
+    return { icon: '⚠️', color: 'text-warning-400', count: categoryIssues.length };
   };
 
   // Handle run quality check
@@ -301,12 +301,12 @@ export function QualityPanel({
       return { text: 'Not Run', color: 'bg-slate-500/20 text-slate-400' };
     }
     if (overallScore >= 90 && validationPassed) {
-      return { text: 'Passed', color: 'bg-green-500/20 text-green-400' };
+      return { text: 'Passed', color: 'bg-success-500/20 text-success-400' };
     }
     if (overallScore >= 70 || canProceed) {
-      return { text: 'Warning', color: 'bg-yellow-500/20 text-yellow-400' };
+      return { text: 'Warning', color: 'bg-warning-500/20 text-warning-400' };
     }
-    return { text: 'Failed', color: 'bg-red-500/20 text-red-400' };
+    return { text: 'Failed', color: 'bg-error-500/20 text-error-400' };
   };
 
   const statusBadge = getStatusBadge();
@@ -382,8 +382,8 @@ export function QualityPanel({
             <div className="text-2xl font-bold text-white">{overallScore}/100</div>
             <div className="text-sm text-slate-400">Quality Score</div>
             <div className="flex gap-2 mt-2">
-              <span className="text-xs text-green-400">✅ {fixes.length} fixed</span>
-              <span className="text-xs text-yellow-400">⚠️ {issues.length} remaining</span>
+              <span className="text-xs text-success-400">✅ {fixes.length} fixed</span>
+              <span className="text-xs text-warning-400">⚠️ {issues.length} remaining</span>
             </div>
           </div>
         </div>
@@ -394,12 +394,12 @@ export function QualityPanel({
         <div className="mb-4">
           <button
             onClick={() => setShowAutoFixes(!showAutoFixes)}
-            className="w-full flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20 text-left"
+            className="w-full flex items-center justify-between p-3 bg-success-500/10 rounded-lg border border-success-500/20 text-left"
           >
-            <span className="text-sm font-medium text-green-400">
+            <span className="text-sm font-medium text-success-400">
               ✅ Auto-Fixed ({fixes.length})
             </span>
-            <span className="text-green-400">{showAutoFixes ? '▲' : '▼'}</span>
+            <span className="text-success-400">{showAutoFixes ? '▲' : '▼'}</span>
           </button>
           {showAutoFixes && (
             <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
@@ -433,12 +433,12 @@ export function QualityPanel({
         <div className="mb-4">
           <button
             onClick={() => setShowRemainingIssues(!showRemainingIssues)}
-            className="w-full flex items-center justify-between p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 text-left"
+            className="w-full flex items-center justify-between p-3 bg-warning-500/10 rounded-lg border border-warning-500/20 text-left"
           >
-            <span className="text-sm font-medium text-yellow-400">
+            <span className="text-sm font-medium text-warning-400">
               ⚠️ Remaining Issues ({issues.length})
             </span>
-            <span className="text-yellow-400">{showRemainingIssues ? '▲' : '▼'}</span>
+            <span className="text-warning-400">{showRemainingIssues ? '▲' : '▼'}</span>
           </button>
           {showRemainingIssues && (
             <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
@@ -474,8 +474,8 @@ export function QualityPanel({
             Diff: {selectedFix.description}
           </div>
           <div className="text-xs font-mono">
-            <div className="text-red-400 line-through opacity-70">{selectedFix.beforeCode}</div>
-            <div className="text-green-400">{selectedFix.afterCode}</div>
+            <div className="text-error-400 line-through opacity-70">{selectedFix.beforeCode}</div>
+            <div className="text-success-400">{selectedFix.afterCode}</div>
           </div>
         </div>
       )}
@@ -519,7 +519,7 @@ export function QualityPanel({
             {(validationPassed && reviewPassed) || canProceed ? (
               <button
                 onClick={onProceedAnyway}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-lg bg-success-600 hover:bg-success-500 text-white font-medium transition-all flex items-center justify-center gap-2"
               >
                 <span>✅</span>
                 <span>Proceed</span>

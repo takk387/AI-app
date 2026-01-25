@@ -5,6 +5,8 @@
  * These mappings ensure generated code exactly matches the design specifications.
  */
 
+import { STATUS_COLORS } from '@/constants/themeDefaults';
+
 // ============================================================================
 // BORDER RADIUS MAPPINGS
 // ============================================================================
@@ -277,10 +279,10 @@ export function generateColorCSSVariables(colors: {
   --color-text: ${colors.text};
   --color-text-muted: ${colors.textMuted};
   --color-border: ${colors.border};
-  --color-success: ${colors.success || '#6B7280'};
-  --color-warning: ${colors.warning || '#6B7280'};
-  --color-error: ${colors.error || '#6B7280'};
-  --color-info: ${colors.info || '#6B7280'};`;
+  --color-success: ${colors.success || STATUS_COLORS.success};
+  --color-warning: ${colors.warning || STATUS_COLORS.warning};
+  --color-error: ${colors.error || STATUS_COLORS.error};
+  --color-info: ${colors.info || STATUS_COLORS.info};`;
 }
 
 /**

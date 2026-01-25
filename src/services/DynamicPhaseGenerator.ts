@@ -29,6 +29,7 @@ import {
   MODERATE_FEATURE_PATTERNS as moderatePatterns,
   DEFAULT_PHASE_GENERATOR_CONFIG as defaultConfig,
 } from '@/types/dynamicPhases';
+import { DEFAULT_COLORS } from '@/constants/themeDefaults';
 
 // ============================================================================
 // PHASE CONTEXT KEYWORDS
@@ -1344,7 +1345,7 @@ export class DynamicPhaseGenerator {
       designDetails.push(`Typography: ${fonts.heading} headings, ${fonts.body} body`);
     }
     if (Object.keys(colors).length > 0) {
-      const primaryColor = colors.primary || colors.background || '#6B7280';
+      const primaryColor = colors.primary || colors.background || DEFAULT_COLORS.primary;
       designDetails.push(
         `Colors: primary ${primaryColor}, ${Object.keys(colors).length} color tokens`
       );
@@ -1358,10 +1359,10 @@ export class DynamicPhaseGenerator {
       )
     );
 
-    const primaryColor = colors.primary || '#6B7280';
-    const backgroundColor = colors.background || '#FFFFFF';
-    const textColor = colors.text || '#374151';
-    const borderColor = colors.border || '#E5E7EB';
+    const primaryColor = colors.primary || DEFAULT_COLORS.primary;
+    const backgroundColor = colors.background || DEFAULT_COLORS.surface;
+    const textColor = colors.text || DEFAULT_COLORS.text;
+    const borderColor = colors.border || DEFAULT_COLORS.border;
 
     return {
       number: phaseNumber,

@@ -14,6 +14,7 @@ import {
   generateZIndexCSS,
   generateTailwindZIndex,
 } from '@/utils/layerUtils';
+import { LAYER_COLORS } from '@/constants/themeDefaults';
 
 // ============================================================================
 // TYPES
@@ -31,15 +32,23 @@ interface ZIndexEditorProps {
 
 const TOKEN_INFO: Record<keyof ZIndexScale, { label: string; description: string; color: string }> =
   {
-    base: { label: 'Base', description: 'Default stacking context', color: '#64748B' },
-    content: { label: 'Content', description: 'Regular content elements', color: '#3B82F6' },
-    dropdown: { label: 'Dropdown', description: 'Dropdowns & menus', color: '#06B6D4' },
-    sticky: { label: 'Sticky', description: 'Sticky headers & elements', color: '#10B981' },
-    overlay: { label: 'Overlay', description: 'Background overlays', color: '#8B5CF6' },
-    modal: { label: 'Modal', description: 'Modal dialogs', color: '#EC4899' },
-    toast: { label: 'Toast', description: 'Toast notifications', color: '#F59E0B' },
-    tooltip: { label: 'Tooltip', description: 'Tooltips & popovers', color: '#EF4444' },
-    max: { label: 'Max', description: 'Maximum z-index', color: '#1F2937' },
+    base: { label: 'Base', description: 'Default stacking context', color: LAYER_COLORS.base },
+    content: {
+      label: 'Content',
+      description: 'Regular content elements',
+      color: LAYER_COLORS.content,
+    },
+    dropdown: { label: 'Dropdown', description: 'Dropdowns & menus', color: LAYER_COLORS.dropdown },
+    sticky: {
+      label: 'Sticky',
+      description: 'Sticky headers & elements',
+      color: LAYER_COLORS.sticky,
+    },
+    overlay: { label: 'Overlay', description: 'Background overlays', color: LAYER_COLORS.overlay },
+    modal: { label: 'Modal', description: 'Modal dialogs', color: LAYER_COLORS.modal },
+    toast: { label: 'Toast', description: 'Toast notifications', color: LAYER_COLORS.toast },
+    tooltip: { label: 'Tooltip', description: 'Tooltips & popovers', color: LAYER_COLORS.tooltip },
+    max: { label: 'Max', description: 'Maximum z-index', color: LAYER_COLORS.max },
   };
 
 const SCALE_PRESETS: { id: string; name: string; scale: ZIndexScale }[] = [

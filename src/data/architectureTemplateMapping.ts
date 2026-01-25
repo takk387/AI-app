@@ -9,6 +9,7 @@
 
 import type { LayoutManifest, UISpecNode } from '@/types/schema';
 import type { FullTemplate } from '@/types/architectureTemplates';
+import { DEFAULT_COLORS, DARK_PALETTE, STATUS_COLORS } from '@/constants/themeDefaults';
 
 // ============================================================================
 // LAYOUT TYPE CONFIGURATIONS
@@ -172,17 +173,17 @@ export function createManifestForTemplate(template: FullTemplate): LayoutManifes
     designSystem: {
       colors: {
         // Neutral gray defaults - actual colors should be AI-generated
-        primary: '#6B7280',
-        secondary: '#9CA3AF',
-        accent: '#6B7280',
-        background: isLightScheme ? '#F9FAFB' : '#0f172a',
-        surface: isLightScheme ? '#FFFFFF' : '#1e293b',
-        text: isLightScheme ? '#374151' : '#f8fafc',
-        textMuted: isLightScheme ? '#6B7280' : '#94a3b8',
-        border: isLightScheme ? '#E5E7EB' : '#334155',
-        error: '#EF4444',
-        warning: '#F59E0B',
-        success: '#10B981',
+        primary: DEFAULT_COLORS.primary,
+        secondary: DEFAULT_COLORS.secondary,
+        accent: DEFAULT_COLORS.accent,
+        background: isLightScheme ? DEFAULT_COLORS.background : DARK_PALETTE.background,
+        surface: isLightScheme ? DEFAULT_COLORS.surface : DARK_PALETTE.surface,
+        text: isLightScheme ? DEFAULT_COLORS.text : DARK_PALETTE.text,
+        textMuted: isLightScheme ? DEFAULT_COLORS.textMuted : DARK_PALETTE.textMuted,
+        border: isLightScheme ? DEFAULT_COLORS.border : DARK_PALETTE.border,
+        error: STATUS_COLORS.error,
+        warning: STATUS_COLORS.warning,
+        success: STATUS_COLORS.success,
       },
       fonts: {
         heading:

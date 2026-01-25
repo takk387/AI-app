@@ -87,14 +87,14 @@ const PHASE_COLORS: Record<string, { bg: string; border: string; text: string }>
     text: 'text-garden-400',
   },
   completed: {
-    bg: 'bg-green-500/20',
-    border: 'border-green-500',
-    text: 'text-green-400',
+    bg: 'bg-success-500/20',
+    border: 'border-success-500',
+    text: 'text-success-400',
   },
   error: {
-    bg: 'bg-red-500/20',
-    border: 'border-red-500',
-    text: 'text-red-400',
+    bg: 'bg-error-500/20',
+    border: 'border-error-500',
+    text: 'text-error-400',
   },
   skipped: {
     bg: 'bg-slate-600/30',
@@ -137,7 +137,7 @@ function SubPhaseList({ subPhases }: { subPhases: AnalysisPhaseState['subPhases'
                   : sub.status === 'in_progress'
                     ? 'bg-garden-400 animate-pulse'
                     : sub.status === 'error'
-                      ? 'bg-red-400'
+                      ? 'bg-error-400'
                       : 'bg-slate-500'
               }`}
             />
@@ -202,7 +202,7 @@ function PhaseCard({
       )}
 
       {/* Error message */}
-      {phase.error && <div className="mt-2 text-xs text-red-400">{phase.error}</div>}
+      {phase.error && <div className="mt-2 text-xs text-error-400">{phase.error}</div>}
     </div>
   );
 }
@@ -296,7 +296,7 @@ export function AnalysisProgressIndicator({
           {state.isAnalyzing && onCancel && state.canCancel && (
             <button
               onClick={onCancel}
-              className="px-3 py-1.5 text-xs rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+              className="px-3 py-1.5 text-xs rounded-lg bg-error-500/20 text-error-400 hover:bg-error-500/30 transition-colors"
             >
               Cancel
             </button>
@@ -337,7 +337,7 @@ export function AnalysisProgressIndicator({
                       : phase.status === 'in_progress'
                         ? 'bg-garden-500 border-garden-500 animate-pulse'
                         : phase.status === 'error'
-                          ? 'bg-red-500 border-red-500'
+                          ? 'bg-error-500 border-error-500'
                           : 'bg-slate-800 border-slate-600'
                   }
                 `}
@@ -388,12 +388,12 @@ export function AnalysisProgressIndicator({
 
       {/* Error Display */}
       {state.error && (
-        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <div className="flex items-center gap-2 text-red-400">
+        <div className="mt-4 p-3 bg-error-500/10 border border-error-500/30 rounded-lg">
+          <div className="flex items-center gap-2 text-error-400">
             <span>❌</span>
             <span className="font-medium">Analysis Failed</span>
           </div>
-          <p className="mt-1 text-sm text-red-300/80">{state.error}</p>
+          <p className="mt-1 text-sm text-error-300/80">{state.error}</p>
         </div>
       )}
     </div>

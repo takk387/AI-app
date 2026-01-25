@@ -5,6 +5,8 @@
  * Uses k-means clustering to identify the most prominent colors.
  */
 
+import { DEFAULT_COLORS, NEUTRAL_PALETTE, DARK_PALETTE } from '@/constants/themeDefaults';
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -318,33 +320,36 @@ function categorizeColors(colors: ExtractedColor[], isDark: boolean): ColorPalet
   if (useLightTheme) {
     // Light mode - use lightest colors for background
     const sortedLight = [...lightColors].sort((a, b) => b.hsl.l - a.hsl.l);
-    background = sortedLight[0]?.hex || '#FFFFFF';
-    surface = sortedLight[1]?.hex || sortedLight[0]?.hex || '#F8FAFC';
+    background = sortedLight[0]?.hex || NEUTRAL_PALETTE.white;
+    surface = sortedLight[1]?.hex || sortedLight[0]?.hex || NEUTRAL_PALETTE.gray100;
 
     // Extract text from darkest colors in the image (for contrast on light bg)
     const sortedDarkForText = [...darkColors].sort((a, b) => a.hsl.l - b.hsl.l);
-    text = sortedDarkForText[0]?.hex || '#0F172A';
+    text = sortedDarkForText[0]?.hex || DARK_PALETTE.background;
     // textMuted: slightly lighter than text, or second darkest color
     textMuted =
-      sortedDarkForText[1]?.hex || sortedMidTones[sortedMidTones.length - 1]?.hex || '#64748B';
+      sortedDarkForText[1]?.hex ||
+      sortedMidTones[sortedMidTones.length - 1]?.hex ||
+      NEUTRAL_PALETTE.gray500;
     // border: a subtle mid-tone from the image
-    border = sortedMidTones[0]?.hex || sortedLight[sortedLight.length - 1]?.hex || '#E2E8F0';
+    border =
+      sortedMidTones[0]?.hex || sortedLight[sortedLight.length - 1]?.hex || NEUTRAL_PALETTE.gray300;
   } else {
     // Dark mode - use darkest colors for background
     const sortedDark = [...darkColors].sort((a, b) => a.hsl.l - b.hsl.l);
-    background = sortedDark[0]?.hex || '#0F172A';
-    surface = sortedDark[1]?.hex || sortedDark[0]?.hex || '#1E293B';
+    background = sortedDark[0]?.hex || DARK_PALETTE.background;
+    surface = sortedDark[1]?.hex || sortedDark[0]?.hex || DARK_PALETTE.surface;
 
     // Extract text from lightest colors in the image (for contrast on dark bg)
     const sortedLightForText = [...lightColors].sort((a, b) => b.hsl.l - a.hsl.l);
-    text = sortedLightForText[0]?.hex || '#F8FAFC';
+    text = sortedLightForText[0]?.hex || DARK_PALETTE.text;
     // textMuted: slightly darker than text, or second lightest color
-    textMuted = sortedLightForText[1]?.hex || sortedMidTones[0]?.hex || '#94A3B8';
+    textMuted = sortedLightForText[1]?.hex || sortedMidTones[0]?.hex || DARK_PALETTE.textMuted;
     // border: a subtle mid-tone from the image
     border =
       sortedMidTones[sortedMidTones.length - 1]?.hex ||
       sortedDark[sortedDark.length - 1]?.hex ||
-      '#334155';
+      DARK_PALETTE.border;
   }
 
   return {
@@ -434,16 +439,16 @@ function processImageData(imageData: ImageData, numColors: number): ExtractionRe
     return {
       colors: [],
       palette: {
-        primary: '#6B7280',
-        secondary: '#9CA3AF',
-        accent: '#6B7280',
-        background: '#F9FAFB',
-        surface: '#FFFFFF',
-        text: '#374151',
-        textMuted: '#6B7280',
-        border: '#E5E7EB',
+        primary: DEFAULT_COLORS.primary,
+        secondary: DEFAULT_COLORS.secondary,
+        accent: DEFAULT_COLORS.accent,
+        background: DEFAULT_COLORS.background,
+        surface: DEFAULT_COLORS.surface,
+        text: DEFAULT_COLORS.text,
+        textMuted: DEFAULT_COLORS.textMuted,
+        border: DEFAULT_COLORS.border,
       },
-      dominantColor: '#6B7280',
+      dominantColor: DEFAULT_COLORS.primary,
       isDarkImage: false,
     };
   }

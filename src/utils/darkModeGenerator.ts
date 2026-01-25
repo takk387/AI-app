@@ -1,4 +1,5 @@
 import type { LayoutManifest } from '@/types/schema';
+import { DARK_PALETTE } from '@/constants/themeDefaults';
 
 /**
  * Generate a dark mode variant of a LayoutManifest
@@ -10,11 +11,11 @@ export function generateDarkMode(manifest: LayoutManifest): LayoutManifest {
 
   const darkColors = {
     ...colors,
-    background: '#0f172a',
-    surface: '#1e293b',
-    text: '#f8fafc',
-    textMuted: '#94a3b8',
-    border: '#334155',
+    background: DARK_PALETTE.background,
+    surface: DARK_PALETTE.surface,
+    text: DARK_PALETTE.text,
+    textMuted: DARK_PALETTE.textMuted,
+    border: DARK_PALETTE.border,
   };
 
   return {
