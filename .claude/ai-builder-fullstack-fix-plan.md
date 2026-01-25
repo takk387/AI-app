@@ -5,10 +5,79 @@
 This plan addresses **17 critical issues** (18 identified, 1 invalid) that prevent the AI builder from generating production-quality full-stack applications.
 
 **Two Workflows Supported:**
+
 1. **Guided Path:** NaturalConversationWizard → LayoutBuilder → Build → AIBuilder
 2. **Direct Path:** AIBuilder (MainBuilderView) accessed directly at `/app`
 
 All fixes ensure **zero breaking changes** to both workflows. Fixes are additive - they add optional fields and new capabilities without removing or renaming existing required fields.
+
+---
+
+## 🎯 Implementation Status (Updated 2025-01-25)
+
+| Fix    | Description                         | Status          | Commit          |
+| ------ | ----------------------------------- | --------------- | --------------- |
+| Fix 1  | Backend Requirements (scale phases) | ✅ **COMPLETE** | 933ba9e         |
+| Fix 2  | Tech Stack Configurable             | ✅ **COMPLETE** | Pre-existing    |
+| Fix 3  | Architecture Gate                   | ✅ **COMPLETE** | Pre-existing    |
+| Fix 4  | Sandbox Constraints                 | ✅ **COMPLETE** | 933ba9e         |
+| Fix 5  | Backend Validation Phases           | ✅ **COMPLETE** | 933ba9e         |
+| Fix 6  | Dynamic Templates                   | ✅ **COMPLETE** | Pre-existing    |
+| Fix 7  | Deployment Phase                    | ✅ **COMPLETE** | 933ba9e         |
+| Fix 8  | Token Budget                        | ✅ **COMPLETE** | 933ba9e         |
+| Fix 9  | Backend Integrity Checks            | ✅ **COMPLETE** | Pre-existing    |
+| Fix 10 | Test Generation                     | ✅ **COMPLETE** | Pre-existing    |
+| Fix 11 | Context Pinning                     | ✅ **COMPLETE** | Pre-existing    |
+| Fix 12 | Database Migration                  | ⚠️ **PARTIAL**  | Simulation-only |
+| Fix 13 | Validation Levels                   | ✅ **COMPLETE** | Pre-existing    |
+| Fix 14 | Dependency Resolution               | ✅ **COMPLETE** | Pre-existing    |
+| Fix 15 | Fail-Open Bug                       | ✅ **COMPLETE** | Pre-existing    |
+| Fix 16 | Architecture Verification           | ✅ **COMPLETE** | Pre-existing    |
+| Fix 17 | Regex Parsing                       | ❌ **REMOVED**  | Invalid         |
+| Fix 18 | Auth Propagation                    | ✅ **COMPLETE** | Pre-existing    |
+
+**Summary: 15 Complete, 1 Partial, 1 Removed**
+
+### Key Implementations (2025-01-25)
+
+**Fix 1 & 5:** Scale-based DevOps/Monitoring phases in [DynamicPhaseGenerator.ts:759-795](src/services/DynamicPhaseGenerator.ts#L759-L795)
+
+```typescript
+if (tech.scale === 'large' || tech.scale === 'enterprise') {
+  implicit.push({ domain: 'devops', ... });
+  implicit.push({ domain: 'monitoring', ... });
+}
+```
+
+**Fix 4:** Conditional fullstack rules in [fullstack-rules-compressed.ts](src/prompts/full-app/fullstack-rules-compressed.ts)
+
+```typescript
+export function getFullstackRules(appType: AppType): string { ... }
+```
+
+**Fix 8:** Backend token budget in [generation-logic.ts](src/app/api/ai-builder/full-app/generation-logic.ts)
+
+```typescript
+const BACKEND_DOMAINS = [
+  'database',
+  'auth',
+  'devops',
+  'monitoring',
+  'testing',
+  'backend-validator',
+];
+if (domain && BACKEND_DOMAINS.includes(domain)) return TOKEN_BUDGETS.backend;
+```
+
+### Remaining Work
+
+**Fix 12 (Database Migration):** Currently simulation-only. To complete:
+
+1. Add `pg` or `@libsql/client` dependencies
+2. Replace simulation with real SQL execution
+3. Implement real verification queries
+
+**Decision:** Skipped for now - simulation acceptable until production deployment needed.
 
 ---
 
@@ -25,6 +94,7 @@ All fixes ensure **zero breaking changes** to both workflows. Fixes are additive
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/prompts/wizardSystemPrompt.ts` - Add backend requirement questions
 - `src/types/appConcept.ts` - Add optional fields to TechnicalRequirements
 
@@ -42,13 +112,13 @@ interface TechnicalRequirements {
 
   // NEW optional fields
   scale?: 'small' | 'medium' | 'large' | 'enterprise';
-  expectedUsers?: string;  // "100", "10k", "1M+"
+  expectedUsers?: string; // "100", "10k", "1M+"
   hostingPreference?: 'vercel' | 'aws' | 'gcp' | 'self-hosted';
-  complianceNeeds?: string[];  // ['GDPR', 'HIPAA', 'SOC2']
-  integrationsNeeded?: string[];  // ['Stripe', 'SendGrid', 'Twilio']
+  complianceNeeds?: string[]; // ['GDPR', 'HIPAA', 'SOC2']
+  integrationsNeeded?: string[]; // ['Stripe', 'SendGrid', 'Twilio']
   performanceRequirements?: {
-    latencySLA?: string;  // "< 200ms"
-    uptimeSLA?: string;   // "99.9%"
+    latencySLA?: string; // "< 200ms"
+    uptimeSLA?: string; // "99.9%"
   };
 }
 ```
@@ -73,6 +143,7 @@ For apps with payments/integrations, ask:
 ```
 
 **Why Safe:**
+
 - All new fields are OPTIONAL (`?:`)
 - Existing flow unchanged if fields not provided
 - `technical.*` defaults to `false` for booleans, `undefined` for new fields
@@ -84,6 +155,7 @@ For apps with payments/integrations, ask:
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/types/appConcept.ts` - Add tech preferences
 - `src/services/BackendArchitectureAgent.ts` - Read preferences, use defaults
 
@@ -108,19 +180,26 @@ interface TechnicalRequirements {
 
 const techStackSection = `
 ## Technology Stack
-${concept.technical.preferredDatabase
-  ? `- **Database**: ${concept.technical.preferredDatabase} (user preference)`
-  : '- **Database**: SQLite with Prisma ORM (default)'}
-${concept.technical.preferredAuth
-  ? `- **Auth**: ${concept.technical.preferredAuth} (user preference)`
-  : '- **Auth**: NextAuth.js (default)'}
-${concept.technical.preferredApiStyle
-  ? `- **API**: ${concept.technical.preferredApiStyle} (user preference)`
-  : '- **API**: Next.js API Routes REST (default)'}
+${
+  concept.technical.preferredDatabase
+    ? `- **Database**: ${concept.technical.preferredDatabase} (user preference)`
+    : '- **Database**: SQLite with Prisma ORM (default)'
+}
+${
+  concept.technical.preferredAuth
+    ? `- **Auth**: ${concept.technical.preferredAuth} (user preference)`
+    : '- **Auth**: NextAuth.js (default)'
+}
+${
+  concept.technical.preferredApiStyle
+    ? `- **API**: ${concept.technical.preferredApiStyle} (user preference)`
+    : '- **API**: Next.js API Routes REST (default)'
+}
 `;
 ```
 
 **Why Safe:**
+
 - All preferences are OPTIONAL
 - Falls back to current defaults if not specified
 - BackendArchitectureAgent already reads from AppConcept.technical
@@ -132,6 +211,7 @@ ${concept.technical.preferredApiStyle
 **Status:** REQUIRES UI/FLOW CHANGE ⚠️
 
 **The Critical Flow (Already Exists in Code):**
+
 ```
 AppConcept + ArchitectureSpec → DynamicPhaseGenerator.generatePhasePlanWithArchitecture()
 ```
@@ -139,6 +219,7 @@ AppConcept + ArchitectureSpec → DynamicPhaseGenerator.generatePhasePlanWithArc
 The architecture is NOT just for user review - it's a **critical input** to phase planning. Without it, phases are generated without backend context.
 
 **Current Problem:**
+
 - "Analyze Architecture" button exists but may not be prominent
 - User might skip it and try to build without architecture
 - If skipped, `generatePhasePlanWithArchitecture()` doesn't get the architecture context
@@ -170,6 +251,7 @@ Building begins with full context
 ```
 
 **Files to Modify:**
+
 - `src/components/NaturalConversationWizard.tsx` - Show button prominently when planning complete
 - `src/prompts/wizardSystemPrompt.ts` - AI signals when to show button
 
@@ -228,6 +310,7 @@ Do NOT suggest building until architecture is analyzed and approved."
 ```
 
 **Why This Matters:**
+
 - `ArchitectureSpec.backendPhases` contains the backend phase definitions
 - `DynamicPhaseGenerator.injectBackendPhases()` inserts these into the plan
 - Without architecture, backend phases are missing or auto-generated with less context
@@ -240,6 +323,7 @@ Do NOT suggest building until architecture is analyzed and approved."
 **Status:** SAFE WITH CARE ⚠️
 
 **Files to Modify:**
+
 - `src/prompts/full-app/fullstack-rules-compressed.ts` - Conditional rules
 - `src/app/api/ai-builder/full-app/generation-logic.ts` - App type detection
 
@@ -274,6 +358,7 @@ NOTE: This app requires local development. Preview will show:
 ```
 
 **Why Safe:**
+
 - FRONTEND_ONLY apps unchanged (backward compatible)
 - FULL_STACK apps get production patterns
 - Preview gracefully shows setup instructions instead of breaking
@@ -285,6 +370,7 @@ NOTE: This app requires local development. Preview will show:
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/types/dynamicPhases.ts` - Add new FeatureDomain values
 - `src/services/DynamicPhaseGenerator.ts` - Add phase detection logic
 
@@ -300,15 +386,15 @@ export type FeatureDomain =
   | 'interaction'
   | 'integration'
   | 'polish'
-  | 'database'     // existing
-  | 'auth'         // existing
-  | 'real-time'    // existing
-  | 'storage'      // existing
+  | 'database' // existing
+  | 'auth' // existing
+  | 'real-time' // existing
+  | 'storage' // existing
   // NEW domains
-  | 'devops'       // Docker, CI/CD, deployment config
-  | 'monitoring'   // Logging, error tracking, observability
-  | 'testing'      // Unit tests, integration tests, E2E
-  | 'security'     // Rate limiting, CORS, input validation
+  | 'devops' // Docker, CI/CD, deployment config
+  | 'monitoring' // Logging, error tracking, observability
+  | 'testing' // Unit tests, integration tests, E2E
+  | 'security' // Rate limiting, CORS, input validation
   | 'documentation'; // API docs, README, setup guides
 ```
 
@@ -322,7 +408,7 @@ if (concept.technical.scale === 'large' || concept.technical.scale === 'enterpri
     name: 'DevOps & Deployment',
     description: 'Docker configuration, CI/CD pipeline, environment setup',
     files: ['Dockerfile', 'docker-compose.yml', '.github/workflows/deploy.yml'],
-    priority: phases.length + 1
+    priority: phases.length + 1,
   });
 
   phases.push({
@@ -330,7 +416,7 @@ if (concept.technical.scale === 'large' || concept.technical.scale === 'enterpri
     name: 'Monitoring & Observability',
     description: 'Error tracking, logging, performance monitoring',
     files: ['lib/logger.ts', 'lib/monitoring.ts'],
-    priority: phases.length + 1
+    priority: phases.length + 1,
   });
 }
 
@@ -340,12 +426,13 @@ if (concept.technical.needsAPI) {
     name: 'API Testing',
     description: 'Unit tests and integration tests for API routes',
     files: ['__tests__/api/*.test.ts'],
-    priority: phases.length + 1
+    priority: phases.length + 1,
   });
 }
 ```
 
 **Why Safe:**
+
 - Only ADDS new domain values to union type
 - Existing domains unchanged
 - Phase execution already handles any domain type
@@ -358,6 +445,7 @@ if (concept.technical.needsAPI) {
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/prompts/full-app/backend-templates.ts` - Parameterize templates
 
 **Changes:**
@@ -399,12 +487,13 @@ function getAuthTemplate(provider: string): string {
       return SUPABASE_AUTH_TEMPLATE;
     case 'nextauth':
     default:
-      return AUTH_TEMPLATE;  // existing template
+      return AUTH_TEMPLATE; // existing template
   }
 }
 ```
 
 **Why Safe:**
+
 - Defaults to current behavior if no preferences
 - New templates are additive
 - Existing AUTH_TEMPLATE unchanged
@@ -416,6 +505,7 @@ function getAuthTemplate(provider: string): string {
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/services/DynamicPhaseGenerator.ts` - Add devops phase logic
 
 **Implementation:** Included in Fix 5 above.
@@ -427,6 +517,7 @@ function getAuthTemplate(provider: string): string {
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/app/api/ai-builder/full-app/generation-logic.ts` - Adjust budgets
 
 **Changes:**
@@ -436,23 +527,24 @@ function getAuthTemplate(provider: string): string {
 // MODIFY getTokenBudget() to account for backend complexity
 
 function getTokenBudget(phase: DynamicPhase, appType: string): TokenBudget {
-  const isBackendPhase = ['database', 'auth', 'devops', 'monitoring', 'testing']
-    .includes(phase.domain);
+  const isBackendPhase = ['database', 'auth', 'devops', 'monitoring', 'testing'].includes(
+    phase.domain
+  );
 
   if (phase.number === 1) {
     return {
       max_tokens: 48000,
       thinking_budget: 24000,
-      timeout: 360000
+      timeout: 360000,
     };
   }
 
   // Backend phases get larger budget
   if (isBackendPhase && appType === 'FULL_STACK') {
     return {
-      max_tokens: 40000,  // Increased from 32000
-      thinking_budget: 20000,  // Increased from 16000
-      timeout: 360000  // 6 minutes
+      max_tokens: 40000, // Increased from 32000
+      thinking_budget: 20000, // Increased from 16000
+      timeout: 360000, // 6 minutes
     };
   }
 
@@ -460,12 +552,13 @@ function getTokenBudget(phase: DynamicPhase, appType: string): TokenBudget {
   return {
     max_tokens: 32000,
     thinking_budget: 16000,
-    timeout: 300000
+    timeout: 300000,
   };
 }
 ```
 
 **Why Safe:**
+
 - Only increases budgets, doesn't reduce
 - Frontend-only apps unchanged
 - Backward compatible
@@ -477,6 +570,7 @@ function getTokenBudget(phase: DynamicPhase, appType: string): TokenBudget {
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/services/PhaseExecutionManager.ts` - Add backend validation
 - `src/utils/codeValidator.ts` - Add Prisma/API validation
 
@@ -502,7 +596,7 @@ export function validatePrismaSchema(content: string): ValidationResult {
 
   return {
     valid: issues.length === 0,
-    errors: issues
+    errors: issues,
   };
 }
 
@@ -521,12 +615,13 @@ export function validateApiRoute(content: string, path: string): ValidationResul
 
   return {
     valid: issues.length === 0,
-    errors: issues
+    errors: issues,
   };
 }
 ```
 
 **Why Safe:**
+
 - Validation is additive (new functions)
 - Existing validation unchanged
 - Returns warnings, doesn't block generation
@@ -538,6 +633,7 @@ export function validateApiRoute(content: string, path: string): ValidationResul
 **Status:** SAFE ✓
 
 **Files to Modify:**
+
 - `src/prompts/builder.ts` - Add test generation instructions
 
 **Changes:**
@@ -574,6 +670,7 @@ if (appType === 'FULL_STACK' && concept.technical.needsAPI) {
 ```
 
 **Why Safe:**
+
 - Only adds instructions for specific app types
 - Existing prompts unchanged
 - Test files are additive (new files, don't modify existing)
@@ -582,16 +679,16 @@ if (appType === 'FULL_STACK' && concept.technical.needsAPI) {
 
 ## What MUST NOT Change
 
-| Item | Reason |
-|------|--------|
-| `AppConcept.name` required | API validation fails (generate-phases:66) |
-| `AppConcept.coreFeatures[]` required | Phase generation fails (generate-phases:75) |
-| `Feature` structure (id, name, description, priority) | Phase ordering breaks |
-| Zustand store key `appConcept` | Build page reads this |
-| Zustand store key `dynamicPhasePlan` | Phase execution reads this |
-| Zustand store key `currentAppId` | Documentation tracking |
-| `DynamicPhasePlan.concept` embedding | Phase context lost |
-| `onComplete(concept, phasePlan)` signature | Wizard→Builder handoff |
+| Item                                                  | Reason                                      |
+| ----------------------------------------------------- | ------------------------------------------- |
+| `AppConcept.name` required                            | API validation fails (generate-phases:66)   |
+| `AppConcept.coreFeatures[]` required                  | Phase generation fails (generate-phases:75) |
+| `Feature` structure (id, name, description, priority) | Phase ordering breaks                       |
+| Zustand store key `appConcept`                        | Build page reads this                       |
+| Zustand store key `dynamicPhasePlan`                  | Phase execution reads this                  |
+| Zustand store key `currentAppId`                      | Documentation tracking                      |
+| `DynamicPhasePlan.concept` embedding                  | Phase context lost                          |
+| `onComplete(concept, phasePlan)` signature            | Wizard→Builder handoff                      |
 
 ---
 
@@ -646,17 +743,17 @@ if (appType === 'FULL_STACK' && concept.technical.needsAPI) {
 
 ## Files Summary
 
-| File | Action | Risk |
-|------|--------|------|
-| `src/types/appConcept.ts` | Add optional fields | None |
-| `src/types/dynamicPhases.ts` | Add domain values | None |
-| `src/prompts/wizardSystemPrompt.ts` | Add questions | None |
-| `src/prompts/full-app/fullstack-rules-compressed.ts` | Conditional rules | Low |
-| `src/prompts/builder.ts` | Add test instructions | None |
-| `src/services/BackendArchitectureAgent.ts` | Read preferences | None |
-| `src/services/DynamicPhaseGenerator.ts` | Add phase logic | None |
-| `src/utils/codeValidator.ts` | Add validation | None |
-| `src/app/api/ai-builder/full-app/generation-logic.ts` | Adjust budgets | None |
+| File                                                  | Action                | Risk |
+| ----------------------------------------------------- | --------------------- | ---- |
+| `src/types/appConcept.ts`                             | Add optional fields   | None |
+| `src/types/dynamicPhases.ts`                          | Add domain values     | None |
+| `src/prompts/wizardSystemPrompt.ts`                   | Add questions         | None |
+| `src/prompts/full-app/fullstack-rules-compressed.ts`  | Conditional rules     | Low  |
+| `src/prompts/builder.ts`                              | Add test instructions | None |
+| `src/services/BackendArchitectureAgent.ts`            | Read preferences      | None |
+| `src/services/DynamicPhaseGenerator.ts`               | Add phase logic       | None |
+| `src/utils/codeValidator.ts`                          | Add validation        | None |
+| `src/app/api/ai-builder/full-app/generation-logic.ts` | Adjust budgets        | None |
 
 ---
 
@@ -666,14 +763,14 @@ if (appType === 'FULL_STACK' && concept.technical.needsAPI) {
 
 ### Gemini's Claims vs. Actual Codebase
 
-| Claim | Gemini's Assessment | Actual Status | Evidence |
-|-------|---------------------|---------------|----------|
-| **Split-Brain Problem** | "No mechanism to pass backend output" | **PARTIALLY INCORRECT** | `architectureContext` in PhaseExecutionManager (lines 826-857) passes Prisma schema and API routes |
-| **Context Amnesia** | "No pin list for critical files" | **VERIFIED** | CodeContextService has no explicit pinning for database.d.ts or schema files |
-| **Dormant Compiler** | "No validation before writing" | **DISPROVEN** | TypeScriptCompilerService exists and is called in generation-logic.ts (lines 621-672) |
-| **Replace Trap** | "Only whole-file replacement" | **DISPROVEN** | modify/route.ts has 10+ surgical AST operations; astModifier.ts is comprehensive |
-| **Weak Database State** | "No schema tracking" | **PARTIALLY VERIFIED** | Schema extracted but migration has TODOs; not comprehensively injected |
-| **Missing Integration Test** | "No verification phase" | **DISPROVEN** | P9 regression testing, API contract validation, type compatibility all exist |
+| Claim                        | Gemini's Assessment                   | Actual Status           | Evidence                                                                                           |
+| ---------------------------- | ------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **Split-Brain Problem**      | "No mechanism to pass backend output" | **PARTIALLY INCORRECT** | `architectureContext` in PhaseExecutionManager (lines 826-857) passes Prisma schema and API routes |
+| **Context Amnesia**          | "No pin list for critical files"      | **VERIFIED**            | CodeContextService has no explicit pinning for database.d.ts or schema files                       |
+| **Dormant Compiler**         | "No validation before writing"        | **DISPROVEN**           | TypeScriptCompilerService exists and is called in generation-logic.ts (lines 621-672)              |
+| **Replace Trap**             | "Only whole-file replacement"         | **DISPROVEN**           | modify/route.ts has 10+ surgical AST operations; astModifier.ts is comprehensive                   |
+| **Weak Database State**      | "No schema tracking"                  | **PARTIALLY VERIFIED**  | Schema extracted but migration has TODOs; not comprehensively injected                             |
+| **Missing Integration Test** | "No verification phase"               | **DISPROVEN**           | P9 regression testing, API contract validation, type compatibility all exist                       |
 
 ### Valid Issues from Gemini (To Address)
 
@@ -697,11 +794,13 @@ if (appType === 'FULL_STACK' && concept.technical.needsAPI) {
 ### Gemini's "Safe Mode" Implementation Plan
 
 **Their proposed changes:**
+
 1. `BuilderService.ts` - Add `validationLevel` parameter ✅ Good idea
 2. `CodeContextService.ts` - Add pin list and soft loading ✅ Good idea
 3. Fork context strategy for Layout Builder vs Full Stack ✅ Already addressed in our Fix 4
 
 **Compatibility concerns they raised (and my response):**
+
 - Layout Builder needs `validationLevel: 'loose'` → Already covered in our Fix 4 (conditional rules)
 - Wizard may not have database.d.ts yet → Soft loading (check `fileExists` first)
 - Tool Use could break Layout Builder → Only apply to modify route, not layout chat
@@ -715,6 +814,7 @@ if (appType === 'FULL_STACK' && concept.technical.needsAPI) {
 **Status:** SAFE ✓ (addresses Gemini's valid "Context Amnesia" concern)
 
 **Files to Modify:**
+
 - `src/services/CodeContextService.ts` - Add pinned files
 
 **Changes:**
@@ -759,6 +859,7 @@ getMinimalContext(maxTokens: number = 8000): CodeContextSnapshot {
 ```
 
 **Why Safe:**
+
 - Only ADDS prioritization logic
 - Existing file selection unchanged
 - Soft loading (checks if file exists)
@@ -768,6 +869,7 @@ getMinimalContext(maxTokens: number = 8000): CodeContextSnapshot {
 **Status:** SAFE ✓ (addresses Gemini's valid "Weak State" concern)
 
 **Files to Modify:**
+
 - `src/services/deployment/DatabaseMigrationService.ts` - Complete TODO
 
 **Changes:**
@@ -799,6 +901,7 @@ private async executeMigration(
 ```
 
 **Why Safe:**
+
 - Graceful fallback for local development
 - Doesn't break existing flow
 - Adds capability without removing
@@ -808,6 +911,7 @@ private async executeMigration(
 **Status:** SAFE ✓ (addresses Gemini's Layout Builder concern)
 
 **Files to Modify:**
+
 - `src/services/BuilderService.ts` (if exists, or equivalent file writing logic)
 
 **Changes:**
@@ -843,6 +947,7 @@ async saveFile(path: string, content: string, options: WriteOptions = {}) {
 ```
 
 **Why Safe:**
+
 - Adds options, doesn't change defaults
 - Layout Builder continues to work
 - Full Stack gets stricter validation
@@ -851,20 +956,20 @@ async saveFile(path: string, content: string, options: WriteOptions = {}) {
 
 ## Updated Files Summary
 
-| File | Action | Risk | Source |
-|------|--------|------|--------|
-| `src/types/appConcept.ts` | Add optional fields | None | My analysis |
-| `src/types/dynamicPhases.ts` | Add domain values | None | My analysis |
-| `src/prompts/wizardSystemPrompt.ts` | Add questions | None | My analysis |
-| `src/prompts/full-app/fullstack-rules-compressed.ts` | Conditional rules | Low | My analysis |
-| `src/prompts/builder.ts` | Add test instructions | None | My analysis |
-| `src/services/BackendArchitectureAgent.ts` | Read preferences | None | My analysis |
-| `src/services/DynamicPhaseGenerator.ts` | Add phase logic | None | My analysis |
-| `src/utils/codeValidator.ts` | Add validation | None | My analysis |
-| `src/app/api/ai-builder/full-app/generation-logic.ts` | Adjust budgets | None | My analysis |
-| `src/services/CodeContextService.ts` | Add pin list | None | **Gemini** |
-| `src/services/deployment/DatabaseMigrationService.ts` | Complete TODO | None | **Gemini** |
-| `src/services/BuilderService.ts` | Add validation levels | None | **Gemini** |
+| File                                                  | Action                | Risk | Source      |
+| ----------------------------------------------------- | --------------------- | ---- | ----------- |
+| `src/types/appConcept.ts`                             | Add optional fields   | None | My analysis |
+| `src/types/dynamicPhases.ts`                          | Add domain values     | None | My analysis |
+| `src/prompts/wizardSystemPrompt.ts`                   | Add questions         | None | My analysis |
+| `src/prompts/full-app/fullstack-rules-compressed.ts`  | Conditional rules     | Low  | My analysis |
+| `src/prompts/builder.ts`                              | Add test instructions | None | My analysis |
+| `src/services/BackendArchitectureAgent.ts`            | Read preferences      | None | My analysis |
+| `src/services/DynamicPhaseGenerator.ts`               | Add phase logic       | None | My analysis |
+| `src/utils/codeValidator.ts`                          | Add validation        | None | My analysis |
+| `src/app/api/ai-builder/full-app/generation-logic.ts` | Adjust budgets        | None | My analysis |
+| `src/services/CodeContextService.ts`                  | Add pin list          | None | **Gemini**  |
+| `src/services/deployment/DatabaseMigrationService.ts` | Complete TODO         | None | **Gemini**  |
+| `src/services/BuilderService.ts`                      | Add validation levels | None | **Gemini**  |
 
 ---
 
@@ -875,6 +980,7 @@ async saveFile(path: string, content: string, options: WriteOptions = {}) {
 **Location:** `src/services/DynamicPhaseGenerator.ts` (lines 433-444)
 
 **The Bug:**
+
 ```typescript
 private resolveBackendDependencies(
   dependencies: string[],
@@ -891,12 +997,14 @@ private resolveBackendDependencies(
 ```
 
 **Problem:**
+
 1. Dependencies not found default to phase 1 (line 441)
 2. Filter then removes phases past insertion point (line 443)
 3. **Missing dependencies silently disappear** - no error thrown
 4. Phases execute without required dependencies ready
 
 **Fix:**
+
 ```typescript
 private resolveBackendDependencies(
   dependencies: string[],
@@ -936,6 +1044,7 @@ private resolveBackendDependencies(
 **Location:** `src/services/PhaseExecutionManager.ts` (line 1946)
 
 **The Bug:**
+
 ```typescript
 async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
   try {
@@ -949,6 +1058,7 @@ async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
 ```
 
 **Problem:**
+
 - When type checking crashes, it returns `success: true`
 - Caller thinks code is valid when it may have TypeScript errors
 - Same pattern found in:
@@ -957,6 +1067,7 @@ async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
   - Regression tests (lines 2157-2164)
 
 **Fix:**
+
 ```typescript
 async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
   try {
@@ -991,6 +1102,7 @@ async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
 **Location:** Missing entirely - needs to be added
 
 **The Problem:**
+
 - ArchitectureSpec defines: API routes, database tables, auth requirements
 - Code is generated based on this spec
 - **No verification** that generated code actually matches the spec
@@ -1062,6 +1174,7 @@ async verifyArchitectureImplementation(): Promise<ArchitectureVerificationResult
 **Location:** `src/app/api/ai-builder/full-app/generation-logic.ts` (lines 273-310, 561-567)
 
 **The Problem:**
+
 ```typescript
 // Current: Regex-based brace counting (unreliable)
 const openBraces = (file.content.match(/{/g) || []).length;
@@ -1081,13 +1194,13 @@ function detectTruncation(file: { path: string; content: string }): TruncationRe
     const result = validateSyntax(file.content, file.path);
     return {
       isTruncated: !result.valid,
-      reason: result.errors.join('; ')
+      reason: result.errors.join('; '),
     };
   } catch (err) {
     // Fallback to simpler check if AST parsing fails
     return {
       isTruncated: !file.content.trim().endsWith('}') && !file.content.trim().endsWith(';'),
-      reason: 'Could not parse with AST, using heuristic'
+      reason: 'Could not parse with AST, using heuristic',
     };
   }
 }
@@ -1100,6 +1213,7 @@ function detectTruncation(file: { path: string; content: string }): TruncationRe
 **Location:** `src/prompts/full-app/backend-templates.ts` (lines 15-174)
 
 **The Problem:**
+
 - AUTH_TEMPLATE provides `requireAuth()` helper but no example of using it
 - Generated API routes don't automatically include auth checks
 - APIs are left unprotected even when `needsAuth: true`
@@ -1173,40 +1287,43 @@ When \`needsAuth: true\`, EVERY generated API route (except /api/auth/*) MUST:
 
 ## Updated Files Summary
 
-| File | Action | Risk | Source |
-|------|--------|------|--------|
-| `src/types/appConcept.ts` | Add optional fields | None | My analysis |
-| `src/types/dynamicPhases.ts` | Add domain values | None | My analysis |
-| `src/prompts/wizardSystemPrompt.ts` | Add questions | None | My analysis |
-| `src/prompts/full-app/fullstack-rules-compressed.ts` | Conditional rules | Low | My analysis |
-| `src/prompts/builder.ts` | Add test instructions | None | My analysis |
-| `src/services/BackendArchitectureAgent.ts` | Read preferences | None | My analysis |
-| `src/services/DynamicPhaseGenerator.ts` | Fix dependency bug + add phases | **Medium** | **New Issue** |
-| `src/utils/codeValidator.ts` | Add validation | None | My analysis |
-| `src/app/api/ai-builder/full-app/generation-logic.ts` | Adjust budgets + fix regex | **Medium** | **New Issue** |
-| `src/services/CodeContextService.ts` | Add pin list | None | Gemini |
-| `src/services/deployment/DatabaseMigrationService.ts` | Complete TODO | None | Gemini |
-| `src/services/BuilderService.ts` | Add validation levels | None | Gemini |
-| `src/services/PhaseExecutionManager.ts` | Fix fail-open + add verification | **High** | **New Issue** |
-| `src/prompts/full-app/backend-templates.ts` | Add protected route pattern | **Medium** | **New Issue** |
+| File                                                  | Action                           | Risk       | Source        |
+| ----------------------------------------------------- | -------------------------------- | ---------- | ------------- |
+| `src/types/appConcept.ts`                             | Add optional fields              | None       | My analysis   |
+| `src/types/dynamicPhases.ts`                          | Add domain values                | None       | My analysis   |
+| `src/prompts/wizardSystemPrompt.ts`                   | Add questions                    | None       | My analysis   |
+| `src/prompts/full-app/fullstack-rules-compressed.ts`  | Conditional rules                | Low        | My analysis   |
+| `src/prompts/builder.ts`                              | Add test instructions            | None       | My analysis   |
+| `src/services/BackendArchitectureAgent.ts`            | Read preferences                 | None       | My analysis   |
+| `src/services/DynamicPhaseGenerator.ts`               | Fix dependency bug + add phases  | **Medium** | **New Issue** |
+| `src/utils/codeValidator.ts`                          | Add validation                   | None       | My analysis   |
+| `src/app/api/ai-builder/full-app/generation-logic.ts` | Adjust budgets + fix regex       | **Medium** | **New Issue** |
+| `src/services/CodeContextService.ts`                  | Add pin list                     | None       | Gemini        |
+| `src/services/deployment/DatabaseMigrationService.ts` | Complete TODO                    | None       | Gemini        |
+| `src/services/BuilderService.ts`                      | Add validation levels            | None       | Gemini        |
+| `src/services/PhaseExecutionManager.ts`               | Fix fail-open + add verification | **High**   | **New Issue** |
+| `src/prompts/full-app/backend-templates.ts`           | Add protected route pattern      | **Medium** | **New Issue** |
 
 ---
 
 ## Two Workflow Architecture
 
 ### Workflow 1: Guided Path (Wizard → Design → Build → Builder)
+
 ```
 /app/wizard → /app/design → /app/build → /app
      ↓              ↓             ↓          ↓
 NaturalConversation  Layout    Phase      Main
    Wizard           Builder   Execution  Builder
 ```
+
 - Creates structured `AppConcept` through conversation
 - Optionally generates `ArchitectureSpec` via "Analyze Architecture" button
 - Pre-generates `DynamicPhasePlan` with backend phases
 - All data flows through Zustand store
 
 **Files involved:**
+
 - `src/app/(protected)/app/wizard/page.tsx` - Entry point
 - `src/components/NaturalConversationWizard.tsx` - Concept building
 - `src/components/LayoutBuilderWizard.tsx` - Visual layout
@@ -1214,9 +1331,11 @@ NaturalConversation  Layout    Phase      Main
 - `src/components/MainBuilderView.tsx` - Final builder
 
 ### Workflow 2: Direct Builder (Skip Everything)
+
 ```
 /app (directly) → MainBuilderView
 ```
+
 - **No prerequisites** - works WITHOUT appConcept, dynamicPhasePlan, or layoutDesign
 - User builds incrementally via chat conversation
 - Concept created on-the-fly during chat
@@ -1224,17 +1343,18 @@ NaturalConversation  Layout    Phase      Main
 - Full flexibility, less structure
 
 **Files involved:**
+
 - `src/app/(protected)/app/page.tsx` - Direct entry
 - `src/components/MainBuilderView.tsx` - Handles everything
 
 ### Critical Compatibility Requirements
 
-| Store Key | Workflow 1 | Workflow 2 | Fix Impact |
-|-----------|------------|------------|------------|
-| `appConcept` | Populated by wizard | **null** (built via chat) | Must remain OPTIONAL |
-| `dynamicPhasePlan` | Pre-generated | **null** (on-demand) | Must remain OPTIONAL |
-| `architectureSpec` | Generated if button clicked | **null** (never generated) | Must remain OPTIONAL |
-| `currentLayoutDesign` | Created in LayoutBuilder | **null** (skipped) | Must remain OPTIONAL |
+| Store Key             | Workflow 1                  | Workflow 2                 | Fix Impact           |
+| --------------------- | --------------------------- | -------------------------- | -------------------- |
+| `appConcept`          | Populated by wizard         | **null** (built via chat)  | Must remain OPTIONAL |
+| `dynamicPhasePlan`    | Pre-generated               | **null** (on-demand)       | Must remain OPTIONAL |
+| `architectureSpec`    | Generated if button clicked | **null** (never generated) | Must remain OPTIONAL |
+| `currentLayoutDesign` | Created in LayoutBuilder    | **null** (skipped)         | Must remain OPTIONAL |
 
 ---
 
@@ -1242,21 +1362,21 @@ NaturalConversation  Layout    Phase      Main
 
 ### ✅ SAFE FIXES (No Breaking Changes)
 
-| Fix | Status | Reason |
-|-----|--------|--------|
-| **1. Backend requirements** | ✅ SAFE | All fields optional; existing code uses `??` and optional chaining |
-| **2. Tech stack configurable** | ✅ SAFE | Optional fields with fallback defaults |
-| **3. Architecture gate** | ✅ ALREADY EXISTS | "Analyze Architecture" button already implemented |
-| **4. Sandbox constraints** | ✅ SAFE | Conditional prompts; no type changes |
-| **6. Dynamic templates** | ✅ SAFE | `getBackendTemplates()` already uses conditional logic |
-| **7. Deployment phase** | ✅ SAFE | No hardcoded phase limits (maxPhases: 30) |
-| **8. Token budget** | ✅ SAFE | Modular budget object; no breaking callers |
-| **9. Backend integrity P10+** | ✅ SAFE | Phase system uses dynamic Maps, no enumeration |
-| **10. Test generation** | ✅ SAFE | Additive prompt changes only |
-| **11. Context pinning** | ✅ SAFE | Optional field + new methods |
-| **12. Database migration** | ✅ SAFE | Completing private methods; public API unchanged |
-| **16. Architecture verification** | ✅ SAFE | Additive step after generation |
-| **18. Auth propagation** | ✅ SAFE | Adding example patterns to templates |
+| Fix                               | Status            | Reason                                                             |
+| --------------------------------- | ----------------- | ------------------------------------------------------------------ |
+| **1. Backend requirements**       | ✅ SAFE           | All fields optional; existing code uses `??` and optional chaining |
+| **2. Tech stack configurable**    | ✅ SAFE           | Optional fields with fallback defaults                             |
+| **3. Architecture gate**          | ✅ ALREADY EXISTS | "Analyze Architecture" button already implemented                  |
+| **4. Sandbox constraints**        | ✅ SAFE           | Conditional prompts; no type changes                               |
+| **6. Dynamic templates**          | ✅ SAFE           | `getBackendTemplates()` already uses conditional logic             |
+| **7. Deployment phase**           | ✅ SAFE           | No hardcoded phase limits (maxPhases: 30)                          |
+| **8. Token budget**               | ✅ SAFE           | Modular budget object; no breaking callers                         |
+| **9. Backend integrity P10+**     | ✅ SAFE           | Phase system uses dynamic Maps, no enumeration                     |
+| **10. Test generation**           | ✅ SAFE           | Additive prompt changes only                                       |
+| **11. Context pinning**           | ✅ SAFE           | Optional field + new methods                                       |
+| **12. Database migration**        | ✅ SAFE           | Completing private methods; public API unchanged                   |
+| **16. Architecture verification** | ✅ SAFE           | Additive step after generation                                     |
+| **18. Auth propagation**          | ✅ SAFE           | Adding example patterns to templates                               |
 
 ### ⚠️ CRITICAL BREAKING CHANGES DETECTED
 
@@ -1264,14 +1384,14 @@ NaturalConversation  Layout    Phase      Main
 
 **WILL BREAK TypeScript compilation** unless these files are also updated:
 
-| File | Line | Issue | Required Fix |
-|------|------|-------|--------------|
-| `src/types/dynamicPhases.ts` | 27-45 | `FeatureDomain` type missing new values | Add `'devops' \| 'monitoring'` to union |
-| `src/services/DynamicPhaseGenerator.ts` | 1103-1122 | `domainNames` Record missing entries | Add `devops: 'DevOps & Infrastructure', monitoring: 'Monitoring & Observability'` |
-| `src/services/DynamicPhaseGenerator.ts` | 1472-1506 | Switch statement missing cases | Add case handlers for new domains |
-| `src/services/DynamicPhaseGenerator.ts` | 974-987 | `domainPriority` array incomplete | Add new domains to priority ordering |
-| `src/services/phaseContextExtractor.ts` | 48 | `PHASE_TOPICS` Record missing entries | Add entries for new domains |
-| `src/services/phaseContextExtractor.ts` | 72 | `PHASE_QUERIES` Record missing entries | Add entries for new domains |
+| File                                    | Line      | Issue                                   | Required Fix                                                                      |
+| --------------------------------------- | --------- | --------------------------------------- | --------------------------------------------------------------------------------- |
+| `src/types/dynamicPhases.ts`            | 27-45     | `FeatureDomain` type missing new values | Add `'devops' \| 'monitoring'` to union                                           |
+| `src/services/DynamicPhaseGenerator.ts` | 1103-1122 | `domainNames` Record missing entries    | Add `devops: 'DevOps & Infrastructure', monitoring: 'Monitoring & Observability'` |
+| `src/services/DynamicPhaseGenerator.ts` | 1472-1506 | Switch statement missing cases          | Add case handlers for new domains                                                 |
+| `src/services/DynamicPhaseGenerator.ts` | 974-987   | `domainPriority` array incomplete       | Add new domains to priority ordering                                              |
+| `src/services/phaseContextExtractor.ts` | 48        | `PHASE_TOPICS` Record missing entries   | Add entries for new domains                                                       |
+| `src/services/phaseContextExtractor.ts` | 72        | `PHASE_QUERIES` Record missing entries  | Add entries for new domains                                                       |
 
 #### Fix 13: Validation Levels (BuilderService.ts)
 
@@ -1290,7 +1410,8 @@ NaturalConversation  Layout    Phase      Main
 ## Implementation Order
 
 **Phase 1 - Safe Additions (No Breaking Changes)**
-*These only affect Workflow 1 (Wizard path) - Workflow 2 (Direct) unaffected*
+_These only affect Workflow 1 (Wizard path) - Workflow 2 (Direct) unaffected_
+
 1. Fix 1: Add optional backend requirement fields
 2. Fix 2: Add optional tech stack preferences
 3. Fix 4: Make fullstack rules conditional
@@ -1299,23 +1420,27 @@ NaturalConversation  Layout    Phase      Main
 6. Fix 18: Add protected route patterns
 
 **Phase 2 - Coordinated Changes (Must Update Multiple Files)**
-*Affects both workflows - must ensure null-safe access*
+_Affects both workflows - must ensure null-safe access_
+
 1. Fix 5: Add new FeatureDomain values (update 6 files atomically)
 2. Fix 7: Add deployment phase generation
 3. Fix 9: Add P10+ integrity checks
 4. Fix 10: Add test generation instructions
 
 **Phase 3 - Behavior Changes (Require Careful Testing)**
-*Test BOTH workflows after each change*
+_Test BOTH workflows after each change_
+
 1. Fix 14: Fix dependency resolution silent failure
 2. Fix 15: Fix type check fail-open (add error handling first)
 3. Fix 12: Complete database migration TODO
 
 **Phase 4 - UI Enhancements (Workflow 1 Only)**
+
 1. Fix 3: Make architecture button more prominent
 2. Fix 8: Adjust token budgets
 
 **Removed:**
+
 - Fix 17: Invalid (regex is correct for delimiter parsing)
 
 ---
@@ -1323,6 +1448,7 @@ NaturalConversation  Layout    Phase      Main
 ## Verification Plan
 
 ### Workflow 1 Tests (Guided Path)
+
 1. Complete wizard conversation → verify AppConcept created
 2. Click "Analyze Architecture" → verify ArchitectureReviewPanel shows
 3. Proceed to phases → verify DynamicPhasePlan includes backend phases
@@ -1331,6 +1457,7 @@ NaturalConversation  Layout    Phase      Main
 6. Request "SaaS with auth" → verify backend code generated
 
 ### Workflow 2 Tests (Direct Builder)
+
 1. Navigate to /app directly → verify MainBuilderView loads
 2. Verify no errors with null appConcept, null phasePlan
 3. Request "build me a todo app" → verify code generates
@@ -1338,6 +1465,7 @@ NaturalConversation  Layout    Phase      Main
 5. Verify full-stack requests work without ArchitectureSpec
 
 ### Both Workflows
+
 1. Run `npm run typecheck` - must pass
 2. Run `npm run lint` - must pass
 3. Run `npm test` - all tests pass
