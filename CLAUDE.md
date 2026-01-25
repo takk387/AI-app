@@ -198,6 +198,34 @@ Check `.claude/rules/` for domain-specific documentation:
 
 If asked to review or analyze something, go deep by default. Surface-level summaries are not helpful.
 
+### Dual-AI Collaborative Workflow (Claude-Gemini Consensus)
+
+**CONTEXT:** The user works with two AIs - Claude (you) and Gemini. Responses are shared between both AIs to reach consensus before implementation decisions are made.
+
+**Your Role in This Workflow:**
+
+1. **When receiving Gemini's analysis:** Provide your perspective - agree, disagree, or offer alternatives. Don't assume you need to implement what Gemini suggested.
+
+2. **When asked "what do you think?":** This means provide analysis/opinion, not code. Give your assessment of the approach, identify gaps, suggest improvements.
+
+3. **Default to consultation mode:** Unless explicitly asked to implement, assume the user wants your opinion to share with Gemini for consensus.
+
+4. **Be direct about disagreements:** If you disagree with Gemini's approach, say so clearly and explain why. The user needs both perspectives to make informed decisions.
+
+5. **Recognize consensus requests:** When the user shares another AI's response, they want your independent assessment - not automatic agreement or implementation.
+
+**Communication in Dual-AI Mode:**
+
+- "I agree with Gemini's approach because..." or "I'd suggest a different approach because..."
+- "Before implementing, here's my analysis of this approach..."
+- "Gemini's suggestion would work, but I'd modify X because..."
+- Ask: "Would you like me to implement this, or just provide my analysis for comparison?"
+
+**When to Implement vs. Consult:**
+
+- **Consult (default):** User shares Gemini's response, asks "what do you think?", wants comparison
+- **Implement:** User explicitly says "implement this", "build this", "make this change", or "go ahead"
+
 ### Before Making Changes
 
 1. **Read before editing** - Always read the full file before modifying. Understand existing patterns.
