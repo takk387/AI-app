@@ -14,9 +14,18 @@ module.exports = {
         'body': ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
-        // Garden Theme - Primary semantic colors
-        'primary': '#2ECC71',
-        'secondary': '#C9A227',
+        // --- DYNAMIC THEME BRIDGE ---
+        // These map semantic classes to CSS variables injected by LayoutPreview
+        // The fallback values are used when CSS vars are not set (non-generated UI)
+        // AI-generated layouts use: bg-primary, text-text, border-border, etc.
+        'primary': 'var(--primary, #2ECC71)',
+        'secondary': 'var(--secondary, #C9A227)',
+        'accent': 'var(--accent, #FFB8CA)',
+        'background': 'var(--background, #F6F9F2)',
+        'surface': 'var(--surface, #FEFCF8)',
+        'text': 'var(--text, #1A3D26)',
+        'text-muted': 'var(--text-muted, #5A7D64)',
+        'border': 'var(--border, #E6ECDF)',
 
         // Garden green palette
         garden: {

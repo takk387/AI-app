@@ -33,7 +33,13 @@ interface EngineProps {
   editable?: boolean;
 }
 
-export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, selectedId, editable = false }) => {
+export const Engine: React.FC<EngineProps> = ({
+  node,
+  definitions,
+  onSelect,
+  selectedId,
+  editable = false,
+}) => {
   // Guard against undefined/null nodes
   if (!node) {
     return null;
@@ -41,17 +47,45 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
 
   if (node.type === 'component-reference' && node.attributes.componentId) {
     const def = definitions[node.attributes.componentId];
-    if (def) return <Engine node={def} definitions={definitions} onSelect={onSelect} selectedId={selectedId} editable={editable} />;
+    if (def)
+      return (
+        <Engine
+          node={def}
+          definitions={definitions}
+          onSelect={onSelect}
+          selectedId={selectedId}
+          editable={editable}
+        />
+      );
   }
 
   const tagMap: Record<string, string> = {
-    container: 'div', text: 'span', button: 'button', input: 'input', list: 'div', image: 'img'
+    container: 'div',
+    text: 'span',
+    button: 'button',
+    input: 'input',
+    list: 'div',
+    image: 'img',
   };
   const Tag = tagMap[node.type] || 'div';
   const MotionTag = motionComponents[Tag] || motion.div;
 
   // Void elements cannot have children (HTML spec)
-  const voidElements = ['img', 'input', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
+  const voidElements = [
+    'img',
+    'input',
+    'br',
+    'hr',
+    'meta',
+    'link',
+    'area',
+    'base',
+    'col',
+    'embed',
+    'source',
+    'track',
+    'wbr',
+  ];
   const isVoidElement = voidElements.includes(Tag);
 
   if (node.type === 'icon' && node.attributes?.src) {
@@ -60,7 +94,8 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
   }
 
   const isSelected = selectedId === node.id;
-  const selectionStyle = editable && isSelected ? { outline: '2px solid #3b82f6', outlineOffset: '2px' } : {};
+  const selectionStyle =
+    editable && isSelected ? { outline: '2px solid #3b82f6', outlineOffset: '2px' } : {};
 
   // For void elements, render without children
   if (isVoidElement) {
@@ -72,7 +107,10 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
           style={selectionStyle}
           initial={node.styles?.motion?.initial}
           animate={node.styles?.motion?.animate}
-          onClick={(e: any) => { e.stopPropagation(); onSelect?.(node.id); }}
+          onClick={(e: any) => {
+            e.stopPropagation();
+            onSelect?.(node.id);
+          }}
           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
             e.currentTarget.src = PLACEHOLDER_SVG;
           }}
@@ -86,7 +124,10 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
         style={selectionStyle}
         initial={node.styles?.motion?.initial}
         animate={node.styles?.motion?.animate}
-        onClick={(e: any) => { e.stopPropagation(); onSelect?.(node.id); }}
+        onClick={(e: any) => {
+          e.stopPropagation();
+          onSelect?.(node.id);
+        }}
         {...filterDOMAttributes(node.attributes)}
       />
     );
@@ -98,12 +139,22 @@ export const Engine: React.FC<EngineProps> = ({ node, definitions, onSelect, sel
       style={selectionStyle}
       initial={node.styles?.motion?.initial}
       animate={node.styles?.motion?.animate}
-      onClick={(e: any) => { e.stopPropagation(); onSelect?.(node.id); }}
+      onClick={(e: any) => {
+        e.stopPropagation();
+        onSelect?.(node.id);
+      }}
       {...filterDOMAttributes(node.attributes)}
     >
       {node.attributes?.text}
-      {node.children?.filter(Boolean).map(c => (
-        <Engine key={c.id} node={c} definitions={definitions} onSelect={onSelect} selectedId={selectedId} editable={editable} />
+      {node.children?.filter(Boolean).map((c) => (
+        <Engine
+          key={c.id}
+          node={c}
+          definitions={definitions}
+          onSelect={onSelect}
+          selectedId={selectedId}
+          editable={editable}
+        />
       ))}
     </MotionTag>
   );
@@ -149,11 +200,21 @@ class EngineErrorBoundary extends React.Component<
   }
 }
 
-export const LayoutPreview: React.FC<LayoutPreviewProps> = ({ manifest, onSelectNode, selectedNodeId, editMode = false }) => {
+export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
+  manifest,
+  onSelectNode,
+  selectedNodeId,
+  editMode = false,
+}) => {
   const cssVariables: Record<string, string> = {};
   const colors = manifest.designSystem?.colors ?? {};
   Object.entries(colors).forEach(([key, value]) => {
-    cssVariables[`--${key}`] = value;
+    if (value) {
+      // Map camelCase keys to kebab-case CSS variables
+      // e.g., textMuted → --text-muted (matches Tailwind's text-muted class)
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      cssVariables[`--${cssKey}`] = value;
+    }
   });
   const fonts = manifest.designSystem?.fonts ?? { heading: 'sans-serif', body: 'sans-serif' };
   cssVariables['--font-heading'] = fonts.heading;

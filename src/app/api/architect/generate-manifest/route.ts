@@ -79,29 +79,56 @@ export async function POST(request: Request) {
 The user may request selective elements from different images. Follow their instructions precisely.`
         : '';
 
-    // Build color injection context - THIS IS THE CRITICAL FIX FOR GREY COLORS
+    // Build color injection context - USE SEMANTIC CLASSES (production-safe)
     const colorInjectionLine = extractedColors
       ? `
-DETECTED COLOR PALETTE (GROUND TRUTH - HIGH PRIORITY):
-The following colors were algorithmically extracted from the source image using k-means clustering.
-You MUST use these values in the designSystem.colors object unless explicitly instructed otherwise.
-- Primary: ${extractedColors.primary}
-- Secondary: ${extractedColors.secondary}
-- Accent: ${extractedColors.accent}
-- Background: ${extractedColors.background}
-- Surface: ${extractedColors.surface}
-- Text: ${extractedColors.text}
-- Text Muted: ${extractedColors.textMuted}
-- Border: ${extractedColors.border}
+DESIGN SYSTEM (GROUND TRUTH - EXTRACTED FROM IMAGE):
+The following colors were algorithmically extracted using k-means clustering.
+These will be injected as CSS variables at runtime.
 
-CRITICAL: DO NOT use generic greys (#6B7280, #9CA3AF, #F9FAFB, #374151, #E5E7EB) if these specific colors are provided.
-These extracted colors are mathematically accurate and should be treated as the source of truth.`
+YOU MUST USE SEMANTIC TAILWIND CLASSES (not arbitrary hex values):
+- Primary: ${extractedColors.primary} → USE CLASS: "bg-primary" or "text-primary"
+- Secondary: ${extractedColors.secondary} → USE CLASS: "bg-secondary" or "text-secondary"
+- Accent: ${extractedColors.accent} → USE CLASS: "bg-accent" or "text-accent"
+- Background: ${extractedColors.background} → USE CLASS: "bg-background"
+- Surface: ${extractedColors.surface} → USE CLASS: "bg-surface"
+- Text: ${extractedColors.text} → USE CLASS: "text-text"
+- Text Muted: ${extractedColors.textMuted} → USE CLASS: "text-text-muted"
+- Border: ${extractedColors.border} → USE CLASS: "border-border"
+
+CRITICAL RULES:
+✓ USE semantic classes: bg-primary, bg-background, text-text, border-border
+✓ USE opacity modifiers: bg-primary/80, text-text/60
+✓ USE state modifiers: hover:bg-primary, focus:border-accent
+❌ DO NOT use arbitrary hex values like bg-[#123456] (purged in production)
+❌ DO NOT use generic Tailwind colors like bg-slate-900, text-gray-600`
       : '';
+
+    // Component density requirements for detailed layouts
+    const componentTargets = `
+COMPONENT DENSITY REQUIREMENTS:
+- Simple landing page: minimum 15-20 components
+- Dashboard/app screen: minimum 25-35 components
+- Complex multi-section page: minimum 40-50 components
+
+EXHAUSTIVE COMPONENT CHECKLIST - Check image for ALL of these:
+□ Navigation: Logo, nav links, hamburger menu, user avatar, notifications
+□ Hero: Headline, subheadline, CTA buttons, background elements
+□ Cards: Title, description, image, badges, actions, metadata
+□ Forms: Labels, inputs, textareas, selects, checkboxes, radio buttons
+□ Lists: Items, icons, descriptions, actions, separators
+□ Footer: Links, social icons, copyright, newsletter signup
+□ Stats: Numbers, labels, trends, icons
+□ Testimonials: Quote, avatar, name, title
+
+For EVERY visible element in the image, create a corresponding node.
+Missing components = failed replication.`;
 
     const systemPrompt = `
 ROLE: Expert Frontend Architect specializing in UI replication and composition.
 ${contextLine}${imageContextLine}
 ${colorInjectionLine}
+${componentTargets}
 
 TASK: Generate a complete LayoutManifest based on the user's specific instructions.
 
@@ -217,7 +244,7 @@ If no specific instructions, default to using Image 1 as the primary reference.
       parts.push({ text: `USER REQUEST: ${userPrompt}` });
     }
 
-    // Handle video upload if provided
+    // Handle video upload if provided - with graceful fallback
     if (videoBase64 && videoMimeType) {
       console.log('Uploading video for Temporal Inference...');
 
@@ -234,7 +261,7 @@ If no specific instructions, default to using Image 1 as the primary reference.
         // Wait for processing (video takes time to ingest)
         let fileState = await fileManager.getFile(uploadResponse.file.name);
         let attempts = 0;
-        const maxAttempts = 60; // 2 minutes max wait
+        const maxAttempts = 30; // 1 minute max wait (reduced for better UX)
 
         while (fileState.state === FileState.PROCESSING && attempts < maxAttempts) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -242,27 +269,28 @@ If no specific instructions, default to using Image 1 as the primary reference.
           attempts++;
         }
 
-        if (fileState.state === FileState.FAILED) {
-          throw new Error('Video processing failed.');
+        if (fileState.state === FileState.ACTIVE) {
+          // Add file reference to the prompt
+          parts.push({
+            fileData: {
+              mimeType: fileState.mimeType,
+              fileUri: fileState.uri,
+            },
+          });
+
+          parts.push({
+            text: 'VIDEO ANALYSIS: Identify hidden states, transitions, and loading sequences.',
+          });
+        } else {
+          throw new Error(`Video processing state: ${fileState.state}`);
         }
-
-        // Add file reference to the prompt
-        parts.push({
-          fileData: {
-            mimeType: fileState.mimeType,
-            fileUri: fileState.uri,
-          },
-        });
-
-        parts.push({
-          text: 'VIDEO ANALYSIS: Identify hidden states, transitions, and loading sequences.',
-        });
       } catch (e) {
-        console.error('Video Ingest Failed', e);
-        return NextResponse.json(
-          { error: `Video upload failed: ${e instanceof Error ? e.message : 'Unknown error'}` },
-          { status: 500 }
-        );
+        // Graceful fallback - continue with images/prompt only
+        console.error('⚠️ Video processing failed, falling back to prompt-only:', e);
+        parts.push({
+          text: '[SYSTEM: Video analysis failed. Proceed using user prompt and any provided images.]',
+        });
+        // Don't return 500 - continue with degraded functionality
       }
     }
 

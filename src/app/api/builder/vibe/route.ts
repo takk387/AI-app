@@ -99,10 +99,17 @@ export async function POST(request: Request) {
         TASK: Refine this specific component based on: "${prompt}".
 
         CRITICAL RULE: Interpret adjectives as PHYSICAL properties.
-        - "Heavier" -> Increase shadow opacity, darken background, thicken border.
-        - "Lighter" -> Reduce alpha channels, increase backdrop-blur.
-        - "More obsidian" -> Deeper blacks, sharper edges.
-        - "More glass" -> More transparency, more blur.
+        - "Heavier" -> Increase shadow opacity, add stronger shadows, thicken border.
+        - "Lighter" -> Reduce opacity (bg-surface/80), increase backdrop-blur.
+        - "More obsidian" -> Sharper edges (rounded-none), darker overlays.
+        - "More glass" -> More transparency (bg-surface/60), more blur (backdrop-blur-2xl).
+
+        USE SEMANTIC COLOR CLASSES ONLY:
+        ✓ bg-background, bg-surface, bg-primary, bg-secondary, bg-accent
+        ✓ text-text, text-text-muted, text-primary
+        ✓ border-border, border-primary
+        ✓ Opacity modifiers: bg-primary/80, text-text/60
+        ❌ DO NOT use bg-[#hex] or generic colors like bg-slate-900
 
         INPUT NODE: ${JSON.stringify(node)}
         OUTPUT: The same node with updated 'styles.tailwindClasses'.
@@ -191,16 +198,11 @@ async function synthesizeStyles(
   metaphor: string,
   userPrompt: string
 ): Promise<LayoutManifest> {
-  // Extract colors to inject into prompt context for color fidelity
+  // Extract colors for reference in the prompt (actual colors will be injected via CSS variables)
   const colors = manifest.designSystem?.colors || {};
-  const colorContext = Object.entries(colors)
-    .filter(([, value]) => value) // Filter out empty values
-    .map(([key, value]) => `- ${key}: ${value}`)
-    .join('\n');
 
   const prompt = `
 ROLE: "Flash UI" - Tailwind CSS styling engine.
-TASK: Apply styles to the provided LayoutManifest based on the user's request, physical metaphor, AND the provided Design System colors.
 
 USER'S ORIGINAL REQUEST: "${userPrompt}"
 DERIVED METAPHOR: "${metaphor}"
@@ -208,37 +210,46 @@ DERIVED METAPHOR: "${metaphor}"
 PRIORITY ORDER:
 1. Follow the user's explicit styling instructions from their request
 2. Apply the metaphor's texture/physics (blur, shadow, border-radius)
-3. PRESERVE the Design System colors - use Tailwind arbitrary values
+3. Use SEMANTIC color classes (not arbitrary hex values)
 
-**COLOR LOCK** - CRITICAL REQUIREMENT:
-You MUST use the EXACT hex codes from the Design System below.
-Do NOT use generic Tailwind colors (bg-white, bg-slate-900, bg-blue-500, text-gray-900, etc.)
-Use ARBITRARY VALUES for ALL colors:
-- Primary (${colors.primary || 'N/A'}) -> 'bg-[${colors.primary}]' or 'text-[${colors.primary}]'
-- Secondary (${colors.secondary || 'N/A'}) -> 'bg-[${colors.secondary}]'
-- Background (${colors.background || 'N/A'}) -> 'bg-[${colors.background}]'
-- Surface (${colors.surface || 'N/A'}) -> 'bg-[${colors.surface}]'
-- Text (${colors.text || 'N/A'}) -> 'text-[${colors.text}]'
-- Text Muted (${colors.textMuted || 'N/A'}) -> 'text-[${colors.textMuted}]'
-- Border (${colors.border || 'N/A'}) -> 'border-[${colors.border}]'
-- Accent (${colors.accent || 'N/A'}) -> 'bg-[${colors.accent}]'
+**SEMANTIC COLOR CLASSES** - CRITICAL REQUIREMENT:
+The runtime has CSS variables configured for the design system.
+You MUST use these semantic class names to ensure color fidelity:
 
-DESIGN SYSTEM COLORS (USE THESE EXACT VALUES):
-${colorContext || 'No colors defined'}
+| Role       | Tailwind Class    | Mapped Color |
+|------------|-------------------|--------------|
+| Background | bg-background     | ${colors.background || 'N/A'} |
+| Surface    | bg-surface        | ${colors.surface || 'N/A'} |
+| Primary    | bg-primary        | ${colors.primary || 'N/A'} |
+| Secondary  | bg-secondary      | ${colors.secondary || 'N/A'} |
+| Accent     | bg-accent         | ${colors.accent || 'N/A'} |
+| Text       | text-text         | ${colors.text || 'N/A'} |
+| Muted Text | text-text-muted   | ${colors.textMuted || 'N/A'} |
+| Border     | border-border     | ${colors.border || 'N/A'} |
 
-STYLE MAPPING (Apply textures/effects ONLY, not color changes):
-- Glass/Liquid -> backdrop-blur-xl, bg-opacity-80, border-white/20
-- Steel/Metal -> bg-gradient-to-br, shadow-md
-- Neon/Light -> shadow-[0_0_15px_rgba(...)], ring-2
-- Obsidian/Volcanic -> border-0, rounded-none
-- Paper/Matte -> shadow-sm, rounded-lg
-- If user says "dark" -> adjust opacity, add darker overlays (but keep base colors)
-- If user says "bold" -> stronger shadows, thicker borders
-- If user says "minimal" -> less decoration, more whitespace
+BANNED PATTERNS (will be purged in production):
+❌ bg-[#123456] (arbitrary hex values)
+❌ bg-slate-900 (generic Tailwind colors)
+❌ text-gray-600 (overrides design system)
+
+ALLOWED PATTERNS:
+✓ bg-background (semantic - maps to extracted color)
+✓ bg-primary/80 (opacity modifier - works with semantic)
+✓ hover:bg-primary (state modifier - works with semantic)
+✓ backdrop-blur-xl (texture - not a color)
+✓ shadow-lg (texture - not a color)
+✓ rounded-xl (shape - not a color)
+
+STYLE MAPPING (Apply textures/effects ONLY):
+- Glass/Liquid → backdrop-blur-xl, bg-surface/80, border-border/20
+- Steel/Metal → bg-gradient-to-br from-surface to-background, shadow-md
+- Neon/Light → shadow-lg shadow-primary/50, ring-2 ring-accent
+- Obsidian/Volcanic → border-0, rounded-none, bg-background
+- Paper/Matte → shadow-sm, rounded-lg, bg-surface
 
 INSTRUCTIONS:
-1. Apply the Metaphor's texture/physics (blur, shadow, border-radius) using Tailwind
-2. Apply the Design System's COLORS using arbitrary values like bg-[#hex] and text-[#hex]
+1. Apply the Metaphor's texture using Tailwind (blur, shadow, border-radius)
+2. Use ONLY semantic color classes (bg-primary, text-text, etc.)
 3. Modify ONLY the styles.tailwindClasses values
 4. Preserve ALL other fields exactly: id, type, semanticTag, attributes, children structure
 5. Return the COMPLETE manifest JSON - do NOT omit any fields
@@ -365,8 +376,8 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
     body: 'Inter',
   };
 
-  // Safe mode uses neutral colors - the preserved colors are stored in designSystem
-  // for future regeneration attempts to use
+  // Safe mode uses semantic color classes - CSS variables will be injected by LayoutPreview
+  // This ensures colors from the original manifest are preserved
   return {
     id: 'safe-mode-fallback',
     version: '1.0.0',
@@ -375,8 +386,7 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
       type: 'container',
       semanticTag: 'safe-mode-container',
       styles: {
-        tailwindClasses:
-          'min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-8',
+        tailwindClasses: 'min-h-screen flex items-center justify-center bg-background p-8',
       },
       attributes: {},
       children: [
@@ -386,7 +396,7 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
           semanticTag: 'error-card',
           styles: {
             tailwindClasses:
-              'bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md text-center',
+              'bg-surface rounded-lg shadow-lg p-8 max-w-md text-center border border-border',
           },
           attributes: {},
           children: [
@@ -394,7 +404,7 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
               id: 'error-icon',
               type: 'icon',
               semanticTag: 'warning-icon',
-              styles: { tailwindClasses: 'w-16 h-16 text-amber-500 mx-auto mb-4' },
+              styles: { tailwindClasses: 'w-16 h-16 text-accent mx-auto mb-4' },
               attributes: { src: 'AlertTriangle' },
             },
             {
@@ -402,7 +412,7 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
               type: 'text',
               semanticTag: 'error-title',
               styles: {
-                tailwindClasses: 'text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2',
+                tailwindClasses: 'text-xl font-semibold text-text mb-2',
               },
               attributes: { text: 'Layout Generation Issue' },
             },
@@ -410,7 +420,7 @@ function generateSafeModeManifest(originalManifest?: LayoutManifest): LayoutMani
               id: 'error-description',
               type: 'text',
               semanticTag: 'error-description',
-              styles: { tailwindClasses: 'text-gray-600 dark:text-gray-400' },
+              styles: { tailwindClasses: 'text-text-muted' },
               attributes: {
                 text: 'The layout could not be fully generated. Your design colors have been preserved. Please try regenerating.',
               },

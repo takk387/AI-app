@@ -428,6 +428,9 @@ function processImageData(imageData: ImageData, numColors: number): ExtractionRe
 
   if (pixels.length === 0) {
     // Return neutral gray palette if no valid pixels - actual colors should come from AI
+    console.warn(
+      '⚠️ No valid pixels found in image - using fallback grey palette. AI vision will be used as backup.'
+    );
     return {
       colors: [],
       palette: {
@@ -505,12 +508,22 @@ export async function extractColorsFromFile(file: File): Promise<ExtractionResul
       try {
         const dataUrl = e.target?.result as string;
         const result = await extractColorsFromImage(dataUrl);
+        console.log('✅ Color extraction successful:', {
+          primary: result.palette.primary,
+          background: result.palette.background,
+          text: result.palette.text,
+          isDark: result.isDarkImage,
+        });
         resolve(result);
       } catch (error) {
+        console.error('⚠️ COLOR EXTRACTION FAILED - Layout will use AI vision fallback:', error);
         reject(error);
       }
     };
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => {
+      console.error('⚠️ File read failed for color extraction');
+      reject(new Error('Failed to read file'));
+    };
     reader.readAsDataURL(file);
   });
 }
