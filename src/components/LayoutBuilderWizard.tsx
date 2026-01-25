@@ -176,7 +176,12 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
 
       // 2. Builder applies the initial style (Flash UI)
       // CRITICAL: Skip Builder for exact replicas - it destroys Architect's extracted colors
-      const isExactReplica = !prompt.trim(); // No user text = they want the image replicated exactly
+      const isExactReplica =
+        effectivePrompt.toLowerCase().includes('exact') ||
+        effectivePrompt.toLowerCase().includes('replica') ||
+        effectivePrompt.toLowerCase().includes('copy') ||
+        effectivePrompt.toLowerCase().includes('match') ||
+        (!prompt.trim() && mediaFiles && mediaFiles.length > 0); // No user text + has media = exact replica
 
       if (isExactReplica) {
         // SKIP BUILDER - Architect already has exact colors/structure from image

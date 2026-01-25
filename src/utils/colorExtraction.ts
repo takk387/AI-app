@@ -311,22 +311,40 @@ function categorizeColors(colors: ExtractedColor[], isDark: boolean): ColorPalet
   // If light colors dominate (>30% of image) or isDark is false, use light theme
   const useLightTheme = lightArea > 30 || (!isDark && lightArea > 10);
 
+  // Mid-tone colors for border (not too light, not too dark)
+  const midTones = colors.filter((c) => c.hsl.l >= 30 && c.hsl.l <= 70);
+  const sortedMidTones = [...midTones].sort((a, b) => a.hsl.s - b.hsl.s); // Least saturated first for border
+
   if (useLightTheme) {
     // Light mode - use lightest colors for background
     const sortedLight = [...lightColors].sort((a, b) => b.hsl.l - a.hsl.l);
     background = sortedLight[0]?.hex || '#FFFFFF';
     surface = sortedLight[1]?.hex || sortedLight[0]?.hex || '#F8FAFC';
-    text = '#0F172A';
-    textMuted = '#64748B';
-    border = '#E2E8F0';
+
+    // Extract text from darkest colors in the image (for contrast on light bg)
+    const sortedDarkForText = [...darkColors].sort((a, b) => a.hsl.l - b.hsl.l);
+    text = sortedDarkForText[0]?.hex || '#0F172A';
+    // textMuted: slightly lighter than text, or second darkest color
+    textMuted =
+      sortedDarkForText[1]?.hex || sortedMidTones[sortedMidTones.length - 1]?.hex || '#64748B';
+    // border: a subtle mid-tone from the image
+    border = sortedMidTones[0]?.hex || sortedLight[sortedLight.length - 1]?.hex || '#E2E8F0';
   } else {
     // Dark mode - use darkest colors for background
     const sortedDark = [...darkColors].sort((a, b) => a.hsl.l - b.hsl.l);
     background = sortedDark[0]?.hex || '#0F172A';
     surface = sortedDark[1]?.hex || sortedDark[0]?.hex || '#1E293B';
-    text = '#F8FAFC';
-    textMuted = '#94A3B8';
-    border = '#334155';
+
+    // Extract text from lightest colors in the image (for contrast on dark bg)
+    const sortedLightForText = [...lightColors].sort((a, b) => b.hsl.l - a.hsl.l);
+    text = sortedLightForText[0]?.hex || '#F8FAFC';
+    // textMuted: slightly darker than text, or second lightest color
+    textMuted = sortedLightForText[1]?.hex || sortedMidTones[0]?.hex || '#94A3B8';
+    // border: a subtle mid-tone from the image
+    border =
+      sortedMidTones[sortedMidTones.length - 1]?.hex ||
+      sortedDark[sortedDark.length - 1]?.hex ||
+      '#334155';
   }
 
   return {
