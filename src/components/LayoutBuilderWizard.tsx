@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/useToast';
 
 // --- GEMINI 3 IMPORTS ---
@@ -35,45 +35,6 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
 
   // --- STATE: FILE UPLOAD (Now supports multiple files) ---
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-
-  // --- AUTO-DETECT VIEW MODE (Hybrid Precision-Flow Architecture) ---
-  // Automatically uses 'strict' (pixel-perfect) when bounds coverage >= 80%
-  // Otherwise uses 'responsive' (Tailwind flow)
-  const autoViewMode = useMemo((): 'strict' | 'responsive' => {
-    if (!manifest?.root) return 'responsive';
-
-    let totalNodes = 0;
-    let nodesWithBounds = 0;
-
-    function countBounds(node: UISpecNode): void {
-      // Count structural nodes that should have bounds
-      const isStructural =
-        node.type === 'container' ||
-        ['header', 'footer', 'nav', 'section', 'main', 'article'].includes(node.type);
-
-      if (isStructural) {
-        totalNodes++;
-        if (node.layout?.mode === 'absolute' && node.layout?.bounds) {
-          nodesWithBounds++;
-        }
-      }
-      node.children?.forEach(countBounds);
-    }
-
-    countBounds(manifest.root);
-
-    // Use strict mode if 80%+ of structural nodes have bounds
-    const coverage = totalNodes > 0 ? (nodesWithBounds / totalNodes) * 100 : 0;
-    const mode = coverage >= 80 ? 'strict' : 'responsive';
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `[LayoutBuilder] Auto-detected view mode: ${mode} (${coverage.toFixed(0)}% bounds coverage)`
-      );
-    }
-
-    return mode;
-  }, [manifest]);
 
   // --- SERVICES (API keys handled server-side) ---
   const architect = React.useMemo(() => new ArchitectService(), []);
@@ -421,20 +382,6 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
             </div>
 
             <div className="flex items-center gap-2">
-              {/* View Mode Indicator (Auto-detected) */}
-              <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-800 rounded-lg">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    autoViewMode === 'strict' ? 'bg-green-500' : 'bg-blue-500'
-                  }`}
-                />
-                <span className="text-xs text-slate-400">
-                  {autoViewMode === 'strict' ? 'Exact Vision' : 'Responsive'}
-                </span>
-              </div>
-
-              <div className="w-px h-6 bg-white/10 mx-1"></div>
-
               {/* Undo/Redo Buttons */}
               <button
                 onClick={handleUndo}
@@ -490,7 +437,6 @@ export function LayoutBuilderWizard({ isOpen, onClose, appConcept }: LayoutBuild
                   onSelectNode={(id) => setSelectedNodeId(id)}
                   selectedNodeId={selectedNodeId ?? undefined}
                   editMode={true}
-                  viewMode={autoViewMode}
                 />
 
                 {/* Loading Overlay for Vibe Coding */}

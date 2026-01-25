@@ -1,13 +1,10 @@
 /**
  * Architect API Route - Generate Layout Manifest
  *
- * Server-side route for generating layout manifests using Gemini AI.
- * Handles file uploads via GoogleAIFileManager which requires server-side Node.js.
- *
- * Supports:
- * - Multi-image upload with indexed references (Image 1, Image 2, etc.)
- * - Selective merging: "buttons from Image 1, colors from Image 2"
- * - Video upload for temporal inference (loading states, transitions)
+ * Multi-Strategy Architecture for source types:
+ * - STATIC IMAGE: Visual Fidelity with absolute bounds
+ * - VIDEO: Precision Flow with arbitrary Tailwind (NO absolute - kills animation)
+ * - DUAL-SOURCE (Director's Cut): Image for visuals, Video for motions
  */
 
 import { NextResponse } from 'next/server';
@@ -18,8 +15,7 @@ import type { LayoutManifest } from '@/types/schema';
 import { sanitizeManifest } from '@/utils/manifestSanitizer';
 import type { ColorPalette } from '@/utils/colorExtraction';
 
-// Vercel serverless function config
-export const maxDuration = 120; // 2 minutes for video processing
+export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
 interface GenerateManifestRequest {
@@ -37,13 +33,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return NextResponse.json(
-        {
-          error:
-            'Google AI API key not configured. Set GOOGLE_AI_API_KEY or GEMINI_API_KEY in environment.',
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Google AI API key not configured.' }, { status: 500 });
     }
 
     const body: GenerateManifestRequest = await request.json();
@@ -57,332 +47,258 @@ export async function POST(request: Request) {
       extractedColors,
     } = body;
 
+    // --- SOURCE DETECTION ---
+    const hasVideo = !!videoBase64;
+    const hasImages = images && images.length > 0;
+    const isMergeMode = hasVideo && hasImages;
+
+    console.log('[generate-manifest] Source detection:', {
+      hasVideo,
+      hasImages,
+      isMergeMode,
+      imageCount: images?.length ?? 0,
+    });
+
     const genAI = new GoogleGenerativeAI(apiKey);
     const fileManager = new GoogleAIFileManager(apiKey);
-
-    // Gemini 3 Flash for fast, high-quality vision with multimodal support
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash-exp',
       generationConfig: { responseMimeType: 'application/json' },
     });
 
-    // Build context based on whether concept is provided
     const contextLine = concept
       ? `CONTEXT: App "${concept.name}" - ${concept.purpose}.`
-      : 'CONTEXT: Analyzing provided reference image/video to create a UI layout.';
+      : 'CONTEXT: Analyzing provided reference material to create a UI layout.';
 
-    // Build system prompt with multi-image awareness
-    const hasMultipleImages = images && images.length > 1;
-    const imageContextLine =
-      images && images.length > 0
-        ? `\nREFERENCE IMAGES: ${images.length} image(s) provided, indexed as Image 1${images.length > 1 ? `, Image 2${images.length > 2 ? ', etc.' : ''}` : ''}.
-The user may request selective elements from different images. Follow their instructions precisely.`
-        : '';
-
-    // Build color injection context - USE SEMANTIC CLASSES (production-safe)
+    // Color injection for design system
     const colorInjectionLine = extractedColors
       ? `
-DESIGN SYSTEM (GROUND TRUTH - EXTRACTED FROM IMAGE):
-The following colors were algorithmically extracted using k-means clustering.
-These will be injected as CSS variables at runtime.
-
-YOU MUST USE SEMANTIC TAILWIND CLASSES (not arbitrary hex values):
+DESIGN SYSTEM (GROUND TRUTH - EXTRACTED FROM SOURCE):
 - Primary: ${extractedColors.primary} → USE CLASS: "bg-primary" or "text-primary"
-- Secondary: ${extractedColors.secondary} → USE CLASS: "bg-secondary" or "text-secondary"
-- Accent: ${extractedColors.accent} → USE CLASS: "bg-accent" or "text-accent"
+- Secondary: ${extractedColors.secondary} → USE CLASS: "bg-secondary"
+- Accent: ${extractedColors.accent} → USE CLASS: "bg-accent"
 - Background: ${extractedColors.background} → USE CLASS: "bg-background"
 - Surface: ${extractedColors.surface} → USE CLASS: "bg-surface"
 - Text: ${extractedColors.text} → USE CLASS: "text-text"
 - Text Muted: ${extractedColors.textMuted} → USE CLASS: "text-text-muted"
 - Border: ${extractedColors.border} → USE CLASS: "border-border"
 
-CRITICAL RULES:
-✓ USE semantic classes: bg-primary, bg-background, text-text, border-border
-✓ USE opacity modifiers: bg-primary/80, text-text/60
-✓ USE state modifiers: hover:bg-primary, focus:border-accent
-❌ DO NOT use arbitrary hex values like bg-[#123456] (purged in production)
-❌ DO NOT use generic Tailwind colors like bg-slate-900, text-gray-600`
+USE SEMANTIC CLASSES (bg-primary, text-text, etc.) - NOT arbitrary hex values.
+`
       : '';
 
-    // Note: Component targets now integrated into SPATIAL PROTOCOL in postImageInstructions
+    // --- STRATEGY SELECTION ---
+    let strategyInstruction = '';
 
-    // ========================================
-    // PHASE 8: RESTRUCTURED MULTIMODAL PROMPT
-    // Images come EARLY, spatial instructions come AFTER images
-    // ========================================
+    if (isMergeMode) {
+      strategyInstruction = `
+STRATEGY: **DUAL-SOURCE MERGE (The "Director's Cut")**
+The user wants to combine the VISUALS of the Image with the MOTIONS of the Video.
 
-    // PART 1: Brief pre-image context (keep it short so image is near the start)
+1. **VISUAL SOURCE (The Image)**:
+   - Use the Image to define the Layout, Colors, Typography, and Component Structure.
+   - Use "layout.bounds" to replicate the Image's exact spacing and positioning.
+   - The 'styles.tailwindClasses' MUST match the Image.
+
+2. **MOTION SOURCE (The Video)**:
+   - Ignore the Video's visual layout/colors.
+   - ANALYZE ONLY THE MOVEMENT: transitions, hover states, scroll effects, entrance animations.
+   - APPLY these motions to the Image's components via 'styles.motion'.
+
+3. **MAPPING LOGIC**:
+   - If Video shows a list sliding in -> Make the Image's list slide in.
+   - If Video buttons bounce on click -> Make the Image's buttons bounce.
+   - If Video header is sticky -> Make the Image's header sticky.
+
+4. **OUTPUT GOAL**:
+   - A layout that LOOKS like the Image but BEHAVES like the Video.
+`;
+    } else if (hasVideo) {
+      strategyInstruction = `
+STRATEGY: **VIDEO DETECTED -> ENABLE "PRECISION FLOW" MODE**
+The user wants the EXACT "Look and Feel" of this video.
+
+1. **THE LOOK (Precision Flow)**:
+   - Do NOT use absolute positioning (it kills animation).
+   - MUST USE ARBITRARY VALUES: 'w-[375px]', 'gap-[18px]', 'rounded-[22px]'.
+   - This creates a pixel-perfect layout that can still animate.
+   - Use 'layout.mode: "flow"' for ALL elements.
+
+2. **THE FEEL (Motion Extraction)**:
+   - Analyze movement between frames.
+   - Populate 'styles.motion' objects with Framer Motion props.
+   - Example: { "initial": { "opacity": 0, "y": 20 }, "animate": { "opacity": 1, "y": 0 } }
+`;
+    } else {
+      strategyInstruction = `
+STRATEGY: **STATIC IMAGE DETECTED -> PRIORITIZE VISUAL FIDELITY**
+The user wants an EXACT REPLICA of this specific screen.
+
+1. **VISUAL PRECISION**:
+   - You MUST provide precise 'layout.bounds' for every structural element.
+   - Use 'layout.mode: "absolute"' for elements that overlap or break the grid.
+   - Use 'layout.mode: "flow"' for content that flows naturally (text, lists).
+
+2. **SPATIAL PROTOCOL (Top-to-Bottom)**:
+   - HEADER (0-15%): Logo, Nav.
+   - HERO (15-50%): Headline, CTA.
+   - CONTENT (50-90%): Features, Grid.
+   - FOOTER (90-100%): Links.
+
+3. **BOUNDS CALCULATION**:
+   - X/Y/Width/Height must be PERCENTAGES (0-100) relative to viewport.
+   - Calculate bounds by VISUALLY ANALYZING the image zones.
+`;
+    }
+
     const preImageContext = `
-ROLE: Expert Frontend Architect specializing in UI replication and composition.
-${contextLine}${imageContextLine}
-
-TASK: Analyze the reference image(s) provided below to generate a complete LayoutManifest.
-Pay close attention to the visual layout structure - the image(s) will appear next.
+ROLE: Expert Frontend Architect (Multimodal).
+${contextLine}
+${strategyInstruction}
+TASK: Generate a complete Hybrid LayoutManifest (JSON).
 `;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parts: any[] = [{ text: preImageContext }];
 
-    // PART 2: Add images IMMEDIATELY after brief context (critical for spatial anchoring)
-    if (images && images.length > 0) {
-      console.log(`Processing ${images.length} image(s) for analysis...`);
+    // --- ADD MEDIA ---
 
+    // 1. Add Image (Visual Truth)
+    if (images && images.length > 0) {
+      console.log(`[generate-manifest] Processing ${images.length} image(s)...`);
       images.forEach((img, index) => {
         parts.push({
-          inlineData: {
-            mimeType: img.mimeType,
-            data: img.base64,
-          },
+          inlineData: { mimeType: img.mimeType, data: img.base64 },
         });
         parts.push({
-          text: `[IMAGE ${index + 1}] - Filename: ${img.name}`,
+          text: `[VISUAL SOURCE: Image ${index + 1}] - Use this for Layout & Style`,
         });
       });
-
-      if (images.length > 1) {
-        parts.push({
-          text: `You have been provided ${images.length} reference images. The user's request may specify which elements to take from which image.`,
-        });
-      }
     }
 
-    // PART 3: Detailed analysis instructions AFTER the image (so spatial rules anchor to visual content)
-    const multiImageRules = hasMultipleImages
-      ? `
-MULTI-IMAGE EXTRACTION RULES:
-1. If user says "replicate Image 1" → Extract ALL elements, colors, and structure from Image 1
-2. If user says "buttons from Image 1, colors from Image 2" →
-   - Extract button styles/shapes from Image 1
-   - Extract color palette from Image 2
-   - Merge them in the output manifest
-3. If user says "layout from Image 1, header from Image 2" →
-   - Use Image 1's overall structure
-   - Replace/use Image 2's header component
-4. For each image, extract:
-   - Exact hex color values (#RRGGBB format)
-   - Component structure (buttons, cards, headers, etc.)
-   - Spacing and proportions
-   - Typography (font styles, sizes)
-`
-      : '';
-
-    // GEMINI FIX: Explicit SPATIAL PROTOCOL with zone percentages
-    const postImageInstructions = `
-NOW ANALYZE THE IMAGE(S) ABOVE using this SPATIAL PROTOCOL (Read Top-to-Bottom):
-
-1. **HEADER ZONE (Top 0-15%)**:
-   - SCAN for: Logo, Nav Links, Hamburger Menu, "Sign In" buttons.
-   - ACTION: Create a "container" with semanticTag "header".
-   - CONSTRAINT: This MUST be the first child of the root.
-
-2. **HERO ZONE (Top 15-50%)**:
-   - SCAN for: Large Headlines, Subtext, Primary CTA Buttons, Hero Image.
-   - ACTION: Create a "container" with semanticTag "hero".
-   - CONSTRAINT: All CTA buttons MUST be type: "button" (not text).
-
-3. **CONTENT ZONE (Middle 50-90%)**:
-   - SCAN for: Feature Grids, Cards, Lists, Testimonials.
-   - ACTION: Group distinct visual sections into separate containers.
-
-4. **FOOTER ZONE (Bottom 90-100%)**:
-   - SCAN for: Copyright, Links, Social Icons.
-   - ACTION: Create a "container" with semanticTag "footer".
-
-${colorInjectionLine}
-
-BUTTON_DETECTION_PROTOCOL:
-- Any element that looks clickable (Pills, Rectangles with text) IS A BUTTON.
-- Use type: "button" for these. DO NOT simplify to text.
-
-BACKGROUND & COLOR PROTOCOL (CRITICAL FOR VISUAL FIDELITY):
-ROOT BACKGROUND:
-- The Root Container MUST have "bg-background" class
-- This ensures the extracted background color is applied
-
-SECTION BACKGROUND DETECTION (MANDATORY - SCAN EACH ZONE):
-1. HEADER ZONE: Look at the top 0-15% of the image
-   - If header has a DISTINCT color → "bg-primary" or "bg-secondary"
-   - If header blends with page → "bg-transparent" or "bg-background"
-
-2. HERO ZONE: Look at the 15-50% region
-   - If hero has DARK/COLORED background → "bg-primary text-white"
-   - If hero has LIGHT background → "bg-background text-text"
-   - If hero has GRADIENT → "bg-gradient-to-br from-primary to-secondary"
-
-3. CONTENT ZONES: Look at the 50-90% region
-   - Each visually distinct section MUST have its own bg- class
-   - Alternating sections should alternate between "bg-background" and "bg-surface"
-
-4. FOOTER ZONE: Look at the bottom 90-100%
-   - If footer is DARK → "bg-primary text-white" or "bg-secondary text-white"
-   - If footer is LIGHT → "bg-surface text-text"
-
-VISUAL CONTRAST RULES:
-- Dark background (visually dark in image) → ALWAYS pair with "text-white"
-- Light background (visually light) → ALWAYS pair with "text-text"
-- Colored background (primary/secondary/accent) → Check brightness, use "text-white" for dark colors
-- Cards/panels → "bg-surface" with "shadow-md" or "shadow-lg"
-
-CRITICAL: Every container with children MUST have an explicit bg- class. Do NOT leave any section without a background!
-
-${multiImageRules}
-
-REQUIRED OUTPUT SCHEMA - Every field is MANDATORY:
-{
-  "id": "unique-manifest-id",
-  "version": "1.0.0",
-  "root": { /* UISpecNode - see below */ },
-  "definitions": {},
-  "detectedFeatures": [],
-  "designSystem": {
-    "colors": { "primary": "#hex", "secondary": "#hex", "background": "#hex", "surface": "#hex", "text": "#hex", "textMuted": "#hex", "border": "#hex", "accent": "#hex" },
-    "fonts": { "heading": "font-name", "body": "font-name" }
-  }
-}
-
-UISpecNode REQUIRED FIELDS (every node MUST have ALL of these):
-- id: string (unique identifier like "hero-section-1")
-- type: "container" | "text" | "button" | "input" | "list" | "icon" | "image"
-- semanticTag: string (descriptive tag like "hero-section", "nav-link", "cta-button")
-- styles: { tailwindClasses: "space-separated tailwind classes" }
-- attributes: {} (can be empty object, but MUST exist)
-- children?: UISpecNode[] (only for non-void elements)
-
-ICON PROTOCOL (CRITICAL):
-- NEVER create a text node with words like "icon", "menu", "search" - these are NOT icons
-- ALWAYS use type: "icon" for icon elements
-- Set attributes.src to a valid Lucide icon name: "Menu", "Search", "User", "Heart", "Star", "ChevronDown", "ChevronRight", "X", "Check", "Plus", "Minus", "Settings", "Home", "Mail", "Phone", "MapPin", "Github", "Twitter", "Facebook", "Instagram", "ArrowRight", "ArrowLeft", "ExternalLink"
-- Example: { "type": "icon", "attributes": { "src": "Menu" }, "styles": { "tailwindClasses": "w-6 h-6" } }
-- If unsure which icon, use "HelpCircle"
-
-NAVIGATION SPACING PROTOCOL (CRITICAL):
-- Navigation containers MUST use spacing classes to separate items properly
-- ALWAYS add "gap-4" or "gap-6" to flex containers holding nav items
-- For horizontal navigation: use "flex items-center gap-4" or "flex items-center gap-6"
-- For nav link groups: use "flex items-center space-x-4" or "space-x-6"
-- Header containers should use "justify-between" to spread logo/nav apart
-- NEVER place nav items directly adjacent without gap/spacing classes
-- Example nav container: { "styles": { "tailwindClasses": "flex items-center justify-between px-6 py-4" } }
-- Example nav links group: { "styles": { "tailwindClasses": "flex items-center gap-6" } }
-
-TEXT_SPACING_PROTOCOL (CRITICAL):
-- Text containers MUST use spacing classes between child elements
-- For vertical text layouts: use "flex flex-col gap-4" or "space-y-4"
-- For horizontal text/inline: use "flex items-center gap-2" or "space-x-2"
-- Headlines should have: "leading-tight" or "leading-snug" plus "mb-2" or "mb-4"
-- Body text should have: "leading-relaxed" or "leading-normal"
-- Paragraphs need bottom margin: "mb-4" or "mb-6"
-- NEVER place text nodes directly adjacent without parent container spacing
-- Example text container: { "styles": { "tailwindClasses": "flex flex-col gap-4" } }
-- Example headline: { "type": "text", "styles": { "tailwindClasses": "text-4xl font-bold leading-tight mb-4" } }
-- Example paragraph: { "type": "text", "styles": { "tailwindClasses": "text-lg leading-relaxed mb-4" } }
-
-HYBRID LAYOUT PROTOCOL (CRITICAL - FOR DUAL-MODE RENDERING):
-You must generate TWO truths for every element:
-1. **Flow Truth (Tailwind)**: Responsive classes (flex, grid, gap) - always required
-2. **Visual Truth (Bounds)**: Exact percentage coordinates - for pixel-perfect mode
-
-For EVERY container, image, button, or major section, populate the "layout" field:
-"layout": {
-  "mode": "absolute",
-  "bounds": { "x": 10, "y": 20, "width": 80, "height": 30, "unit": "%" },
-  "zIndex": 10
-}
-
-BOUNDS CALCULATION RULES:
-- X/Y/Width/Height must be PERCENTAGES (0-100) relative to the viewport
-- X = left edge position as percentage of viewport width
-- Y = top edge position as percentage of viewport height
-- Width = element width as percentage of viewport width
-- Height = element height as percentage of viewport height
-- Calculate bounds by VISUALLY ANALYZING the image zones
-- EVEN IF you write flex/grid classes, providing bounds is MANDATORY
-
-LAYOUT EXAMPLES:
-- Full-width header at top: { "x": 0, "y": 0, "width": 100, "height": 10, "unit": "%" }
-- Hero section below header: { "x": 0, "y": 10, "width": 100, "height": 40, "unit": "%" }
-- Centered content card: { "x": 20, "y": 25, "width": 60, "height": 50, "unit": "%" }
-- Footer at bottom: { "x": 0, "y": 90, "width": 100, "height": 10, "unit": "%" }
-
-Z-INDEX LAYERING:
-- Background elements: zIndex: 0
-- Content sections: zIndex: 10
-- Navigation/Header: zIndex: 20
-- Modals/Overlays: zIndex: 50
-
-CRITICAL: The layout field enables "Strict Mode" (pixel-perfect) rendering. Without bounds, elements will only work in "Responsive Mode" (Tailwind flow).
-
-VOID ELEMENTS (image, input, icon) MUST NOT have children arrays.
-
-IMAGE URL RULE:
-- For image nodes, use placeholder URLs like "https://placehold.co/400x300/e2e8f0/64748b?text=Image"
-- NEVER use local filenames or the uploaded image filename as src
-- Estimate appropriate dimensions based on the image's role in the layout
-
-OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omissions.
-`;
-
-    parts.push({ text: postImageInstructions });
-
-    // PART 4: User prompt LAST
-    if (userPrompt) {
-      parts.push({ text: `USER REQUEST: ${userPrompt}` });
-    }
-
-    // Handle video upload if provided - with graceful fallback
+    // 2. Add Video (Motion Truth)
     if (videoBase64 && videoMimeType) {
-      console.log('Uploading video for Temporal Inference...');
-
+      console.log('[generate-manifest] Uploading video for motion analysis...');
       try {
-        // Convert base64 to buffer
         const buffer = Buffer.from(videoBase64, 'base64');
-
-        // Upload to Google File API
         const uploadResponse = await fileManager.uploadFile(buffer, {
           mimeType: videoMimeType,
           displayName: videoFileName || 'uploaded-video',
         });
 
-        // Wait for processing (video takes time to ingest)
         let fileState = await fileManager.getFile(uploadResponse.file.name);
         let attempts = 0;
-        const maxAttempts = 30; // 1 minute max wait (reduced for better UX)
-
-        while (fileState.state === FileState.PROCESSING && attempts < maxAttempts) {
+        while (fileState.state === FileState.PROCESSING && attempts < 15) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
           fileState = await fileManager.getFile(uploadResponse.file.name);
           attempts++;
         }
 
         if (fileState.state === FileState.ACTIVE) {
-          // Add file reference to the prompt
           parts.push({
-            fileData: {
-              mimeType: fileState.mimeType,
-              fileUri: fileState.uri,
-            },
+            fileData: { mimeType: fileState.mimeType, fileUri: fileState.uri },
           });
-
           parts.push({
-            text: 'VIDEO ANALYSIS: Identify hidden states, transitions, and loading sequences.',
+            text: '[MOTION SOURCE: Video] - Use this for Animation & Behavior ONLY',
           });
+          console.log('[generate-manifest] Video uploaded successfully');
         } else {
           throw new Error(`Video processing state: ${fileState.state}`);
         }
       } catch (e) {
-        // Graceful fallback - continue with images/prompt only
-        console.error('⚠️ Video processing failed, falling back to prompt-only:', e);
+        console.error('[generate-manifest] Video upload failed:', e);
         parts.push({
-          text: '[SYSTEM: Video analysis failed. Proceed using user prompt and any provided images.]',
+          text: '[SYSTEM: Video upload failed. Ignoring motion source.]',
         });
-        // Don't return 500 - continue with degraded functionality
       }
+    }
+
+    const postImageInstructions = `
+${colorInjectionLine}
+
+**COMPONENT PROTOCOLS:**
+
+BUTTON_DETECTION_PROTOCOL:
+- Any element that looks clickable (Pills, Rectangles with text) IS A BUTTON.
+- Use type: "button" for these. DO NOT simplify to text.
+
+ICON PROTOCOL:
+- Use type: "icon" with attributes.src set to Lucide icon name.
+- Valid names: "Menu", "Search", "User", "Heart", "Star", "ChevronDown", "X", "Check", "Plus", "Settings", "Home", "Mail", "Github", "ArrowRight"
+- Example: { "type": "icon", "attributes": { "src": "Menu" }, "styles": { "tailwindClasses": "w-6 h-6" } }
+
+NAVIGATION SPACING PROTOCOL:
+- Nav containers MUST use "flex items-center gap-4" or "gap-6".
+- Headers should use "justify-between" to spread logo/nav apart.
+
+TEXT SPACING PROTOCOL:
+- Text containers: "flex flex-col gap-4" or "space-y-4".
+- Headlines: "text-4xl font-bold leading-tight mb-4".
+- Paragraphs: "text-lg leading-relaxed mb-4".
+
+BACKGROUND PROTOCOL:
+- Root MUST have "bg-background min-h-screen w-full".
+- Each section needs an explicit bg- class (bg-background, bg-surface, bg-primary).
+- Dark backgrounds pair with "text-white".
+
+**HYBRID LAYOUT PROTOCOL:**
+1. **Flow Truth (Tailwind)**: Standard classes (flex, grid, gap).
+2. **Visual Truth (Bounds)**: Exact percentage coordinates.
+
+For structural elements, populate the "layout" field:
+"layout": {
+  "mode": "flow" | "absolute",
+  "bounds": { "x": 0, "y": 0, "width": 100, "height": 10, "unit": "%" },
+  "zIndex": 10
+}
+
+MODE DECISION RULES:
+- Is it a section container (header, hero, footer)? → Consider "absolute" for exact replica
+- Is it text flowing naturally? → "flow"
+- Is it a floating/overlapping element? → "absolute"
+- VIDEO SOURCE? → Always "flow" (absolute kills animation)
+
+**MOTION PROTOCOL (For Video/Merge):**
+- Populate 'styles.motion' with Framer Motion props.
+- Example: "initial": { "opacity": 0, "y": 20 }, "animate": { "opacity": 1, "y": 0 }
+
+REQUIRED OUTPUT SCHEMA:
+{
+  "id": "manifest-id",
+  "version": "1.0.0",
+  "root": { /* UISpecNode */ },
+  "definitions": {},
+  "detectedFeatures": [],
+  "designSystem": { "colors": {...}, "fonts": {...} }
+}
+
+UISpecNode REQUIRED FIELDS:
+- id: string (unique like "hero-section-1")
+- type: "container" | "text" | "button" | "input" | "list" | "icon" | "image"
+- semanticTag: string (like "hero-section", "cta-button")
+- styles: { tailwindClasses: "..." }
+- attributes: {}
+- children?: UISpecNode[] (only for non-void elements)
+- layout?: { mode, bounds, zIndex }
+
+VOID ELEMENTS (image, input, icon) MUST NOT have children arrays.
+
+IMAGE URL RULE:
+- Use placeholder URLs like "https://placehold.co/400x300/e2e8f0/64748b?text=Image"
+- NEVER use local filenames.
+
+OUTPUT: Complete JSON LayoutManifest with ALL required fields.
+`;
+
+    parts.push({ text: postImageInstructions });
+
+    if (userPrompt) {
+      parts.push({ text: `USER REQUEST: ${userPrompt}` });
     }
 
     const result = await model.generateContent(parts);
     const responseText = result.response.text();
 
-    // Helper to strip Markdown code blocks (Gemini sometimes wraps JSON in ```json...```)
     const cleanJson = (text: string): string => {
       return text
         .replace(/```json\s*/gi, '')
@@ -392,8 +308,7 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omis
 
     let manifest: LayoutManifest;
     try {
-      const cleanedJson = cleanJson(responseText);
-      manifest = JSON.parse(cleanedJson);
+      manifest = JSON.parse(cleanJson(responseText));
     } catch {
       console.error('[generate-manifest] Failed to parse JSON:', responseText.slice(0, 500));
       return NextResponse.json(
@@ -402,28 +317,24 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omis
       );
     }
 
-    // Ensure root.children is always an array (Gemini may return undefined)
+    // --- POST-PROCESSING ---
+
+    // Ensure root.children is always an array
     if (manifest.root && !Array.isArray(manifest.root.children)) {
-      console.log('[generate-manifest] Defaulting root.children to empty array');
       manifest.root.children = [];
     }
 
-    // HARD OVERWRITE: Force extracted colors into manifest - don't trust AI
-    // This guarantees color fidelity even if AI ignores prompt instructions
+    // Force extracted colors into manifest
     if (extractedColors) {
-      console.log('HARD OVERWRITE: Force-applying extracted colors to Architect result');
-
-      // Ensure designSystem exists
+      console.log('[generate-manifest] Force-applying extracted colors');
       if (!manifest.designSystem) {
         manifest.designSystem = { colors: {}, fonts: { heading: 'Inter', body: 'Inter' } };
       }
       if (!manifest.designSystem.colors) {
         manifest.designSystem.colors = {};
       }
-
-      // Force all extracted colors - these are mathematically accurate from k-means
       manifest.designSystem.colors = {
-        ...manifest.designSystem.colors, // Keep any AI-detected colors as fallback
+        ...manifest.designSystem.colors,
         primary: extractedColors.primary,
         secondary: extractedColors.secondary,
         background: extractedColors.background,
@@ -435,73 +346,47 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omis
       };
     }
 
-    // POST-PROCESSING: Sanitize image URLs in manifest
-    // Gemini often outputs the uploaded filename as src, which doesn't exist on server
+    // Sanitize image URLs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function sanitizeImageUrls(node: any): any {
       if (!node) return node;
-
-      // If this is an image node, check and fix the src attribute
       if (node.type === 'image' && node.attributes) {
         const src = node.attributes.src;
-        // Check if src is a local filename (not a valid URL)
         if (src && typeof src === 'string') {
           const isValidUrl =
             src.startsWith('http://') ||
             src.startsWith('https://') ||
             src.startsWith('data:') ||
             src.startsWith('/');
-
           if (!isValidUrl) {
-            console.log(
-              `[generate-manifest] Replacing invalid image src "${src}" with placeholder`
-            );
-            // Use a descriptive placeholder that shows intended dimensions
             const width = node.attributes.width || 400;
             const height = node.attributes.height || 300;
             node.attributes.src = `https://placehold.co/${width}x${height}/e2e8f0/64748b?text=Image`;
-            // Also set alt if missing
-            if (!node.attributes.alt) {
-              node.attributes.alt = 'Placeholder image';
-            }
+            if (!node.attributes.alt) node.attributes.alt = 'Placeholder image';
           }
         }
       }
-
-      // Recursively process children
       if (node.children && Array.isArray(node.children)) {
         node.children = node.children.map(sanitizeImageUrls);
       }
-
       return node;
     }
 
-    // Apply image URL sanitization
     if (manifest.root) {
       manifest.root = sanitizeImageUrls(manifest.root);
     }
 
-    // POST-PROCESSING: FORCE ROOT BACKGROUND & LAYOUT
-    // Ensures root has proper dimensions and background even if AI forgets
+    // Force root background & layout
     if (manifest.root) {
-      // Ensure styles object exists
       if (!manifest.root.styles) manifest.root.styles = { tailwindClasses: '' };
-
       let classes = manifest.root.styles.tailwindClasses || '';
-
-      // Force minimum height and width
       if (!classes.includes('min-h-screen')) classes = `min-h-screen ${classes}`;
       if (!classes.includes('w-full')) classes = `w-full ${classes}`;
-
-      // Force background color if missing
-      if (!classes.includes('bg-background')) {
-        console.log('POST-FIX: Injecting missing bg-background class');
-        classes = `${classes} bg-background`;
-      }
-
+      if (!classes.includes('bg-background')) classes = `${classes} bg-background`;
       manifest.root.styles.tailwindClasses = classes.trim();
     }
 
-    // Sanitize manifest: Strip children from void elements (image, input)
+    // Sanitize manifest (remove children from void elements)
     const {
       manifest: sanitizedManifest,
       totalRemovedChildren,
@@ -510,31 +395,22 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omis
 
     if (totalRemovedChildren > 0) {
       console.log(
-        `Manifest sanitized: Removed ${totalRemovedChildren} children from ${affectedNodes.length} void element nodes:`,
-        affectedNodes
+        `[generate-manifest] Sanitized: Removed ${totalRemovedChildren} children from ${affectedNodes.length} void elements`
       );
     }
 
-    // DEBUG: Log complete manifest structure
     console.log('[generate-manifest] FINAL MANIFEST:', {
       id: sanitizedManifest.id,
       rootType: sanitizedManifest.root?.type,
-      rootId: sanitizedManifest.root?.id,
       rootChildrenCount: sanitizedManifest.root?.children?.length ?? 0,
-      rootClasses: sanitizedManifest.root?.styles?.tailwindClasses,
-      firstChildType: sanitizedManifest.root?.children?.[0]?.type,
-      firstChildTag: sanitizedManifest.root?.children?.[0]?.semanticTag,
-      colors: sanitizedManifest.designSystem?.colors,
+      strategy: isMergeMode ? 'MERGE' : hasVideo ? 'VIDEO_FLOW' : 'IMAGE_FIDELITY',
     });
 
     return NextResponse.json({ manifest: sanitizedManifest });
   } catch (error) {
-    console.error('Architect generate-manifest error:', error);
-
+    console.error('[generate-manifest] Error:', error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Failed to generate layout manifest',
-      },
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -542,21 +418,13 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields populated. No omis
 
 export async function GET() {
   return NextResponse.json({
-    name: 'Architect API - Generate Layout Manifest',
-    version: '2.0',
-    description:
-      'Generate LayoutManifest from app concept using Gemini AI with multi-image and video analysis',
-    endpoints: {
-      generate: 'POST /api/architect/generate-manifest',
+    name: 'Architect API - Multi-Strategy Layout Generator',
+    version: '3.0',
+    description: 'Generate layouts with smart source detection',
+    strategies: {
+      IMAGE: 'Visual Fidelity with absolute bounds',
+      VIDEO: 'Precision Flow with arbitrary Tailwind (no absolute)',
+      MERGE: 'Directors Cut - Image visuals + Video motions',
     },
-    requiredEnv: ['GOOGLE_AI_API_KEY or GEMINI_API_KEY'],
-    features: [
-      'App concept to layout manifest conversion',
-      'Multi-image upload with indexed references (Image 1, Image 2, etc.)',
-      'Selective merging: "buttons from Image 1, colors from Image 2"',
-      'Video upload and temporal inference',
-      'Exact color extraction from images',
-      'Recursive UI schema generation',
-    ],
   });
 }

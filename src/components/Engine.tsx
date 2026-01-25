@@ -31,7 +31,7 @@ interface EngineProps {
   onSelect?: (id: string) => void;
   selectedId?: string;
   editable?: boolean;
-  viewMode?: 'strict' | 'responsive'; // Hybrid: 'strict' = pixel-perfect, 'responsive' = Tailwind flow
+  // Per-node layout mode: Engine respects node.layout.mode for absolute/flow decisions
 }
 
 export const Engine: React.FC<EngineProps> = ({
@@ -40,7 +40,6 @@ export const Engine: React.FC<EngineProps> = ({
   onSelect,
   selectedId,
   editable = false,
-  viewMode = 'responsive',
 }) => {
   // Guard against undefined/null nodes
   if (!node) {
@@ -57,7 +56,6 @@ export const Engine: React.FC<EngineProps> = ({
           onSelect={onSelect}
           selectedId={selectedId}
           editable={editable}
-          viewMode={viewMode}
         />
       );
     }
@@ -109,10 +107,10 @@ export const Engine: React.FC<EngineProps> = ({
   ];
   const isVoidElement = voidElements.includes(Tag);
 
-  // --- HYBRID STYLING LOGIC (must be before icon handling) ---
+  // --- PER-NODE LAYOUT LOGIC (Architect decides absolute vs flow per node) ---
   const isSelected = selectedId === node.id;
-  const isStrict = viewMode === 'strict';
-  const hasBounds = node.layout?.mode === 'absolute' && node.layout?.bounds;
+  // Per-node decision: if layout.mode is 'absolute' with bounds, use absolute positioning
+  const useAbsolute = node.layout?.mode === 'absolute' && node.layout?.bounds;
 
   // Build computed style with optional absolute positioning
   const computedStyle: React.CSSProperties = {};
@@ -123,8 +121,8 @@ export const Engine: React.FC<EngineProps> = ({
     computedStyle.outlineOffset = '2px';
   }
 
-  // Absolute positioning override for Strict Mode (Pixel-Perfect)
-  if (isStrict && hasBounds && node.layout?.bounds) {
+  // Absolute positioning when node specifies layout.mode = 'absolute'
+  if (useAbsolute && node.layout?.bounds) {
     const { x, y, width, height, unit } = node.layout.bounds;
     computedStyle.position = 'absolute';
     computedStyle.left = `${x}${unit}`;
@@ -138,15 +136,15 @@ export const Engine: React.FC<EngineProps> = ({
   // Legacy selection style for backward compatibility
   const selectionStyle = computedStyle;
 
-  // Icon handling (after hybrid styling logic so we can use isStrict, hasBounds, computedStyle)
+  // Icon handling (after layout logic so we can use useAbsolute, computedStyle)
   if (node.type === 'icon' && node.attributes?.src) {
     const iconName = node.attributes.src;
     // Handle case-insensitive matching: "menu" -> "Menu"
     const pascalName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
     const IconCmp = (Icons as any)[iconName] || (Icons as any)[pascalName] || Icons.HelpCircle;
 
-    // In strict mode with bounds, wrap icon in a positioned div
-    if (isStrict && hasBounds) {
+    // If node has absolute positioning, wrap icon in a positioned div
+    if (useAbsolute) {
       return (
         <div
           className={node.styles?.tailwindClasses ?? ''}
@@ -250,7 +248,6 @@ export const Engine: React.FC<EngineProps> = ({
           onSelect={onSelect}
           selectedId={selectedId}
           editable={editable}
-          viewMode={viewMode}
         />
       ))}
     </MotionTag>
@@ -272,7 +269,7 @@ interface LayoutPreviewProps {
   onSelectNode?: (id: string) => void;
   selectedNodeId?: string;
   editMode?: boolean;
-  viewMode?: 'strict' | 'responsive'; // Hybrid: 'strict' = pixel-perfect, 'responsive' = Tailwind flow
+  // Layout mode is now per-node: Engine respects node.layout.mode for absolute/flow
 }
 
 // Error boundary to prevent render crashes from breaking the entire app
@@ -303,7 +300,6 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
   onSelectNode,
   selectedNodeId,
   editMode = false,
-  viewMode = 'responsive',
 }) => {
   const colors = manifest.designSystem?.colors ?? {};
   const fonts = manifest.designSystem?.fonts ?? { heading: 'sans-serif', body: 'sans-serif' };
@@ -373,7 +369,6 @@ export const LayoutPreview: React.FC<LayoutPreviewProps> = ({
           onSelect={onSelectNode}
           selectedId={selectedNodeId}
           editable={editMode}
-          viewMode={viewMode}
         />
         {/* Debug: Show when manifest appears empty */}
         {!hasContent && !hasText && process.env.NODE_ENV === 'development' && (
