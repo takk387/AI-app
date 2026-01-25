@@ -76,6 +76,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
     setShowNameAppModal,
     setNewAppStagePlan,
     setCurrentAppId,
+    setDynamicPhasePlan,
   } = useAppStore();
 
   /**
@@ -143,6 +144,18 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       const hasPendingPhases = comp.stagePlan?.phases?.some((p) => p.status === 'pending') ?? false;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       setNewAppStagePlan(hasPendingPhases ? comp.stagePlan! : null);
+
+      // Restore dynamic phase plan to store for build resumption
+      setDynamicPhasePlan(comp.dynamicPhasePlan ?? null);
+
+      // Save to localStorage for refresh persistence
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('current_app_id', comp.id);
+        } catch {
+          // Failed to save current app ID to localStorage
+        }
+      }
     },
     [
       setCurrentComponent,
@@ -151,6 +164,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       setShowLibrary,
       setActiveTab,
       setNewAppStagePlan,
+      setDynamicPhasePlan,
     ]
   );
 

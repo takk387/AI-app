@@ -14,7 +14,9 @@ import type {
   AppVersion,
   StagePlan,
   AppBranch,
+  ImplementationPlanSnapshot,
 } from '@/types/aiBuilderTypes';
+import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import { migrateToBranchFormat } from '@/utils/branchMigration';
 
 type DbGeneratedApp = Database['public']['Tables']['generated_apps']['Row'];
@@ -29,6 +31,8 @@ interface DbMetadata {
   versions?: AppVersion[];
   timestamp?: string;
   stagePlan?: StagePlan | null;
+  dynamicPhasePlan?: DynamicPhasePlan | null;
+  implementationPlan?: ImplementationPlanSnapshot | null;
   branches?: AppBranch[];
   activeBranchId?: string;
 }
@@ -79,6 +83,8 @@ function componentToDb(component: GeneratedComponent, userId: string): DbGenerat
       versions: component.versions || [],
       timestamp: component.timestamp,
       stagePlan: component.stagePlan || null,
+      dynamicPhasePlan: component.dynamicPhasePlan || null,
+      implementationPlan: component.implementationPlan || null,
       branches: component.branches || [],
       activeBranchId: component.activeBranchId,
     } as unknown as Database['public']['Tables']['generated_apps']['Row']['metadata'],
@@ -106,6 +112,8 @@ function dbToComponent(dbApp: DbGeneratedApp): GeneratedComponent {
     conversationHistory: metadata.conversationHistory || [],
     versions: metadata.versions || [],
     stagePlan: metadata.stagePlan ?? null,
+    dynamicPhasePlan: metadata.dynamicPhasePlan ?? null,
+    implementationPlan: metadata.implementationPlan ?? null,
     previewSlug: dbApp.preview_slug || null,
     previewEnabled: dbApp.preview_enabled ?? true,
     isPublic: dbApp.is_public ?? false,

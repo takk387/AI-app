@@ -3,6 +3,9 @@
  * Extracted from MainBuilderView.tsx for modular architecture
  */
 
+import type { DynamicPhasePlan } from './dynamicPhases';
+import type { ImplementationPlan as RuntimeImplementationPlan } from './appConcept';
+
 // ============================================================================
 // CHAT TYPES
 // ============================================================================
@@ -108,6 +111,10 @@ export interface GeneratedComponent {
   versions?: AppVersion[];
   /** Phase build progress - null when complete or not applicable */
   stagePlan?: StagePlan | null;
+  /** Dynamic phase plan - AI-generated phase structure for multi-phase builds */
+  dynamicPhasePlan?: DynamicPhasePlan | null;
+  /** Implementation plan snapshot - Build strategy and approach metadata for DB persistence */
+  implementationPlan?: ImplementationPlanSnapshot | null;
   /** Preview sharing - slug for public preview URL */
   previewSlug?: string | null;
   /** Preview sharing - whether preview is enabled */
@@ -118,6 +125,56 @@ export interface GeneratedComponent {
   branches?: AppBranch[];
   /** Currently active branch ID */
   activeBranchId?: string;
+}
+
+/**
+ * Implementation plan snapshot - stores the build strategy and approach metadata
+ * for database persistence. This is distinct from the runtime ImplementationPlan
+ * in appConcept.ts which contains the full AppConcept and BuildPhase objects.
+ */
+export interface ImplementationPlanSnapshot {
+  id: string;
+  appName: string;
+  approach: string;
+  phases: Array<{
+    name: string;
+    description: string;
+    estimatedComplexity: 'simple' | 'moderate' | 'complex';
+  }>;
+  technicalDecisions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Convert runtime ImplementationPlan to ImplementationPlanSnapshot for DB persistence.
+ * Extracts only the lightweight metadata needed for storage.
+ */
+export function toImplementationPlanSnapshot(
+  plan: RuntimeImplementationPlan
+): ImplementationPlanSnapshot {
+  // Extract technical decisions from the technical requirements object
+  const technicalDecisions: string[] = [];
+  const tech = plan.concept.technical;
+  if (tech.needsAuth) technicalDecisions.push(`Auth: ${tech.authType || 'simple'}`);
+  if (tech.needsDatabase) technicalDecisions.push('Database required');
+  if (tech.needsAPI) technicalDecisions.push('API endpoints required');
+  if (tech.needsFileUpload) technicalDecisions.push('File upload support');
+  if (tech.needsRealtime) technicalDecisions.push('Realtime features');
+
+  return {
+    id: `impl-${plan.concept.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+    appName: plan.concept.name,
+    approach: plan.concept.description || plan.concept.purpose || '',
+    phases: plan.phases.map((phase) => ({
+      name: phase.name,
+      description: phase.description,
+      estimatedComplexity: phase.estimatedComplexity,
+    })),
+    technicalDecisions,
+    createdAt: plan.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 // ============================================================================

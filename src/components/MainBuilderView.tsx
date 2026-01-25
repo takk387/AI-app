@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -58,6 +58,7 @@ import { useAppBuilderSync } from '@/hooks/useAppBuilderSync';
 
 // Types
 import type { GeneratedComponent, ChatMessage, AppVersion, Phase } from '../types/aiBuilderTypes';
+import { toImplementationPlanSnapshot } from '../types/aiBuilderTypes';
 
 // Utils
 import { parseAppFiles } from '../utils/exportApp';
@@ -97,6 +98,7 @@ What would you like to create today?`,
 
 export function MainBuilderView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, sessionReady } = useAuth();
 
   // ============================================================================
@@ -183,6 +185,7 @@ export function MainBuilderView() {
     setNewAppStagePlan,
     appConcept,
     dynamicPhasePlan,
+    implementationPlan,
     uploadedImage,
     setUploadedImage,
 
@@ -514,6 +517,50 @@ export function MainBuilderView() {
     loadApps();
   }, [sessionReady, user?.id, loadComponentsFromDb, setComponents, setLoadingApps]);
 
+  // Restore active app from URL param or localStorage after components load
+  useEffect(() => {
+    // Wait for components to finish loading
+    if (loadingApps || components.length === 0) return;
+    // Don't override if user already has a component loaded
+    if (currentComponent) return;
+
+    // Priority 1: Check URL for appId param (from dashboard navigation)
+    const urlAppId = searchParams.get('appId');
+    if (urlAppId) {
+      const matchingComponent = components.find((c) => c.id === urlAppId);
+      if (matchingComponent) {
+        loadComponent(matchingComponent);
+        // Also save to localStorage for refresh persistence
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('current_app_id', urlAppId);
+          } catch {
+            // Failed to save to localStorage
+          }
+        }
+        return;
+      }
+    }
+
+    // Priority 2: Check localStorage for previously active app
+    if (typeof window !== 'undefined') {
+      try {
+        const storedAppId = localStorage.getItem('current_app_id');
+        if (storedAppId) {
+          const matchingComponent = components.find((c) => c.id === storedAppId);
+          if (matchingComponent) {
+            loadComponent(matchingComponent);
+          } else {
+            // Stale app ID - component no longer exists, clear localStorage
+            localStorage.removeItem('current_app_id');
+          }
+        }
+      } catch {
+        // Failed to read from localStorage
+      }
+    }
+  }, [loadingApps, components, currentComponent, searchParams, loadComponent]);
+
   // Handle pending deploy after app is saved
   useEffect(() => {
     if (pendingDeployAfterSave && currentAppId) {
@@ -530,6 +577,155 @@ export function MainBuilderView() {
       setShowNameAppModal(true);
     }
   }, [sessionReady, loadingApps, currentComponent, showNameAppModal, setShowNameAppModal]);
+
+  // Debounced auto-save for chat messages, code changes, and phase plans (2000ms)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedRef = useRef<{
+    chatLength: number;
+    code: string;
+    phasePlanId: string | null;
+    hasImplPlan: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    // Don't auto-save if no component is loaded or if still loading
+    if (!currentComponent || loadingApps || isGenerating) return;
+
+    // Skip if nothing has changed since last save
+    const currentState = {
+      chatLength: chatMessages.length,
+      code: currentComponent.code,
+      phasePlanId: dynamicPhasePlan?.id ?? null,
+      hasImplPlan: !!implementationPlan,
+    };
+    if (
+      lastSavedRef.current &&
+      lastSavedRef.current.chatLength === currentState.chatLength &&
+      lastSavedRef.current.code === currentState.code &&
+      lastSavedRef.current.phasePlanId === currentState.phasePlanId &&
+      lastSavedRef.current.hasImplPlan === currentState.hasImplPlan
+    ) {
+      return;
+    }
+
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set up debounced save (2000ms)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      // Convert runtime implementation plan to snapshot for DB persistence
+      const implPlanSnapshot = implementationPlan
+        ? toImplementationPlanSnapshot(implementationPlan)
+        : currentComponent.implementationPlan;
+
+      // Update component with current state from store before saving
+      const updatedComponent = {
+        ...currentComponent,
+        conversationHistory: chatMessages,
+        dynamicPhasePlan: dynamicPhasePlan ?? currentComponent.dynamicPhasePlan,
+        implementationPlan: implPlanSnapshot,
+      };
+      await saveComponentToDb(updatedComponent);
+      lastSavedRef.current = currentState;
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [
+    chatMessages,
+    currentComponent,
+    loadingApps,
+    isGenerating,
+    saveComponentToDb,
+    dynamicPhasePlan,
+    implementationPlan,
+  ]);
+
+  // Persist UI state to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('ai_builder_active_tab', activeTab);
+    } catch {
+      // Failed to save UI state
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('ai_builder_user_input', userInput);
+    } catch {
+      // Failed to save user input
+    }
+  }, [userInput]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (uploadedImage) {
+        localStorage.setItem('ai_builder_uploaded_image', uploadedImage);
+      } else {
+        localStorage.removeItem('ai_builder_uploaded_image');
+      }
+    } catch {
+      // Failed to save uploaded image
+    }
+  }, [uploadedImage]);
+
+  // Restore UI state from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const savedTab = localStorage.getItem('ai_builder_active_tab');
+      if (savedTab && (savedTab === 'chat' || savedTab === 'preview' || savedTab === 'code')) {
+        setActiveTab(savedTab);
+      }
+
+      const savedInput = localStorage.getItem('ai_builder_user_input');
+      if (savedInput) {
+        setUserInput(savedInput);
+      }
+
+      const savedImage = localStorage.getItem('ai_builder_uploaded_image');
+      if (savedImage) {
+        setUploadedImage(savedImage);
+      }
+    } catch {
+      // Failed to restore UI state
+    }
+  }, [setActiveTab, setUserInput, setUploadedImage]);
+
+  // Persist wizard state for PLAN mode
+  useEffect(() => {
+    if (typeof window === 'undefined' || currentMode !== 'PLAN') return;
+    try {
+      localStorage.setItem('ai_builder_wizard_state', JSON.stringify(wizardState));
+    } catch {
+      // Failed to save wizard state
+    }
+  }, [wizardState, currentMode]);
+
+  // Restore wizard state on mount if in PLAN mode
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const savedWizardState = localStorage.getItem('ai_builder_wizard_state');
+      if (savedWizardState) {
+        const parsed = JSON.parse(savedWizardState);
+        setWizardState(parsed);
+      }
+    } catch {
+      // Failed to restore wizard state
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
   // RENDER

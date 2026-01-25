@@ -20,11 +20,11 @@ export function ProjectCard({ project, view, onDelete, onArchive, onDeploy }: Pr
   const statusConfig = getStatusConfig(project.status);
 
   const handleContinue = () => {
-    router.push(`/app/builder?appId=${project.appId}`);
+    router.push(`/app?appId=${project.appId}`);
   };
 
   const handleViewDocs = () => {
-    router.push(`/app/builder?appId=${project.appId}&showDocs=true`);
+    router.push(`/app?appId=${project.appId}&showDocs=true`);
   };
 
   const handleDeploy = () => {
