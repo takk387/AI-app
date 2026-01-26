@@ -572,11 +572,29 @@ export function MainBuilderView() {
 
   // Show naming modal if no app is loaded (after initial load completes)
   useEffect(() => {
+    // Skip if URL restoration is in progress
+    const urlAppId = searchParams.get('appId');
+    if (urlAppId) return;
+
+    // Skip if localStorage restoration is pending (app exists and will be loaded)
+    const storedAppId =
+      typeof window !== 'undefined' ? localStorage.getItem('current_app_id') : null;
+    if (storedAppId && components.length > 0 && components.some((c) => c.id === storedAppId))
+      return;
+
     // Wait for session to be ready and initial app load to complete
     if (sessionReady && !loadingApps && !currentComponent && !showNameAppModal) {
       setShowNameAppModal(true);
     }
-  }, [sessionReady, loadingApps, currentComponent, showNameAppModal, setShowNameAppModal]);
+  }, [
+    sessionReady,
+    loadingApps,
+    currentComponent,
+    showNameAppModal,
+    setShowNameAppModal,
+    searchParams,
+    components,
+  ]);
 
   // Debounced auto-save for chat messages, code changes, and phase plans (2000ms)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
