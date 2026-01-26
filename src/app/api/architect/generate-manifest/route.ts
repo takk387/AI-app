@@ -15,7 +15,6 @@ import type { LayoutManifest, UISpecNode } from '@/types/schema';
 import { sanitizeManifest } from '@/utils/manifestSanitizer';
 import type { ColorPalette } from '@/utils/colorExtraction';
 import { geminiImageService } from '@/services/GeminiImageService';
-import { PipelineOrchestrator } from '@/services/PipelineOrchestrator';
 
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
@@ -76,45 +75,7 @@ export async function POST(request: Request) {
       imageCount: images?.length ?? 0,
     });
 
-    // --- MULTI-STAGE PIPELINE FOR STATIC IMAGES ---
-    // Use new pipeline for image-only mode (no video) for better component detection
-    if (hasImages && !hasVideo) {
-      console.log('[generate-manifest] Using multi-stage pipeline for static image');
-
-      // Use extracted colors if provided, otherwise pass undefined and let Stage 4 handle
-      // This avoids hardcoding color defaults here
-      const colors: ColorPalette | undefined = extractedColors;
-
-      const orchestrator = new PipelineOrchestrator(apiKey);
-      const pipelineResult = await orchestrator.execute({
-        image: images[0].base64,
-        extractedColors: colors,
-        userPrompt,
-      });
-
-      console.log('[generate-manifest] Pipeline complete:', pipelineResult.metadata);
-
-      // Post-process: sanitize image URLs that aren't valid
-      function sanitizeImageUrls(node: UISpecNode): void {
-        if (node.type === 'image' && node.attributes?.src) {
-          const src = node.attributes.src as string;
-          // Only allow http(s) URLs or data URIs
-          if (!src.startsWith('http') && !src.startsWith('data:')) {
-            const desc = encodeURIComponent((node.attributes.alt as string) || 'Image');
-            node.attributes.src = `https://placehold.co/400x300/e2e8f0/64748b?text=${desc}`;
-          }
-        }
-        node.children?.forEach(sanitizeImageUrls);
-      }
-      sanitizeImageUrls(pipelineResult.manifest.root);
-
-      // Sanitize the manifest (removes children from void elements)
-      const { manifest: sanitizedManifest } = sanitizeManifest(pipelineResult.manifest);
-
-      return NextResponse.json({ manifest: sanitizedManifest });
-    }
-
-    // --- LEGACY SINGLE-PROMPT FLOW (for video, merge mode, or no images) ---
+    // --- SINGLE-PROMPT FLOW (All sources: image, video, merge, or none) ---
     const genAI = new GoogleGenerativeAI(apiKey);
     const fileManager = new GoogleAIFileManager(apiKey);
     const model = genAI.getGenerativeModel({
