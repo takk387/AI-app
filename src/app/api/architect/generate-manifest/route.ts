@@ -146,9 +146,9 @@ The user wants the EXACT "Look and Feel" of this video.
    - Example: { "initial": { "opacity": 0, "y": 20 }, "animate": { "opacity": 1, "y": 0 } }
 `;
     } else {
-      // THIS IS THE FIX FOR "EXACT REPLICA" - HARDCOPY MODE
+      // STATIC IMAGE HARDCOPY with PIXEL-PRECISION (Phase 18 Enhanced)
       strategyInstruction = `
-STRATEGY: **STATIC IMAGE HARDCOPY (Exact Replica)**
+STRATEGY: **STATIC IMAGE HARDCOPY (Exact Replica with Pixel Precision)**
 The user wants an EXACT REPLICA of this specific screen.
 
 1. **LAYOUT (HARDCOPY MODE)**:
@@ -157,15 +157,38 @@ The user wants an EXACT REPLICA of this specific screen.
    - Every button, text, icon, and card gets a bounding box: { x, y, width, height, unit: "%" }.
    - Root acts as positioning container. Children are absolutely positioned inside it.
 
-2. **FIDELITY RULES**:
+2. **PIXEL-PRECISION RULES (CRITICAL)**:
+   - **Do NOT use vague terms.** Estimate exact values:
+     - Hero Height: "850px" not "tall"
+     - Border Radius: "16px" or "24px" not "rounded"
+     - Font Sizes: "64px" heading, "16px" body - not "large" or "small"
+     - Padding/Margin: "80px" not "spacious"
+     - Gap/Spacing: "24px" not "normal"
+   - Store these in 'styles.customCSS' or use Tailwind arbitrary values: 'h-[850px]', 'rounded-[16px]'
+
+3. **ADVANCED EFFECTS DETECTION**:
+   - **Glassmorphism**: If you see blurred, semi-transparent backgrounds:
+     Extract: 'backdrop-filter: blur(Xpx)', 'background: rgba(255,255,255,0.X)'
+   - **Mesh Gradients / Auroras**: Soft multi-color blends (not linear):
+     Extract the 3-5 colors and positions
+   - **Neumorphism**: Elements with double shadows (light + dark):
+     Extract: 'box-shadow: -Xpx -Ypx #light, Xpx Ypx #dark'
+   - Store effects in 'styles.customCSS'
+
+4. **BOUNDS CALCULATION**:
+   - X/Y/Width/Height as PERCENTAGES (0-100) relative to viewport.
+   - SPATIAL PROTOCOL: HEADER (0-15%), HERO (15-50%), CONTENT (50-90%), FOOTER (90-100%).
+
+5. **EXHAUSTIVE COMPONENT DETECTION**:
+   - Detect 20-30+ components minimum
+   - Every button, icon, text, card, image you see = a UISpecNode
+   - Don't summarize: "navigation with links" → wrong
+   - Be specific: "sticky nav with logo, 5 menu items, search icon, CTA button" → correct
+
+6. **FIDELITY RULES**:
    - If there is an icon visible, use type: "icon" with correct attributes.src.
    - If there is a background image/gradient, use customCSS on the container.
-   - Match colors, spacing, and typography EXACTLY.
-
-3. **BOUNDS CALCULATION**:
-   - X/Y/Width/Height must be PERCENTAGES (0-100) relative to viewport.
-   - Calculate bounds by VISUALLY ANALYZING the image zones.
-   - SPATIAL PROTOCOL: HEADER (0-15%), HERO (15-50%), CONTENT (50-90%), FOOTER (90-100%).
+   - Match colors, spacing, and typography EXACTLY using the pixel values you detected.
 `;
     }
 
@@ -289,6 +312,14 @@ MODE DECISION RULES:
 **MOTION PROTOCOL (For Video/Merge):**
 - Populate 'styles.motion' with Framer Motion props.
 - Example: "initial": { "opacity": 0, "y": 20 }, "animate": { "opacity": 1, "y": 0 }
+
+**ADVANCED VISUAL FIDELITY PROTOCOL:**
+1. **Glassmorphism**: If semi-transparent blur is seen, apply 'backdrop-filter: blur(12px)' and 'background: rgba(255,255,255,0.1)' in styles.customCSS.
+2. **Mesh Gradients**: Detect multi-color backgrounds; use 'background: linear-gradient(...)' in customCSS with extracted colors.
+3. **Precision Spacing**: Use Tailwind arbitrary values like 'p-[24px]', 'gap-[18px]', 'h-[850px]' - NOT vague presets.
+4. **Neumorphism**: Double shadows → 'box-shadow: -4px -4px 8px #light, 4px 4px 8px #dark' in customCSS.
+5. **Border Radius Precision**: Extract exact values - 'rounded-[16px]' or 'rounded-[24px]', not 'rounded-lg'.
+6. **Font Size Precision**: Detect exact sizes - 'text-[64px]' for hero headings, 'text-[16px]' for body.
 
 REQUIRED OUTPUT SCHEMA:
 {
