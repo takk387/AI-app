@@ -22,23 +22,27 @@ interface GenericComponentRendererProps {
   selectedId?: string | null;
 }
 
+// Default bounds for components with missing/invalid bounds data
+const DEFAULT_BOUNDS = { top: 0, left: 0, width: 100, height: 50 };
+
 export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> = ({
   component,
   onSelect,
   selectedId,
 }) => {
-  const { id, type, style, content, children, bounds } = component;
+  const { id, type, style = {}, content, children, bounds = DEFAULT_BOUNDS } = component;
   const isSelected = selectedId === id;
 
   // 1. Dynamic Style Generation (The Zero-Preset Logic)
   // Maps API styles to inline styles or atomic classes
   const dynamicStyles: React.CSSProperties = {
-    // Layout
-    position: style.isFloating || style.isSticky ? (style.isSticky ? 'sticky' : 'absolute') : 'relative',
-    top: style.isFloating ? `${bounds.top}%` : undefined,
-    left: style.isFloating ? `${bounds.left}%` : undefined,
+    // Layout - uses optional chaining for defensive access
+    position:
+      style?.isFloating || style?.isSticky ? (style?.isSticky ? 'sticky' : 'absolute') : 'relative',
+    top: style?.isFloating ? `${bounds?.top ?? 0}%` : undefined,
+    left: style?.isFloating ? `${bounds?.left ?? 0}%` : undefined,
     width: style.display === 'inline' ? 'auto' : '100%',
-    
+
     // Visuals (Arbitrary Values from AI)
     backgroundColor: style.backgroundColor,
     color: style.textColor,
@@ -51,13 +55,18 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     textAlign: style.textAlign as any,
     boxShadow: style.shadow,
     gap: style.gap,
-    
+
     // Flex/Grid
     display: style.display || 'flex',
     flexDirection: type === 'list' || type === 'content-section' ? 'column' : 'row',
     alignItems: style.alignment === 'center' ? 'center' : 'flex-start',
-    justifyContent: style.alignment === 'center' ? 'center' : style.alignment === 'between' ? 'space-between' : 'flex-start',
-    
+    justifyContent:
+      style.alignment === 'center'
+        ? 'center'
+        : style.alignment === 'between'
+          ? 'space-between'
+          : 'flex-start',
+
     // Zero-Preset Override: Apply arbitrary CSS detected by AI
     ...style.customCSS,
   };
@@ -69,26 +78,36 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   };
 
   // 3. Selection Visuals (Overlay for "See" mode)
-  const selectionClass = isSelected 
-    ? 'ring-2 ring-blue-500 ring-offset-2' 
+  const selectionClass = isSelected
+    ? 'ring-2 ring-blue-500 ring-offset-2'
     : 'hover:ring-1 hover:ring-blue-300 hover:ring-offset-1';
 
   // 4. Recursive Children Rendering
-  // In a real app, you'd look up children from a map or pass them down. 
+  // In a real app, you'd look up children from a map or pass them down.
   // For this snippet, we assume children IDs might need lookup, but let's assume
   // for now that `children` contains actual node structures or we render content.
 
   const renderContent = () => {
     if (content?.text) return content.text;
-    if (content?.hasImage) return <div className="bg-gray-200 w-full h-full min-h-[100px] flex items-center justify-center text-gray-400">Image</div>;
+    if (content?.hasImage)
+      return (
+        <div className="bg-gray-200 w-full h-full min-h-[100px] flex items-center justify-center text-gray-400">
+          Image
+        </div>
+      );
     return null;
   };
 
   // 5. Component Specific Envelopes
   // Even in "Zero-Preset", some semantic tags matter (button vs div)
-  const Tag = (type === 'button' || type === 'cta') ? 'button' : 
-              (type === 'input' || type === 'search-bar') ? 'input' : 
-              (type === 'image-gallery') ? 'img' : 'div';
+  const Tag =
+    type === 'button' || type === 'cta'
+      ? 'button'
+      : type === 'input' || type === 'search-bar'
+        ? 'input'
+        : type === 'image-gallery'
+          ? 'img'
+          : 'div';
 
   if (type === 'input' || type === 'search-bar') {
     return (

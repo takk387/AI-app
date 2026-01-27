@@ -15,6 +15,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { DetectedComponentEnhanced, PageAnalysis, LayoutStructure } from '@/types/layoutDesign';
+import { sanitizeComponents } from '@/utils/layoutValidation';
 
 // ============================================================================
 // CONFIGURATION
@@ -102,7 +103,12 @@ class GeminiLayoutService {
     const response = result.response;
 
     try {
-      return JSON.parse(response.text()) as DetectedComponentEnhanced[];
+      const rawData = JSON.parse(response.text());
+      const { components, errors } = sanitizeComponents(rawData);
+      if (errors.length > 0) {
+        console.warn('[GeminiLayoutService] Validation issues in analyzeImage:', errors);
+      }
+      return components;
     } catch (e) {
       console.error('Failed to parse Gemini response', e);
       return [];
@@ -227,7 +233,11 @@ class GeminiLayoutService {
     const response = result.response;
 
     try {
-      return JSON.parse(response.text()) as DetectedComponentEnhanced;
+      const rawData = JSON.parse(response.text());
+      // Merge with original component to preserve bounds if AI omits them
+      const merged = { ...component, ...rawData };
+      const { components } = sanitizeComponents([merged]);
+      return components[0] || component; // Fallback to original if validation fails
     } catch (e) {
       console.error('Failed to parse Edit response', e);
       return component; // Fallback to original

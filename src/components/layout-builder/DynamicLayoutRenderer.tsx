@@ -22,11 +22,15 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
   selectedComponentId,
 }) => {
   // Sort components by vertical position (top bounds) to ensure roughly correct flow order
-  // for non-absolute layouts.
-  const sortedComponents = [...components].sort((a, b) => a.bounds.top - b.bounds.top);
+  // for non-absolute layouts. Uses defensive null checks to handle incomplete bounds.
+  const sortedComponents = [...components].sort((a, b) => {
+    const aTop = a?.bounds?.top ?? 0;
+    const bTop = b?.bounds?.top ?? 0;
+    return aTop - bTop;
+  });
 
   return (
-    <div 
+    <div
       className="relative w-full min-h-screen bg-white"
       id="layout-canvas" // ID for html2canvas
     >

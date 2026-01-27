@@ -12,13 +12,14 @@
 import { useState, useCallback } from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { extractKeyframes } from '@/utils/videoProcessor';
+import { sanitizeComponents } from '@/utils/layoutValidation';
 
 interface UseLayoutBuilderReturn {
   // State
   components: DetectedComponentEnhanced[];
   selectedId: string | null;
   isAnalyzing: boolean;
-  
+
   // Actions
   setComponents: (components: DetectedComponentEnhanced[]) => void;
   selectComponent: (id: string | null) => void;
@@ -32,7 +33,7 @@ interface UseLayoutBuilderReturn {
   saveToWizard: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  
+
   // AI Actions
   analyzeImage: (file: File, instructions?: string) => Promise<void>;
   analyzeVideo: (file: File, instructions?: string) => Promise<void>;
@@ -53,11 +54,11 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   }, []);
 
   const updateComponentStyle = useCallback((id: string, newStyle: Record<string, any>) => {
-    setComponents(prev => prev.map(comp => 
-      comp.id === id 
-        ? { ...comp, style: { ...comp.style, ...newStyle } }
-        : comp
-    ));
+    setComponents((prev) =>
+      prev.map((comp) =>
+        comp.id === id ? { ...comp, style: { ...comp.style, ...newStyle } } : comp
+      )
+    );
   }, []);
 
   // --- AI Interactions ---
@@ -66,21 +67,26 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     setIsAnalyzing(true);
     try {
       const base64 = await fileToBase64(file);
-      
+
       const response = await fetch('/api/layout/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'analyze-image', 
+        body: JSON.stringify({
+          action: 'analyze-image',
           image: base64,
-          instructions 
+          instructions,
         }),
       });
 
       if (!response.ok) throw new Error('Analysis failed');
-      
+
       const detected = await response.json();
-      setComponents(detected);
+      // Secondary validation layer - sanitize components before setting state
+      const { components: validatedComponents, errors } = sanitizeComponents(detected);
+      if (errors.length > 0) {
+        console.warn('[useLayoutBuilder] Components sanitized:', errors);
+      }
+      setComponents(validatedComponents);
     } catch (error) {
       console.error('Image analysis error:', error);
     } finally {
@@ -93,27 +99,26 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     try {
       // 1. Extract frames in browser (Client-Side Strategy)
       const frames = await extractKeyframes(file, { keyframeCount: 3 });
-      const base64Frames = frames.map(f => f.image);
+      const base64Frames = frames.map((f) => f.image);
 
       // 2. Send to Gemini for Motion Analysis
       const response = await fetch('/api/layout/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'analyze-video-flow', 
+        body: JSON.stringify({
+          action: 'analyze-video-flow',
           images: base64Frames,
-          instructions
+          instructions,
         }),
       });
 
       if (!response.ok) throw new Error('Video analysis failed');
       const motionData = await response.json();
-      
+
       console.log('Video Motion Data Received:', motionData);
-      
+
       // TODO: Map motion data to component props or global animation state
       // For now, we just log it as the "Structure" part comes from the Image/Hybrid flow
-      
     } catch (error) {
       console.error('Video analysis error:', error);
     } finally {
@@ -132,19 +137,18 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
       const response = await fetch('/api/layout/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'critique', 
-          original: originalImage, 
-          current: currentScreenshot 
+        body: JSON.stringify({
+          action: 'critique',
+          original: originalImage,
+          current: currentScreenshot,
         }),
       });
 
       if (!response.ok) throw new Error('Critique failed');
       const critique = await response.json();
-      
+
       console.log('AI Critique:', critique);
       // Auto-apply corrections could happen here
-      
     } catch (error) {
       console.error('Critique error:', error);
     } finally {
@@ -157,38 +161,45 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [future, setFuture] = useState<DetectedComponentEnhanced[][]>([]);
 
   // Helper to push state to history
-  const updateComponentsWithHistory = useCallback((newComponents: DetectedComponentEnhanced[] | ((prev: DetectedComponentEnhanced[]) => DetectedComponentEnhanced[])) => {
-    setComponents(prev => {
-      const next = typeof newComponents === 'function' ? newComponents(prev) : newComponents;
-      setHistory(h => [...h, prev]);
-      setFuture([]); // Clear future on new action
-      return next;
-    });
-  }, []);
+  const updateComponentsWithHistory = useCallback(
+    (
+      newComponents:
+        | DetectedComponentEnhanced[]
+        | ((prev: DetectedComponentEnhanced[]) => DetectedComponentEnhanced[])
+    ) => {
+      setComponents((prev) => {
+        const next = typeof newComponents === 'function' ? newComponents(prev) : newComponents;
+        setHistory((h) => [...h, prev]);
+        setFuture([]); // Clear future on new action
+        return next;
+      });
+    },
+    []
+  );
 
   const undo = useCallback(() => {
-    setHistory(prev => {
+    setHistory((prev) => {
       if (prev.length === 0) return prev;
       const newHistory = [...prev];
       const previousState = newHistory.pop()!;
-      
-      setComponents(current => {
-        setFuture(f => [current, ...f]);
+
+      setComponents((current) => {
+        setFuture((f) => [current, ...f]);
         return previousState;
       });
-      
+
       return newHistory;
     });
   }, []);
 
   const redo = useCallback(() => {
-    setFuture(prev => {
+    setFuture((prev) => {
       if (prev.length === 0) return prev;
       const newFuture = [...prev];
       const nextState = newFuture.shift()!;
 
-      setComponents(current => {
-        setHistory(h => [...h, current]);
+      setComponents((current) => {
+        setHistory((h) => [...h, current]);
         return nextState;
       });
 
@@ -200,64 +211,79 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
 
   const exportCode = useCallback(() => {
     // Lazy load or import utility
-    import('@/utils/codeExporter').then(mod => {
+    import('@/utils/codeExporter').then((mod) => {
       const code = mod.exportToReact(components);
       navigator.clipboard.writeText(code);
       alert('React code copied to clipboard!');
     });
   }, [components]);
 
-  // Override setComponents locally to use history? 
+  // Override setComponents locally to use history?
   // For simplicity, we expose the direct setter but internal actions use logic.
   // Actually, let's replace the internal calls to use `updateComponentsWithHistory`.
 
   // --- Edit Actions ---
 
-  const deleteComponent = useCallback((id: string) => {
-    updateComponentsWithHistory(prev => prev.filter(c => c.id !== id));
-    if (selectedId === id) setSelectedId(null);
-  }, [selectedId, updateComponentsWithHistory]);
+  const deleteComponent = useCallback(
+    (id: string) => {
+      updateComponentsWithHistory((prev) => prev.filter((c) => c.id !== id));
+      if (selectedId === id) setSelectedId(null);
+    },
+    [selectedId, updateComponentsWithHistory]
+  );
 
-  const duplicateComponent = useCallback((id: string) => {
-    updateComponentsWithHistory(prev => {
-      const comp = prev.find(c => c.id === id);
-      if (!comp) return prev;
-      
-      const newComp = {
-        ...comp,
-        id: `${comp.id}-copy-${Date.now()}`,
-        bounds: { ...comp.bounds, top: comp.bounds.top + 5, left: comp.bounds.left + 5 }
-      };
-      return [...prev, newComp];
-    });
-  }, [updateComponentsWithHistory]);
+  const duplicateComponent = useCallback(
+    (id: string) => {
+      updateComponentsWithHistory((prev) => {
+        const comp = prev.find((c) => c.id === id);
+        if (!comp) return prev;
 
-  const applyAIEdit = useCallback(async (id: string, prompt: string) => {
-    setIsAnalyzing(true);
-    try {
-        const component = components.find(c => c.id === id);
+        const newComp = {
+          ...comp,
+          id: `${comp.id}-copy-${Date.now()}`,
+          bounds: { ...comp.bounds, top: comp.bounds.top + 5, left: comp.bounds.left + 5 },
+        };
+        return [...prev, newComp];
+      });
+    },
+    [updateComponentsWithHistory]
+  );
+
+  const applyAIEdit = useCallback(
+    async (id: string, prompt: string) => {
+      setIsAnalyzing(true);
+      try {
+        const component = components.find((c) => c.id === id);
         if (!component) throw new Error('Component not found');
 
         const response = await fetch('/api/layout/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'edit-component', 
-                component, 
-                prompt 
-            }),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'edit-component',
+            component,
+            prompt,
+          }),
         });
 
         if (!response.ok) throw new Error('Edit failed');
         const updatedComponent = await response.json();
-        
-        updateComponentsWithHistory(prev => prev.map(c => c.id === id ? updatedComponent : c));
-    } catch (error) {
+
+        // Validate the updated component before applying
+        const { components: validatedComponents } = sanitizeComponents([updatedComponent]);
+        if (validatedComponents.length > 0) {
+          updateComponentsWithHistory((prev) =>
+            prev.map((c) => (c.id === id ? validatedComponents[0] : c))
+          );
+        }
+      } catch (error) {
         console.error('AI Edit error:', error);
-    } finally {
+      } finally {
         setIsAnalyzing(false);
-    }
-  }, [components, updateComponentsWithHistory]);
+      }
+    },
+    [components, updateComponentsWithHistory]
+  );
 
   // --- Layout to Wizard Bridge ---
 
@@ -265,14 +291,14 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     // Dynamic import to avoid cycles/SSR issues
     import('@/utils/layoutConverter').then(({ convertToLayoutManifest }) => {
       const manifest = convertToLayoutManifest(components);
-      
+
       // Update global store
       // We need to import the store here to separate concerns or pass it as dependency
-      // For now, simpler to rely on the component using this hook to have access, 
+      // For now, simpler to rely on the component using this hook to have access,
       // BUT proper way is to use the store hook inside this hook if it was a component,
-      // or just import the store state getter if outside. 
+      // or just import the store state getter if outside.
       // Since this is a hook, we can import useAppStore.
-      
+
       import('@/store/useAppStore').then(({ useAppStore }) => {
         useAppStore.getState().setCurrentLayoutManifest(manifest);
         console.log('[LayoutBuilder] Saved layout to Wizard:', manifest);
@@ -307,19 +333,19 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         // 1. Convert to Manifest
         const { convertToLayoutManifest } = await import('@/utils/layoutConverter');
         const manifest = convertToLayoutManifest(components);
-        
+
         // 2. Get Current Concept & Update with Manifest
         const { useAppStore } = await import('@/store/useAppStore');
         const store = useAppStore.getState();
         const currentConcept = store.appConcept;
-        
+
         if (!currentConcept) {
           throw new Error('No App Concept found. Please start from the Wizard.');
         }
 
         const updatedConcept = {
           ...currentConcept,
-          layoutManifest: manifest
+          layoutManifest: manifest,
         };
 
         // 3. Update Store locally first
@@ -339,18 +365,17 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         }
 
         const { plan } = await response.json();
-        
+
         // 5. Store the Generated Plan
         store.setDynamicPhasePlan(plan);
         console.log('[LayoutBuilder] Generated Dynamic Phase Plan:', plan);
-        
       } catch (error) {
         console.error('Plan Generation Error:', error);
         throw error; // Re-throw for UI to handle
       } finally {
         setIsAnalyzing(false);
       }
-    }, [components])
+    }, [components]),
   };
 }
 
@@ -360,6 +385,6 @@ function fileToBase64(file: File): Promise<string> {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 }

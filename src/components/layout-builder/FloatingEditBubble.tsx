@@ -57,17 +57,19 @@ export const FloatingEditBubble: React.FC<FloatingEditBubbleProps> = ({
 
   // Calculate position: Just above the element, centered
   // In a real app, we'd use usePopper or similar for collision detection
+  // Uses defensive defaults to prevent crashes with missing bounds
+  const bounds = component.bounds ?? { top: 0, left: 0, width: 100, height: 50 };
   const style: React.CSSProperties = {
     position: 'absolute',
-    top: `${component.bounds.top}%`,
-    left: `${component.bounds.left + component.bounds.width / 2}%`,
+    top: `${bounds.top}%`,
+    left: `${bounds.left + bounds.width / 2}%`,
     transform: 'translate(-50%, -110%)', // Shift up and center
     marginTop: '-8px',
     zIndex: 1000,
   };
 
   return (
-    <div 
+    <div
       style={style}
       className="bg-white shadow-xl rounded-lg border border-gray-200 p-3 w-[280px] animate-in fade-in zoom-in-95 duration-200"
       onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
@@ -77,10 +79,7 @@ export const FloatingEditBubble: React.FC<FloatingEditBubbleProps> = ({
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Edit {component.type}
         </span>
-        <button 
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 p-1"
-        >
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
           &times;
         </button>
       </div>
@@ -106,7 +105,12 @@ export const FloatingEditBubble: React.FC<FloatingEditBubbleProps> = ({
               <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
             ) : (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
               </svg>
             )}
           </button>
