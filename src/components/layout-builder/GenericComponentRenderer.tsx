@@ -71,9 +71,11 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
           ? 'space-between'
           : 'flex-start',
 
-    // DEBUG: Force visible styling - these come LAST to ensure visibility
-    backgroundColor: 'rgba(59, 130, 246, 0.15)', // Light blue background
-    border: '3px solid #3b82f6', // Thick blue border
+    // Apply AI-returned background and border if provided
+    backgroundColor: style.backgroundColor || 'rgba(229, 231, 235, 0.5)', // Light gray fallback
+    borderColor: style.borderColor || '#d1d5db', // Gray border fallback
+    borderWidth: style.borderWidth || '1px',
+    borderStyle: 'solid',
 
     // Zero-Preset Override: Apply arbitrary CSS detected by AI
     ...style.customCSS,
