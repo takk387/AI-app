@@ -117,16 +117,8 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     return <span className="text-xs text-gray-400 opacity-50 select-none">{type}</span>;
   };
 
-  // 5. Component Specific Envelopes
-  // Even in "Zero-Preset", some semantic tags matter (button vs div)
-  const Tag =
-    type === 'button' || type === 'cta'
-      ? 'button'
-      : type === 'input' || type === 'search-bar'
-        ? 'input'
-        : type === 'image-gallery'
-          ? 'img'
-          : 'div';
+  // 5. Early returns for void elements and special cases
+  // Void elements (input, img) cannot have children, so handle them separately
 
   if (type === 'input' || type === 'search-bar') {
     return (
@@ -141,8 +133,25 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     );
   }
 
+  // Handle image-gallery as a div container with image placeholder (img is void element)
+  if (type === 'image-gallery') {
+    return (
+      <div
+        data-id={id}
+        style={dynamicStyles}
+        className={cn('transition-all duration-200 cursor-pointer', selectionClass)}
+        onClick={handleClick}
+      >
+        <div className="bg-gray-200 w-full h-full min-h-[100px] flex items-center justify-center text-gray-400">
+          {content?.text || 'Image Gallery'}
+        </div>
+      </div>
+    );
+  }
+
+  // Use div for all component types (avoid void elements like img that can't have children)
   return (
-    <Tag
+    <div
       data-id={id}
       style={dynamicStyles}
       className={cn('transition-all duration-200 cursor-pointer', selectionClass)}
@@ -153,6 +162,6 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
          TODO: Recursively render children if the data structure supports full nesting.
          For this MVP, we focus on the leaf node rendering logic.
       */}
-    </Tag>
+    </div>
   );
 };
