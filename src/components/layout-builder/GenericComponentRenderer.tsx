@@ -33,6 +33,9 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   const { id, type, style = {}, content, children, bounds = DEFAULT_BOUNDS } = component;
   const isSelected = selectedId === id;
 
+  // DEBUG: Log component bounds to diagnose visibility issues
+  console.log('[GenericComponentRenderer] Rendering:', id, 'type:', type, 'bounds:', bounds);
+
   // 1. Dynamic Style Generation (The Zero-Preset Logic)
   // Maps API styles to inline styles or atomic classes
   // Uses absolute positioning with bounds for precise layout replication
@@ -43,13 +46,14 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     left: `${bounds?.left ?? 0}%`,
     width: style?.display === 'inline' ? 'auto' : `${bounds?.width ?? 100}%`,
     height: `${bounds?.height ?? 50}%`,
-    minHeight: '20px', // Ensure visibility even for empty components
+    minWidth: '50px', // Ensure minimum visible width
+    minHeight: '50px', // Ensure minimum visible height
     overflow: 'hidden', // Prevent content overflow
 
     // Visuals (Arbitrary Values from AI)
-    backgroundColor: style.backgroundColor,
-    // Add fallback border for components without background (visibility during design)
-    border: !style.backgroundColor && !style.borderWidth ? '1px dashed #e5e7eb' : undefined,
+    backgroundColor: style.backgroundColor || 'rgba(59, 130, 246, 0.1)', // Light blue fallback for visibility
+    // DEBUG: Always show visible border
+    border: '2px solid #3b82f6', // Blue border for visibility during development
     color: style.textColor,
     borderColor: style.borderColor,
     borderWidth: style.borderWidth,

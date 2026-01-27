@@ -31,8 +31,9 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
 
   return (
     <div
-      className="relative w-full min-h-screen bg-white"
+      className="relative w-full h-full bg-white"
       id="layout-canvas" // ID for html2canvas
+      style={{ minHeight: '600px' }}
     >
       {sortedComponents.map((component) => (
         <GenericComponentRenderer
