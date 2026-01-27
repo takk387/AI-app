@@ -49,6 +49,7 @@ import {
   useAppCrud,
 } from '@/hooks';
 import { useBranchManagement } from '@/hooks/useBranchManagement';
+import { useConceptSync } from '@/hooks/useConceptSync';
 import type { WizardState } from '@/hooks';
 import { useDynamicBuildPhases } from '@/hooks/useDynamicBuildPhases';
 import { useStreamingGeneration } from '@/hooks/useStreamingGeneration';
@@ -199,6 +200,26 @@ export function MainBuilderView() {
     setShowDocumentationPanel,
     currentAppId,
   } = useAppStore();
+
+  // Sync wizard state to app concept in store during PLAN mode
+  // Adapt wizardState to useConceptSync's expected format (features need id)
+  const adaptedWizardState = useMemo(
+    () => ({
+      ...wizardState,
+      features: wizardState.features.map((f, idx) => ({
+        id: `feature-${idx}`,
+        name: f.name,
+        description: f.description || '',
+        priority: f.priority as 'high' | 'medium' | 'low',
+      })),
+    }),
+    [wizardState]
+  );
+
+  useConceptSync({
+    wizardState: adaptedWizardState,
+    enabled: currentMode === 'PLAN',
+  });
 
   // ============================================================================
   // CUSTOM HOOKS
@@ -371,7 +392,7 @@ export function MainBuilderView() {
   );
 
   // Message sending
-  const { sendMessage } = useSendMessage({
+  const { sendMessage, suggestedActions, clearSuggestedActions } = useSendMessage({
     wizardState,
     appConcept,
     messageSender,
@@ -383,6 +404,81 @@ export function MainBuilderView() {
     onSaveComponent: saveComponentToDb,
     saveVersion,
   });
+
+  // Handle PLAN mode suggested actions
+  const handlePlanAction = useCallback(
+    (action: string) => {
+      switch (action) {
+        case 'generate_architecture':
+          // For architecture generation, guide user to use the full wizard flow
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              role: 'assistant' as const,
+              content:
+                '🏗️ **Architecture Analysis**\n\nTo generate a full backend architecture analysis, please use the **Wizard** (Step 1) to complete your app planning. The architecture analyzer works best with a fully defined app concept.\n\nOnce you have your concept ready, you can proceed to design and build phases.',
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          break;
+        case 'generate_phases':
+          // For phase generation, guide user to use the full wizard flow
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              role: 'assistant' as const,
+              content:
+                '📋 **Implementation Plan**\n\nTo generate a detailed implementation plan with phases, please complete the planning process in the **Wizard** (Step 1). The phase generator creates optimized build phases based on your complete app concept.\n\nOnce your concept is finalized, you can move through Design and Build steps.',
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          break;
+        case 'start_building':
+          // Switch to ACT mode to start building
+          setCurrentMode('ACT');
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              role: 'system' as const,
+              content:
+                '🚀 **Switched to ACT mode!**\n\nYou can now build and modify your application. Describe what you want to create or change.',
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          break;
+        case 'adjust_plan':
+          // Clear actions and let user continue chatting
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              role: 'assistant' as const,
+              content: "Sure, let's refine the plan. What would you like to adjust or add?",
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          break;
+        case 'browse_templates':
+          // Open library modal to browse templates
+          setShowLibrary(true);
+          break;
+        case 'upload_reference':
+          // Trigger file input for image upload
+          if (fileInputRef.current) {
+            fileInputRef.current.click();
+          }
+          break;
+        default:
+          // Handle unknown actions
+          console.log('[MainBuilderView] Unknown plan action:', action);
+      }
+      clearSuggestedActions();
+    },
+    [setChatMessages, setCurrentMode, setShowLibrary, fileInputRef, clearSuggestedActions]
+  );
 
   // Version handlers hook
   const { approveDiff, rejectDiff, revertToVersion, handleCompareVersions, handleForkApp } =
@@ -500,6 +596,13 @@ export function MainBuilderView() {
   // ============================================================================
   // EFFECTS
   // ============================================================================
+
+  // Clear suggested actions when switching to ACT mode
+  useEffect(() => {
+    if (currentMode === 'ACT') {
+      clearSuggestedActions();
+    }
+  }, [currentMode, clearSuggestedActions]);
 
   useEffect(() => {
     setIsClient(true);
@@ -824,6 +927,8 @@ export function MainBuilderView() {
                   canRedo={versionControl.canRedo}
                   onUndo={versionControl.undo}
                   onRedo={versionControl.redo}
+                  suggestedActions={suggestedActions}
+                  onAction={handlePlanAction}
                 />
               </div>
             </ResizablePanel>

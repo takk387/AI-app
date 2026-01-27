@@ -10,7 +10,7 @@
  * - Error handling
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import type {
   ChatMessage,
@@ -100,10 +100,20 @@ export interface UseSendMessageOptions {
 }
 
 /**
+ * Suggested action for PLAN mode
+ */
+export interface SuggestedAction {
+  label: string;
+  action: string;
+}
+
+/**
  * Return type for useSendMessage hook
  */
 export interface UseSendMessageReturn {
   sendMessage: () => Promise<void>;
+  suggestedActions: SuggestedAction[];
+  clearSuggestedActions: () => void;
 }
 
 // ============================================================================
@@ -190,6 +200,14 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
     onSaveComponent,
     saveVersion,
   } = options;
+
+  // Suggested actions state for PLAN mode
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+
+  // Clear suggested actions
+  const clearSuggestedActions = useCallback(() => {
+    setSuggestedActions([]);
+  }, []);
 
   // Get state and setters from Zustand store
   const {
@@ -341,6 +359,11 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
       // Update wizard state from PLAN mode response
       if (currentMode === 'PLAN' && data?.updatedState) {
         onWizardStateUpdate(data.updatedState as WizardState);
+      }
+
+      // Store suggested actions from PLAN mode response
+      if (currentMode === 'PLAN' && data?.suggestedActions) {
+        setSuggestedActions(data.suggestedActions as SuggestedAction[]);
       }
 
       // Handle ACT mode build trigger
@@ -761,7 +784,7 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
     onSaveComponent,
   ]);
 
-  return { sendMessage };
+  return { sendMessage, suggestedActions, clearSuggestedActions };
 }
 
 export default useSendMessage;

@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import type { ChatMessage, StagePlan, Phase } from '../types/aiBuilderTypes';
 import type { StreamingProgress as StreamingProgressType } from '../types/streaming';
 import { InlineStreamingProgress } from './StreamingProgress';
+import { SuggestedActionsBar } from './conversation-wizard';
 import {
   MessageSquareIcon,
   SendIcon,
@@ -159,6 +160,10 @@ export interface ChatPanelProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+
+  // Suggested actions for PLAN mode
+  suggestedActions?: Array<{ label: string; action: string }>;
+  onAction?: (action: string) => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel({
@@ -184,6 +189,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel
   canRedo,
   onUndo,
   onRedo,
+  suggestedActions,
+  onAction,
 }) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -384,6 +391,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel
             Redo
           </button>
         </div>
+      )}
+
+      {/* Suggested Actions for PLAN mode */}
+      {currentMode === 'PLAN' && suggestedActions && suggestedActions.length > 0 && onAction && (
+        <SuggestedActionsBar
+          actions={suggestedActions}
+          onAction={onAction}
+          disabled={isGenerating}
+        />
       )}
 
       {/* Input Area */}

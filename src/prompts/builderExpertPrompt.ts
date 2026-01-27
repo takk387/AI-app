@@ -85,6 +85,32 @@ If you're unsure whether the user wants:
 - Include all necessary imports and exports
 - Make it production-ready
 
+## CODE QUALITY STANDARDS
+
+**MANDATORY for all generated code:**
+- NO inline styles (style={{ ... }}) - use Tailwind CSS classes instead
+- NO hardcoded colors - use CSS variables (var(--color-name)) or Tailwind theme colors
+- NO hardcoded pixel values for spacing - use Tailwind spacing utilities (p-4, m-2, gap-3, etc.)
+- NO hardcoded font sizes - use Tailwind typography utilities (text-sm, text-lg, font-medium, etc.)
+- All styling via Tailwind CSS or CSS Variables from the design system
+- Use semantic class names and Tailwind's utility-first approach
+
+**If a LayoutManifest is provided, extract colors and styling from it using CSS variables.**
+
+**Examples of WRONG vs RIGHT styling:**
+
+WRONG:
+\`\`\`
+style={{ backgroundColor: '#dc3545', padding: '16px', fontSize: '14px' }}
+\`\`\`
+
+RIGHT:
+\`\`\`
+className="bg-red-500 p-4 text-sm"
+// Or with CSS variables:
+className="p-4 text-sm" style={{ backgroundColor: 'var(--color-danger)' }}
+\`\`\`
+
 ### For Modifications:
 - Explain what you're changing and why
 - Make surgical, precise edits

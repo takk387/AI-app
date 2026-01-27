@@ -57,10 +57,38 @@ interface WizardResponse {
     action: string;
   }>;
   isConceptComplete: boolean;
+  hadCodeStripped?: boolean;
   tokensUsed: {
     input: number;
     output: number;
   };
+}
+
+// ============================================================================
+// CODE STRIPPING (Safety Net)
+// ============================================================================
+
+/**
+ * Strip any code blocks from PLAN mode responses
+ * This is a safety net in case the AI generates code despite prompt constraints
+ */
+function stripCodeBlocks(text: string): string {
+  let cleaned = text;
+
+  // Remove fenced code blocks (```...```)
+  cleaned = cleaned.replace(/```[\s\S]*?```/g, '[Code removed - use ACT mode for code generation]');
+
+  // Remove <create_files> XML blocks
+  cleaned = cleaned.replace(/<create_files>[\s\S]*?<\/create_files>/g, '[Code removed]');
+
+  // Remove <file> XML blocks
+  cleaned = cleaned.replace(/<file[\s\S]*?<\/file>/g, '[Code removed]');
+
+  // Remove self-closing component-like XML that looks like JSX (but keep normal markdown/text)
+  // Only remove if it looks like a React component pattern
+  cleaned = cleaned.replace(/<[A-Z][a-zA-Z]*\s+[\s\S]*?\/>/g, '[Component removed]');
+
+  return cleaned;
 }
 
 // ============================================================================
@@ -318,7 +346,16 @@ Ask any final technical questions if needed (platform, technology preferences) b
 
     // Extract response text (skip thinking blocks)
     const textBlock = response.content.find((block) => block.type === 'text');
-    const assistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+    const rawAssistantMessage = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+
+    // Strip any code blocks from PLAN mode responses (safety net)
+    const cleanedMessage = stripCodeBlocks(rawAssistantMessage);
+    const hadCodeStripped = cleanedMessage !== rawAssistantMessage;
+    const assistantMessage = cleanedMessage;
+
+    if (hadCodeStripped) {
+      console.warn('[wizard/chat] Code blocks were stripped from PLAN mode response');
+    }
 
     // Update state by analyzing the full conversation
     const updatedHistory = [
@@ -382,6 +419,7 @@ Ask any final technical questions if needed (platform, technology preferences) b
       },
       suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
       isConceptComplete: isComplete,
+      hadCodeStripped: hadCodeStripped || undefined,
       tokensUsed: {
         input: response.usage.input_tokens,
         output: response.usage.output_tokens,
