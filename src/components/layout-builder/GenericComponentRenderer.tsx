@@ -71,14 +71,22 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
           ? 'space-between'
           : 'flex-start',
 
+    // Zero-Preset Override: Apply arbitrary CSS detected by AI (but filter out white backgrounds)
+    ...style.customCSS,
+
     // Apply AI-returned background and border if provided
-    backgroundColor: style.backgroundColor || 'rgba(229, 231, 235, 0.5)', // Light gray fallback
+    // These come AFTER customCSS to ensure visibility - white backgrounds get a visible fallback
+    backgroundColor:
+      style.customCSS?.backgroundColor === 'white' ||
+      style.customCSS?.backgroundColor === '#fff' ||
+      style.customCSS?.backgroundColor === '#ffffff' ||
+      style.customCSS?.backgroundColor === 'rgb(255, 255, 255)' ||
+      !style.backgroundColor
+        ? 'rgba(229, 231, 235, 0.5)' // Light gray fallback for visibility
+        : style.backgroundColor,
     borderColor: style.borderColor || '#d1d5db', // Gray border fallback
     borderWidth: style.borderWidth || '1px',
     borderStyle: 'solid',
-
-    // Zero-Preset Override: Apply arbitrary CSS detected by AI
-    ...style.customCSS,
   };
 
   // 2. Click Handler for Vision Loop

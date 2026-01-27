@@ -82,20 +82,65 @@ class GeminiLayoutService {
     });
 
     const prompt = `
-      Analyze this UI screenshot and extract a "Zero-Preset" component tree.
-      
-      USER INSTRUCTIONS: ${instructions || 'Replicate this design exactly as seen.'}
+      You are an expert UI designer with pixel-perfect vision. Analyze this screenshot and create a complete JSON representation of EVERY visible UI element.
+
+      USER INSTRUCTIONS: ${instructions || 'Create a pixel-perfect replica of this design.'}
+
+      YOUR TASK:
+      Return a JSON array where EACH visible element (text, button, image, icon, container, etc.) is a separate object.
+
+      REQUIRED JSON SCHEMA FOR EACH COMPONENT:
+      {
+        "id": "unique-descriptive-id",
+        "type": "header|sidebar|hero|cards|navigation|footer|form|table|carousel|timeline|stepper|stats|testimonials|pricing|features|cta|breadcrumb|pagination|tabs|modal-trigger|search-bar|user-menu|logo|content-section|image-gallery|video-player|map|chart|button|input|list|menu|modal|dropdown|badge|avatar|divider|progress|unknown",
+        "bounds": {
+          "top": <number 0-100, percentage from top of viewport>,
+          "left": <number 0-100, percentage from left edge>,
+          "width": <number 0-100, percentage of viewport width>,
+          "height": <number 0-100, percentage of viewport height>
+        },
+        "style": {
+          "backgroundColor": "<exact hex color like #1a1a2e>",
+          "textColor": "<exact hex color>",
+          "fontSize": "<exact size like 48px, 16px>",
+          "fontWeight": "<bold|normal|600|700>",
+          "padding": "<exact value like 16px or 12px 24px>",
+          "borderRadius": "<exact value like 8px, 12px>",
+          "borderColor": "<hex color if bordered>",
+          "borderWidth": "<1px, 2px etc>",
+          "shadow": "<box-shadow value if present>",
+          "customCSS": { "<any other CSS properties>": "<values>" }
+        },
+        "content": {
+          "text": "<actual text content you can read>",
+          "hasImage": true/false,
+          "hasIcon": true/false
+        },
+        "confidence": <0.0-1.0>
+      }
 
       CRITICAL REQUIREMENTS:
-      1. **Exact values**: Do NOT use presets (like "p-4"). Use ARBITRARY values (e.g., "padding: '18px'", "width: '340px'").
-      2. **Exhaustive**: Detect every single visible element (min 20+ components).
-      3. **Hierarchy**: Identify parent/child relationships.
-      4. **Data-ID**: Assign a unique readable ID to every component (e.g., "hero-cta-primary").
-      5. **True Customization**: For ANY property not covered by standard fields (like 'backgroundImage', 'backdropFilter', 'transform', 'clipPath', 'backgroundClip'), strictly put them into 'style.customCSS'.
-         - Example: style: { ..., customCSS: { backgroundImage: 'linear-gradient(135deg, #FF0080, #7928CA)', backdropFilter: 'blur(10px)' } }
+      1. **EXHAUSTIVE DETECTION**: Find 20-50+ components. Include EVERY:
+         - Heading, paragraph, and text element
+         - Button, link, and clickable element
+         - Image, icon, and graphic
+         - Input field, form element
+         - Card, container, section
+         - Navigation item, menu item
+         - Badge, tag, label
 
-      Return JSON format matching 'DetectedComponentEnhanced[]'.
-      Focus on 'bounds' (0-100% viewport), 'style' (exact CSS), and 'content'.
+      2. **PIXEL-PERFECT BOUNDS**: Measure precisely where each element sits:
+         - top: 0 = very top, 50 = middle, 100 = bottom
+         - left: 0 = left edge, 50 = center, 100 = right edge
+         - width/height: as percentage of total viewport
+
+      3. **EXTRACT ACTUAL TEXT**: Read all visible text and put it in content.text
+
+      4. **USE EXACT CSS VALUES**: No Tailwind classes. Use "padding": "16px", "fontSize": "24px", "backgroundColor": "#1a1a2e"
+
+      5. **UNIQUE IDS**: Give each component a descriptive ID like "header-logo", "hero-main-heading", "cta-primary-button", "footer-social-links"
+
+      Return ONLY the JSON array. No markdown, no explanation.
     `;
 
     const imagePart = this.fileToPart(imageBase64);
