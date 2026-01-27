@@ -15,6 +15,7 @@ import type { LayoutManifest, UISpecNode } from '@/types/schema';
 import { sanitizeManifest } from '@/utils/manifestSanitizer';
 import type { ColorPalette } from '@/utils/colorExtraction';
 import { geminiImageService } from '@/services/GeminiImageService';
+import { AssetExtractionService, type ExtractedAssets } from '@/services/AssetExtractionService';
 
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
@@ -468,6 +469,24 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields.
       }
     }
 
+    // --- ASSET EXTRACTION PIPELINE (NEW) ---
+    // Extract real icons, images, and button styles from reference
+    if (hasImages && !hasVideo) {
+      console.log('[generate-manifest] Starting asset extraction pipeline...');
+      try {
+        const extractor = new AssetExtractionService();
+        const extractedAssets = await extractor.extractAllAssets(images![0].base64);
+
+        // Apply extracted assets to manifest
+        manifest = applyExtractedAssets(manifest, extractedAssets);
+
+        console.log('[generate-manifest] Asset extraction complete');
+      } catch (error) {
+        console.error('[generate-manifest] Asset extraction failed:', error);
+        // Continue without extraction - don't block generation
+      }
+    }
+
     // Force root background & layout
     if (manifest.root) {
       if (!manifest.root.styles) manifest.root.styles = { tailwindClasses: '' };
@@ -518,15 +537,126 @@ OUTPUT: Complete JSON LayoutManifest with ALL required fields.
   }
 }
 
+/**
+ * Apply extracted assets (icons, images, buttons) to the manifest
+ * Matches by bounding box coordinates with tolerance
+ */
+function applyExtractedAssets(manifest: LayoutManifest, assets: ExtractedAssets): LayoutManifest {
+  interface BoundsLike {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+  }
+
+  function boundsMatch(b1: BoundsLike | undefined, b2: BoundsLike | undefined): boolean {
+    if (!b1 || !b2) return false;
+    const threshold = 5; // 5% tolerance for matching
+    return (
+      Math.abs((b1.x || 0) - (b2.x || 0)) < threshold &&
+      Math.abs((b1.y || 0) - (b2.y || 0)) < threshold &&
+      Math.abs((b1.width || 0) - (b2.width || 0)) < threshold &&
+      Math.abs((b1.height || 0) - (b2.height || 0)) < threshold
+    );
+  }
+
+  function matchAndApply(node: UISpecNode): UISpecNode {
+    const nodeBounds = node.layout?.bounds;
+
+    // Match and apply icons
+    if (node.type === 'icon' && nodeBounds) {
+      const match = assets.icons.find((icon) => boundsMatch(nodeBounds, icon.bounds));
+      if (match) {
+        console.log(`[AssetExtraction] Matched icon: ${match.semanticId} -> ${match.url}`);
+        node.attributes = {
+          ...node.attributes,
+          src: match.url,
+        };
+      }
+    }
+
+    // Match and apply images
+    if (node.type === 'image' && nodeBounds) {
+      const match = assets.images.find((img) => boundsMatch(nodeBounds, img.bounds));
+      if (match) {
+        console.log(`[AssetExtraction] Matched image: ${match.semanticId} -> ${match.url}`);
+        node.attributes = {
+          ...node.attributes,
+          src: match.url,
+          alt: match.semanticId,
+        };
+      }
+    }
+
+    // Match and apply button styles
+    if (node.type === 'button' && nodeBounds) {
+      const match = assets.buttons.find((btn) => boundsMatch(nodeBounds, btn.bounds));
+      if (match) {
+        console.log(`[AssetExtraction] Matched button: ${match.semanticId}`);
+        const styles = match.styles;
+
+        // Build custom CSS from extracted styles
+        const customCSS = `
+          background: ${styles.background};
+          border-radius: ${styles.borderRadius};
+          border: ${styles.borderWidth} solid ${styles.borderColor};
+          box-shadow: ${styles.boxShadow};
+          color: ${styles.textColor};
+          font-size: ${styles.fontSize};
+          font-weight: ${styles.fontWeight};
+          padding: ${styles.padding};
+        `
+          .trim()
+          .replace(/\s+/g, ' ');
+
+        node.styles = {
+          ...node.styles,
+          customCSS: customCSS,
+        };
+      }
+    }
+
+    // Match and apply logos (treated like icons)
+    if ((node.type === 'icon' || node.type === 'image') && nodeBounds) {
+      const match = assets.logos.find((logo) => boundsMatch(nodeBounds, logo.bounds));
+      if (match) {
+        console.log(`[AssetExtraction] Matched logo: ${match.semanticId} -> ${match.url}`);
+        node.attributes = {
+          ...node.attributes,
+          src: match.url,
+          alt: match.semanticId,
+        };
+      }
+    }
+
+    // Recurse through children
+    if (node.children && Array.isArray(node.children)) {
+      node.children = node.children.map(matchAndApply);
+    }
+
+    return node;
+  }
+
+  return {
+    ...manifest,
+    root: matchAndApply(manifest.root),
+  };
+}
+
 export async function GET() {
   return NextResponse.json({
     name: 'Architect API - Multi-Strategy Layout Generator',
-    version: '3.0',
-    description: 'Generate layouts with smart source detection',
+    version: '3.1',
+    description: 'Generate layouts with smart source detection + asset extraction',
     strategies: {
-      IMAGE: 'Visual Fidelity with absolute bounds',
+      IMAGE: 'Visual Fidelity with absolute bounds + extracted assets',
       VIDEO: 'Precision Flow with arbitrary Tailwind (no absolute)',
       MERGE: 'Directors Cut - Image visuals + Video motions',
+    },
+    features: {
+      assetExtraction: 'Automatic extraction of icons, images, and button styles',
+      backgroundGeneration: 'Custom background image generation',
+      colorExtraction: 'Client-side color palette detection',
     },
   });
 }
