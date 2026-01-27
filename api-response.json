@@ -1,0 +1,349 @@
+[
+  {
+    "id": "main-canvas",
+    "type": "content-section",
+    "bounds": {
+      "top": 0,
+      "left": 0,
+      "width": 100,
+      "height": 100
+    },
+    "style": {
+      "backgroundColor": "#FF0000",
+      "textColor": "#FFFFFF",
+      "borderRadius": "0px",
+      "padding": "0px",
+      "fontSize": "16px",
+      "fontWeight": "normal",
+      "customCSS": {
+        "display": "flex",
+        "flexDirection": "column"
+      }
+    },
+    "content": {
+      "text": "",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 1
+  },
+  {
+    "id": "header-navigation",
+    "type": "header",
+    "bounds": {
+      "top": 0,
+      "left": 0,
+      "width": 100,
+      "height": 10
+    },
+    "style": {
+      "backgroundColor": "rgba(255, 255, 255, 0.1)",
+      "textColor": "#FFFFFF",
+      "borderRadius": "0px",
+      "padding": "0px 64px",
+      "fontSize": "16px",
+      "fontWeight": "600",
+      "customCSS": {
+        "backdropFilter": "blur(10px)",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between"
+      }
+    },
+    "content": {
+      "text": "",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.98
+  },
+  {
+    "id": "header-logo",
+    "type": "logo",
+    "bounds": {
+      "top": 3,
+      "left": 5,
+      "width": 12,
+      "height": 4
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderRadius": "0px",
+      "padding": "0px",
+      "fontSize": "24px",
+      "fontWeight": "bold",
+      "customCSS": {
+        "letterSpacing": "-1px"
+      }
+    },
+    "content": {
+      "text": "RED.CORP",
+      "hasIcon": true,
+      "hasImage": false
+    },
+    "confidence": 0.99
+  },
+  {
+    "id": "nav-link-home",
+    "type": "button",
+    "bounds": {
+      "top": 3.5,
+      "left": 40,
+      "width": 5,
+      "height": 3
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderRadius": "4px",
+      "padding": "4px 8px",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    "content": {
+      "text": "Home",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.95
+  },
+  {
+    "id": "nav-link-features",
+    "type": "button",
+    "bounds": {
+      "top": 3.5,
+      "left": 46,
+      "width": 6,
+      "height": 3
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderRadius": "4px",
+      "padding": "4px 8px",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    "content": {
+      "text": "Features",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.95
+  },
+  {
+    "id": "nav-link-pricing",
+    "type": "button",
+    "bounds": {
+      "top": 3.5,
+      "left": 53,
+      "width": 5,
+      "height": 3
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderRadius": "4px",
+      "padding": "4px 8px",
+      "fontSize": "14px",
+      "fontWeight": "500"
+    },
+    "content": {
+      "text": "Pricing",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.95
+  },
+  {
+    "id": "header-cta-button",
+    "type": "button",
+    "bounds": {
+      "top": 2.5,
+      "left": 85,
+      "width": 10,
+      "height": 5
+    },
+    "style": {
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#FF0000",
+      "borderRadius": "8px",
+      "shadow": "0 4px 6px rgba(0,0,0,0.1)",
+      "padding": "12px 24px",
+      "fontSize": "14px",
+      "fontWeight": "bold"
+    },
+    "content": {
+      "text": "Get Started",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.97
+  },
+  {
+    "id": "hero-section-container",
+    "type": "hero",
+    "bounds": {
+      "top": 10,
+      "left": 0,
+      "width": 100,
+      "height": 90
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderRadius": "0px",
+      "padding": "80px",
+      "fontSize": "16px",
+      "fontWeight": "normal",
+      "customCSS": {
+        "display": "flex",
+        "flexDirection": "column",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "textAlign": "center"
+      }
+    },
+    "content": {
+      "text": "",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.99
+  },
+  {
+    "id": "hero-headline",
+    "type": "content-section",
+    "bounds": {
+      "top": 30,
+      "left": 15,
+      "width": 70,
+      "height": 15
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderRadius": "0px",
+      "padding": "0px",
+      "fontSize": "72px",
+      "fontWeight": "700",
+      "customCSS": {
+        "lineHeight": "1.1",
+        "textTransform": "uppercase"
+      }
+    },
+    "content": {
+      "text": "Bold Innovation in Every Pixel",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.98
+  },
+  {
+    "id": "hero-subheading",
+    "type": "content-section",
+    "bounds": {
+      "top": 48,
+      "left": 25,
+      "width": 50,
+      "height": 8
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "rgba(255, 255, 255, 0.9)",
+      "borderRadius": "0px",
+      "padding": "0px",
+      "fontSize": "20px",
+      "fontWeight": "normal",
+      "customCSS": {
+        "lineHeight": "1.6"
+      }
+    },
+    "content": {
+      "text": "Experience the power of minimalist design combined with extreme performance. Built for the modern visionary.",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.96
+  },
+  {
+    "id": "hero-primary-cta",
+    "type": "button",
+    "bounds": {
+      "top": 62,
+      "left": 38,
+      "width": 12,
+      "height": 6
+    },
+    "style": {
+      "backgroundColor": "#FFFFFF",
+      "textColor": "#FF0000",
+      "borderRadius": "12px",
+      "shadow": "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
+      "padding": "16px 32px",
+      "fontSize": "18px",
+      "fontWeight": "700"
+    },
+    "content": {
+      "text": "Start Now",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.98
+  },
+  {
+    "id": "hero-secondary-cta",
+    "type": "button",
+    "bounds": {
+      "top": 62,
+      "left": 51,
+      "width": 12,
+      "height": 6
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "#FFFFFF",
+      "borderColor": "#FFFFFF",
+      "borderWidth": "2px",
+      "borderRadius": "12px",
+      "padding": "16px 32px",
+      "fontSize": "18px",
+      "fontWeight": "600"
+    },
+    "content": {
+      "text": "Learn More",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.97
+  },
+  {
+    "id": "hero-social-proof",
+    "type": "content-section",
+    "bounds": {
+      "top": 85,
+      "left": 0,
+      "width": 100,
+      "height": 5
+    },
+    "style": {
+      "backgroundColor": "transparent",
+      "textColor": "rgba(255, 255, 255, 0.6)",
+      "borderRadius": "0px",
+      "padding": "0px",
+      "fontSize": "12px",
+      "fontWeight": "600",
+      "customCSS": {
+        "textTransform": "uppercase",
+        "letterSpacing": "2px"
+      }
+    },
+    "content": {
+      "text": "Trusted by 500+ global brands",
+      "hasIcon": false,
+      "hasImage": false
+    },
+    "confidence": 0.92
+  }
+]

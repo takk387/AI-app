@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Layout Builder Rendering</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .component-renderer {
+            position: absolute;
+            border: 1px solid rgba(209, 213, 219, 0.5);
+            min-width: 20px;
+            min-height: 20px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-4">Layout Builder Component Rendering Test</h1>
+    
+    <div class="bg-white p-4 rounded shadow mb-4">
+        <h2 class="font-semibold mb-2">Test: Components with bounds should render</h2>
+        <div id="canvas" class="relative bg-white border-2 border-gray-300 rounded" style="width: 800px; height: 600px;">
+            <!-- Components will be rendered here -->
+        </div>
+    </div>
+
+    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded">
+        <h3 class="font-semibold mb-2">Expected Result:</h3>
+        <ul class="list-disc list-inside text-sm">
+            <li>Header should appear at top (dark background)</li>
+            <li>Hero should appear below header (gradient background)</li>
+            <li>CTA button should be visible in hero section</li>
+            <li>All components should have visible backgrounds (not white)</li>
+        </ul>
+    </div>
+
+    <script>
+        // Mock component data from Gemini API
+        const mockComponents = [
+            {
+                id: "header-1",
+                type: "header",
+                bounds: { top: 0, left: 0, width: 100, height: 10 },
+                style: {
+                    backgroundColor: "#1a1a2e",
+                    textColor: "#ffffff",
+                    fontSize: "16px",
+                    padding: "20px"
+                },
+                content: { text: "MyApp - Home Features Pricing" }
+            },
+            {
+                id: "hero-1",
+                type: "hero",
+                bounds: { top: 10, left: 0, width: 100, height: 50 },
+                style: {
+                    backgroundColor: "#667eea",
+                    textColor: "#ffffff",
+                    fontSize: "48px",
+                    padding: "80px",
+                    customCSS: {
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                    }
+                },
+                content: { text: "Welcome to Our Platform" }
+            },
+            {
+                id: "cta-button-1",
+                type: "button",
+                bounds: { top: 45, left: 35, width: 30, height: 8 },
+                style: {
+                    backgroundColor: "#ffffff",
+                    textColor: "#667eea",
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    padding: "15px 40px",
+                    borderRadius: "8px"
+                },
+                content: { text: "Get Started" }
+            }
+        ];
+
+        // Render components using the same logic as GenericComponentRenderer
+        const canvas = document.getElementById('canvas');
+        
+        mockComponents.forEach(component => {
+            const el = document.createElement('div');
+            el.className = 'component-renderer';
+            el.setAttribute('data-id', component.id);
+            el.setAttribute('data-type', component.type);
+            
+            // Apply positioning
+            el.style.position = 'absolute';
+            el.style.top = `${component.bounds.top}%`;
+            el.style.left = `${component.bounds.left}%`;
+            el.style.width = `${component.bounds.width}%`;
+            el.style.height = `${component.bounds.height}%`;
+            
+            // Apply styles
+            const style = component.style;
+            if (style.customCSS?.background) {
+                el.style.background = style.customCSS.background;
+            } else if (style.backgroundColor) {
+                // Apply color utility logic
+                const isWhite = style.backgroundColor === '#ffffff' || style.backgroundColor === '#fff';
+                el.style.backgroundColor = isWhite ? '#e5e7eb' : style.backgroundColor;
+            }
+            
+            if (style.textColor) el.style.color = style.textColor;
+            if (style.fontSize) el.style.fontSize = style.fontSize;
+            if (style.fontWeight) el.style.fontWeight = style.fontWeight;
+            if (style.padding) el.style.padding = style.padding;
+            if (style.borderRadius) el.style.borderRadius = style.borderRadius;
+            
+            // Add content
+            if (component.content?.text) {
+                el.textContent = component.content.text;
+            } else {
+                el.innerHTML = `<span class="text-xs text-gray-400">${component.type}</span>`;
+            }
+            
+            // Add display flex for layout
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            
+            canvas.appendChild(el);
+        });
+
+        console.log('Rendered', mockComponents.length, 'components');
+        console.log('Component data:', mockComponents);
+    </script>
+</body>
+</html>

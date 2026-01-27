@@ -22,7 +22,7 @@ import { sanitizeComponents } from '@/utils/layoutValidation';
 // ============================================================================
 
 const MODEL_FLASH = 'gemini-3-flash-preview';
-// const MODEL_PRO_IMAGE = 'gemini-3-pro-image-preview'; // Future use for assets
+// const MODEL_PRO_IMAGE = 'gemini-3-pro-preview'; // Future use for assets
 
 interface VideoMotionAnalysis {
   keyframes: {
@@ -78,7 +78,10 @@ class GeminiLayoutService {
 
     const model = this.client.getGenerativeModel({
       model: MODEL_FLASH,
-      generationConfig: { responseMimeType: 'application/json' },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        // Note: thinking_level parameter not yet supported in SDK, will be added in future update
+      },
     });
 
     const prompt = `

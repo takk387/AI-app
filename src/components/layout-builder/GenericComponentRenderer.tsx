@@ -15,6 +15,7 @@
 import React from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { cn } from '@/lib/utils'; // Assuming cn utility exists, otherwise standard classnames
+import { getVisibleFallback } from '@/utils/colorUtils';
 
 interface GenericComponentRendererProps {
   component: DetectedComponentEnhanced;
@@ -36,6 +37,19 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   // DEBUG: Log component bounds to diagnose visibility issues
   console.log('[GenericComponentRenderer] Rendering:', id, 'type:', type, 'bounds:', bounds);
 
+  // Helper function for smart z-index based on component type
+  const getDefaultZIndex = (componentType: DetectedComponentEnhanced['type']): number => {
+    const zIndexMap: Record<string, number> = {
+      modal: 1000,
+      header: 100,
+      navigation: 90,
+      sidebar: 80,
+      footer: 50,
+      hero: 20,
+    };
+    return zIndexMap[componentType] || 10;
+  };
+
   // 1. Dynamic Style Generation (The Zero-Preset Logic)
   // Maps API styles to inline styles or atomic classes
   // Uses absolute positioning with bounds for precise layout replication
@@ -46,15 +60,17 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     left: `${bounds?.left ?? 0}%`,
     width: style?.display === 'inline' ? 'auto' : `${bounds?.width ?? 100}%`,
     height: `${bounds?.height ?? 50}%`,
-    minWidth: '50px', // Ensure minimum visible width
-    minHeight: '50px', // Ensure minimum visible height
-    overflow: 'hidden', // Prevent content overflow
 
-    // Visuals (Arbitrary Values from AI) - these can be overridden by debug styles below
-    color: style.textColor,
+    // Ensure visibility
+    minWidth: '20px',
+    minHeight: '20px',
+    overflow: 'hidden',
+
+    // Visuals
+    color: style.textColor || '#1f2937',
     borderRadius: style.borderRadius,
-    padding: style.padding,
-    fontSize: style.fontSize,
+    padding: style.padding || '8px',
+    fontSize: style.fontSize || '14px',
     fontWeight: style.fontWeight as any,
     textAlign: style.textAlign as any,
     boxShadow: style.shadow,
@@ -71,22 +87,21 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
           ? 'space-between'
           : 'flex-start',
 
-    // Zero-Preset Override: Apply arbitrary CSS detected by AI (but filter out white backgrounds)
+    // Apply custom CSS first
     ...style.customCSS,
 
-    // Apply AI-returned background and border if provided
-    // These come AFTER customCSS to ensure visibility - white backgrounds get a visible fallback
-    backgroundColor:
-      style.customCSS?.backgroundColor === 'white' ||
-      style.customCSS?.backgroundColor === '#fff' ||
-      style.customCSS?.backgroundColor === '#ffffff' ||
-      style.customCSS?.backgroundColor === 'rgb(255, 255, 255)' ||
-      !style.backgroundColor
-        ? 'rgba(229, 231, 235, 0.5)' // Light gray fallback for visibility
-        : style.backgroundColor,
-    borderColor: style.borderColor || '#d1d5db', // Gray border fallback
-    borderWidth: style.borderWidth || '1px',
-    borderStyle: 'solid',
+    // Override background with visible color (AFTER customCSS to ensure visibility)
+    backgroundColor: getVisibleFallback(
+      (style.customCSS?.backgroundColor as string) || style.backgroundColor
+    ),
+
+    // Add visible border for debugging and structure
+    border: style.borderWidth
+      ? `${style.borderWidth} solid ${style.borderColor || '#d1d5db'}`
+      : '1px solid rgba(209, 213, 219, 0.5)',
+
+    // Smart z-index based on component type
+    zIndex: component.zIndex ?? getDefaultZIndex(type),
   };
 
   // 2. Click Handler for Vision Loop
