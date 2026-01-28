@@ -24,18 +24,21 @@ interface GenericComponentRendererProps {
 }
 
 // Default bounds for components with missing/invalid bounds data
-const DEFAULT_BOUNDS = { top: 0, left: 0, width: 100, height: 50 };
+// Using smaller defaults to prevent full-width stacking
+const DEFAULT_BOUNDS = { top: 0, left: 0, width: 20, height: 10 };
 
 export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> = ({
   component,
   onSelect,
   selectedId,
 }) => {
-  const { id, type, style = {}, content, children, bounds = DEFAULT_BOUNDS } = component;
+  const { id, type, style = {}, content, bounds = DEFAULT_BOUNDS } = component;
   const isSelected = selectedId === id;
 
-  // DEBUG: Log component bounds to diagnose visibility issues
-  console.log('[GenericComponentRenderer] Rendering:', id, 'type:', type, 'bounds:', bounds);
+  // DEBUG: Log component bounds to diagnose visibility issues (dev only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[GenericComponentRenderer] Rendering:', id, 'type:', type, 'bounds:', bounds);
+  }
 
   // Helper function for smart z-index based on component type
   const getDefaultZIndex = (componentType: DetectedComponentEnhanced['type']): number => {
@@ -114,11 +117,14 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       ? `${style.borderWidth} solid ${style.borderColor || '#d1d5db'}`
       : '1px solid rgba(209, 213, 219, 0.5)',
 
-    // Smart z-index based on component type
+    // Smart z-index based on component type (don't use index - components are sorted by top, not z-order)
     zIndex: component.zIndex ?? getDefaultZIndex(type),
 
     // For full-viewport containers, allow clicks to pass through to children
     pointerEvents: isFullViewportContainer() ? 'none' : 'auto',
+
+    // Debug outline in development to see all component positions
+    outline: process.env.NODE_ENV === 'development' ? '1px dashed rgba(255, 0, 0, 0.3)' : undefined,
   };
 
   // 2. Click Handler for Vision Loop

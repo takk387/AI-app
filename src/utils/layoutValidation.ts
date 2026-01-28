@@ -19,13 +19,13 @@ import type { DetectedComponentEnhanced } from '@/types/layoutDesign';
 
 /**
  * Default bounds for components missing bounds data.
- * Uses full-width layout at top of viewport.
+ * Uses smaller defaults to prevent full-width stacking.
  */
 export const DEFAULT_BOUNDS = {
   top: 0,
   left: 0,
-  width: 100,
-  height: 50,
+  width: 20,
+  height: 10,
 } as const;
 
 // ============================================================================
@@ -33,44 +33,57 @@ export const DEFAULT_BOUNDS = {
 // ============================================================================
 
 /**
+ * Helper to convert bounds value to percentage.
+ * Handles both 0-100 (percentage) and 0-1000 (normalized) scales.
+ * Values > 100 are assumed to be 0-1000 scale and converted to percentage.
+ */
+function toPercentage(val: number | string, defaultVal: number): number {
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(num)) return defaultVal;
+  // If value > 100, assume 0-1000 scale and convert to percentage
+  if (num > 100) {
+    return Math.max(0, Math.min(100, num / 10));
+  }
+  return Math.max(0, Math.min(100, num));
+}
+
+/**
+ * Helper for width/height - ensures minimum value for visibility.
+ */
+function toPercentageWithMin(val: number | string, defaultVal: number, min: number = 1): number {
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(num) || num <= 0) return defaultVal;
+  // If value > 100, assume 0-1000 scale and convert to percentage
+  if (num > 100) {
+    return Math.max(min, Math.min(100, num / 10));
+  }
+  return Math.max(min, Math.min(100, num));
+}
+
+/**
  * Schema for bounds validation.
  * - Coerces string numbers to actual numbers
- * - Clamps values to valid 0-100 range
+ * - Handles both 0-100 (percentage) and 0-1000 (normalized) scales
+ * - Values > 100 are assumed to be 0-1000 and converted to percentage
  * - Provides defaults for missing values
  */
 const BoundsSchema = z
   .object({
     top: z
       .union([z.number(), z.string()])
-      .transform((val) => {
-        const num = typeof val === 'string' ? parseFloat(val) : val;
-        if (isNaN(num)) return DEFAULT_BOUNDS.top;
-        return Math.max(0, Math.min(100, num));
-      })
+      .transform((val) => toPercentage(val, DEFAULT_BOUNDS.top))
       .default(DEFAULT_BOUNDS.top),
     left: z
       .union([z.number(), z.string()])
-      .transform((val) => {
-        const num = typeof val === 'string' ? parseFloat(val) : val;
-        if (isNaN(num)) return DEFAULT_BOUNDS.left;
-        return Math.max(0, Math.min(100, num));
-      })
+      .transform((val) => toPercentage(val, DEFAULT_BOUNDS.left))
       .default(DEFAULT_BOUNDS.left),
     width: z
       .union([z.number(), z.string()])
-      .transform((val) => {
-        const num = typeof val === 'string' ? parseFloat(val) : val;
-        if (isNaN(num) || num <= 0) return DEFAULT_BOUNDS.width;
-        return Math.max(1, Math.min(100, num)); // Min 1 to prevent division by zero
-      })
+      .transform((val) => toPercentageWithMin(val, DEFAULT_BOUNDS.width, 1))
       .default(DEFAULT_BOUNDS.width),
     height: z
       .union([z.number(), z.string()])
-      .transform((val) => {
-        const num = typeof val === 'string' ? parseFloat(val) : val;
-        if (isNaN(num) || num <= 0) return DEFAULT_BOUNDS.height;
-        return Math.max(1, Math.min(100, num)); // Min 1 for visibility
-      })
+      .transform((val) => toPercentageWithMin(val, DEFAULT_BOUNDS.height, 1))
       .default(DEFAULT_BOUNDS.height),
   })
   .default(DEFAULT_BOUNDS);
@@ -382,6 +395,8 @@ export function validateComponentsForRender(components: DetectedComponentEnhance
 
 /**
  * Safely convert a value to a number with bounds checking.
+ * Handles both 0-100 (percentage) and 0-1000 (normalized) scales.
+ * Values > 100 are assumed to be 0-1000 scale and converted to percentage.
  */
 function safeNumber(
   value: unknown,
@@ -395,5 +410,8 @@ function safeNumber(
 
   if (isNaN(num)) return defaultValue;
 
-  return Math.max(minValue, Math.min(maxValue, num));
+  // Convert 0-1000 scale to percentage if value > 100
+  const converted = num > 100 ? num / 10 : num;
+
+  return Math.max(minValue, Math.min(maxValue, converted));
 }

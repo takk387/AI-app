@@ -157,7 +157,59 @@ class GeminiLayoutService {
     const response = result.response;
 
     try {
-      return JSON.parse(response.text()) as DesignSpec;
+      const spec = JSON.parse(response.text());
+
+      // Basic validation - ensure required fields exist with defaults
+      if (!spec.colorPalette || !spec.typography || !spec.structure) {
+        console.warn('[GeminiLayoutService] Incomplete DesignSpec, applying defaults');
+        return {
+          colorPalette: {
+            primary: '#3b82f6',
+            secondary: '#6b7280',
+            accent: '#f59e0b',
+            background: '#ffffff',
+            surface: '#f3f4f6',
+            text: '#1f2937',
+            textMuted: '#6b7280',
+            border: '#e5e7eb',
+            ...spec.colorPalette,
+          },
+          typography: {
+            headingFont: 'Inter',
+            bodyFont: 'Inter',
+            fontSizes: { h1: '48px', h2: '36px', h3: '24px', body: '16px', small: '14px' },
+            fontWeights: { heading: 700, body: 400, bold: 600 },
+            ...spec.typography,
+          },
+          spacing: {
+            unit: 8,
+            scale: [4, 8, 12, 16, 24, 32, 48, 64],
+            containerPadding: '24px',
+            sectionGap: '48px',
+            ...spec.spacing,
+          },
+          structure: {
+            type: 'header-top',
+            hasHeader: true,
+            hasSidebar: false,
+            hasFooter: true,
+            mainContentWidth: 'standard',
+            ...spec.structure,
+          },
+          componentTypes: spec.componentTypes || [],
+          effects: {
+            borderRadius: '8px',
+            shadows: 'subtle',
+            hasGradients: false,
+            hasBlur: false,
+            ...spec.effects,
+          },
+          vibe: spec.vibe || 'Modern and clean',
+          confidence: spec.confidence || 0.8,
+        } as DesignSpec;
+      }
+
+      return spec as DesignSpec;
     } catch (e) {
       console.error('[GeminiLayoutService] Failed to parse DesignSpec', e);
       throw new Error('Failed to extract design specification');
@@ -182,51 +234,93 @@ class GeminiLayoutService {
     });
 
     const prompt = `
-      You are "The Engineer" - you build pixel-perfect component specifications.
+      You are "The Engineer" - a pixel-perfect layout reconstruction specialist.
 
       USER INSTRUCTIONS: ${instructions || 'Build component list.'}
 
-      You have been given this DESIGN SPEC from Stage 1 (The Architect):
+      DESIGN SPEC (from Stage 1 - The Architect):
       ${JSON.stringify(designSpec, null, 2)}
 
-      YOUR TASK: Build the SPECIFIC component list.
-      Use the colors from the DesignSpec above - DO NOT guess or invent colors.
+      YOUR TASK: Create a JSON Scene Graph of EVERY visible UI element.
 
-      For each visible element, return:
+      COORDINATE SYSTEM: Use normalized 0-1000 scale where:
+      - 0 = left/top edge of the image
+      - 1000 = right/bottom edge of the image
+      - 500 = center of the image
+
+      This gives you 10x more precision than percentages!
+
+      For EACH visible element, return:
       {
-        "id": "descriptive-id",
-        "type": "header|logo|navigation|hero|button|etc",
+        "id": "descriptive-unique-id",
+        "type": "header|logo|navigation|hero|button|text|image|card|input|link|icon|container|section|footer|sidebar|menu|badge|avatar|divider|list|unknown",
         "bounds": {
-          "top": <0-100 percentage>,
-          "left": <0-100 percentage>,
-          "width": <0-100 percentage>,
-          "height": <0-100 percentage>
+          "top": <0-1000 from top edge>,
+          "left": <0-1000 from left edge>,
+          "width": <0-1000 element width>,
+          "height": <0-1000 element height>
         },
         "style": {
-          "backgroundColor": "<USE COLOR FROM DESIGN SPEC>",
-          "textColor": "<USE COLOR FROM DESIGN SPEC>",
-          "fontSize": "<USE SIZE FROM DESIGN SPEC>",
-          "fontWeight": "<USE WEIGHT FROM DESIGN SPEC>",
-          "padding": "<USE SPACING FROM DESIGN SPEC>",
-          "borderRadius": "<USE FROM DESIGN SPEC>",
-          "shadow": "<USE FROM DESIGN SPEC IF APPLICABLE>"
+          "backgroundColor": "<hex from designSpec.colorPalette>",
+          "textColor": "<hex from designSpec.colorPalette>",
+          "fontSize": "<px value from designSpec.typography>",
+          "fontWeight": "<weight from designSpec.typography>",
+          "padding": "<px value from designSpec.spacing>",
+          "borderRadius": "<px value from designSpec.effects>"
         },
         "content": {
-          "text": "<ACTUAL TEXT YOU SEE>",
+          "text": "<EXACT text you can read - be thorough>",
           "hasImage": true/false,
           "hasIcon": true/false
         },
+        "zIndex": <number based on visual layer: 1-10 backgrounds, 11-50 content, 51-100 interactive, 100+ overlays>,
         "confidence": 0.9
       }
 
       CRITICAL RULES:
-      1. **USE DESIGN SPEC COLORS**: Match elements to colors from designSpec.colorPalette
-      2. **USE DESIGN SPEC TYPOGRAPHY**: Match text to fontSizes from designSpec.typography
-      3. **USE DESIGN SPEC SPACING**: Use spacing.scale values for padding/margins
-      4. **EXTRACT ALL TEXT**: Read and include all visible text content
-      5. **BE EXHAUSTIVE**: Find 20-50+ components
 
-      Return ONLY a JSON array of components. No markdown, no explanation.
+      1. **DETECT EVERY ELEMENT INDIVIDUALLY**:
+         - Each heading = separate component
+         - Each paragraph = separate component
+         - Each button = separate component
+         - Each link = separate component
+         - Each image = separate component
+         - Each icon = separate component
+         - Each input field = separate component
+         - Each card = separate component
+
+      2. **DO NOT NEST EVERYTHING IN ONE CONTAINER**:
+         Example: If you see a header with logo + nav links + CTA button, return:
+         - "header-bg" (background container, zIndex: 1, bounds covering full header area)
+         - "header-logo" (the logo image/text, zIndex: 2, precise bounds)
+         - "nav-link-home" (first nav link, zIndex: 2, precise bounds)
+         - "nav-link-about" (second nav link, zIndex: 2, precise bounds)
+         - "nav-link-services" (third nav link, zIndex: 2, precise bounds)
+         - "header-cta-button" (CTA button, zIndex: 3, precise bounds)
+         That's 6 components for ONE header section!
+
+      3. **UNIQUE BOUNDS FOR EACH ELEMENT**:
+         A button at top-right corner of a header should have bounds like:
+         { "top": 20, "left": 850, "width": 120, "height": 40 }
+         NOT the same bounds as its parent container!
+
+      4. **ASSIGN Z-INDEX BY VISUAL LAYER**:
+         - Background/container elements: zIndex 1-10
+         - Text and content elements: zIndex 11-50
+         - Interactive elements (buttons, links): zIndex 51-100
+         - Overlays, modals, tooltips: zIndex 100+
+
+      5. **MINIMUM 20 COMPONENTS** for any real UI
+         A typical landing page has 30-50+ individual elements.
+         Count them: logo + nav links + hero heading + hero subtext + hero button + hero image + feature cards + footer links...
+
+      6. **USE DESIGN SPEC VALUES**:
+         - Colors from designSpec.colorPalette
+         - Font sizes from designSpec.typography.fontSizes
+         - Spacing from designSpec.spacing.scale
+         - Border radius from designSpec.effects.borderRadius
+
+      Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
     `;
 
     const imagePart = this.fileToPart(imageBase64);

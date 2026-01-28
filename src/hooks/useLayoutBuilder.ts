@@ -86,17 +86,25 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
       const detected = await response.json();
       console.log('[useLayoutBuilder] Raw API response:', detected);
 
-      // Secondary validation layer - sanitize components before setting state
-      const { components: validatedComponents, errors } = sanitizeComponents(detected);
-      console.log(
-        '[useLayoutBuilder] Validated components:',
-        validatedComponents.length,
-        'components'
-      );
-
-      if (errors.length > 0) {
-        console.warn('[useLayoutBuilder] Components sanitized:', errors);
+      // Check for API error response
+      if (detected && typeof detected === 'object' && 'error' in detected) {
+        console.error('[useLayoutBuilder] API returned error:', detected.error);
+        throw new Error(detected.error as string);
       }
+
+      // API already sanitizes via GeminiLayoutService - just ensure it's an array
+      const validatedComponents = Array.isArray(detected) ? detected : [];
+      console.log('[useLayoutBuilder] Received', validatedComponents.length, 'components from API');
+
+      // Warn if too few components detected
+      if (validatedComponents.length > 0 && validatedComponents.length < 10) {
+        console.warn(
+          '[useLayoutBuilder] ⚠️ Only',
+          validatedComponents.length,
+          'components detected. Expected 20+ for a typical layout.'
+        );
+      }
+
       setComponents(validatedComponents);
     } catch (error) {
       console.error('Image analysis error:', error);
