@@ -89,13 +89,21 @@ Lower risk, but still follow patterns.
 ```
 Components  → Hooks, Types, Utils       ✅ ALLOWED
 Hooks       → Store, Services, Types    ✅ ALLOWED
-Services    → Types only                ✅ ALLOWED (no service-to-service)
+Services    → Types, Utils              ✅ ALLOWED
+Services    → Other Services            ✅ ALLOWED (via dependency injection or direct import)
 Types       → Other Types only          ✅ ALLOWED
 
-Services    → Services                  ❌ FORBIDDEN (Root cause of Service Bloat)
-Components  → Services directly         ❌ FORBIDDEN
-Hooks       → Other Hooks               ❌ FORBIDDEN
+CIRCULAR Dependencies                   ❌ FORBIDDEN (A→B→A is never allowed)
+Components  → Services directly         ❌ FORBIDDEN (use hooks as intermediary)
+Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular, prefer composition)
 ```
+
+**Service Composition Guidelines:**
+
+- ✅ Services CAN import other services for composition
+- ✅ Use dependency injection where practical
+- ❌ NO circular dependencies (ServiceA → ServiceB → ServiceA)
+- ❌ NO deep chains (limit to 2-3 levels of service nesting)
 
 **Current Status**: ✅ Clean architecture, no circular dependencies detected.
 
@@ -144,13 +152,13 @@ src/
 
 ## Known Risks & Tech Debt
 
-| Risk                                      | Severity     | Mitigation                                                             |
-| ----------------------------------------- | ------------ | ---------------------------------------------------------------------- |
-| `DynamicPhaseGenerator.ts` is 2.6k+ lines | **CRITICAL** | **URGENT**: Relax Service-to-Service rule; split into Domain Services. |
-| `layoutDesign.ts` is 2.8k+ lines          | HIGH         | Split into `layout/typography`, `layout/grids`, etc.                   |
-| `appConcept` dependency explosion         | HIGH         | 51 dependencies; any change is expensive. Freeze this interface.       |
-| Browser memory with large file histories  | MEDIUM       | Move historical versions to IndexedDB                                  |
-| AI rate limits at scale                   | HIGH         | Enterprise quotas, multiple keys, Inngest queueing                     |
+| Risk                                      | Severity     | Mitigation                                                                          |
+| ----------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
+| `DynamicPhaseGenerator.ts` is 2.6k+ lines | **CRITICAL** | ✅ Service-to-Service rule relaxed (Jan 29, 2026) — NOW: Split into Domain Services |
+| `layoutDesign.ts` is 2.8k+ lines          | HIGH         | Split into `layout/typography`, `layout/grids`, etc.                                |
+| `appConcept` dependency explosion         | HIGH         | 51 dependencies; any change is expensive. Freeze this interface.                    |
+| Browser memory with large file histories  | MEDIUM       | Move historical versions to IndexedDB                                               |
+| AI rate limits at scale                   | HIGH         | Enterprise quotas, multiple keys, Inngest queueing                                  |
 
 ---
 

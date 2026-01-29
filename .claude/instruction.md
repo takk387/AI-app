@@ -1,6 +1,6 @@
 ---
 name: thorough-coding
-description: "Comprehensive coding practices combining architectural thinking, scalability, and thorough verification across all application types (mobile, desktop, web, backend). Use this skill when writing, modifying, reviewing, or debugging code to ensure: (1) scalable, modern architectural design, (2) use of efficient libraries and patterns, (3) creative synthesis balancing user requests with better approaches, (4) thorough line-by-line verification, (5) complete removal of hardcoded values, (6) proper feature integration, and (7) careful import analysis. Critical for preventing incomplete implementations, over-engineered solutions, missed hardcoded presets, and accidental code deletion while optimizing for scale and speed."
+description: 'Comprehensive coding practices combining architectural thinking, scalability, and thorough verification across all application types (mobile, desktop, web, backend). Use this skill when writing, modifying, reviewing, or debugging code to ensure: (1) scalable, modern architectural design, (2) use of efficient libraries and patterns, (3) creative synthesis balancing user requests with better approaches, (4) thorough line-by-line verification, (5) complete removal of hardcoded values, (6) proper feature integration, and (7) careful import analysis. Critical for preventing incomplete implementations, over-engineered solutions, missed hardcoded presets, and accidental code deletion while optimizing for scale and speed.'
 ---
 
 # Thorough Coding
@@ -22,24 +22,28 @@ Balance thoroughness with modern, scalable architecture. Don't just implement li
 Every implementation must start with architectural thinking:
 
 **1. Scale Analysis**
+
 - How does this scale to 100x users? 1000x? 1M+?
 - What are the performance implications?
 - Will this approach bottleneck at scale?
 - Are there memory, network, or computational constraints?
 
 **2. Modern Library Assessment**
+
 - Does a battle-tested library already solve this?
 - What are current best practices for this problem?
 - Am I reinventing a wheel that exists in a modern, maintained package?
 - What do industry leaders use for this pattern?
 
 **3. Architectural Flow**
+
 - How does this fit into the overall system architecture?
 - What's the data flow from start to finish?
 - Are there better architectural patterns for this use case?
 - Does this follow separation of concerns and single responsibility?
 
 **4. Creative Synthesis**
+
 - User asked for X, but is Y a better solution?
 - Can I achieve the goal more efficiently?
 - Are there performance optimizations to consider upfront?
@@ -76,12 +80,14 @@ Before implementing any feature, ask yourself:
 ### When to Suggest Alternatives
 
 **Always suggest better approaches when:**
+
 - User's request would create performance bottlenecks at scale
 - A modern library solves it better than custom implementation
 - The architectural pattern doesn't align with best practices
 - There's a more efficient way to achieve the same goal
 
 **How to suggest:**
+
 1. Acknowledge the request
 2. Explain the scalability/efficiency concern
 3. Propose the better approach
@@ -94,30 +100,58 @@ Example:
 ## Critical Rules
 
 ### 1. Complete Line-by-Line Analysis
+
 When working with code, search and analyze the ENTIRE codebase that is directly connected to the work:
+
 - Read every line of every file being modified
 - Search for ALL occurrences of patterns, not just obvious ones
 - Continue searching until you have verified there are no more instances
 - Never stop after finding "some" instances - find ALL instances
 
-### 2. Zero Hardcoded Values
-NEVER hardcode any values in code:
-- No hardcoded colors (hex codes, RGB, color names)
-- No hardcoded sizes, dimensions, or spacing
-- No hardcoded text strings or labels
-- No hardcoded configurations or presets
-- No hardcoded API endpoints or URLs
-- No hardcoded default states or initial values
+### 2. Zero Hardcoded Visual Elements
 
-**Instead:**
-- Use configuration files
-- Use environment variables
-- Use user-provided inputs
-- Use theme/styling systems
-- Create clearly documented constants with configuration sources
+NEVER hardcode visual/styling values in code:
+
+- No hardcoded colors (hex codes, RGB, color names) → Use CSS variables
+- No hardcoded sizes, dimensions, or spacing → Use CSS variables or theme tokens
+- No hardcoded font sizes, weights, or families → Use CSS variables
+
+**CSS Variables Preferred:**
+
+```css
+/* Good - CSS variables */
+.button {
+  background-color: var(--color-primary);
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+}
+
+/* Bad - hardcoded */
+.button {
+  background-color: #3b82f6;
+  padding: 16px;
+  font-size: 14px;
+}
+```
+
+**Acceptable Hardcoded Values:**
+
+- ✅ Algorithm constants: `const HASH_MULTIPLIER = 31;`
+- ✅ Retry/timeout defaults: `const MAX_RETRIES = 3;`
+- ✅ Static text labels in components: `<button>Submit</button>`
+- ✅ Configuration defaults with clear intent: `const DEFAULT_PAGE_SIZE = 20;`
+
+**Still Forbidden:**
+
+- ❌ Colors anywhere in code (use CSS variables)
+- ❌ Spacing/sizing in inline styles (use Tailwind classes or CSS variables)
+- ❌ API endpoints (use environment variables)
+- ❌ Feature flags (use configuration)
 
 ### 3. Import Investigation Protocol
+
 Before removing ANY import or dependency:
+
 1. Search where the import is used in the file
 2. Check if it's used indirectly (passed to functions, used in types, etc.)
 3. Verify if it was recently added as part of current work
@@ -127,7 +161,9 @@ Before removing ANY import or dependency:
 **NEVER remove an import just because a linter says it's unused without manual verification.**
 
 ### 4. Feature Implementation Verification
+
 When implementing a feature, verify COMPLETE integration:
+
 1. Implementation exists in the correct location
 2. Feature is properly imported where needed
 3. Feature is called/invoked in the right places
@@ -136,23 +172,18 @@ When implementing a feature, verify COMPLETE integration:
 6. Feature actually works in the full pipeline
 
 ### 5. Removal Verification Protocol
+
 When asked to remove something (code, presets, hardcoded values):
 
 **Phase 1 - Initial Search:**
+
 1. Search for direct occurrences
 2. Document what you find
 3. Remove all found instances
 
-**Phase 2 - Deep Verification:**
-4. Search again using different patterns/variations
-5. Check related file types (styles, configs, types, tests)
-6. Search for the concept, not just exact text
-7. Verify removal was actually complete
+**Phase 2 - Deep Verification:** 4. Search again using different patterns/variations 5. Check related file types (styles, configs, types, tests) 6. Search for the concept, not just exact text 7. Verify removal was actually complete
 
-**Phase 3 - Pattern Search:**
-8. Look for similar patterns that should also be removed
-9. Check if the same concept appears elsewhere
-10. Document final count of removals
+**Phase 3 - Pattern Search:** 8. Look for similar patterns that should also be removed 9. Check if the same concept appears elsewhere 10. Document final count of removals
 
 ## AI-Specific Limitations & Mitigations
 
@@ -166,6 +197,7 @@ These rules address common AI coding pitfalls that cause project delays and erro
 
 **Maintain a Decision Log**
 At the start of each significant change, create or update a decision log:
+
 ```
 ## Current Implementation State
 - Feature X: Implemented in files A, B, C using library Y
@@ -176,6 +208,7 @@ At the start of each significant change, create or update a decision log:
 
 **Consistency Checks**
 Before making any change:
+
 1. Review the decision log
 2. Check if this contradicts earlier decisions
 3. If it does, explicitly call it out: "This contradicts our earlier decision to use X. Should we proceed with this change or maintain consistency?"
@@ -183,6 +216,7 @@ Before making any change:
 
 **Conversation Checkpoints**
 Every 10-15 messages or major feature, provide a summary:
+
 - "So far we've implemented: [list]"
 - "Current architectural decisions: [list]"
 - "Remaining work: [list]"
@@ -196,9 +230,11 @@ Every 10-15 messages or major feature, provide a summary:
 
 **Always Check File Size First**
 Before modifying any file:
+
 ```bash
 wc -l filename.js
 ```
+
 - Under 200 lines: Standard approach
 - 200-500 lines: Extra caution on side effects
 - 500-1000 lines: Mandatory dependency mapping
@@ -206,6 +242,7 @@ wc -l filename.js
 
 **Large File Protocol**
 For files over 500 lines:
+
 1. Create a dependency map of functions/components
 2. Search for all uses of what you're modifying
 3. Test/verify in smaller increments
@@ -213,6 +250,7 @@ For files over 500 lines:
 
 **Codebase Complexity Assessment**
 Before any major change:
+
 1. Count total files affected
 2. Estimate lines of code impacted
 3. Map dependencies between files
@@ -225,6 +263,7 @@ Before any major change:
 **Mandatory Breaking Change Checklist:**
 
 **Before ANY modification that changes:**
+
 - Function signatures (parameters, return types)
 - Component props or interfaces
 - API endpoints or response structures
@@ -235,6 +274,7 @@ Before any major change:
 **Execute this protocol:**
 
 **Step 1: Dependency Search**
+
 ```bash
 # Search for all uses of the thing being changed
 grep -r "functionName" --include="*.js" --include="*.ts" --include="*.jsx" --include="*.tsx"
@@ -242,12 +282,14 @@ grep -r "functionName" --include="*.js" --include="*.ts" --include="*.jsx" --inc
 
 **Step 2: Impact Analysis**
 List every file that imports or uses the changing code:
+
 - File A: Uses functionName on line 45
 - File B: Uses functionName on line 120, 145
 - File C: Type definition imports it
 
 **Step 3: Update Plan**
 Before making the change, document:
+
 - Original signature/interface
 - New signature/interface
 - Every location that needs updating
@@ -255,6 +297,7 @@ Before making the change, document:
 
 **Step 4: Verification**
 After the change:
+
 - Verify each dependent file was updated
 - Check for TypeScript/linting errors
 - Confirm no runtime breaks
@@ -272,6 +315,7 @@ Always warn about breaking changes:
 For EVERY implementation, verify these cases:
 
 **Data Edge Cases:**
+
 - [ ] Empty arrays/lists `[]`
 - [ ] Null/undefined values
 - [ ] Empty strings `""`
@@ -281,6 +325,7 @@ For EVERY implementation, verify these cases:
 - [ ] Malformed data
 
 **State Edge Cases:**
+
 - [ ] Loading states (show spinners/skeletons)
 - [ ] Error states (network failures, API errors)
 - [ ] Empty states (no data yet)
@@ -288,6 +333,7 @@ For EVERY implementation, verify these cases:
 - [ ] Unauthenticated states
 
 **Interaction Edge Cases:**
+
 - [ ] Rapid clicking/double submits
 - [ ] Forms with validation errors
 - [ ] Concurrent operations
@@ -295,12 +341,14 @@ For EVERY implementation, verify these cases:
 - [ ] Stale data scenarios
 
 **Network Edge Cases:**
+
 - [ ] Slow connections (timeouts)
 - [ ] Offline scenarios
 - [ ] Failed requests (4xx, 5xx)
 - [ ] Partial data loading
 
 **UI Edge Cases:**
+
 - [ ] Very long text (overflow/truncation)
 - [ ] Very short text
 - [ ] Mobile vs desktop
@@ -308,6 +356,7 @@ For EVERY implementation, verify these cases:
 - [ ] Accessibility (keyboard nav, screen readers)
 
 **Implementation Pattern:**
+
 ```javascript
 // ❌ WRONG - Only happy path
 const data = await fetchData();
@@ -339,30 +388,39 @@ return <Display data={data} />;
 
 **NEVER claim completion without verification.**
 
-**For Every Implementation:**
+**Applies to:** All code changes (.ts, .tsx, .js, .jsx, .css, .json configs, etc.)
+
+**Exempt from running/testing:** Documentation files (.md, .txt, .mdx) — verify content accuracy instead
+
+**For Every Code Implementation:**
 
 **1. Syntax Verification**
+
 - Run the linter: `npm run lint` or `eslint filename.js`
 - Check TypeScript: `tsc --noEmit`
 - Verify no syntax errors
 
 **2. Execution Verification**
 For executable code:
+
 ```bash
 # Actually run the code
 node script.js
 # Or run the dev server
 npm run dev
 ```
+
 Never say "this should work" - say "I've verified this works by running [command]"
 
 **3. Integration Testing**
+
 - Start the application
 - Navigate to the modified feature
 - Test the actual user flow
 - Verify it works end-to-end
 
 **4. Error Scenario Testing**
+
 - Test with invalid inputs
 - Test with empty data
 - Test with network failures (if applicable)
@@ -371,21 +429,25 @@ Never say "this should work" - say "I've verified this works by running [command
 **Communication Rules:**
 
 ❌ **Never say:**
+
 - "This should work"
 - "This will work"
 - "It's done" (without testing)
 
 ✓ **Instead say:**
+
 - "I've implemented X and verified it by running Y. Output shows Z."
 - "Implementation complete. I tested by [specific test steps]. Results: [actual results]"
 - "Code written. Before confirming it works, let me run tests... [runs tests] ...confirmed working."
 
 **Incomplete Testing Acknowledgment:**
 If you can't fully test:
+
 - "I've implemented X but cannot fully test without [database/API/credentials]. Please test that [specific scenarios] work as expected."
 - Be explicit about what you tested vs. what needs user testing
 
 **Test Checklist Before Completion:**
+
 - [ ] Code runs without syntax errors
 - [ ] Linter passes
 - [ ] TypeScript compiles (if applicable)
@@ -397,7 +459,14 @@ If you can't fully test:
 ## Workflow for Code Modifications
 
 ### Step 0: Architectural Design (ALWAYS FIRST)
-Before any implementation:
+
+Before any implementation: 0. **Consult Master Context First**
+
+- Read `MASTER_CONTEXT_VERIFIED.md` before starting any work
+- Check if the file you're modifying is in the Critical Files list
+- Verify dependency counts (TIER 1: 20+ dependents = EXTREME CAUTION)
+- Review relevant import rules and architecture patterns for this project
+
 1. **Assess the optimal approach**
    - What's the most scalable solution?
    - What modern libraries should I use?
@@ -417,15 +486,24 @@ Before any implementation:
    - Follow current best practices
 
 ### Step 1: Understand the Full Context
+
 Before making ANY changes:
-1. Read the entire file(s) being modified
-2. Identify all related files and their relationships
-3. Understand the full workflow/pipeline the code is part of
-4. Map dependencies and connections
-5. Identify architectural patterns already in use
+
+1. **Check MASTER_CONTEXT_VERIFIED.md** for:
+   - Critical file warnings (does this file have 20+ dependents?)
+   - Dependency hierarchy (TIER 1 = EXTREME CAUTION)
+   - Import rules specific to this file type
+   - Known risks and tech debt for files you're modifying
+2. Read the entire file(s) being modified
+3. Identify all related files and their relationships
+4. Understand the full workflow/pipeline the code is part of
+5. Map dependencies and connections
+6. Identify architectural patterns already in use
 
 ### Step 2: Plan the Changes
+
 Before writing code:
+
 1. List all files that will be touched
 2. Identify all locations that need modification
 3. Note any hardcoded values that must become configurable
@@ -434,7 +512,9 @@ Before writing code:
 6. Check for modern libraries that could simplify implementation
 
 ### Step 3: Implement with Verification
+
 As you implement:
+
 1. Use modern, efficient patterns and libraries
 2. Make changes systematically
 3. After each significant change, verify it's complete
@@ -443,7 +523,9 @@ As you implement:
 6. Ensure implementation is performant and scalable
 
 ### Step 4: Mandatory Self-Review
+
 After implementation, perform a complete review:
+
 1. Re-read ALL modified code line by line
 2. Search for any remaining hardcoded values
 3. Verify all imports are necessary and properly used
@@ -453,7 +535,9 @@ After implementation, perform a complete review:
 7. Confirm modern best practices are followed
 
 ### Step 5: Explicit Verification Statement
+
 Before claiming work is complete:
+
 1. List what was changed
 2. List what was searched for
 3. State explicitly: "I have verified X by searching Y and found Z instances"
@@ -465,18 +549,21 @@ Before claiming work is complete:
 When reviewing code or making suggestions:
 
 ### Before Giving Suggestions:
+
 1. Read through the ENTIRE relevant codebase
 2. Understand how all components connect
 3. Trace the workflow/pipeline from start to end
 4. Verify your suggestions fit the actual architecture
 
 ### When Providing Suggestions:
+
 1. Reference specific file locations and line numbers
 2. Explain how the suggestion integrates with existing code
 3. Note any imports, dependencies, or configuration needed
 4. Warn about potential impacts on connected systems
 
 ### After User Implements Suggestions:
+
 1. Review the implementation thoroughly
 2. Check for complete integration
 3. Verify no hardcoded values were introduced
@@ -485,64 +572,79 @@ When reviewing code or making suggestions:
 ## Common Failure Modes to Avoid
 
 ### Failure Mode 1: Partial Search
+
 ❌ **Wrong:** Find 16 hardcoded colors, remove them, declare complete
 ✓ **Right:** Find 16 colors, then search again with different patterns, find 40+ more, then search again
 
 ### Failure Mode 2: Trusting Linters Blindly
+
 ❌ **Wrong:** ESLint says import unused → delete it immediately
 ✓ **Right:** Investigate why import exists → check usage → verify it's not from recent work → only then consider removal
 
 ### Failure Mode 3: Implementation Without Integration
+
 ❌ **Wrong:** Add the feature code, say "it's implemented"
 ✓ **Right:** Add feature code → import it → connect it to pipeline → verify it works end-to-end
 
 ### Failure Mode 4: Assuming Completion
+
 ❌ **Wrong:** "I've removed all the hardcoded presets"
 ✓ **Right:** "I found and removed 47 hardcoded presets in the following locations... searching again to verify completeness"
 
 ### Failure Mode 5: Surface-Level Review
+
 ❌ **Wrong:** Skim the code, say "looks good"
 ✓ **Right:** Read every line, trace every connection, verify every claim
 
 ### Failure Mode 6: Over-Literal Implementation
+
 ❌ **Wrong:** User asks for feature X, implement X exactly even though it won't scale
 ✓ **Right:** "I can implement X, but for scale I recommend Y because [reasons]. Which approach would you prefer?"
 
 ### Failure Mode 7: Reinventing Wheels
+
 ❌ **Wrong:** Write 200 lines of custom validation logic
 ✓ **Right:** "I'll use Zod for validation—it's battle-tested, type-safe, and handles edge cases we might miss"
 
 ### Failure Mode 8: Ignoring Architecture
+
 ❌ **Wrong:** Add feature without considering how it fits the system architecture
 ✓ **Right:** Analyze architectural flow first, ensure clean integration with existing patterns
 
 ### Failure Mode 9: Verbose Without Value
+
 ❌ **Wrong:** Write highly verbose comments explaining obvious code, literal implementation
 ✓ **Right:** Write clean, self-documenting code with modern patterns; comment only complex logic
 
 ### Failure Mode 10: Context Amnesia
+
 ❌ **Wrong:** Contradict earlier decisions or forget what was implemented 10 messages ago
 ✓ **Right:** Maintain decision log, provide regular summaries, check for consistency
 
 ### Failure Mode 11: File Size Blindness
+
 ❌ **Wrong:** Modify 2000-line file without checking dependencies or side effects
 ✓ **Right:** Check file size first, map dependencies, suggest refactoring if needed
 
 ### Failure Mode 12: Silent Breaking Changes
+
 ❌ **Wrong:** Change function signature without searching for all uses
 ✓ **Right:** Search all dependencies, list impact, update all affected files, warn user
 
 ### Failure Mode 13: Happy Path Only
+
 ❌ **Wrong:** Implement feature without loading/error/empty states
 ✓ **Right:** Use edge case checklist, implement all states, test error scenarios
 
 ### Failure Mode 14: Untested Claims
+
 ❌ **Wrong:** "This should work" / "It's done" without running code
 ✓ **Right:** "I've tested this by running X, results show Y" with actual verification
 
 ## Mandatory Practices for Every Coding Task
 
 **Before starting:**
+
 - [ ] Review decision log for consistency with earlier work
 - [ ] Consider architectural approach and scalability
 - [ ] Identify modern libraries that could help
@@ -554,6 +656,7 @@ When reviewing code or making suggestions:
 - [ ] Map the workflow/pipeline and architectural patterns
 
 **During implementation:**
+
 - [ ] Use modern libraries and patterns
 - [ ] Implement for scale and performance
 - [ ] Follow current best practices
@@ -564,6 +667,7 @@ When reviewing code or making suggestions:
 - [ ] Check for breaking changes before modifying signatures
 
 **Before claiming completion:**
+
 - [ ] Actually RUN the code (never say "should work" without testing)
 - [ ] Test edge cases and error scenarios
 - [ ] Verify architectural alignment
@@ -575,9 +679,15 @@ When reviewing code or making suggestions:
 - [ ] Confirm complete integration
 - [ ] Run linter and type checker
 - [ ] Update decision log with what was implemented
+- [ ] **Update MASTER_CONTEXT_VERIFIED.md if needed:**
+  - Files were added/removed (update file counts)
+  - Critical file line counts changed significantly (+/- 100 lines)
+  - New high-dependency files created (10+ dependents)
+  - Import rules violated or new architectural patterns established
 - [ ] Provide explicit verification statement with test results
 
 **When removing code:**
+
 - [ ] Search multiple times with different patterns
 - [ ] Check related files
 - [ ] Verify nothing dependent was broken
@@ -586,6 +696,7 @@ When reviewing code or making suggestions:
 ## Language and Communication
 
 When discussing your work:
+
 - **Consistency awareness**: "Let me check our decision log... we're using X approach from earlier"
 - **File size transparency**: "This file is 800 lines - I'm mapping dependencies before making changes"
 - **Breaking change warnings**: "⚠️ This will break files A, B, C - I'll update all of them"
@@ -604,6 +715,7 @@ When discussing your work:
 ## Integration Checklist
 
 When implementing a new feature, verify each step:
+
 1. [ ] Checked for consistency with earlier decisions
 2. [ ] Architectural pattern chosen for scalability
 3. [ ] Modern libraries selected where appropriate
