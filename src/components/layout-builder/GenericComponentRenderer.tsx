@@ -33,6 +33,25 @@ const MAX_DEPTH = 10;
 // Using smaller defaults to prevent full-width stacking
 const DEFAULT_BOUNDS = { top: 0, left: 0, width: 20, height: 10 };
 
+/**
+ * Ensures a value has a CSS unit. If the value is a plain number or numeric string,
+ * adds the default unit. Otherwise returns the value as-is.
+ * This prevents silent CSS failures when AI returns "16" instead of "16px".
+ */
+const ensureUnit = (
+  value: string | number | undefined,
+  defaultUnit: string = 'px'
+): string | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const str = String(value);
+  // If it's a pure number (no unit), add the default unit
+  if (/^-?\d+(\.\d+)?$/.test(str)) {
+    return `${str}${defaultUnit}`;
+  }
+  // Already has a unit or is a special value (like "normal", "inherit")
+  return str;
+};
+
 export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> = ({
   component,
   componentMap,
@@ -187,12 +206,13 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     color: style.textColor,
     borderRadius: style.borderRadius,
     padding: style.padding,
-    fontSize: style.fontSize,
+    // Typography with unit normalization - prevents silent failures when AI returns "16" instead of "16px"
+    fontSize: ensureUnit(style.fontSize),
     fontWeight: style.fontWeight as React.CSSProperties['fontWeight'],
     textAlign: style.textAlign as React.CSSProperties['textAlign'],
     textTransform: style.textTransform as React.CSSProperties['textTransform'],
-    letterSpacing: style.letterSpacing,
-    lineHeight: style.lineHeight,
+    letterSpacing: ensureUnit(style.letterSpacing),
+    lineHeight: style.lineHeight, // lineHeight can be unitless (e.g., 1.5)
     boxShadow: style.shadow,
 
     // Typography extensions
@@ -468,13 +488,20 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // Need either SVG path or icon name
     if (!content?.iconSvgPath && !content?.iconName) return null;
 
-    const iconSizeClasses: Record<string, string> = {
-      sm: 'w-4 h-4',
-      md: 'w-5 h-5',
-      lg: 'w-7 h-7',
+    // Support arbitrary px icon sizes, not just sm/md/lg presets
+    const getIconSize = (): { width: string; height: string } => {
+      const size = content.iconSize || 'md';
+      // If it's a pixel value, use it directly
+      if (typeof size === 'string' && size.endsWith('px')) {
+        return { width: size, height: size };
+      }
+      // Preset sizes mapping
+      const presets: Record<string, string> = { sm: '16px', md: '20px', lg: '28px' };
+      const pxSize = presets[size] || presets.md;
+      return { width: pxSize, height: pxSize };
     };
 
-    const sizeClass = iconSizeClasses[content.iconSize || 'md'] || iconSizeClasses.md;
+    const iconSize = getIconSize();
     const iconColor = content.iconColor || style.textColor || 'currentColor';
     // PREFER raw SVG path for exact replication, fall back to named icon lookup
     const pathData = content.iconSvgPath || getIconPath(content.iconName || 'Info');
@@ -482,8 +509,8 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
     const iconElement = (
       <span
-        className={`inline-flex items-center justify-center flex-shrink-0 ${sizeClass}`}
-        style={{ color: iconColor }}
+        className="inline-flex items-center justify-center flex-shrink-0"
+        style={{ color: iconColor, width: iconSize.width, height: iconSize.height }}
         title={content.iconName}
       >
         <svg
@@ -502,12 +529,14 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
     // Wrap in container if iconContainerStyle is specified
     if (content.iconContainerStyle) {
-      const containerSizes: Record<string, string> = {
-        sm: '32px',
-        md: '48px',
-        lg: '64px',
+      // Support custom px sizes, not just sm/md/lg presets
+      const getContainerSize = (): string => {
+        const size = content.iconContainerStyle?.size || 'md';
+        if (typeof size === 'string' && size.endsWith('px')) return size;
+        const presets: Record<string, string> = { sm: '32px', md: '48px', lg: '64px' };
+        return presets[size] || '48px';
       };
-      const containerSize = containerSizes[content.iconContainerStyle.size || 'md'];
+      const containerSize = getContainerSize();
 
       const borderRadiusMap: Record<string, string> = {
         circle: '50%',
@@ -572,12 +601,17 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
       // Center items for vertical layouts, align center for horizontal
       const isVertical = iconPosition === 'top' || iconPosition === 'bottom';
-      const alignClass = isVertical ? 'items-center justify-center text-center' : 'items-center';
+      const alignClass = isVertical ? 'items-center text-center' : 'items-center';
 
       return (
-        <div className={`flex ${getFlexClass()} ${alignClass} gap-2`}>
+        <div className={`flex ${getFlexClass()} ${alignClass}`} style={{ gap: style.gap || '8px' }}>
           {renderIcon()}
-          <span>{content.text}</span>
+          {/* Add flex constraints to text to prevent overlap */}
+          <span
+            style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+          >
+            {content.text}
+          </span>
         </div>
       );
     }
@@ -592,11 +626,21 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return content.text;
     }
 
-    // Render image placeholder
+    // Render image placeholder (improved - less intrusive, respects bounds)
     if (hasImageContent) {
+      // Check if there's a background image set on the component - if so, don't show placeholder
+      if (style.backgroundImage) {
+        return null; // Background image is handled by the component's styles
+      }
       return (
-        <div className="bg-gray-200 w-full h-full min-h-[100px] flex items-center justify-center text-gray-400">
-          Image
+        <div
+          className="w-full h-full flex items-center justify-center text-gray-400 text-xs"
+          style={{
+            backgroundColor: style.backgroundColor || 'rgba(229, 231, 235, 0.5)',
+            minHeight: bounds?.height ? undefined : '40px',
+          }}
+        >
+          [IMG]
         </div>
       );
     }
