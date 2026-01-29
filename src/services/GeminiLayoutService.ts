@@ -17,7 +17,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { DetectedComponentEnhanced, PageAnalysis, LayoutStructure } from '@/types/layoutDesign';
 import { sanitizeComponents } from '@/utils/layoutValidation';
 import type { DesignSpec } from '@/types/designSpec';
-import type { LayoutAnalysisResult, LayoutCritiqueEnhanced, LayoutDiscrepancy } from '@/types/layoutAnalysis';
+import type {
+  LayoutAnalysisResult,
+  LayoutCritiqueEnhanced,
+  LayoutDiscrepancy,
+} from '@/types/layoutAnalysis';
 
 // ============================================================================
 // CONFIGURATION
@@ -285,41 +289,113 @@ class GeminiLayoutService {
           "align": "start|center|end|stretch"
         },
         "style": {
-          "backgroundColor": "<hex - MEASURE from image>",
-          "backgroundImage": "<url(...) or linear-gradient(...) - DETECT if present>",
+          // Colors
+          "backgroundColor": "<hex or linear-gradient(135deg, #667eea 0%, #764ba2 100%)>",
           "textColor": "<hex>",
+
+          // Typography
+          "fontFamily": "<font name if different from body font>",
           "fontSize": "<px value>",
           "fontWeight": "<weight>",
+          "fontStyle": "normal|italic",
+          "textAlign": "left|center|right|justify",
           "textTransform": "uppercase|lowercase|capitalize|none",
+          "textDecoration": "none|underline|line-through",
+          "textShadow": "<shadow value for glowing text>",
           "letterSpacing": "<px or em value>",
           "lineHeight": "<number or px value>",
+          "whiteSpace": "normal|nowrap|pre-wrap",
+          "textOverflow": "clip|ellipsis",
+          "wordBreak": "normal|break-all|keep-all|break-word",
+
+          // Backgrounds
+          "backgroundImage": "<url(...) or linear-gradient(...)>",
+          "backgroundSize": "cover|contain|<px>",
+          "backgroundPosition": "center|top left|<px px>",
+          "backgroundRepeat": "no-repeat|repeat|repeat-x|repeat-y",
+
+          // Spacing
           "padding": "<px value>",
+          "margin": "<px value for external spacing>",
+          "gap": "<px value>",
+
+          // Sizing
+          "maxWidth": "<px or %>",
+          "maxHeight": "<px or %>",
+          "minHeight": "<px>",
+          "aspectRatio": "16/9 or 1/1 or auto",
+
+          // Borders
           "borderRadius": "<px value>",
           "borderWidth": "<px value>",
           "borderColor": "<hex>",
           "borderStyle": "solid|dashed|dotted|none",
+
+          // Effects
           "shadow": "<box-shadow value>",
           "opacity": "<0-1 value>",
-          "transform": "<rotate(...) scale(...) skew(...) - detect any rotation>",
-          "backdropFilter": "<blur(...) - detect glassmorphism>",
-          "overflow": "hidden|visible - default to hidden for rounded cards with images",
-          "cursor": "pointer|text|default",
+          "backdropFilter": "blur(10px) - for glassmorphism",
+          "filter": "blur(5px) or grayscale(100%) or brightness(1.2)",
+          "mixBlendMode": "normal|multiply|screen|overlay",
+          "transform": "<rotate(5deg) scale(1.1) skew(10deg) - detect any transformation>",
+
+          // Layout control
+          "overflow": "hidden|visible|scroll|auto",
+          "objectFit": "cover|contain - for images",
+          "objectPosition": "center|top - for images",
+
+          // Position (for sticky/fixed)
+          "position": "static|relative|absolute|fixed|sticky",
+          "top": "<px or %>",
+          "left": "<px or %>",
+
+          // Cursor
+          "cursor": "pointer|text|default|grab",
+
+          // Flex control
+          "flexGrow": "<number>",
+          "flexShrink": "<number>",
+          "order": "<number>",
+
+          // CRITICAL - CUSTOM CSS CATCH-ALL:
+          // Put ANY CSS property not listed above in customCSS.
+          // This ensures 100% visual fidelity for ANY design.
           "customCSS": {
-             // CRITICAL: Put ANY other CSS property here that doesn't fit the schema above
-             // e.g. mix-blend-mode, clip-path, mask-image, perspective, filter
-             "<property>": "<value>"
+             "clipPath": "polygon(...) or circle(...)",
+             "maskImage": "linear-gradient(...)",
+             "WebkitBackgroundClip": "text",
+             "perspective": "1000px",
+             "columnCount": "2",
+             "writingMode": "vertical-rl",
+             "<literally-any-css-property>": "<value>"
           }
         },
         "content": {
           "text": "<EXACT visible text>",
           "hasImage": true/false,
           "hasIcon": true/false,
-          "iconName": "<Lucide icon name: Home, User, Menu, Search, ArrowRight, Settings, etc.>",
+          "iconName": "<Lucide icon name: Home, User, Menu, Search, ArrowRight, Settings, Info, Check, Plus, Star, Heart, etc.>",
           "iconColor": "<hex color of the icon - MEASURE from image>",
-          "iconPosition": "left|right|center|top|bottom",
-          "iconSize": "sm|md|lg"
+          "iconPosition": "left|right|center|top|bottom - use 'top' when icon is ABOVE text",
+          "iconSize": "sm|md|lg",
+          "iconContainerStyle": {
+            "shape": "circle|square|rounded - DETECT if icon has a background shape/container",
+            "backgroundColor": "<hex - background color of the icon container>",
+            "borderColor": "<hex - border color if icon container has a border>",
+            "borderWidth": "<px value - e.g. 1px, 2px>",
+            "size": "sm|md|lg - container size (sm=32px, md=48px, lg=64px)"
+          }
         },
         "zIndex": <number>,
+        "interactions": {
+          "hover": {
+            "backgroundColor": "<hex - background color on hover, if button/link>",
+            "textColor": "<hex - text color on hover>",
+            "transform": "scale(1.05) or translateY(-2px) - transform on hover",
+            "boxShadow": "<shadow value on hover - often larger than default>",
+            "borderColor": "<hex - border color on hover>"
+          }
+        },
         "confidence": 0.9
       }
 
@@ -380,6 +456,35 @@ class GeminiLayoutService {
          - Use Lucide icon names: "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard", etc.
          - Specify iconPosition relative to text content: "left" (before), "right" (after), "top" (above), "bottom" (below), or "center" (standalone)
 
+      9. **FOOTER HIERARCHY - DETECT MULTI-COLUMN FOOTERS**:
+         - Footers typically have 2-4 columns arranged horizontally
+         - EACH column should be a separate container with role: "container"
+         - Column children (links, text, icons) have role: "leaf"
+
+         Example footer structure:
+         - "footer" (parentId: null, role: "container", layout: { type: "flex", direction: "row", justify: "between" }, children: ["footer-col-1", "footer-col-2", "footer-col-3", "footer-col-4"])
+         - "footer-col-1" (parentId: "footer", role: "container", layout: { type: "flex", direction: "column" }, children: ["footer-logo", "footer-tagline"])
+         - "footer-col-2" (parentId: "footer", role: "container", layout: { type: "flex", direction: "column" }, children: ["footer-heading-1", "footer-link-1", "footer-link-2"])
+         - "footer-link-1" (parentId: "footer-col-2", role: "leaf", content: { text: "About Us" })
+
+         IMPORTANT: Do NOT flatten footer content into a single container. Preserve the column structure.
+
+      10. **CUSTOM CSS CATCH-ALL - 100% VISUAL FIDELITY**:
+          If you detect ANY visual property that is NOT in the explicit style schema above,
+          put it in the "customCSS" object. This ensures we can replicate ANY design.
+
+          Examples of properties that should go in customCSS:
+          - clip-path, mask-image, perspective, column-count, writing-mode
+          - animation, transition (specific values)
+          - scroll-behavior, overscroll-behavior
+          - user-select, pointer-events
+          - text-indent, vertical-align, word-spacing
+          - ANY vendor prefixes (-webkit-*, -moz-*)
+          - box-decoration-break, hyphens, tab-size
+          - ANY CSS property that exists but isn't in the schema
+
+          The customCSS object is our guarantee of 100% visual fidelity.
+
       Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
     `;
 
@@ -397,14 +502,14 @@ class GeminiLayoutService {
       // Debug: Log Stage 2 output to verify colors and hierarchy
       console.log('[GeminiLayoutService] Stage 2 result:', {
         count: components.length,
-        hasHierarchy: components.some(c => c.parentId || (c.children && c.children.length > 0)),
-        colorsSample: components.slice(0, 5).map(c => ({
+        hasHierarchy: components.some((c) => c.parentId || (c.children && c.children.length > 0)),
+        colorsSample: components.slice(0, 5).map((c) => ({
           id: c.id,
           bg: c.style?.backgroundColor,
           text: c.style?.textColor,
           role: c.role,
           parentId: c.parentId,
-        }))
+        })),
       });
 
       return components;
@@ -454,7 +559,8 @@ class GeminiLayoutService {
         componentTypes: designSpec.componentTypes.length,
       });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error extracting design spec';
+      const errorMsg =
+        error instanceof Error ? error.message : 'Unknown error extracting design spec';
       result.errors.push(`Stage 1 (DesignSpec): ${errorMsg}`);
       console.error('[GeminiLayoutService] Stage 1 failed:', errorMsg);
       // Continue to Stage 2 even if Stage 1 fails - components may still be extractable
@@ -465,7 +571,11 @@ class GeminiLayoutService {
     try {
       // Use default spec if Stage 1 failed
       const specForStage2 = result.designSpec || this.getDefaultDesignSpec();
-      const components = await this.buildComponentsFromSpec(imageBase64, specForStage2, instructions);
+      const components = await this.buildComponentsFromSpec(
+        imageBase64,
+        specForStage2,
+        instructions
+      );
       result.components = components;
       result.metadata.componentCount = components.length;
       result.metadata.componentsBuilt = true;
@@ -481,7 +591,9 @@ class GeminiLayoutService {
 
     // Add warning if design spec extraction failed but components succeeded
     if (!result.metadata.designSpecExtracted && result.metadata.componentsBuilt) {
-      result.warnings.push('Design specification extraction failed; using default colors. Layout may not match original design precisely.');
+      result.warnings.push(
+        'Design specification extraction failed; using default colors. Layout may not match original design precisely.'
+      );
     }
 
     return result;
@@ -844,7 +956,9 @@ class GeminiLayoutService {
         overallAssessment: critique.overallAssessment || 'No assessment provided',
         discrepancies: Array.isArray(critique.discrepancies) ? critique.discrepancies : [],
         passesThreshold: critique.fidelityScore >= targetFidelity,
-        recommendation: critique.recommendation || (critique.fidelityScore >= targetFidelity ? 'accept' : 'refine'),
+        recommendation:
+          critique.recommendation ||
+          (critique.fidelityScore >= targetFidelity ? 'accept' : 'refine'),
       };
     } catch (e) {
       console.error('[GeminiLayoutService] Failed to parse enhanced critique response', e);

@@ -12,11 +12,12 @@
  * - Export functionality
  */
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { DynamicLayoutRenderer } from './DynamicLayoutRenderer';
 import { FloatingEditBubble } from './FloatingEditBubble';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import type { VisionLoopProgress, SelfHealingResult } from '@/services/VisionLoopEngine';
+import type { DesignSpec } from '@/types/designSpec';
 
 export interface LayoutCanvasProps {
   components: DetectedComponentEnhanced[];
@@ -24,6 +25,8 @@ export interface LayoutCanvasProps {
   isAnalyzing: boolean;
   analysisErrors?: string[];
   analysisWarnings?: string[];
+  /** Design specification for font loading */
+  designSpec?: DesignSpec | null;
   onSelectComponent: (id: string | null) => void;
   onAnalyzeImage: (file: File, instructions?: string) => Promise<void>;
   onAnalyzeVideo: (file: File, instructions?: string) => Promise<void>;
@@ -55,6 +58,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   isAnalyzing,
   analysisErrors = [],
   analysisWarnings = [],
+  designSpec = null,
   onSelectComponent,
   onAnalyzeImage,
   onAnalyzeVideo,
@@ -78,6 +82,47 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [showHealingResult, setShowHealingResult] = useState(false);
   const layoutRef = useRef<HTMLDivElement>(null);
+
+  // Load Google Fonts based on DesignSpec typography
+  useEffect(() => {
+    if (!designSpec?.typography) return;
+
+    const { headingFont, bodyFont } = designSpec.typography;
+    const fonts = [headingFont, bodyFont].filter(
+      (f): f is string => !!f && f !== 'Inter' && f !== 'system-ui'
+    );
+
+    if (fonts.length === 0) return;
+
+    // Create unique font families (remove duplicates)
+    const uniqueFonts = [...new Set(fonts)];
+
+    // Check if fonts are already loaded
+    const fontLinkId = 'layout-builder-fonts';
+    const existingLink = document.getElementById(fontLinkId);
+
+    // Build Google Fonts URL
+    const fontFamilies = uniqueFonts
+      .map((f) => f.replace(/\s+/g, '+'))
+      .map((f) => `family=${f}:wght@400;500;600;700`)
+      .join('&');
+    const fontUrl = `https://fonts.googleapis.com/css2?${fontFamilies}&display=swap`;
+
+    // Update or create the font link
+    if (existingLink) {
+      if (existingLink.getAttribute('href') !== fontUrl) {
+        existingLink.setAttribute('href', fontUrl);
+      }
+    } else {
+      const link = document.createElement('link');
+      link.id = fontLinkId;
+      link.href = fontUrl;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+
+    // Cleanup function - don't remove the link as other components may use it
+  }, [designSpec?.typography]);
 
   // Generate HTML from current layout for self-healing
   const generateLayoutHtml = useCallback((): string => {
@@ -218,15 +263,36 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               {isHealing ? (
                 <>
                   <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Cancel
                 </>
               ) : (
                 <>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                   Auto-Refine
                 </>
@@ -240,9 +306,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
       {isHealing && healingProgress && (
         <div className="px-4 py-2 bg-purple-50 border-b border-purple-200">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-purple-800">
-              {healingProgress.message}
-            </span>
+            <span className="text-xs font-medium text-purple-800">{healingProgress.message}</span>
             <span className="text-xs text-purple-600">
               Iteration {healingProgress.iteration}/{healingProgress.maxIterations}
               {healingProgress.fidelityScore !== undefined && (
@@ -266,11 +330,22 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
         <div className="px-4 py-2 bg-green-50 border-b border-green-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-4 h-4 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <span className="text-sm font-medium text-green-800">
-                Layout refined in {lastHealingResult.iterations} iteration{lastHealingResult.iterations !== 1 ? 's' : ''}
+                Layout refined in {lastHealingResult.iterations} iteration
+                {lastHealingResult.iterations !== 1 ? 's' : ''}
               </span>
               <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                 Fidelity: {lastHealingResult.finalFidelityScore.toFixed(1)}%
@@ -288,7 +363,9 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
 
       {/* Error/Warning Panel */}
       {(hasErrors || hasWarnings) && !isAnalyzing && (
-        <div className={`px-4 py-2 border-b ${hasErrors ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+        <div
+          className={`px-4 py-2 border-b ${hasErrors ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}
+        >
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {hasErrors && (
@@ -316,9 +393,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               <button
                 onClick={onClearErrors}
                 className={`ml-4 text-xs px-2 py-1 rounded ${
-                  hasErrors
-                    ? 'text-red-700 hover:bg-red-100'
-                    : 'text-amber-700 hover:bg-amber-100'
+                  hasErrors ? 'text-red-700 hover:bg-red-100' : 'text-amber-700 hover:bg-amber-100'
                 }`}
               >
                 Dismiss

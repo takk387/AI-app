@@ -672,16 +672,58 @@ export interface DetectedComponentEnhanced {
     /** Typography details */
     lineHeight?: string;
     letterSpacing?: string;
+    /** Per-component font family override */
+    fontFamily?: string;
+    /** Font style (italic, normal) */
+    fontStyle?: 'normal' | 'italic' | 'oblique';
+    /** Text decoration */
+    textDecoration?: 'none' | 'underline' | 'line-through' | 'overline' | string;
+    /** Text shadow for glow effects */
+    textShadow?: string;
     /** Border details */
-    borderStyle?: string;
+    borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none' | string;
     /** Visual effects */
     opacity?: string;
     backdropFilter?: string;
     transform?: string;
+    /** Filter effects (blur, grayscale, etc.) */
+    filter?: string;
+    /** Blend mode */
+    mixBlendMode?: string;
+    /** Spacing */
+    margin?: string;
+    /** Max width constraint */
+    maxWidth?: string;
+    /** Max height constraint */
+    maxHeight?: string;
+    /** Min height specific value */
+    minHeight?: string;
+    /** Aspect ratio */
+    aspectRatio?: string;
     /** Layout control */
-    overflow?: string;
+    overflow?: 'visible' | 'hidden' | 'scroll' | 'auto' | string;
+    /** Image object fit */
+    objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+    /** Image object position */
+    objectPosition?: string;
+    /** White space handling */
+    whiteSpace?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
+    /** Text overflow */
+    textOverflow?: 'clip' | 'ellipsis';
+    /** Word break */
+    wordBreak?: 'normal' | 'break-all' | 'keep-all' | 'break-word';
+    /** Flex properties for advanced layouts */
+    flexGrow?: number;
+    flexShrink?: number;
+    order?: number;
+    /** Position for sticky/fixed elements */
+    position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+    top?: string;
+    right?: string;
+    bottom?: string;
+    left?: string;
     /** Arbitrary CSS properties for "Zero-Preset" custom designs (e.g., gradients, filters, complex shadows) */
-    customCSS?: Record<string, string>;
+    customCSS?: Record<string, string | number>;
   };
   /** Content information extracted from the component */
   content?: {
@@ -698,6 +740,15 @@ export interface DetectedComponentEnhanced {
     iconPosition?: 'left' | 'right' | 'center' | 'top' | 'bottom';
     /** Icon size */
     iconSize?: 'sm' | 'md' | 'lg';
+    /** Container style for icons (circular background, etc.) */
+    iconContainerStyle?: {
+      shape: 'circle' | 'square' | 'rounded';
+      backgroundColor?: string;
+      borderColor?: string;
+      borderWidth?: string;
+      size?: 'sm' | 'md' | 'lg';
+      padding?: string;
+    };
   };
   /** Parent component ID for hierarchy */
   parentId?: string;
@@ -730,6 +781,23 @@ export interface DetectedComponentEnhanced {
   isNavigationItem?: boolean;
   /** Is this element interactive (button, link, input) */
   isInteractive?: boolean;
+  /** Interactive state styles (hover, active, focus) for buttons/links */
+  interactions?: {
+    hover?: {
+      backgroundColor?: string;
+      textColor?: string;
+      transform?: string;
+      boxShadow?: string;
+      opacity?: number;
+      borderColor?: string;
+    };
+    active?: {
+      backgroundColor?: string;
+      textColor?: string;
+      transform?: string;
+      scale?: number;
+    };
+  };
   /** Confidence score 0-1 */
   confidence: number;
 }
