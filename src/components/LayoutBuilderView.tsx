@@ -48,10 +48,7 @@ export const LayoutBuilderView: React.FC = () => {
     },
   ]);
 
-  // Store original uploaded image for self-healing reference
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
-
-  // Single source of truth for all layout state
+  // Single source of truth for all layout state (including originalImage for self-healing)
   const {
     analyzeImage,
     analyzeVideo,
@@ -74,8 +71,10 @@ export const LayoutBuilderView: React.FC = () => {
     isHealing,
     healingProgress,
     lastHealingResult,
+    originalImage,
     runSelfHealingLoop,
     cancelHealing,
+    registerRenderToHtml,
   } = useLayoutBuilder();
 
   // Debug: Log component count changes
@@ -159,8 +158,7 @@ export const LayoutBuilderView: React.FC = () => {
           if (item.type === 'video') {
             await analyzeVideo(item.file, instructions);
           } else {
-            // Store the original image for self-healing reference
-            setOriginalImage(item.previewUrl);
+            // Hook stores the original image internally for self-healing
             await analyzeImage(item.file, instructions);
           }
         }
@@ -230,6 +228,7 @@ export const LayoutBuilderView: React.FC = () => {
           originalImage={originalImage}
           onRunSelfHealing={runSelfHealingLoop}
           onCancelHealing={cancelHealing}
+          registerRenderToHtml={registerRenderToHtml}
         />
       </div>
     </div>

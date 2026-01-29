@@ -732,8 +732,12 @@ export interface DetectedComponentEnhanced {
     hasImage?: boolean;
     itemCount?: number;
     placeholder?: string;
-    /** Lucide icon name (e.g. "Home", "User", "Menu") */
+    /** Lucide icon name (e.g. "Home", "User", "Menu") - FALLBACK when SVG path not available */
     iconName?: string;
+    /** Raw SVG path d attribute for exact icon replication - PREFERRED over iconName */
+    iconSvgPath?: string;
+    /** SVG viewBox if different from default "0 0 24 24" */
+    iconViewBox?: string;
     /** Icon color hex code */
     iconColor?: string;
     /** Icon position relative to text */

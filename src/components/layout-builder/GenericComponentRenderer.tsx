@@ -219,9 +219,26 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // Border style (dashed, dotted, etc.)
     borderStyle: style.borderStyle as React.CSSProperties['borderStyle'],
 
-    // Overflow control - use style.overflow if provided, else default based on container type
-    overflow:
-      (style.overflow as React.CSSProperties['overflow']) || (isContainer ? 'visible' : 'hidden'),
+    // Overflow control - use style.overflow if provided, else smart defaults
+    // Text components should NOT clip by default (causes text clipping issues)
+    overflow: (() => {
+      // Explicit AI override wins
+      if (style.overflow) return style.overflow;
+      // Text-heavy components should not clip
+      const typeStr = type as string;
+      const isTextComponent =
+        content?.text ||
+        typeStr.includes('text') ||
+        typeStr.includes('heading') ||
+        typeStr.includes('paragraph') ||
+        typeStr.includes('label') ||
+        typeStr === 'button' ||
+        typeStr === 'link' ||
+        typeStr === 'badge';
+      if (isTextComponent) return 'visible' as const;
+      // Containers visible, images/media hidden
+      return isContainer ? ('visible' as const) : ('hidden' as const);
+    })(),
 
     // Spacing and sizing
     margin: style.margin,
@@ -274,10 +291,12 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return bgColor;
     })(),
 
-    // Only add border if explicitly specified in style
-    border: style.borderWidth
-      ? `${style.borderWidth} ${style.borderStyle || 'solid'} ${style.borderColor || 'transparent'}`
-      : undefined,
+    // Add border if borderWidth OR borderColor is specified
+    // Previously only checked borderWidth, causing borders to be missed when only color was provided
+    border:
+      style.borderWidth || style.borderColor
+        ? `${style.borderWidth || '1px'} ${style.borderStyle || 'solid'} ${style.borderColor || 'currentColor'}`
+        : undefined,
 
     // Smart z-index based on component type (don't use index - components are sorted by top, not z-order)
     zIndex: component.zIndex ?? getDefaultZIndex(type),
@@ -442,8 +461,11 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   };
 
   // Render icon component
+  // Supports both raw SVG paths (for exact replicas) and named icons (fallback)
   const renderIcon = () => {
-    if (!content?.hasIcon || !content?.iconName) return null;
+    if (!content?.hasIcon) return null;
+    // Need either SVG path or icon name
+    if (!content?.iconSvgPath && !content?.iconName) return null;
 
     const iconSizeClasses: Record<string, string> = {
       sm: 'w-4 h-4',
@@ -453,7 +475,9 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
     const sizeClass = iconSizeClasses[content.iconSize || 'md'] || iconSizeClasses.md;
     const iconColor = content.iconColor || style.textColor || 'currentColor';
-    const pathData = getIconPath(content.iconName);
+    // PREFER raw SVG path for exact replication, fall back to named icon lookup
+    const pathData = content.iconSvgPath || getIconPath(content.iconName || 'Info');
+    const viewBox = content.iconViewBox || '0 0 24 24';
 
     const iconElement = (
       <span
@@ -468,7 +492,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          viewBox="0 0 24 24"
+          viewBox={viewBox}
         >
           <path d={pathData} />
         </svg>
@@ -633,22 +657,43 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     } as React.CSSProperties);
   }
 
+  // Add active state CSS variables
+  if (component.interactions?.active) {
+    const active = component.interactions.active;
+    Object.assign(interactionStyles, {
+      '--active-bg': active.backgroundColor,
+      '--active-color': active.textColor,
+      '--active-transform': active.transform,
+      '--active-scale': active.scale,
+    } as React.CSSProperties);
+  }
+
   // Combine base styles with interaction CSS variables
   const combinedStyles: React.CSSProperties = {
     ...dynamicStyles,
     ...interactionStyles,
   };
 
-  // Generate hover class based on which interaction properties are set
+  // Generate hover and active classes based on which interaction properties are set
   const getInteractionClass = () => {
     if (!hasInteractions) return '';
     const classes: string[] = [];
+
+    // Hover state classes
     const hover = component.interactions?.hover;
     if (hover?.backgroundColor) classes.push('hover:bg-[var(--hover-bg)]');
     if (hover?.textColor) classes.push('hover:text-[var(--hover-color)]');
     if (hover?.transform) classes.push('hover:[transform:var(--hover-transform)]');
     if (hover?.boxShadow) classes.push('hover:[box-shadow:var(--hover-shadow)]');
     if (hover?.opacity !== undefined) classes.push('hover:opacity-[var(--hover-opacity)]');
+
+    // Active state classes
+    const active = component.interactions?.active;
+    if (active?.backgroundColor) classes.push('active:bg-[var(--active-bg)]');
+    if (active?.textColor) classes.push('active:text-[var(--active-color)]');
+    if (active?.transform) classes.push('active:[transform:var(--active-transform)]');
+    if (active?.scale) classes.push(`active:scale-[var(--active-scale)]`);
+
     return classes.join(' ');
   };
 

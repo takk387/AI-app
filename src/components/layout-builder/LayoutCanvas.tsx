@@ -50,6 +50,8 @@ export interface LayoutCanvasProps {
     renderToHtml: () => string
   ) => Promise<SelfHealingResult | null>;
   onCancelHealing?: () => void;
+  /** Register the renderToHtml callback for auto-trigger self-healing */
+  registerRenderToHtml?: (callback: (() => string) | null) => void;
 }
 
 export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
@@ -78,6 +80,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   originalImage = null,
   onRunSelfHealing,
   onCancelHealing,
+  registerRenderToHtml,
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [showHealingResult, setShowHealingResult] = useState(false);
@@ -129,6 +132,22 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
     if (!layoutRef.current) return '';
     return layoutRef.current.innerHTML;
   }, []);
+
+  // Register the renderToHtml callback with the hook for auto-trigger
+  useEffect(() => {
+    if (registerRenderToHtml) {
+      registerRenderToHtml(generateLayoutHtml);
+      console.log('[LayoutCanvas] Registered renderToHtml callback for auto-trigger');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (registerRenderToHtml) {
+        registerRenderToHtml(null);
+        console.log('[LayoutCanvas] Unregistered renderToHtml callback');
+      }
+    };
+  }, [registerRenderToHtml, generateLayoutHtml]);
 
   // Handler for auto-refine button
   const handleAutoRefine = useCallback(async () => {

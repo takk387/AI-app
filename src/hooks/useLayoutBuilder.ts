@@ -31,6 +31,7 @@ interface UseLayoutBuilderReturn {
   isHealing: boolean;
   healingProgress: VisionLoopProgress | null;
   lastHealingResult: SelfHealingResult | null;
+  originalImage: string | null;
 
   // Actions
   setComponents: (components: DetectedComponentEnhanced[]) => void;
@@ -59,6 +60,7 @@ interface UseLayoutBuilderReturn {
     renderToHtml: () => string
   ) => Promise<SelfHealingResult | null>;
   cancelHealing: () => void;
+  registerRenderToHtml: (callback: (() => string) | null) => void;
 }
 
 export function useLayoutBuilder(): UseLayoutBuilderReturn {
@@ -86,9 +88,19 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   } | null>(null);
   const renderToHtmlRef = useRef<(() => string) | null>(null);
 
+  // Auto-trigger self-healing state
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [autoHealingTriggered, setAutoHealingTriggered] = useState(false);
+  const renderToHtmlCallbackRef = useRef<(() => string) | null>(null);
+
   const clearErrors = useCallback(() => {
     setAnalysisErrors([]);
     setAnalysisWarnings([]);
+  }, []);
+
+  // Allow UI to register the renderToHtml callback for auto-trigger
+  const registerRenderToHtml = useCallback((callback: (() => string) | null) => {
+    renderToHtmlCallbackRef.current = callback;
   }, []);
 
   // --- Step-Based Self-Healing Orchestration ---
@@ -207,98 +219,116 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
 
   // --- AI Interactions ---
 
-  const analyzeImage = useCallback(async (file: File, instructions?: string) => {
-    setIsAnalyzing(true);
-    clearErrors();
+  const analyzeImage = useCallback(
+    async (file: File, instructions?: string) => {
+      setIsAnalyzing(true);
+      setAutoHealingTriggered(false); // Reset for new image analysis
+      clearErrors();
 
-    try {
-      const base64 = await fileToBase64(file);
+      try {
+        const base64 = await fileToBase64(file);
+        setOriginalImage(base64); // Store original image for self-healing
 
-      const response = await fetch('/api/layout/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'analyze-image',
-          image: base64,
-          instructions,
-        }),
-      });
+        const response = await fetch('/api/layout/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'analyze-image',
+            image: base64,
+            instructions,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[useLayoutBuilder] Analysis failed:', response.status, errorText);
-        setAnalysisErrors([`Analysis failed: ${response.status}`]);
-        throw new Error(`Analysis failed: ${response.status}`);
-      }
-
-      const result: LayoutAnalysisResult = await response.json();
-      console.log('[useLayoutBuilder] Raw API response:', result);
-
-      // Check for API error response (legacy format)
-      if (result && typeof result === 'object' && 'error' in result && !('success' in result)) {
-        console.error('[useLayoutBuilder] API returned error:', (result as { error: string }).error);
-        setAnalysisErrors([(result as { error: string }).error]);
-        throw new Error((result as { error: string }).error);
-      }
-
-      // Handle new structured response format
-      if ('success' in result) {
-        // Store errors and warnings
-        if (result.errors && result.errors.length > 0) {
-          setAnalysisErrors(result.errors);
-          console.error('[useLayoutBuilder] Analysis errors:', result.errors);
-        }
-        if (result.warnings && result.warnings.length > 0) {
-          setAnalysisWarnings(result.warnings);
-          console.warn('[useLayoutBuilder] Analysis warnings:', result.warnings);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[useLayoutBuilder] Analysis failed:', response.status, errorText);
+          setAnalysisErrors([`Analysis failed: ${response.status}`]);
+          throw new Error(`Analysis failed: ${response.status}`);
         }
 
-        // Extract components from the result
-        const validatedComponents = result.components || [];
-        console.log('[useLayoutBuilder] Received', validatedComponents.length, 'components from API');
+        const result: LayoutAnalysisResult = await response.json();
+        console.log('[useLayoutBuilder] Raw API response:', result);
 
-        // Store the design spec if available
-        if (result.designSpec) {
-          setDesignSpec(result.designSpec);
-          console.log('[useLayoutBuilder] DesignSpec stored:', {
-            primaryColor: result.designSpec.colorPalette?.primary,
-            structure: result.designSpec.structure?.type,
-          });
-
-          // Also store in global app store for export and other features
-          import('@/store/useAppStore').then(({ useAppStore }) => {
-            useAppStore.getState().setCurrentDesignSpec?.(result.designSpec);
-          }).catch(() => {
-            // Store may not have setCurrentDesignSpec yet - that's okay
-            console.log('[useLayoutBuilder] setCurrentDesignSpec not available in store yet');
-          });
-        }
-
-        // Warn if too few components detected
-        if (validatedComponents.length > 0 && validatedComponents.length < 10) {
-          console.warn(
-            '[useLayoutBuilder] ⚠️ Only',
-            validatedComponents.length,
-            'components detected. Expected 20+ for a typical layout.'
+        // Check for API error response (legacy format)
+        if (result && typeof result === 'object' && 'error' in result && !('success' in result)) {
+          console.error(
+            '[useLayoutBuilder] API returned error:',
+            (result as { error: string }).error
           );
+          setAnalysisErrors([(result as { error: string }).error]);
+          throw new Error((result as { error: string }).error);
         }
 
-        setComponents(validatedComponents);
-      } else {
-        // Fallback for legacy array response (backward compatibility)
-        const validatedComponents = Array.isArray(result) ? result : [];
-        console.log('[useLayoutBuilder] Legacy response format, received', validatedComponents.length, 'components');
-        setComponents(validatedComponents);
+        // Handle new structured response format
+        if ('success' in result) {
+          // Store errors and warnings
+          if (result.errors && result.errors.length > 0) {
+            setAnalysisErrors(result.errors);
+            console.error('[useLayoutBuilder] Analysis errors:', result.errors);
+          }
+          if (result.warnings && result.warnings.length > 0) {
+            setAnalysisWarnings(result.warnings);
+            console.warn('[useLayoutBuilder] Analysis warnings:', result.warnings);
+          }
+
+          // Extract components from the result
+          const validatedComponents = result.components || [];
+          console.log(
+            '[useLayoutBuilder] Received',
+            validatedComponents.length,
+            'components from API'
+          );
+
+          // Store the design spec if available
+          if (result.designSpec) {
+            setDesignSpec(result.designSpec);
+            console.log('[useLayoutBuilder] DesignSpec stored:', {
+              primaryColor: result.designSpec.colorPalette?.primary,
+              structure: result.designSpec.structure?.type,
+            });
+
+            // Also store in global app store for export and other features
+            import('@/store/useAppStore')
+              .then(({ useAppStore }) => {
+                useAppStore.getState().setCurrentDesignSpec?.(result.designSpec);
+              })
+              .catch(() => {
+                // Store may not have setCurrentDesignSpec yet - that's okay
+                console.log('[useLayoutBuilder] setCurrentDesignSpec not available in store yet');
+              });
+          }
+
+          // Warn if too few components detected
+          if (validatedComponents.length > 0 && validatedComponents.length < 10) {
+            console.warn(
+              '[useLayoutBuilder] ⚠️ Only',
+              validatedComponents.length,
+              'components detected. Expected 20+ for a typical layout.'
+            );
+          }
+
+          setComponents(validatedComponents);
+        } else {
+          // Fallback for legacy array response (backward compatibility)
+          const validatedComponents = Array.isArray(result) ? result : [];
+          console.log(
+            '[useLayoutBuilder] Legacy response format, received',
+            validatedComponents.length,
+            'components'
+          );
+          setComponents(validatedComponents);
+        }
+      } catch (error) {
+        console.error('Image analysis error:', error);
+        if (error instanceof Error && !analysisErrors.includes(error.message)) {
+          setAnalysisErrors((prev) => [...prev, error.message]);
+        }
+      } finally {
+        setIsAnalyzing(false);
       }
-    } catch (error) {
-      console.error('Image analysis error:', error);
-      if (error instanceof Error && !analysisErrors.includes(error.message)) {
-        setAnalysisErrors((prev) => [...prev, error.message]);
-      }
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [clearErrors, analysisErrors]);
+    },
+    [clearErrors, analysisErrors]
+  );
 
   const analyzeVideo = useCallback(async (file: File, instructions?: string) => {
     setIsAnalyzing(true);
@@ -460,6 +490,49 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     renderToHtmlRef.current = null;
     console.log('[useLayoutBuilder] Self-healing cancelled by user');
   }, []);
+
+  // --- Auto-Trigger Self-Healing After Initial Analysis ---
+  // This useEffect automatically triggers the self-healing loop once:
+  // - Components have been analyzed
+  // - Design spec is available
+  // - Original image is stored
+  // - UI has registered the renderToHtml callback
+  // - Not already analyzing or healing
+  useEffect(() => {
+    // Only trigger once per image analysis
+    if (autoHealingTriggered) return;
+
+    // Must have: components, designSpec, originalImage, and renderToHtml callback
+    if (
+      components.length === 0 ||
+      !designSpec ||
+      !originalImage ||
+      !renderToHtmlCallbackRef.current ||
+      isAnalyzing ||
+      isHealing
+    ) {
+      return;
+    }
+
+    // Mark as triggered to prevent re-triggering
+    setAutoHealingTriggered(true);
+
+    // Small delay to ensure DOM is painted with initial components
+    const timeoutId = setTimeout(() => {
+      console.log('[useLayoutBuilder] Auto-triggering self-healing loop');
+      runSelfHealingLoop(originalImage, renderToHtmlCallbackRef.current!);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    components.length,
+    designSpec,
+    originalImage,
+    isAnalyzing,
+    isHealing,
+    autoHealingTriggered,
+    runSelfHealingLoop,
+  ]);
 
   // --- History State ---
   const [history, setHistory] = useState<DetectedComponentEnhanced[][]>([]);
@@ -624,6 +697,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     isHealing,
     healingProgress,
     lastHealingResult,
+    originalImage,
 
     setComponents: updateComponentsWithHistory, // Expose history-aware setter
     selectComponent,
@@ -645,6 +719,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     // Self-Healing Actions
     runSelfHealingLoop,
     cancelHealing,
+    registerRenderToHtml,
     // New Action: Generate Phase Plan
     generatePhasePlan: useCallback(async () => {
       setIsAnalyzing(true);

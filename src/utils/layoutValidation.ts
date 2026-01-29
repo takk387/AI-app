@@ -140,6 +140,13 @@ const ContentSchema = z
     hasImage: z.boolean().optional(),
     itemCount: z.number().optional(),
     placeholder: z.string().optional(),
+    // Icon properties for exact SVG replication
+    iconName: z.string().optional(),
+    iconSvgPath: z.string().optional(), // Raw SVG path for exact replication
+    iconViewBox: z.string().optional(), // SVG viewBox if different from default
+    iconColor: z.string().optional(),
+    iconPosition: z.enum(['left', 'right', 'center', 'top', 'bottom']).optional(),
+    iconSize: z.enum(['sm', 'md', 'lg']).optional(),
   })
   .passthrough()
   .optional();
@@ -229,7 +236,9 @@ export const DetectedComponentSchema = z.object({
   children: z.array(z.string()).optional(),
   role: z
     .string()
-    .transform((val) => (VALID_ROLES.includes(val as (typeof VALID_ROLES)[number]) ? val : undefined))
+    .transform((val) =>
+      VALID_ROLES.includes(val as (typeof VALID_ROLES)[number]) ? val : undefined
+    )
     .optional(),
   layout: LayoutConfigSchema,
   zIndex: z.number().optional(),
@@ -596,9 +605,7 @@ export function validateHierarchy(
  * Returns root components and a map for quick lookup.
  * Works with both hierarchical and flat (legacy) layouts.
  */
-export function buildComponentTree(
-  components: DetectedComponentEnhanced[]
-): ComponentTreeResult {
+export function buildComponentTree(components: DetectedComponentEnhanced[]): ComponentTreeResult {
   const componentMap = new Map<string, DetectedComponentEnhanced>();
   const roots: DetectedComponentEnhanced[] = [];
 
@@ -650,9 +657,7 @@ export function repairOrphans(
     'form',
   ]);
 
-  const containers = components.filter(
-    (c) => containerTypes.has(c.type) || c.role === 'container'
-  );
+  const containers = components.filter((c) => containerTypes.has(c.type) || c.role === 'container');
 
   // Create a mutable copy
   const repairedComponents = components.map((c) => ({ ...c }));
@@ -762,8 +767,10 @@ export function inferContainerLayouts(
           // Check horizontal alignment
           const horizontalOverlap = Math.max(
             0,
-            Math.min(current.bounds.left + current.bounds.width, next.bounds.left + next.bounds.width) -
-              Math.max(current.bounds.left, next.bounds.left)
+            Math.min(
+              current.bounds.left + current.bounds.width,
+              next.bounds.left + next.bounds.width
+            ) - Math.max(current.bounds.left, next.bounds.left)
           );
           if (horizontalOverlap < Math.min(current.bounds.width, next.bounds.width) * 0.5) {
             // Not enough horizontal overlap to be considered a column
@@ -779,14 +786,16 @@ export function inferContainerLayouts(
       for (let i = 0; i < byLeft.length - 1; i++) {
         const current = byLeft[i];
         const next = byLeft[i + 1];
-        
+
         if (current.bounds.left + current.bounds.width <= next.bounds.left + 5) {
           // Clean horizontal gap
         } else {
-           const verticalOverlap = Math.max(
+          const verticalOverlap = Math.max(
             0,
-            Math.min(current.bounds.top + current.bounds.height, next.bounds.top + next.bounds.height) -
-              Math.max(current.bounds.top, next.bounds.top)
+            Math.min(
+              current.bounds.top + current.bounds.height,
+              next.bounds.top + next.bounds.height
+            ) - Math.max(current.bounds.top, next.bounds.top)
           );
           if (verticalOverlap < Math.min(current.bounds.height, next.bounds.height) * 0.5) {
             isHorizontal = false;
@@ -815,9 +824,9 @@ export function inferContainerLayouts(
         };
       } else {
         // Grid or unknown - default to vertical flow to prevent collapse, but grid is safer for mixed
-        // For now, let's fallback to relative flow (defaults to block/vertical in CSS) 
+        // For now, let's fallback to relative flow (defaults to block/vertical in CSS)
         // by setting a generic column layout unless explicitly grid
-         component.layout = {
+        component.layout = {
           type: 'flex',
           direction: 'column',
           gap: '16px',

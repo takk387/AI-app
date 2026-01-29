@@ -282,11 +282,12 @@ class GeminiLayoutService {
           "height": <0-1000>
         },
         "layout": {
-          "type": "flex|grid|none",
-          "direction": "row|column",
-          "gap": "16px",
-          "justify": "start|center|end|between",
-          "align": "start|center|end|stretch"
+          // MANDATORY for containers - DO NOT OMIT
+          "type": "flex|grid",  // REQUIRED - never use "none" for real containers
+          "direction": "row|column",  // REQUIRED for flex
+          "gap": "24px",  // REQUIRED - measure EXACT pixels from image
+          "justify": "start|center|end|between|evenly",  // REQUIRED
+          "align": "start|center|end|stretch"  // REQUIRED
         },
         "style": {
           // Colors
@@ -374,7 +375,10 @@ class GeminiLayoutService {
           "text": "<EXACT visible text>",
           "hasImage": true/false,
           "hasIcon": true/false,
-          "iconName": "<Lucide icon name: Home, User, Menu, Search, ArrowRight, Settings, Info, Check, Plus, Star, Heart, etc.>",
+          // ICON EXTRACTION - For exact replicas, provide SVG path data when possible
+          "iconSvgPath": "<SVG path d attribute - e.g., 'M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5M2 12l10 5 10-5' - PREFERRED for exact replication>",
+          "iconViewBox": "0 0 24 24",  // viewBox dimensions if different from 24x24
+          "iconName": "<Lucide icon name as FALLBACK: Home, User, Menu, Search, ArrowRight, Settings, Info, Check, Plus, Star, Heart, etc.>",
           "iconColor": "<hex color of the icon - MEASURE from image>",
           "iconPosition": "left|right|center|top|bottom - use 'top' when icon is ABOVE text",
           "iconSize": "sm|md|lg",
@@ -419,11 +423,26 @@ class GeminiLayoutService {
          - "nav-3" (parentId: "nav-container", role: "leaf")
          - "cta-button" (parentId: "header-container", role: "leaf")
 
-      3. **SPECIFY CONTAINER LAYOUTS**:
-         Containers MUST include a "layout" object:
-         - Header with horizontal items: { "type": "flex", "direction": "row", "justify": "between", "align": "center" }
-         - Card grid: { "type": "grid", "columns": "repeat(3, 1fr)", "gap": "24px" }
-         - Vertical stack: { "type": "flex", "direction": "column", "gap": "16px" }
+      3. **CRITICAL - SPECIFY CONTAINER LAYOUTS (MANDATORY)**:
+         Every component with role: "container" MUST include a complete "layout" object.
+         DO NOT omit layout - the renderer CANNOT guess layouts correctly.
+
+         REQUIRED layout properties:
+         - type: "flex" or "grid" (NEVER omit this)
+         - direction: "row" or "column" (for flex layouts)
+         - gap: EXACT pixel value like "24px", "16px", "32px" (MEASURE from image)
+         - justify: "start", "center", "end", "between", "evenly" (how items spread horizontally)
+         - align: "start", "center", "end", "stretch" (how items align vertically)
+
+         EXAMPLES - Use these patterns:
+         - Header with horizontal items: { "type": "flex", "direction": "row", "gap": "24px", "justify": "between", "align": "center" }
+         - Card grid (3 columns): { "type": "grid", "gap": "24px" }
+         - Vertical stack: { "type": "flex", "direction": "column", "gap": "16px", "align": "start" }
+         - Centered content: { "type": "flex", "direction": "column", "gap": "12px", "justify": "center", "align": "center" }
+         - Navigation links: { "type": "flex", "direction": "row", "gap": "32px", "align": "center" }
+         - Footer columns: { "type": "flex", "direction": "row", "gap": "48px", "justify": "between" }
+
+         WARNING: If you omit layout, the system will guess incorrectly and the design will break.
 
       4. **ROOT COMPONENTS** (parentId: null):
          These are major page sections positioned with absolute bounds on the viewport:
@@ -451,10 +470,14 @@ class GeminiLayoutService {
          - Font sizes from designSpec.typography.fontSizes
          - Spacing from designSpec.spacing.scale
 
-      8. **ICON DETECTION - IDENTIFY ALL ICONS**:
-         - When you see an icon, set hasIcon: true AND provide iconName
-         - Use Lucide icon names: "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard", etc.
+      8. **ICON DETECTION - EXACT SVG REPLICATION**:
+         - When you see an icon, set hasIcon: true
+         - FOR EXACT REPLICAS: Extract the actual SVG path data and provide it in iconSvgPath
+           Example: "iconSvgPath": "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5"
+         - If you cannot extract the path, use iconName as FALLBACK with Lucide names:
+           "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard", "Microscope", "Leaf", "Cloud", "Graph", etc.
          - Specify iconPosition relative to text content: "left" (before), "right" (after), "top" (above), "bottom" (below), or "center" (standalone)
+         - ALWAYS measure iconColor from the image - don't guess
 
       9. **FOOTER HIERARCHY - DETECT MULTI-COLUMN FOOTERS**:
          - Footers typically have 2-4 columns arranged horizontally
@@ -499,10 +522,26 @@ class GeminiLayoutService {
         console.warn('[GeminiLayoutService] Validation issues in buildComponentsFromSpec:', errors);
       }
 
-      // Debug: Log Stage 2 output to verify colors and hierarchy
+      // Debug: Log Stage 2 output to verify colors, hierarchy, AND LAYOUT DATA
+      const containersWithLayout = components.filter(
+        (c) => c.role === 'container' && c.layout?.type
+      );
+      const containersWithoutLayout = components.filter(
+        (c) => c.role === 'container' && !c.layout?.type
+      );
+
       console.log('[GeminiLayoutService] Stage 2 result:', {
         count: components.length,
         hasHierarchy: components.some((c) => c.parentId || (c.children && c.children.length > 0)),
+        layoutStats: {
+          containersWithLayout: containersWithLayout.length,
+          containersWithoutLayout: containersWithoutLayout.length,
+          missingLayoutIds: containersWithoutLayout.map((c) => c.id),
+        },
+        layoutSample: containersWithLayout.slice(0, 3).map((c) => ({
+          id: c.id,
+          layout: c.layout,
+        })),
         colorsSample: components.slice(0, 5).map((c) => ({
           id: c.id,
           bg: c.style?.backgroundColor,
