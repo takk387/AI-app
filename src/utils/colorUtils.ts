@@ -128,51 +128,23 @@ export function isDark(color: string | undefined): boolean {
 }
 
 /**
- * Get a visible fallback color - NOW CONTEXT-AWARE
+ * Get a visible fallback color - TRUST AI COLORS
  *
- * Old behavior: Replace all white/transparent with gray (loses design intent)
- * New behavior: Only apply fallback when truly needed:
- *   - undefined colors get fallback
- *   - white on dark background stays white (intentional contrast)
- *   - transparent overlays stay transparent
- *   - only force gray when color would truly be invisible
+ * Philosophy: Trust the AI-provided colors. Only provide fallback when truly undefined.
+ * Use transparent for undefined instead of gray to avoid "gray box" artifacts.
  *
  * @param color - The color to check
- * @param context - Optional context for smarter decisions
+ * @param context - Optional context (mostly unused now, kept for API compatibility)
  */
 export function getVisibleFallback(color: string | undefined, context?: ColorContext): string {
-  // If color is explicitly defined (not undefined/null), trust the design
+  // If color is defined, return it directly - trust the source
   if (color !== undefined && color !== null && color !== '') {
-    // Check if it's a transparent component type that should stay transparent
-    if (context?.componentType && TRANSPARENT_COMPONENT_TYPES.includes(context.componentType)) {
-      return color; // Keep original, even if transparent
-    }
-
-    // Check if white/light on dark background - this is intentional contrast
-    if (isWhiteOrLight(color) && context?.pageBackground && isDark(context.pageBackground)) {
-      return color; // White on dark is intentional, keep it
-    }
-
-    // For truly transparent colors without context, only fallback if it's completely invisible
-    if (isTransparent(color)) {
-      // If we have page background context and it's light, transparent might cause invisibility
-      if (context?.pageBackground && !isDark(context.pageBackground)) {
-        // Light page + transparent element = might need subtle fallback
-        // But still preserve original if it has any opacity
-        const normalized = color.toLowerCase().trim();
-        if (normalized === 'transparent') {
-          return context.forceDebugFallback ? '#f3f4f6' : color;
-        }
-      }
-      return color; // Preserve semi-transparent colors
-    }
-
-    // Color is defined and not problematic - use it as-is
     return color;
   }
 
-  // Color is undefined - apply sensible fallback
-  return '#f3f4f6'; // Light gray for undefined backgrounds
+  // For undefined colors, return transparent instead of gray
+  // This lets content show through and avoids "gray box" artifacts
+  return 'transparent';
 }
 
 /**

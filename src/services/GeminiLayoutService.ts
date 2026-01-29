@@ -101,8 +101,11 @@ class GeminiLayoutService {
           "textMuted": "<hex>",
           "border": "<hex>",
           "additional": [
+            // IMPORTANT: List ALL unique colors visible in the image
             {"name": "button-bg", "hex": "#...", "usage": "primary buttons"},
-            {"name": "header-bg", "hex": "#...", "usage": "header background"}
+            {"name": "header-bg", "hex": "#...", "usage": "header background"},
+            {"name": "card-border", "hex": "#...", "usage": "card borders"},
+            // Include: gradients, shadows, hover states, dividers, icons, etc.
           ]
         },
         "typography": {
@@ -150,6 +153,12 @@ class GeminiLayoutService {
       }
 
       FOCUS: Extract the DESIGN SYSTEM, not individual components.
+
+      IMPORTANT FOR COLORS: Extract ALL unique colors visible in the image.
+      The more complete the color palette, the better Stage 2 can match the design.
+      Include subtle variations (e.g., both #f3f4f6 and #f9fafb if both appear).
+      Don't limit yourself to named roles - capture every distinct color you see.
+
       Return ONLY valid JSON. No markdown, no explanation.
     `;
 
@@ -276,8 +285,8 @@ class GeminiLayoutService {
           "align": "start|center|end|stretch"
         },
         "style": {
-          "backgroundColor": "<hex from designSpec.colorPalette>",
-          "textColor": "<hex from designSpec.colorPalette>",
+          "backgroundColor": "<hex - MEASURE from image, use designSpec colors when they match>",
+          "textColor": "<hex - MEASURE from image>",
           "fontSize": "<px value>",
           "fontWeight": "<weight>",
           "padding": "<px value>",
@@ -335,11 +344,14 @@ class GeminiLayoutService {
          These have role: "leaf", no children array, and render actual content:
          - Buttons, text, images, icons, links, inputs, badges, avatars
 
-      7. **USE DESIGN SPEC VALUES**:
-         - Colors from designSpec.colorPalette
+      7. **COLOR HANDLING - VISUAL FIDELITY OVER SYSTEM CONSISTENCY**:
+         - MEASURE the actual hex color from the image for each component
+         - Use designSpec.colorPalette colors when they closely match what you see
+         - If a component's actual color is NOT in the Design Spec, use the EXACT measured hex
+         - NEVER return undefined or empty string for visible colors - always provide the hex
+         - Transparent backgrounds should explicitly use "transparent" or "rgba(0,0,0,0)"
          - Font sizes from designSpec.typography.fontSizes
          - Spacing from designSpec.spacing.scale
-         - Border radius from designSpec.effects.borderRadius
 
       Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
     `;
@@ -354,6 +366,20 @@ class GeminiLayoutService {
       if (errors.length > 0) {
         console.warn('[GeminiLayoutService] Validation issues in buildComponentsFromSpec:', errors);
       }
+
+      // Debug: Log Stage 2 output to verify colors and hierarchy
+      console.log('[GeminiLayoutService] Stage 2 result:', {
+        count: components.length,
+        hasHierarchy: components.some(c => c.parentId || (c.children && c.children.length > 0)),
+        colorsSample: components.slice(0, 5).map(c => ({
+          id: c.id,
+          bg: c.style?.backgroundColor,
+          text: c.style?.textColor,
+          role: c.role,
+          parentId: c.parentId,
+        }))
+      });
+
       return components;
     } catch (e) {
       console.error('[GeminiLayoutService] Failed to parse components', e);

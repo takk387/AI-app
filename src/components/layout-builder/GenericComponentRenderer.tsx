@@ -15,7 +15,6 @@
 import React from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { cn } from '@/lib/utils'; // Assuming cn utility exists, otherwise standard classnames
-import { getVisibleFallback, type ColorContext } from '@/utils/colorUtils';
 
 interface GenericComponentRendererProps {
   component: DetectedComponentEnhanced;
@@ -122,7 +121,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return {
         display: 'flex',
         flexDirection: layout.direction || 'row',
-        gap: layout.gap || '8px',
+        gap: layout.gap,
         justifyContent: mapJustify(layout.justify),
         alignItems: mapAlign(layout.align),
         flexWrap: layout.wrap ? 'wrap' : 'nowrap',
@@ -133,7 +132,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return {
         display: 'grid',
         gridTemplateColumns: layout.columns || 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: layout.gap || '16px',
+        gap: layout.gap,
         justifyItems: mapAlign(layout.justify),
         alignItems: mapAlign(layout.align),
       };
@@ -170,11 +169,11 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     minHeight: '20px',
     overflow: isContainer ? 'visible' : 'hidden',
 
-    // Visuals
-    color: style.textColor || '#1f2937',
+    // Visuals - trust AI-provided colors, no hardcoded fallbacks
+    color: style.textColor,
     borderRadius: style.borderRadius,
-    padding: style.padding || '8px',
-    fontSize: style.fontSize || '14px',
+    padding: style.padding,
+    fontSize: style.fontSize,
     fontWeight: style.fontWeight as React.CSSProperties['fontWeight'],
     textAlign: style.textAlign as React.CSSProperties['textAlign'],
     boxShadow: style.shadow,
@@ -197,27 +196,21 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // Apply custom CSS first
     ...style.customCSS,
 
-    // Apply background color - only use fallback when truly undefined
-    // Context-aware: preserves white-on-dark contrast and transparent overlays
+    // Apply background color - trust AI-provided colors, use transparent for undefined
     backgroundColor: (() => {
       const bgColor = (style.customCSS?.backgroundColor as string) || style.backgroundColor;
-      // Only apply fallback if backgroundColor is truly undefined
+      // For undefined colors, use transparent instead of gray - let content show through
       if (bgColor === undefined || bgColor === null || bgColor === '') {
-        return '#f3f4f6'; // Light gray fallback for undefined only
+        return 'transparent';
       }
-      // Use context-aware fallback for defined colors
-      const colorContext: ColorContext = {
-        componentType: type as string,
-        // Page background could be passed as prop in the future
-        pageBackground: undefined,
-      };
-      return getVisibleFallback(bgColor, colorContext);
+      // Trust the AI-provided color directly
+      return bgColor;
     })(),
 
-    // Add visible border for debugging and structure
+    // Only add border if explicitly specified in style
     border: style.borderWidth
-      ? `${style.borderWidth} solid ${style.borderColor || '#d1d5db'}`
-      : '1px solid rgba(209, 213, 219, 0.5)',
+      ? `${style.borderWidth} solid ${style.borderColor || 'transparent'}`
+      : undefined,
 
     // Smart z-index based on component type (don't use index - components are sorted by top, not z-order)
     zIndex: component.zIndex ?? getDefaultZIndex(type),

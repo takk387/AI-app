@@ -54,7 +54,7 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
 
   return (
     <div
-      className="relative w-full h-full bg-white flex flex-col"
+      className="relative w-full h-full bg-white overflow-hidden"
       id="layout-canvas" // ID for html2canvas
       style={{ minHeight: '600px' }}
     >
