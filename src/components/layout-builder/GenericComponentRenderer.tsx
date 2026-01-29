@@ -15,7 +15,7 @@
 import React from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { cn } from '@/lib/utils'; // Assuming cn utility exists, otherwise standard classnames
-import { getVisibleFallback } from '@/utils/colorUtils';
+import { getVisibleFallback, type ColorContext } from '@/utils/colorUtils';
 
 interface GenericComponentRendererProps {
   component: DetectedComponentEnhanced;
@@ -107,10 +107,22 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // Apply custom CSS first
     ...style.customCSS,
 
-    // Override background with visible color (AFTER customCSS to ensure visibility)
-    backgroundColor: getVisibleFallback(
-      (style.customCSS?.backgroundColor as string) || style.backgroundColor
-    ),
+    // Apply background color - only use fallback when truly undefined
+    // Context-aware: preserves white-on-dark contrast and transparent overlays
+    backgroundColor: (() => {
+      const bgColor = (style.customCSS?.backgroundColor as string) || style.backgroundColor;
+      // Only apply fallback if backgroundColor is truly undefined
+      if (bgColor === undefined || bgColor === null || bgColor === '') {
+        return '#f3f4f6'; // Light gray fallback for undefined only
+      }
+      // Use context-aware fallback for defined colors
+      const colorContext: ColorContext = {
+        componentType: type as string,
+        // Page background could be passed as prop in the future
+        pageBackground: undefined,
+      };
+      return getVisibleFallback(bgColor, colorContext);
+    })(),
 
     // Add visible border for debugging and structure
     border: style.borderWidth

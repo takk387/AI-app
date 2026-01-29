@@ -44,6 +44,7 @@ import type { FileMetadata, StorageStats } from '@/types/storage';
 import type { DeploymentInstructions } from '@/utils/exportApp';
 import type { ProjectDocumentation } from '@/types/projectDocumentation';
 import type { PreviewMode } from '@/types/railway';
+import type { DesignSpec } from '@/types/designSpec';
 
 // ============================================================================
 // STORE STATE INTERFACE
@@ -196,6 +197,8 @@ interface DataSlice {
   // Layout Builder (Gemini 3 system uses LayoutManifest)
   currentLayoutManifest: LayoutManifest | null;
   savedLayoutManifests: LayoutManifest[];
+  // Design Specification (extracted from images for theming)
+  currentDesignSpec: DesignSpec | null;
   // Dynamic Phase Plan
   dynamicPhasePlan: DynamicPhasePlan | null;
   // Actions
@@ -220,6 +223,8 @@ interface DataSlice {
   setSavedLayoutManifests: (manifests: LayoutManifest[]) => void;
   addSavedLayoutManifest: (manifest: LayoutManifest) => void;
   removeSavedLayoutManifest: (id: string) => void;
+  // Design Specification action
+  setCurrentDesignSpec: (spec: DesignSpec | null) => void;
   // App Concept field updates
   updateAppConceptField: (path: string, value: unknown) => void;
   // Dynamic Phase Plan action
@@ -467,6 +472,7 @@ export const useAppStore = create<AppState>()(
       uploadedImage: null as string | null,
       currentLayoutManifest: null as LayoutManifest | null,
       savedLayoutManifests: [] as LayoutManifest[],
+      currentDesignSpec: null as DesignSpec | null,
       dynamicPhasePlan: null as DynamicPhasePlan | null,
 
       setPendingChange: (change) => set({ pendingChange: change }),
@@ -487,6 +493,7 @@ export const useAppStore = create<AppState>()(
       setIsValidating: (isValidating) => set({ isValidating }),
       setUploadedImage: (image) => set({ uploadedImage: image }),
       setCurrentLayoutManifest: (manifest) => set({ currentLayoutManifest: manifest }),
+      setCurrentDesignSpec: (spec) => set({ currentDesignSpec: spec }),
       setSavedLayoutManifests: (manifests) => set({ savedLayoutManifests: manifests }),
       addSavedLayoutManifest: (manifest) =>
         set((state) => ({
@@ -664,6 +671,7 @@ export const useLayoutBuilderState = () =>
       showLayoutBuilder: state.showLayoutBuilder,
       currentLayoutManifest: state.currentLayoutManifest,
       savedLayoutManifests: state.savedLayoutManifests,
+      currentDesignSpec: state.currentDesignSpec,
     }))
   );
 

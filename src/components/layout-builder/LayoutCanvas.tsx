@@ -12,15 +12,18 @@
  * - Export functionality
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { DynamicLayoutRenderer } from './DynamicLayoutRenderer';
 import { FloatingEditBubble } from './FloatingEditBubble';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
+import type { VisionLoopProgress, SelfHealingResult } from '@/services/VisionLoopEngine';
 
 export interface LayoutCanvasProps {
   components: DetectedComponentEnhanced[];
   selectedId: string | null;
   isAnalyzing: boolean;
+  analysisErrors?: string[];
+  analysisWarnings?: string[];
   onSelectComponent: (id: string | null) => void;
   onAnalyzeImage: (file: File, instructions?: string) => Promise<void>;
   onAnalyzeVideo: (file: File, instructions?: string) => Promise<void>;
@@ -30,14 +33,28 @@ export interface LayoutCanvasProps {
   onUndo: () => void;
   onRedo: () => void;
   onExportCode: () => void;
+  onClearErrors?: () => void;
   canUndo: boolean;
   canRedo: boolean;
+
+  // Self-Healing Props
+  isHealing?: boolean;
+  healingProgress?: VisionLoopProgress | null;
+  lastHealingResult?: SelfHealingResult | null;
+  originalImage?: string | null;
+  onRunSelfHealing?: (
+    originalImage: string,
+    renderToHtml: () => string
+  ) => Promise<SelfHealingResult | null>;
+  onCancelHealing?: () => void;
 }
 
 export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   components,
   selectedId,
   isAnalyzing,
+  analysisErrors = [],
+  analysisWarnings = [],
   onSelectComponent,
   onAnalyzeImage,
   onAnalyzeVideo,
@@ -47,11 +64,41 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   onUndo,
   onRedo,
   onExportCode,
+  onClearErrors,
   canUndo,
   canRedo,
+  // Self-Healing Props
+  isHealing = false,
+  healingProgress = null,
+  lastHealingResult = null,
+  originalImage = null,
+  onRunSelfHealing,
+  onCancelHealing,
 }) => {
   const [dragActive, setDragActive] = useState(false);
+  const [showHealingResult, setShowHealingResult] = useState(false);
   const layoutRef = useRef<HTMLDivElement>(null);
+
+  // Generate HTML from current layout for self-healing
+  const generateLayoutHtml = useCallback((): string => {
+    if (!layoutRef.current) return '';
+    return layoutRef.current.innerHTML;
+  }, []);
+
+  // Handler for auto-refine button
+  const handleAutoRefine = useCallback(async () => {
+    if (!originalImage || !onRunSelfHealing) {
+      console.warn('[LayoutCanvas] Cannot run self-healing: missing originalImage or handler');
+      return;
+    }
+    const result = await onRunSelfHealing(originalImage, generateLayoutHtml);
+    if (result) {
+      setShowHealingResult(true);
+    }
+  }, [originalImage, onRunSelfHealing, generateLayoutHtml]);
+
+  const hasErrors = analysisErrors.length > 0;
+  const hasWarnings = analysisWarnings.length > 0;
 
   // Debug: Log when components change
   console.log('[LayoutCanvas] Rendering with', components.length, 'components');
@@ -97,6 +144,26 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               AI Analyzing...
             </span>
           )}
+          {isHealing && (
+            <span className="flex items-center gap-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+              Self-Healing...
+            </span>
+          )}
+          {/* Error indicator */}
+          {hasErrors && !isAnalyzing && (
+            <span className="flex items-center gap-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+              {analysisErrors.length} error{analysisErrors.length > 1 ? 's' : ''}
+            </span>
+          )}
+          {/* Warning indicator */}
+          {hasWarnings && !hasErrors && !isAnalyzing && (
+            <span className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+              {analysisWarnings.length} warning{analysisWarnings.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -135,8 +202,131 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
             </svg>
             Export React
           </button>
+
+          {/* Self-Healing Button */}
+          {onRunSelfHealing && (
+            <button
+              onClick={isHealing ? onCancelHealing : handleAutoRefine}
+              disabled={components.length === 0 || !originalImage || isAnalyzing}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                isHealing
+                  ? 'text-white bg-red-600 hover:bg-red-700'
+                  : 'text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50'
+              }`}
+              title={isHealing ? 'Cancel healing' : 'Auto-refine layout using AI vision loop'}
+            >
+              {isHealing ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Auto-Refine
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Self-Healing Progress Bar */}
+      {isHealing && healingProgress && (
+        <div className="px-4 py-2 bg-purple-50 border-b border-purple-200">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-purple-800">
+              {healingProgress.message}
+            </span>
+            <span className="text-xs text-purple-600">
+              Iteration {healingProgress.iteration}/{healingProgress.maxIterations}
+              {healingProgress.fidelityScore !== undefined && (
+                <> • Fidelity: {healingProgress.fidelityScore.toFixed(1)}%</>
+              )}
+            </span>
+          </div>
+          <div className="w-full bg-purple-200 rounded-full h-1.5">
+            <div
+              className="bg-purple-600 h-1.5 rounded-full transition-all duration-300"
+              style={{
+                width: `${Math.min(100, (healingProgress.iteration / healingProgress.maxIterations) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Self-Healing Result Summary */}
+      {showHealingResult && lastHealingResult && !isHealing && (
+        <div className="px-4 py-2 bg-green-50 border-b border-green-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-medium text-green-800">
+                Layout refined in {lastHealingResult.iterations} iteration{lastHealingResult.iterations !== 1 ? 's' : ''}
+              </span>
+              <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                Fidelity: {lastHealingResult.finalFidelityScore.toFixed(1)}%
+              </span>
+            </div>
+            <button
+              onClick={() => setShowHealingResult(false)}
+              className="text-xs text-green-700 hover:text-green-800 px-2 py-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error/Warning Panel */}
+      {(hasErrors || hasWarnings) && !isAnalyzing && (
+        <div className={`px-4 py-2 border-b ${hasErrors ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              {hasErrors && (
+                <div className="mb-1">
+                  <span className="font-medium text-sm text-red-800">Analysis Errors:</span>
+                  <ul className="mt-1 text-xs text-red-700 list-disc list-inside">
+                    {analysisErrors.map((error, idx) => (
+                      <li key={idx}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasWarnings && (
+                <div>
+                  <span className="font-medium text-sm text-amber-800">Warnings:</span>
+                  <ul className="mt-1 text-xs text-amber-700 list-disc list-inside">
+                    {analysisWarnings.map((warning, idx) => (
+                      <li key={idx}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            {onClearErrors && (
+              <button
+                onClick={onClearErrors}
+                className={`ml-4 text-xs px-2 py-1 rounded ${
+                  hasErrors
+                    ? 'text-red-700 hover:bg-red-100'
+                    : 'text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Canvas Area */}
       <div

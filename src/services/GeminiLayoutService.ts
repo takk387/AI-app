@@ -17,6 +17,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { DetectedComponentEnhanced, PageAnalysis, LayoutStructure } from '@/types/layoutDesign';
 import { sanitizeComponents } from '@/utils/layoutValidation';
 import type { DesignSpec } from '@/types/designSpec';
+import type { LayoutAnalysisResult, LayoutCritiqueEnhanced, LayoutDiscrepancy } from '@/types/layoutAnalysis';
 
 // ============================================================================
 // CONFIGURATION
@@ -172,6 +173,7 @@ class GeminiLayoutService {
             text: '#1f2937',
             textMuted: '#6b7280',
             border: '#e5e7eb',
+            additional: [],
             ...spec.colorPalette,
           },
           typography: {
@@ -343,28 +345,121 @@ class GeminiLayoutService {
   /**
    * Two-Stage Analysis: Extract DesignSpec, then build components
    * This is the new recommended approach
+   *
+   * Returns a structured result with both components AND designSpec
+   * so the design system is preserved throughout the pipeline.
    */
   async analyzeImageTwoStage(
     imageBase64: string,
     instructions?: string
-  ): Promise<DetectedComponentEnhanced[]> {
+  ): Promise<LayoutAnalysisResult> {
     console.log('[GeminiLayoutService] Starting two-stage analysis...');
+
+    const result: LayoutAnalysisResult = {
+      success: false,
+      components: [],
+      designSpec: null,
+      errors: [],
+      warnings: [],
+      metadata: {
+        componentCount: 0,
+        parseAttempts: 0,
+        recoveredComponents: 0,
+        designSpecExtracted: false,
+        componentsBuilt: false,
+      },
+    };
 
     // Stage 1: Extract design specification
     console.log('[GeminiLayoutService] Stage 1: Extracting DesignSpec...');
-    const designSpec = await this.extractDesignSpec(imageBase64, instructions);
-    console.log('[GeminiLayoutService] DesignSpec extracted:', {
-      colors: designSpec.colorPalette.primary,
-      structure: designSpec.structure.type,
-      componentTypes: designSpec.componentTypes.length,
-    });
+    try {
+      const designSpec = await this.extractDesignSpec(imageBase64, instructions);
+      result.designSpec = designSpec;
+      result.metadata.designSpecExtracted = true;
+      console.log('[GeminiLayoutService] DesignSpec extracted:', {
+        colors: designSpec.colorPalette.primary,
+        structure: designSpec.structure.type,
+        componentTypes: designSpec.componentTypes.length,
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error extracting design spec';
+      result.errors.push(`Stage 1 (DesignSpec): ${errorMsg}`);
+      console.error('[GeminiLayoutService] Stage 1 failed:', errorMsg);
+      // Continue to Stage 2 even if Stage 1 fails - components may still be extractable
+    }
 
     // Stage 2: Build components using the spec
     console.log('[GeminiLayoutService] Stage 2: Building components from spec...');
-    const components = await this.buildComponentsFromSpec(imageBase64, designSpec, instructions);
-    console.log('[GeminiLayoutService] Built', components.length, 'components');
+    try {
+      // Use default spec if Stage 1 failed
+      const specForStage2 = result.designSpec || this.getDefaultDesignSpec();
+      const components = await this.buildComponentsFromSpec(imageBase64, specForStage2, instructions);
+      result.components = components;
+      result.metadata.componentCount = components.length;
+      result.metadata.componentsBuilt = true;
+      console.log('[GeminiLayoutService] Built', components.length, 'components');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error building components';
+      result.errors.push(`Stage 2 (Components): ${errorMsg}`);
+      console.error('[GeminiLayoutService] Stage 2 failed:', errorMsg);
+    }
 
-    return components;
+    // Determine overall success
+    result.success = result.metadata.componentsBuilt && result.components.length > 0;
+
+    // Add warning if design spec extraction failed but components succeeded
+    if (!result.metadata.designSpecExtracted && result.metadata.componentsBuilt) {
+      result.warnings.push('Design specification extraction failed; using default colors. Layout may not match original design precisely.');
+    }
+
+    return result;
+  }
+
+  /**
+   * Get default design spec for fallback scenarios
+   */
+  private getDefaultDesignSpec(): DesignSpec {
+    return {
+      colorPalette: {
+        primary: '#3b82f6',
+        secondary: '#6b7280',
+        accent: '#f59e0b',
+        background: '#ffffff',
+        surface: '#f3f4f6',
+        text: '#1f2937',
+        textMuted: '#6b7280',
+        border: '#e5e7eb',
+        additional: [],
+      },
+      typography: {
+        headingFont: 'Inter',
+        bodyFont: 'Inter',
+        fontSizes: { h1: '48px', h2: '36px', h3: '24px', body: '16px', small: '14px' },
+        fontWeights: { heading: 700, body: 400, bold: 600 },
+      },
+      spacing: {
+        unit: 8,
+        scale: [4, 8, 12, 16, 24, 32, 48, 64],
+        containerPadding: '24px',
+        sectionGap: '48px',
+      },
+      structure: {
+        type: 'header-top',
+        hasHeader: true,
+        hasSidebar: false,
+        hasFooter: true,
+        mainContentWidth: 'standard',
+      },
+      componentTypes: [],
+      effects: {
+        borderRadius: '8px',
+        shadows: 'subtle',
+        hasGradients: false,
+        hasBlur: false,
+      },
+      vibe: 'Modern and clean',
+      confidence: 0.5, // Low confidence for default
+    } as DesignSpec;
   }
 
   /**
@@ -528,7 +623,7 @@ class GeminiLayoutService {
   }
 
   /**
-   * The "Vision Loop" Critiquer
+   * The "Vision Loop" Critiquer (Legacy)
    * Compares the original reference vs. the generated output (screenshot)
    */
   async critiqueLayout(originalImage: string, generatedImage: string): Promise<LayoutCritique> {
@@ -564,6 +659,130 @@ class GeminiLayoutService {
     } catch (e) {
       console.error('Failed to parse Critique response', e);
       return { score: 0, discrepancies: [] };
+    }
+  }
+
+  /**
+   * Enhanced Vision Loop Critiquer for Self-Healing
+   *
+   * Compares original design vs generated layout and returns structured
+   * corrections that can be automatically applied by the AutoFixEngine.
+   *
+   * @param originalImage - Base64 encoded original design reference
+   * @param generatedImage - Base64 encoded screenshot of current layout
+   * @param components - Current component array for context
+   * @param targetFidelity - Target fidelity score (default: 95)
+   */
+  async critiqueLayoutEnhanced(
+    originalImage: string,
+    generatedImage: string,
+    components: DetectedComponentEnhanced[],
+    targetFidelity: number = 95
+  ): Promise<LayoutCritiqueEnhanced> {
+    if (!this.client) throw new Error('Gemini API not configured');
+
+    const model = this.client.getGenerativeModel({
+      model: MODEL_FLASH,
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    // Build component context for the AI
+    const componentContext = components.map((c) => ({
+      id: c.id,
+      type: c.type,
+      bounds: c.bounds,
+      hasText: !!c.content?.text,
+      backgroundColor: c.style?.backgroundColor,
+      textColor: c.style?.textColor,
+    }));
+
+    const prompt = `
+      You are an expert QA Design Engineer performing pixel-perfect visual comparison.
+
+      **Image 1**: Original Design Reference (the target we want to match)
+      **Image 2**: Current AI-Generated Layout (what we've built so far)
+
+      **Current Components** (for reference when creating corrections):
+      ${JSON.stringify(componentContext, null, 2)}
+
+      **Your Task**: Compare the two images and identify ALL visual discrepancies.
+
+      For each discrepancy, provide:
+      1. Which component is affected (use the component ID from the list above)
+      2. What type of issue it is
+      3. How severe it is
+      4. What the expected value should be
+      5. What the actual value is
+      6. A JSON patch to fix it
+
+      **Return this exact JSON structure**:
+      {
+        "fidelityScore": <0-100, how close is the generated layout to the original>,
+        "overallAssessment": "<brief summary of the layout quality>",
+        "discrepancies": [
+          {
+            "componentId": "<id from components list, or 'unknown' if can't identify>",
+            "issue": "color_drift|spacing_error|typography_mismatch|position_offset|size_mismatch|missing_element|extra_element|content_mismatch",
+            "severity": "minor|moderate|critical",
+            "expected": "<what it should be, e.g., '#FF0000' or '24px'>",
+            "actual": "<what it currently is>",
+            "correctionJSON": {
+              "style": { "<property>": "<corrected value>" }
+            }
+          }
+        ],
+        "passesThreshold": <true if fidelityScore >= ${targetFidelity}>,
+        "recommendation": "accept|refine|regenerate"
+      }
+
+      **Severity Guidelines**:
+      - critical: Major visual difference that breaks the design (wrong colors, missing elements, broken layout)
+      - moderate: Noticeable difference that affects quality (spacing off by >10px, wrong font weight)
+      - minor: Small difference that most users wouldn't notice (spacing off by <5px, slight color variation)
+
+      **Issue Types**:
+      - color_drift: Background or text color doesn't match
+      - spacing_error: Padding, margin, or gap is incorrect
+      - typography_mismatch: Font size, weight, or family is wrong
+      - position_offset: Element is in the wrong position
+      - size_mismatch: Element has wrong dimensions
+      - missing_element: Element exists in original but not in generated
+      - extra_element: Element exists in generated but not in original
+      - content_mismatch: Text content is different
+
+      **Recommendation Logic**:
+      - "accept": fidelityScore >= ${targetFidelity} and no critical issues
+      - "refine": fidelityScore >= 70 and fixable discrepancies
+      - "regenerate": fidelityScore < 70 or unfixable structural issues
+
+      Return ONLY valid JSON. No markdown, no explanation.
+    `;
+
+    const originalPart = this.fileToPart(originalImage);
+    const generatedPart = this.fileToPart(generatedImage);
+
+    try {
+      const result = await model.generateContent([prompt, originalPart, generatedPart]);
+      const response = result.response;
+      const critique = JSON.parse(response.text()) as LayoutCritiqueEnhanced;
+
+      // Validate and sanitize the response
+      return {
+        fidelityScore: Math.min(100, Math.max(0, critique.fidelityScore || 0)),
+        overallAssessment: critique.overallAssessment || 'No assessment provided',
+        discrepancies: Array.isArray(critique.discrepancies) ? critique.discrepancies : [],
+        passesThreshold: critique.fidelityScore >= targetFidelity,
+        recommendation: critique.recommendation || (critique.fidelityScore >= targetFidelity ? 'accept' : 'refine'),
+      };
+    } catch (e) {
+      console.error('[GeminiLayoutService] Failed to parse enhanced critique response', e);
+      return {
+        fidelityScore: 0,
+        overallAssessment: 'Failed to analyze layout comparison',
+        discrepancies: [],
+        passesThreshold: false,
+        recommendation: 'regenerate',
+      };
     }
   }
 

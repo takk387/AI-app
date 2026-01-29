@@ -7,18 +7,30 @@
  * - Selection State (Click-to-Edit)
  * - Interaction with Gemini Service (Analysis, Critique)
  * - Video Keyframe State
+ * - Self-Healing Vision Loop (Auto-refinement)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { extractKeyframes } from '@/utils/videoProcessor';
 import { sanitizeComponents } from '@/utils/layoutValidation';
+import type { LayoutAnalysisResult } from '@/types/layoutAnalysis';
+import type { DesignSpec } from '@/types/designSpec';
+import type { VisionLoopProgress, SelfHealingResult } from '@/services/VisionLoopEngine';
 
 interface UseLayoutBuilderReturn {
   // State
   components: DetectedComponentEnhanced[];
+  designSpec: DesignSpec | null;
   selectedId: string | null;
   isAnalyzing: boolean;
+  analysisErrors: string[];
+  analysisWarnings: string[];
+
+  // Self-Healing State
+  isHealing: boolean;
+  healingProgress: VisionLoopProgress | null;
+  lastHealingResult: SelfHealingResult | null;
 
   // Actions
   setComponents: (components: DetectedComponentEnhanced[]) => void;
@@ -33,18 +45,40 @@ interface UseLayoutBuilderReturn {
   saveToWizard: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  clearErrors: () => void;
 
   // AI Actions
   analyzeImage: (file: File, instructions?: string) => Promise<void>;
   analyzeVideo: (file: File, instructions?: string) => Promise<void>;
   triggerCritique: (originalImage: string, canvasElement: HTMLElement) => Promise<void>;
   generatePhasePlan: () => Promise<void>;
+
+  // Self-Healing Actions
+  runSelfHealingLoop: (
+    originalImage: string,
+    renderToHtml: () => string
+  ) => Promise<SelfHealingResult | null>;
+  cancelHealing: () => void;
 }
 
 export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [components, setComponents] = useState<DetectedComponentEnhanced[]>([]);
+  const [designSpec, setDesignSpec] = useState<DesignSpec | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisErrors, setAnalysisErrors] = useState<string[]>([]);
+  const [analysisWarnings, setAnalysisWarnings] = useState<string[]>([]);
+
+  // Self-Healing State
+  const [isHealing, setIsHealing] = useState(false);
+  const [healingProgress, setHealingProgress] = useState<VisionLoopProgress | null>(null);
+  const [lastHealingResult, setLastHealingResult] = useState<SelfHealingResult | null>(null);
+  const visionLoopEngineRef = useRef<{ abort: () => void } | null>(null);
+
+  const clearErrors = useCallback(() => {
+    setAnalysisErrors([]);
+    setAnalysisWarnings([]);
+  }, []);
 
   // --- Actions ---
 
@@ -64,6 +98,8 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
 
   const analyzeImage = useCallback(async (file: File, instructions?: string) => {
     setIsAnalyzing(true);
+    clearErrors();
+
     try {
       const base64 = await fileToBase64(file);
 
@@ -80,38 +116,78 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[useLayoutBuilder] Analysis failed:', response.status, errorText);
+        setAnalysisErrors([`Analysis failed: ${response.status}`]);
         throw new Error(`Analysis failed: ${response.status}`);
       }
 
-      const detected = await response.json();
-      console.log('[useLayoutBuilder] Raw API response:', detected);
+      const result: LayoutAnalysisResult = await response.json();
+      console.log('[useLayoutBuilder] Raw API response:', result);
 
-      // Check for API error response
-      if (detected && typeof detected === 'object' && 'error' in detected) {
-        console.error('[useLayoutBuilder] API returned error:', detected.error);
-        throw new Error(detected.error as string);
+      // Check for API error response (legacy format)
+      if (result && typeof result === 'object' && 'error' in result && !('success' in result)) {
+        console.error('[useLayoutBuilder] API returned error:', (result as { error: string }).error);
+        setAnalysisErrors([(result as { error: string }).error]);
+        throw new Error((result as { error: string }).error);
       }
 
-      // API already sanitizes via GeminiLayoutService - just ensure it's an array
-      const validatedComponents = Array.isArray(detected) ? detected : [];
-      console.log('[useLayoutBuilder] Received', validatedComponents.length, 'components from API');
+      // Handle new structured response format
+      if ('success' in result) {
+        // Store errors and warnings
+        if (result.errors && result.errors.length > 0) {
+          setAnalysisErrors(result.errors);
+          console.error('[useLayoutBuilder] Analysis errors:', result.errors);
+        }
+        if (result.warnings && result.warnings.length > 0) {
+          setAnalysisWarnings(result.warnings);
+          console.warn('[useLayoutBuilder] Analysis warnings:', result.warnings);
+        }
 
-      // Warn if too few components detected
-      if (validatedComponents.length > 0 && validatedComponents.length < 10) {
-        console.warn(
-          '[useLayoutBuilder] ⚠️ Only',
-          validatedComponents.length,
-          'components detected. Expected 20+ for a typical layout.'
-        );
+        // Extract components from the result
+        const validatedComponents = result.components || [];
+        console.log('[useLayoutBuilder] Received', validatedComponents.length, 'components from API');
+
+        // Store the design spec if available
+        if (result.designSpec) {
+          setDesignSpec(result.designSpec);
+          console.log('[useLayoutBuilder] DesignSpec stored:', {
+            primaryColor: result.designSpec.colorPalette?.primary,
+            structure: result.designSpec.structure?.type,
+          });
+
+          // Also store in global app store for export and other features
+          import('@/store/useAppStore').then(({ useAppStore }) => {
+            useAppStore.getState().setCurrentDesignSpec?.(result.designSpec);
+          }).catch(() => {
+            // Store may not have setCurrentDesignSpec yet - that's okay
+            console.log('[useLayoutBuilder] setCurrentDesignSpec not available in store yet');
+          });
+        }
+
+        // Warn if too few components detected
+        if (validatedComponents.length > 0 && validatedComponents.length < 10) {
+          console.warn(
+            '[useLayoutBuilder] ⚠️ Only',
+            validatedComponents.length,
+            'components detected. Expected 20+ for a typical layout.'
+          );
+        }
+
+        setComponents(validatedComponents);
+      } else {
+        // Fallback for legacy array response (backward compatibility)
+        const validatedComponents = Array.isArray(result) ? result : [];
+        console.log('[useLayoutBuilder] Legacy response format, received', validatedComponents.length, 'components');
+        setComponents(validatedComponents);
       }
-
-      setComponents(validatedComponents);
     } catch (error) {
       console.error('Image analysis error:', error);
+      if (error instanceof Error && !analysisErrors.includes(error.message)) {
+        setAnalysisErrors((prev) => [...prev, error.message]);
+      }
     } finally {
       setIsAnalyzing(false);
     }
-  }, []);
+  }, [clearErrors, analysisErrors]);
 
   const analyzeVideo = useCallback(async (file: File, instructions?: string) => {
     setIsAnalyzing(true);
@@ -172,6 +248,100 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
       console.error('Critique error:', error);
     } finally {
       setIsAnalyzing(false);
+    }
+  }, []);
+
+  // --- Self-Healing Loop ---
+
+  /**
+   * Run the self-healing vision loop to automatically refine the layout
+   * Captures: Generate → Render → Capture → Critique → Heal → Verify
+   */
+  const runSelfHealingLoop = useCallback(
+    async (
+      originalImage: string,
+      renderToHtml: () => string
+    ): Promise<SelfHealingResult | null> => {
+      if (!designSpec) {
+        console.error('[useLayoutBuilder] Cannot run self-healing without designSpec');
+        setAnalysisErrors(['Design specification required for self-healing']);
+        return null;
+      }
+
+      if (components.length === 0) {
+        console.error('[useLayoutBuilder] Cannot run self-healing without components');
+        setAnalysisErrors(['Components required for self-healing']);
+        return null;
+      }
+
+      setIsHealing(true);
+      setHealingProgress(null);
+      setLastHealingResult(null);
+
+      try {
+        // Dynamic import VisionLoopEngine to avoid SSR issues
+        const { createVisionLoopEngine } = await import('@/services/VisionLoopEngine');
+
+        // Create engine with progress callback
+        const engine = createVisionLoopEngine(
+          {
+            maxIterations: 3,
+            targetFidelity: 95,
+            minImprovementThreshold: 2,
+          },
+          (progress) => {
+            setHealingProgress(progress);
+            console.log('[useLayoutBuilder] Healing progress:', progress);
+          }
+        );
+
+        // Store reference for cancellation
+        visionLoopEngineRef.current = engine;
+
+        // Save pre-healing snapshot to history
+        setHistory((h) => [...h, components]);
+        console.log('[useLayoutBuilder] Saved pre-healing snapshot');
+
+        // Run the self-healing loop
+        const result = await engine.runLoop(
+          originalImage,
+          components,
+          designSpec,
+          renderToHtml
+        );
+
+        // Apply the final components
+        if (result.finalComponents.length > 0) {
+          setComponents(result.finalComponents);
+          console.log('[useLayoutBuilder] Applied healed components:', {
+            iterations: result.iterations,
+            finalFidelity: result.finalFidelityScore,
+            history: result.history,
+          });
+        }
+
+        setLastHealingResult(result);
+        return result;
+      } catch (error) {
+        console.error('[useLayoutBuilder] Self-healing error:', error);
+        const errorMsg = error instanceof Error ? error.message : 'Self-healing failed';
+        setAnalysisErrors((prev) => [...prev, errorMsg]);
+        return null;
+      } finally {
+        setIsHealing(false);
+        visionLoopEngineRef.current = null;
+      }
+    },
+    [components, designSpec]
+  );
+
+  /**
+   * Cancel an in-progress self-healing loop
+   */
+  const cancelHealing = useCallback(() => {
+    if (visionLoopEngineRef.current) {
+      visionLoopEngineRef.current.abort();
+      console.log('[useLayoutBuilder] Self-healing cancelled by user');
     }
   }, []);
 
@@ -309,7 +479,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const saveToWizard = useCallback(() => {
     // Dynamic import to avoid cycles/SSR issues
     import('@/utils/layoutConverter').then(({ convertToLayoutManifest }) => {
-      const manifest = convertToLayoutManifest(components);
+      const manifest = convertToLayoutManifest(components, designSpec);
 
       // Update global store
       // We need to import the store here to separate concerns or pass it as dependency
@@ -324,12 +494,21 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         // We could also trigger a toast here if we had one
       });
     });
-  }, [components]);
+  }, [components, designSpec]);
 
   return {
     components,
+    designSpec,
     selectedId,
     isAnalyzing,
+    analysisErrors,
+    analysisWarnings,
+
+    // Self-Healing State
+    isHealing,
+    healingProgress,
+    lastHealingResult,
+
     setComponents: updateComponentsWithHistory, // Expose history-aware setter
     selectComponent,
     updateComponentStyle,
@@ -342,16 +521,21 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     saveToWizard, // Exposed action
     canUndo: history.length > 0,
     canRedo: future.length > 0,
+    clearErrors,
     analyzeImage,
     analyzeVideo,
     triggerCritique,
+
+    // Self-Healing Actions
+    runSelfHealingLoop,
+    cancelHealing,
     // New Action: Generate Phase Plan
     generatePhasePlan: useCallback(async () => {
       setIsAnalyzing(true);
       try {
-        // 1. Convert to Manifest
+        // 1. Convert to Manifest (now includes designSpec for accurate colors/fonts)
         const { convertToLayoutManifest } = await import('@/utils/layoutConverter');
-        const manifest = convertToLayoutManifest(components);
+        const manifest = convertToLayoutManifest(components, designSpec);
 
         // 2. Get Current Concept & Update with Manifest
         const { useAppStore } = await import('@/store/useAppStore');
@@ -394,7 +578,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
       } finally {
         setIsAnalyzing(false);
       }
-    }, [components]),
+    }, [components, designSpec]),
   };
 }
 

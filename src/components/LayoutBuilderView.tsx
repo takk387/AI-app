@@ -48,6 +48,9 @@ export const LayoutBuilderView: React.FC = () => {
     },
   ]);
 
+  // Store original uploaded image for self-healing reference
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+
   // Single source of truth for all layout state
   const {
     analyzeImage,
@@ -64,6 +67,15 @@ export const LayoutBuilderView: React.FC = () => {
     exportCode,
     canUndo,
     canRedo,
+    analysisErrors,
+    analysisWarnings,
+    clearErrors,
+    // Self-Healing State
+    isHealing,
+    healingProgress,
+    lastHealingResult,
+    runSelfHealingLoop,
+    cancelHealing,
   } = useLayoutBuilder();
 
   // Debug: Log component count changes
@@ -147,6 +159,8 @@ export const LayoutBuilderView: React.FC = () => {
           if (item.type === 'video') {
             await analyzeVideo(item.file, instructions);
           } else {
+            // Store the original image for self-healing reference
+            setOriginalImage(item.previewUrl);
             await analyzeImage(item.file, instructions);
           }
         }
@@ -195,6 +209,8 @@ export const LayoutBuilderView: React.FC = () => {
           components={components}
           selectedId={selectedId}
           isAnalyzing={isAnalyzing}
+          analysisErrors={analysisErrors}
+          analysisWarnings={analysisWarnings}
           onSelectComponent={selectComponent}
           onAnalyzeImage={analyzeImage}
           onAnalyzeVideo={analyzeVideo}
@@ -204,8 +220,16 @@ export const LayoutBuilderView: React.FC = () => {
           onUndo={undo}
           onRedo={redo}
           onExportCode={exportCode}
+          onClearErrors={clearErrors}
           canUndo={canUndo}
           canRedo={canRedo}
+          // Self-Healing Props
+          isHealing={isHealing}
+          healingProgress={healingProgress}
+          lastHealingResult={lastHealingResult}
+          originalImage={originalImage}
+          onRunSelfHealing={runSelfHealingLoop}
+          onCancelHealing={cancelHealing}
         />
       </div>
     </div>

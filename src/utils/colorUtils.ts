@@ -88,12 +88,100 @@ export function isWhiteOrLight(color: string | undefined): boolean {
 }
 
 /**
- * Get a visible fallback color for white/light/transparent backgrounds
+ * Context for intelligent color fallback decisions
  */
-export function getVisibleFallback(color: string | undefined): string {
-  // Handle transparent colors first
-  if (isTransparent(color)) return '#f3f4f6'; // light gray for transparent
+export interface ColorContext {
+  /** Page/parent background color - helps determine if white is intentional contrast */
+  pageBackground?: string;
+  /** Component type - some types (overlays, modals) should stay transparent */
+  componentType?: string;
+  /** Whether to force fallback even for valid colors (debug mode) */
+  forceDebugFallback?: boolean;
+}
 
+/**
+ * Component types that should preserve transparency
+ */
+const TRANSPARENT_COMPONENT_TYPES = [
+  'overlay',
+  'modal-backdrop',
+  'glassmorphism',
+  'blur-overlay',
+  'backdrop',
+];
+
+/**
+ * Check if a color is dark (for contrast detection)
+ */
+export function isDark(color: string | undefined): boolean {
+  const normalized = normalizeColor(color);
+  const hex = normalized.replace('#', '');
+  if (hex.length !== 6) return false;
+
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+
+  // Use relative luminance formula
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.5;
+}
+
+/**
+ * Get a visible fallback color - NOW CONTEXT-AWARE
+ *
+ * Old behavior: Replace all white/transparent with gray (loses design intent)
+ * New behavior: Only apply fallback when truly needed:
+ *   - undefined colors get fallback
+ *   - white on dark background stays white (intentional contrast)
+ *   - transparent overlays stay transparent
+ *   - only force gray when color would truly be invisible
+ *
+ * @param color - The color to check
+ * @param context - Optional context for smarter decisions
+ */
+export function getVisibleFallback(color: string | undefined, context?: ColorContext): string {
+  // If color is explicitly defined (not undefined/null), trust the design
+  if (color !== undefined && color !== null && color !== '') {
+    // Check if it's a transparent component type that should stay transparent
+    if (context?.componentType && TRANSPARENT_COMPONENT_TYPES.includes(context.componentType)) {
+      return color; // Keep original, even if transparent
+    }
+
+    // Check if white/light on dark background - this is intentional contrast
+    if (isWhiteOrLight(color) && context?.pageBackground && isDark(context.pageBackground)) {
+      return color; // White on dark is intentional, keep it
+    }
+
+    // For truly transparent colors without context, only fallback if it's completely invisible
+    if (isTransparent(color)) {
+      // If we have page background context and it's light, transparent might cause invisibility
+      if (context?.pageBackground && !isDark(context.pageBackground)) {
+        // Light page + transparent element = might need subtle fallback
+        // But still preserve original if it has any opacity
+        const normalized = color.toLowerCase().trim();
+        if (normalized === 'transparent') {
+          return context.forceDebugFallback ? '#f3f4f6' : color;
+        }
+      }
+      return color; // Preserve semi-transparent colors
+    }
+
+    // Color is defined and not problematic - use it as-is
+    return color;
+  }
+
+  // Color is undefined - apply sensible fallback
+  return '#f3f4f6'; // Light gray for undefined backgrounds
+}
+
+/**
+ * LEGACY: Get visible fallback without context (backward compatibility)
+ * @deprecated Use getVisibleFallback with context for better results
+ */
+export function getVisibleFallbackLegacy(color: string | undefined): string {
+  // Handle transparent colors first
+  if (isTransparent(color)) return '#f3f4f6';
   // Handle white/light colors
   return isWhiteOrLight(color) ? '#e5e7eb' : color || '#f3f4f6';
 }
