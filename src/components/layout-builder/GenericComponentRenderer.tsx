@@ -40,7 +40,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   selectedId,
   depth = 0,
 }) => {
-  const { id, type, style = {}, content, bounds = DEFAULT_BOUNDS, role, layout, parentId, children } = component;
+  const { id, type, style = {}, content, bounds = DEFAULT_BOUNDS, role, layout, parentId, children, isInteractive } = component;
   const isSelected = selectedId === id;
   const isContainer = role === 'container' || (children && children.length > 0);
   const isOverlay = role === 'overlay' || ['modal', 'dropdown', 'tooltip'].includes(type);
@@ -167,7 +167,9 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // Ensure visibility
     minWidth: '20px',
     minHeight: '20px',
-    overflow: isContainer ? 'visible' : 'hidden',
+    
+    // Overflow logic - respect explicit overflow, default to visible for containers
+    overflow: style.overflow || (isContainer ? 'visible' : 'hidden'),
 
     // Visuals - trust AI-provided colors, no hardcoded fallbacks
     color: style.textColor,
@@ -177,6 +179,30 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     fontWeight: style.fontWeight as React.CSSProperties['fontWeight'],
     textAlign: style.textAlign as React.CSSProperties['textAlign'],
     boxShadow: style.shadow,
+    
+    // Typography nuances
+    textTransform: style.textTransform as React.CSSProperties['textTransform'],
+    lineHeight: style.lineHeight,
+    letterSpacing: style.letterSpacing,
+    
+    // Cursor
+    cursor: style.cursor || (isInteractive ? 'pointer' : undefined),
+
+    // Backgrounds (Images & Gradients)
+    backgroundImage: style.backgroundImage,
+    backgroundSize: style.backgroundSize,
+    backgroundPosition: style.backgroundPosition,
+    backgroundRepeat: style.backgroundRepeat,
+
+    // Borders (Style support)
+    borderStyle: style.borderStyle || (style.borderWidth ? 'solid' : undefined),
+    borderWidth: style.borderWidth,
+    borderColor: style.borderColor || 'transparent',
+
+    // Visual Effects & Transforms
+    opacity: style.opacity,
+    backdropFilter: style.backdropFilter,
+    transform: style.transform,
 
     // Container layout (flex/grid) - applies to containers with children
     ...(isContainer ? getContainerLayoutStyles() : {
@@ -193,9 +219,6 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       gap: style.gap,
     }),
 
-    // Apply custom CSS first
-    ...style.customCSS,
-
     // Apply background color - trust AI-provided colors, use transparent for undefined
     backgroundColor: (() => {
       const bgColor = (style.customCSS?.backgroundColor as string) || style.backgroundColor;
@@ -207,11 +230,6 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return bgColor;
     })(),
 
-    // Only add border if explicitly specified in style
-    border: style.borderWidth
-      ? `${style.borderWidth} solid ${style.borderColor || 'transparent'}`
-      : undefined,
-
     // Smart z-index based on component type (don't use index - components are sorted by top, not z-order)
     zIndex: component.zIndex ?? getDefaultZIndex(type),
 
@@ -220,6 +238,10 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
     // Debug outline in development to see all component positions
     outline: process.env.NODE_ENV === 'development' ? '1px dashed rgba(255, 0, 0, 0.3)' : undefined,
+    
+    // CRITICAL for Zero-Preset Architecture:
+    // Custom CSS must be applied LAST to override any default behavior
+    ...style.customCSS,
   };
 
   // 2. Click Handler for Vision Loop
@@ -407,9 +429,18 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     if (hasIconContent && hasTextContent) {
       const iconPosition = content?.iconPosition || 'left';
       const isReversed = iconPosition === 'right';
+      const isVertical = iconPosition === 'top' || iconPosition === 'bottom';
+      const isVerticalReversed = iconPosition === 'bottom';
 
       return (
-        <div className={`flex items-center gap-2 ${isReversed ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div 
+          className={cn(
+            'flex gap-2',
+            isVertical 
+              ? (isVerticalReversed ? 'flex-col-reverse items-center text-center' : 'flex-col items-center text-center')
+              : (isReversed ? 'flex-row-reverse items-center' : 'flex-row items-center')
+          )}
+        >
           {renderIcon()}
           <span>{content.text}</span>
         </div>

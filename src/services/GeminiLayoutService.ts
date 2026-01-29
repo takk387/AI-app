@@ -285,12 +285,30 @@ class GeminiLayoutService {
           "align": "start|center|end|stretch"
         },
         "style": {
-          "backgroundColor": "<hex - MEASURE from image, use designSpec colors when they match>",
-          "textColor": "<hex - MEASURE from image>",
+          "backgroundColor": "<hex - MEASURE from image>",
+          "backgroundImage": "<url(...) or linear-gradient(...) - DETECT if present>",
+          "textColor": "<hex>",
           "fontSize": "<px value>",
           "fontWeight": "<weight>",
+          "textTransform": "uppercase|lowercase|capitalize|none",
+          "letterSpacing": "<px or em value>",
+          "lineHeight": "<number or px value>",
           "padding": "<px value>",
-          "borderRadius": "<px value>"
+          "borderRadius": "<px value>",
+          "borderWidth": "<px value>",
+          "borderColor": "<hex>",
+          "borderStyle": "solid|dashed|dotted|none",
+          "shadow": "<box-shadow value>",
+          "opacity": "<0-1 value>",
+          "transform": "<rotate(...) scale(...) skew(...) - detect any rotation>",
+          "backdropFilter": "<blur(...) - detect glassmorphism>",
+          "overflow": "hidden|visible - default to hidden for rounded cards with images",
+          "cursor": "pointer|text|default",
+          "customCSS": {
+             // CRITICAL: Put ANY other CSS property here that doesn't fit the schema above
+             // e.g. mix-blend-mode, clip-path, mask-image, perspective, filter
+             "<property>": "<value>"
+          }
         },
         "content": {
           "text": "<EXACT visible text>",
@@ -298,7 +316,7 @@ class GeminiLayoutService {
           "hasIcon": true/false,
           "iconName": "<Lucide icon name: Home, User, Menu, Search, ArrowRight, Settings, etc.>",
           "iconColor": "<hex color of the icon - MEASURE from image>",
-          "iconPosition": "left|right|center",
+          "iconPosition": "left|right|center|top|bottom",
           "iconSize": "sm|md|lg"
         },
         "zIndex": <number>,
@@ -360,12 +378,7 @@ class GeminiLayoutService {
       8. **ICON DETECTION - IDENTIFY ALL ICONS**:
          - When you see an icon, set hasIcon: true AND provide iconName
          - Use Lucide icon names: "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard", etc.
-         - MEASURE iconColor from the image (hex value)
-         - Estimate iconSize based on visual proportions:
-           - "sm": 12-16px icons
-           - "md": 20-24px icons (most common)
-           - "lg": 28-36px icons
-         - Specify iconPosition relative to text content: "left" (before text), "right" (after text), or "center" (standalone icon)
+         - Specify iconPosition relative to text content: "left" (before), "right" (after), "top" (above), "bottom" (below), or "center" (standalone)
 
       Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
     `;

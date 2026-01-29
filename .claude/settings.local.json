@@ -99,7 +99,11 @@
       "Bash(findstr:*)",
       "Bash(git push:*)",
       "Bash(timeout:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(npx next build)",
+      "Bash(cmd /c \"dir c:\\\\Users\\\\willi\\\\Projects\\\\APster\\\\AI-app\\\\node_modules\\\\.bin\\\\tsc*\")",
+      "Bash(npm exec:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": [],
     "ask": []

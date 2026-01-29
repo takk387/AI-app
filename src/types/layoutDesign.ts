@@ -660,6 +660,26 @@ export interface DetectedComponentEnhanced {
     display?: string;
     alignment?: string;
     gap?: string;
+    /** Text transformation */
+    textTransform?: 'uppercase' | 'lowercase' | 'capitalize' | 'none';
+    /** Cursor style */
+    cursor?: string;
+    /** Background properties */
+    backgroundImage?: string;
+    backgroundSize?: string;
+    backgroundPosition?: string;
+    backgroundRepeat?: string;
+    /** Typography details */
+    lineHeight?: string;
+    letterSpacing?: string;
+    /** Border details */
+    borderStyle?: string;
+    /** Visual effects */
+    opacity?: string;
+    backdropFilter?: string;
+    transform?: string;
+    /** Layout control */
+    overflow?: string;
     /** Arbitrary CSS properties for "Zero-Preset" custom designs (e.g., gradients, filters, complex shadows) */
     customCSS?: Record<string, string>;
   };
@@ -675,7 +695,7 @@ export interface DetectedComponentEnhanced {
     /** Icon color hex code */
     iconColor?: string;
     /** Icon position relative to text */
-    iconPosition?: 'left' | 'right' | 'center';
+    iconPosition?: 'left' | 'right' | 'center' | 'top' | 'bottom';
     /** Icon size */
     iconSize?: 'sm' | 'md' | 'lg';
   };

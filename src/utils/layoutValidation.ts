@@ -111,6 +111,20 @@ const StyleSchema = z
     display: z.string().optional(),
     alignment: z.string().optional(),
     gap: z.string().optional(),
+    // New fields for Zero-Preset Architecture
+    textTransform: z.string().optional(),
+    cursor: z.string().optional(),
+    backgroundImage: z.string().optional(),
+    backgroundSize: z.string().optional(),
+    backgroundPosition: z.string().optional(),
+    backgroundRepeat: z.string().optional(),
+    lineHeight: z.string().optional(),
+    letterSpacing: z.string().optional(),
+    borderStyle: z.string().optional(),
+    opacity: z.string().optional(),
+    backdropFilter: z.string().optional(),
+    transform: z.string().optional(),
+    overflow: z.string().optional(),
     customCSS: z.record(z.string(), z.unknown()).optional(),
   })
   .passthrough()
