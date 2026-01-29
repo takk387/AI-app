@@ -54,9 +54,9 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
 
   return (
     <div
-      className="relative w-full h-full bg-white overflow-hidden"
+      className="relative w-full h-full bg-white overflow-visible"
       id="layout-canvas" // ID for html2canvas
-      style={{ minHeight: '600px' }}
+      style={{ minHeight: '600px' }} // overflow-visible allows content to extend beyond container
     >
       {/* Only render root components - they recursively render their children */}
       {sortedRoots.map((component) => (

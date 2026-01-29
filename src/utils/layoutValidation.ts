@@ -804,24 +804,58 @@ export function inferContainerLayouts(
         }
       }
 
+      // Calculate actual gap from child positions instead of hardcoding
+      const calculateGap = (
+        sortedChildren: DetectedComponentEnhanced[],
+        direction: 'row' | 'column'
+      ): string => {
+        if (sortedChildren.length < 2) return '0';
+        const gaps: number[] = [];
+        for (let i = 0; i < sortedChildren.length - 1; i++) {
+          const current = sortedChildren[i];
+          const next = sortedChildren[i + 1];
+          if (direction === 'column') {
+            // Vertical gap = next.top - (current.top + current.height)
+            const gap = next.bounds.top - (current.bounds.top + current.bounds.height);
+            if (gap > 0) gaps.push(gap);
+          } else {
+            // Horizontal gap = next.left - (current.left + current.width)
+            const gap = next.bounds.left - (current.bounds.left + current.bounds.width);
+            if (gap > 0) gaps.push(gap);
+          }
+        }
+        if (gaps.length === 0) return '0';
+        // Use the average gap, rounded to nearest pixel
+        const avgGap = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+        return `${avgGap}px`;
+      };
+
       // Assign layout
       if (isVertical) {
+        const calculatedGap = calculateGap(byTop, 'column');
         component.layout = {
           type: 'flex',
           direction: 'column',
-          gap: '16px', // Reasonable default
+          gap: calculatedGap, // Calculated from actual child positions
           align: 'stretch',
           justify: 'start',
         };
+        console.log(
+          `[inferContainerLayouts] ${component.id}: column layout with gap ${calculatedGap}`
+        );
       } else if (isHorizontal) {
+        const calculatedGap = calculateGap(byLeft, 'row');
         component.layout = {
           type: 'flex',
           direction: 'row',
-          gap: '16px',
+          gap: calculatedGap, // Calculated from actual child positions
           align: 'center',
           justify: 'start',
           wrap: true,
         };
+        console.log(
+          `[inferContainerLayouts] ${component.id}: row layout with gap ${calculatedGap}`
+        );
       } else {
         // Grid or unknown - default to vertical flow to prevent collapse, but grid is safer for mixed
         // For now, let's fallback to relative flow (defaults to block/vertical in CSS)

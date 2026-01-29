@@ -161,8 +161,11 @@ export class VisionLoopEngine {
         const screenshot = await this.captureScreenshot(html);
 
         if (!screenshot) {
-          console.warn('[VisionLoopEngine] Screenshot capture failed, using fallback');
-          // Continue without screenshot - critique will be less accurate
+          // CRITICAL: Don't silently fallback - comparing identical images makes healing useless
+          const errorMsg =
+            'Screenshot capture failed - cannot compare layouts. Self-healing requires Puppeteer to capture rendered output.';
+          console.error('[VisionLoopEngine]', errorMsg);
+          throw new Error(errorMsg);
         }
 
         // Phase 2: Critique
@@ -176,7 +179,7 @@ export class VisionLoopEngine {
 
         const critique = await this.geminiService.critiqueLayoutEnhanced(
           originalImage,
-          screenshot || originalImage, // Fallback to original if screenshot fails
+          screenshot, // Screenshot is now guaranteed to exist
           currentComponents,
           this.config.targetFidelity
         );
@@ -262,7 +265,6 @@ export class VisionLoopEngine {
         result.finalFidelityScore = critique.fidelityScore;
         result.finalComponents = currentComponents;
         result.history.push(iterationRecord);
-
       } catch (error) {
         console.error(`[VisionLoopEngine] Iteration ${iteration} error:`, error);
         result.stopReason = 'error';
@@ -371,7 +373,11 @@ export class VisionLoopEngine {
       const screenshot = await this.captureScreenshot(html);
 
       if (!screenshot) {
-        console.warn('[VisionLoopEngine] Screenshot capture failed, using original image');
+        // CRITICAL: Don't silently fallback - comparing identical images makes healing useless
+        const errorMsg =
+          'Screenshot capture failed - cannot compare layouts. Self-healing requires Puppeteer to capture rendered output.';
+        console.error('[VisionLoopEngine]', errorMsg);
+        throw new Error(errorMsg);
       }
 
       // Phase 2: Critique current vs original
@@ -385,7 +391,7 @@ export class VisionLoopEngine {
 
       const critique = await this.geminiService.critiqueLayoutEnhanced(
         originalImage,
-        screenshot || originalImage,
+        screenshot, // Screenshot is now guaranteed to exist
         currentComponents,
         this.config.targetFidelity
       );
@@ -498,9 +504,15 @@ export class VisionLoopEngine {
     const html = renderToHtml();
     const screenshot = await this.captureScreenshot(html);
 
+    if (!screenshot) {
+      throw new Error(
+        'Screenshot capture failed - cannot compare layouts. Self-healing requires Puppeteer.'
+      );
+    }
+
     return this.geminiService.critiqueLayoutEnhanced(
       originalImage,
-      screenshot || originalImage,
+      screenshot,
       components,
       this.config.targetFidelity
     );

@@ -15,7 +15,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { DetectedComponentEnhanced, PageAnalysis, LayoutStructure } from '@/types/layoutDesign';
-import { sanitizeComponents } from '@/utils/layoutValidation';
+import { sanitizeComponents, inferContainerLayouts } from '@/utils/layoutValidation';
 import type { DesignSpec } from '@/types/designSpec';
 import type {
   LayoutAnalysisResult,
@@ -517,10 +517,26 @@ class GeminiLayoutService {
 
     try {
       const rawData = JSON.parse(response.text());
-      const { components, errors } = sanitizeComponents(rawData);
+
+      // CRITICAL FIX: Normalize 0-1000 scale to 0-100 scale
+      // The Stage 2 prompt (The Engineer) asks for 0-1000 scale for precision.
+      // However, the renderer and validator expect 0-100 scale (percentage).
+      // We must normalize before validation to prevent small items (e.g., width 50)
+      // from being misinterpreted as 50% instead of 5% by the validator's heuristic.
+      const normalizedData = this.normalizeCoordinates(rawData);
+
+      const { components: sanitizedComponents, errors } = sanitizeComponents(normalizedData);
       if (errors.length > 0) {
         console.warn('[GeminiLayoutService] Validation issues in buildComponentsFromSpec:', errors);
       }
+
+      // CRITICAL: Infer layout for containers that are missing layout data
+      // This fixes containers where AI didn't specify layout.type, layout.gap, etc.
+      const components = inferContainerLayouts(sanitizedComponents);
+      console.log('[GeminiLayoutService] After inferContainerLayouts:', {
+        before: sanitizedComponents.filter((c) => c.role === 'container' && !c.layout?.type).length,
+        after: components.filter((c) => c.role === 'container' && !c.layout?.type).length,
+      });
 
       // Debug: Log Stage 2 output to verify colors, hierarchy, AND LAYOUT DATA
       const containersWithLayout = components.filter(
@@ -686,6 +702,66 @@ class GeminiLayoutService {
   }
 
   /**
+   * Helper to normalize component coordinates.
+   * Handles 0-1000 scale (from new prompts) and converts to 0-100 scale (percentage).
+   * Uses Max Value Heuristic to auto-detect scale.
+   */
+  private normalizeCoordinates(components: any[]): any[] {
+    if (!Array.isArray(components) || components.length === 0) return components;
+
+    // Deep clone to avoid mutating input
+    const normalized = JSON.parse(JSON.stringify(components));
+
+    // Heuristic: Check for values > 100 to detect 0-1000 scale
+    let maxCoord = 0;
+
+    // Scan all components to find the maximum coordinate value
+    normalized.forEach((c: any) => {
+      if (c?.bounds) {
+        const top = typeof c.bounds.top === 'string' ? parseFloat(c.bounds.top) : c.bounds.top;
+        const left = typeof c.bounds.left === 'string' ? parseFloat(c.bounds.left) : c.bounds.left;
+        const width =
+          typeof c.bounds.width === 'string' ? parseFloat(c.bounds.width) : c.bounds.width;
+        const height =
+          typeof c.bounds.height === 'string' ? parseFloat(c.bounds.height) : c.bounds.height;
+
+        maxCoord = Math.max(maxCoord, top || 0, left || 0, width || 0, height || 0);
+      }
+    });
+
+    // If max coordinate exceeds 100, assume 0-1000 scale and divide everything by 10
+    // We use a threshold slightly above 100 to account for potential small floating point errors or 101%
+    const isThousandsScale = maxCoord > 105;
+
+    if (isThousandsScale) {
+      console.log(
+        '[GeminiLayoutService] Detected 0-1000 scale (max=' +
+          maxCoord +
+          '). Normalizing to percentages.'
+      );
+      normalized.forEach((c: any) => {
+        if (c?.bounds) {
+          const normalize = (val: any) => {
+            const num = typeof val === 'string' ? parseFloat(val) : val;
+            return isNaN(num) ? 0 : num / 10;
+          };
+
+          c.bounds.top = normalize(c.bounds.top);
+          c.bounds.left = normalize(c.bounds.left);
+          c.bounds.width = normalize(c.bounds.width);
+          c.bounds.height = normalize(c.bounds.height);
+        }
+      });
+    } else {
+      console.log(
+        '[GeminiLayoutService] Detected 0-100 scale (max=' + maxCoord + '). Keeping as percentages.'
+      );
+    }
+
+    return normalized;
+  }
+
+  /**
    * LEGACY: Single-stage analysis (kept for backward compatibility)
    * Analyze an image to extract pixel-perfect layout components
    * Uses Gemini 3 Flash for speed and high context window
@@ -790,10 +866,12 @@ class GeminiLayoutService {
 
     try {
       const rawData = JSON.parse(response.text());
-      const { components, errors } = sanitizeComponents(rawData);
+      const { components: sanitizedComponents, errors } = sanitizeComponents(rawData);
       if (errors.length > 0) {
         console.warn('[GeminiLayoutService] Validation issues in analyzeImage:', errors);
       }
+      // Infer layout for containers missing layout data
+      const components = inferContainerLayouts(sanitizedComponents);
       return components;
     } catch (e) {
       console.error('Failed to parse Gemini response', e);
@@ -1058,10 +1136,15 @@ class GeminiLayoutService {
 
   // --- Helper ---
   private fileToPart(base64: string) {
+    // Extract MIME type from data URI (handles PNG, JPEG, SVG, WebP, etc.)
+    const mimeMatch = base64.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    // Remove the data URI prefix - broader regex handles uppercase and special chars
+    const data = base64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
     return {
       inlineData: {
-        data: base64.replace(/^data:image\/[a-z]+;base64,/, ''),
-        mimeType: 'image/jpeg',
+        data,
+        mimeType,
       },
     };
   }

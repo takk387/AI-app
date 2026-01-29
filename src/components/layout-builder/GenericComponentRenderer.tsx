@@ -135,7 +135,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return {
         display: 'flex',
         flexDirection: (layout?.direction || 'column') as React.CSSProperties['flexDirection'],
-        gap: layout?.gap || '1rem',
+        gap: layout?.gap || '0', // No hardcoded gap - use 0 if not specified by AI
         justifyContent: mapJustify(layout?.justify),
         alignItems: mapAlign(layout?.align),
         flexWrap: layout?.wrap ? 'wrap' : 'nowrap',
@@ -145,8 +145,8 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     if (layoutType === 'grid') {
       return {
         display: 'grid',
-        gridTemplateColumns: layout?.columns || 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: layout?.gap,
+        gridTemplateColumns: layout?.columns || 'repeat(auto-fit, minmax(100px, 1fr))', // Smaller minimum
+        gap: layout?.gap || '0', // No hardcoded gap
         justifyItems: mapAlign(layout?.justify),
         alignItems: mapAlign(layout?.align),
       };
@@ -167,20 +167,21 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       ? {
           top: `${bounds?.top ?? 0}%`,
           left: `${bounds?.left ?? 0}%`,
-          width: style?.display === 'inline' ? 'auto' : `${bounds?.width ?? 100}%`,
-          height: `${bounds?.height ?? 50}%`,
+          // Use 'auto' for missing bounds instead of aggressive defaults
+          width: bounds?.width ? `${bounds.width}%` : 'auto',
+          height: bounds?.height ? `${bounds.height}%` : 'auto',
         }
       : {
           // Relative positioning for children - let parent flex/grid handle layout
-          // Use flex property for sizing within flex container
-          flex: bounds?.width ? `0 0 ${bounds.width}%` : '1',
+          // Allow shrinking (flex-shrink: 1) for responsive layouts
+          flex: bounds?.width ? `0 1 ${bounds.width}%` : '1 1 auto',
           minWidth: bounds?.width ? `${bounds.width}%` : undefined,
           height: bounds?.height ? `${bounds.height}%` : 'auto',
         }),
 
-    // Ensure visibility
-    minWidth: '20px',
-    minHeight: style.minHeight || '20px',
+    // No hardcoded minWidth/minHeight - let content determine size
+    // Removing the forced 20px minimum allows small badges/icons to render correctly
+    minHeight: undefined,
 
     // Visuals - trust AI-provided colors, no hardcoded fallbacks
     color: style.textColor,
