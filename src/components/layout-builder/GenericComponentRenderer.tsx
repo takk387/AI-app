@@ -46,13 +46,25 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   const isOverlay = role === 'overlay' || ['modal', 'dropdown', 'tooltip'].includes(type);
 
   // Determine positioning strategy
+  // Determine positioning strategy
   const getPositionStrategy = (): 'absolute' | 'relative' => {
     // Overlays always use absolute positioning
     if (isOverlay) return 'absolute';
     // Root components (no parent) use absolute positioning
     if (!parentId) return 'absolute';
-    // Children use relative positioning (parent handles layout via flex/grid)
-    return 'relative';
+
+    // Check parent layout type to determine if we should flow or float
+    if (componentMap && parentId) {
+      const parent = componentMap.get(parentId);
+      // If parent has explicit flex/grid layout, use relative (flow) positioning
+      if (parent?.layout?.type === 'flex' || parent?.layout?.type === 'grid') {
+        return 'relative';
+      }
+    }
+    
+    // Fallback: If parent has no layout engine (or is unknown), use absolute positioning
+    // This ensures components from legacy/imperfect AI analysis still appear in correct spots
+    return 'absolute';
   };
 
   const positionStrategy = getPositionStrategy();
