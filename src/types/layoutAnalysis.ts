@@ -133,7 +133,12 @@ export interface SelfHealingResult {
   targetReached: boolean;
 
   /** Why the loop stopped */
-  stopReason: 'target_reached' | 'max_iterations' | 'diminishing_returns' | 'user_cancelled' | 'error';
+  stopReason:
+    | 'target_reached'
+    | 'max_iterations'
+    | 'diminishing_returns'
+    | 'user_cancelled'
+    | 'error';
 
   /** History of each iteration */
   history: SelfHealingIteration[];

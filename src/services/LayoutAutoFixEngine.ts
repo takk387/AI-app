@@ -120,9 +120,7 @@ export class LayoutAutoFixEngine {
     }
 
     if (this.config.allowedIssueTypes && this.config.allowedIssueTypes.length > 0) {
-      discrepancies = discrepancies.filter((d) =>
-        this.config.allowedIssueTypes!.includes(d.issue)
-      );
+      discrepancies = discrepancies.filter((d) => this.config.allowedIssueTypes!.includes(d.issue));
     }
 
     if (this.config.maxFixes && discrepancies.length > this.config.maxFixes) {
@@ -201,10 +199,7 @@ export class LayoutAutoFixEngine {
 
     // Apply bounds corrections if present and validation passes
     if (discrepancy.correctionJSON.bounds && this.config.validateBounds) {
-      const boundsValid = this.validateBoundsChange(
-        component,
-        discrepancy.correctionJSON.bounds
-      );
+      const boundsValid = this.validateBoundsChange(component, discrepancy.correctionJSON.bounds);
 
       if (boundsValid) {
         const oldBounds = { ...component.bounds };
@@ -315,10 +310,7 @@ export class LayoutAutoFixEngine {
   /**
    * Validate a single fix before applying
    */
-  validateFix(
-    original: DetectedComponentEnhanced,
-    fixed: DetectedComponentEnhanced
-  ): boolean {
+  validateFix(original: DetectedComponentEnhanced, fixed: DetectedComponentEnhanced): boolean {
     // Check that ID hasn't changed
     if (original.id !== fixed.id) return false;
 

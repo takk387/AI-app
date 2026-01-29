@@ -393,24 +393,23 @@ What would you like to build?`,
         // This ensures we always show the build button when the user explicitly asks
         const lowerInput = messageText.toLowerCase();
         if (
-            lowerInput.includes("i'm finished") || 
-            lowerInput.includes("im finished") || 
-            lowerInput.includes("i am finished") ||
-            lowerInput.includes("done with design") ||
-            lowerInput.includes("ready to build")
+          lowerInput.includes("i'm finished") ||
+          lowerInput.includes('im finished') ||
+          lowerInput.includes('i am finished') ||
+          lowerInput.includes('done with design') ||
+          lowerInput.includes('ready to build')
         ) {
-            setSuggestedActions(prev => {
-                const hasBuild = prev.some(a => a.action === 'start_building');
-                if (hasBuild) return prev;
-                return [{ label: 'Build App', action: 'start_building' }, ...prev];
-            });
-            
-            // Auto-trigger phase generation if we don't have a plan yet
-            if (!phasePlan && !isGeneratingPhases) {
-                generatePhases(architectureSpec || undefined);
-            }
-        }
+          setSuggestedActions((prev) => {
+            const hasBuild = prev.some((a) => a.action === 'start_building');
+            if (hasBuild) return prev;
+            return [{ label: 'Build App', action: 'start_building' }, ...prev];
+          });
 
+          // Auto-trigger phase generation if we don't have a plan yet
+          if (!phasePlan && !isGeneratingPhases) {
+            generatePhases(architectureSpec || undefined);
+          }
+        }
       } catch (err) {
         console.error('Chat error:', err);
         setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -469,12 +468,12 @@ What would you like to build?`,
             onComplete(concept, phasePlan);
           } else if (!phasePlan) {
             // If phases aren't ready, generate them first
-             showToast({ type: 'info', message: 'Generating implementation plan first...' });
-             generatePhases(architectureSpec || undefined).then(() => {
-                // We'll need to user to click again, or we can use an effect. 
-                // For now, simple feedback is better.
-                setSuggestedActions([{ label: 'Build App Now', action: 'start_building' }]);
-             });
+            showToast({ type: 'info', message: 'Generating implementation plan first...' });
+            generatePhases(architectureSpec || undefined).then(() => {
+              // We'll need to user to click again, or we can use an effect.
+              // For now, simple feedback is better.
+              setSuggestedActions([{ label: 'Build App Now', action: 'start_building' }]);
+            });
           }
           break;
 

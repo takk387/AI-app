@@ -863,7 +863,11 @@ export class DynamicPhaseGenerator {
 
     // 3. Complex UI / Dashboard Detection
     // If layout is complex (many nodes or deep nesting), add a dedicated UI Construction phase
-    if (analysis.totalNodes > 15 || analysis.maxDepth > 4 || manifest.detectedFeatures.includes('Dashboard')) {
+    if (
+      analysis.totalNodes > 15 ||
+      analysis.maxDepth > 4 ||
+      manifest.detectedFeatures.includes('Dashboard')
+    ) {
       features.push({
         originalFeature: {
           id: 'layout-complex-ui',
@@ -883,7 +887,7 @@ export class DynamicPhaseGenerator {
 
     // 4. Video/Media Detection
     if (analysis.hasVideo) {
-       features.push({
+      features.push({
         originalFeature: {
           id: 'layout-media-player',
           name: 'Media Player Integration',
@@ -925,7 +929,7 @@ export class DynamicPhaseGenerator {
 
       if (node.type) types.add(node.type);
       if (node.type === 'video') hasVideo = true;
-      
+
       // Semantic checks
       if (node.semanticTag) {
         const tag = node.semanticTag.toLowerCase();
@@ -946,7 +950,7 @@ export class DynamicPhaseGenerator {
       maxDepth: depth,
       hasAuthComponents: hasAuth,
       hasVideo,
-      componentTypes: Array.from(types)
+      componentTypes: Array.from(types),
     };
   }
 

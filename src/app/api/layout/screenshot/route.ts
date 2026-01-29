@@ -107,10 +107,9 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[Screenshot API] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Screenshot capture failed';
-    return NextResponse.json(
-      { success: false, error: errorMessage } as ScreenshotResponse,
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: errorMessage } as ScreenshotResponse, {
+      status: 500,
+    });
   }
 }
 

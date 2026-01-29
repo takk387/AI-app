@@ -283,16 +283,16 @@ export function useDynamicBuildPhases(
           setIsBuilding(false);
           onBuildComplete?.(updatedPlan);
         } else if (autoAdvance && updatedPlan.currentPhaseNumber) {
-           // Auto-advance to next phase if enabled
-           const nextPhaseNumber = manager.getNextPhase()?.number;
-           if (nextPhaseNumber) {
-             // Use a timeout to allow UI update before starting next phase
-             setTimeout(() => {
-               if (mountedRef.current && !isPaused) {
-                 startPhase(nextPhaseNumber);
-               }
-             }, 1500);
-           }
+          // Auto-advance to next phase if enabled
+          const nextPhaseNumber = manager.getNextPhase()?.number;
+          if (nextPhaseNumber) {
+            // Use a timeout to allow UI update before starting next phase
+            setTimeout(() => {
+              if (mountedRef.current && !isPaused) {
+                startPhase(nextPhaseNumber);
+              }
+            }, 1500);
+          }
         }
       } catch (error) {
         onError?.(error as Error);

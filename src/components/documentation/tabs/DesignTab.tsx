@@ -67,14 +67,17 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
   const colors = designSystem?.colors || {};
   const fonts = designSystem?.fonts;
 
-  const handleLoadLayout = useCallback((layout: typeof manifest) => {
-    if (!layout) return;
-    setCurrentLayoutManifest(layout);
-    // Switch to Design mode to see it
-    setCurrentMode('PLAN'); // Initial plan mode, layout builder is accessible
-    setShowDocumentationPanel(false);
-    router.push('/app/design');
-  }, [setCurrentLayoutManifest, setCurrentMode, setShowDocumentationPanel, router]);
+  const handleLoadLayout = useCallback(
+    (layout: typeof manifest) => {
+      if (!layout) return;
+      setCurrentLayoutManifest(layout);
+      // Switch to Design mode to see it
+      setCurrentMode('PLAN'); // Initial plan mode, layout builder is accessible
+      setShowDocumentationPanel(false);
+      router.push('/app/design');
+    },
+    [setCurrentLayoutManifest, setCurrentMode, setShowDocumentationPanel, router]
+  );
 
   return (
     <div className="p-4">
@@ -118,29 +121,37 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
 
       {/* Saved Layouts Section */}
       {savedLayoutManifests.length > 0 && (
-         <Section icon={<LayoutIcon size={16} />} title={`Saved Layouts (${savedLayoutManifests.length})`}>
-           <div className="space-y-2">
-             {savedLayoutManifests.map((layout, idx) => (
-               <div key={layout.id || idx} className="bg-slate-800/30 rounded-lg p-3 flex items-center justify-between group hover:bg-slate-800/50 transition-colors">
-                 <div>
-                   <div className="text-xs font-medium text-slate-300">
-                     {layout.id ? `Layout ${layout.id.slice(0, 8)}` : `Saved Layout ${idx + 1}`}
-                   </div>
-                   <div className="text-[10px] text-slate-500">
-                     {layout.designSystem?.colors ? Object.keys(layout.designSystem.colors).length : 0} Colors • {' '}
-                     {layout.detectedFeatures?.length || 0} Features
-                   </div>
-                 </div>
-                 <button
-                   onClick={() => handleLoadLayout(layout)}
-                   className="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-garden-600 hover:bg-garden-500 text-white text-xs rounded transition-all"
-                 >
-                   Load
-                 </button>
-               </div>
-             ))}
-           </div>
-         </Section>
+        <Section
+          icon={<LayoutIcon size={16} />}
+          title={`Saved Layouts (${savedLayoutManifests.length})`}
+        >
+          <div className="space-y-2">
+            {savedLayoutManifests.map((layout, idx) => (
+              <div
+                key={layout.id || idx}
+                className="bg-slate-800/30 rounded-lg p-3 flex items-center justify-between group hover:bg-slate-800/50 transition-colors"
+              >
+                <div>
+                  <div className="text-xs font-medium text-slate-300">
+                    {layout.id ? `Layout ${layout.id.slice(0, 8)}` : `Saved Layout ${idx + 1}`}
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    {layout.designSystem?.colors
+                      ? Object.keys(layout.designSystem.colors).length
+                      : 0}{' '}
+                    Colors • {layout.detectedFeatures?.length || 0} Features
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleLoadLayout(layout)}
+                  className="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-garden-600 hover:bg-garden-500 text-white text-xs rounded transition-all"
+                >
+                  Load
+                </button>
+              </div>
+            ))}
+          </div>
+        </Section>
       )}
 
       {/* Color Palette */}
