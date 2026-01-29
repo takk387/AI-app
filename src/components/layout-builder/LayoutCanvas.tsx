@@ -151,13 +151,35 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
 
   // Handler for auto-refine button
   const handleAutoRefine = useCallback(async () => {
-    if (!originalImage || !onRunSelfHealing) {
-      console.warn('[LayoutCanvas] Cannot run self-healing: missing originalImage or handler');
+    console.log('[LayoutCanvas] Auto-refine button clicked');
+    console.log('[LayoutCanvas] originalImage exists:', !!originalImage);
+    console.log('[LayoutCanvas] originalImage length:', originalImage?.length || 0);
+    console.log('[LayoutCanvas] onRunSelfHealing exists:', !!onRunSelfHealing);
+    console.log('[LayoutCanvas] layoutRef exists:', !!layoutRef.current);
+
+    if (!originalImage) {
+      console.error('[LayoutCanvas] Cannot run self-healing: no original image stored');
       return;
     }
-    const result = await onRunSelfHealing(originalImage, generateLayoutHtml);
-    if (result) {
-      setShowHealingResult(true);
+    if (!onRunSelfHealing) {
+      console.error('[LayoutCanvas] Cannot run self-healing: no handler provided');
+      return;
+    }
+
+    // Test the generateLayoutHtml function
+    const testHtml = generateLayoutHtml();
+    console.log('[LayoutCanvas] Generated HTML length:', testHtml?.length || 0);
+    console.log('[LayoutCanvas] Generated HTML preview:', testHtml?.substring(0, 200) || 'empty');
+
+    console.log('[LayoutCanvas] Calling onRunSelfHealing...');
+    try {
+      const result = await onRunSelfHealing(originalImage, generateLayoutHtml);
+      console.log('[LayoutCanvas] Self-healing result:', result);
+      if (result) {
+        setShowHealingResult(true);
+      }
+    } catch (error) {
+      console.error('[LayoutCanvas] Self-healing error:', error);
     }
   }, [originalImage, onRunSelfHealing, generateLayoutHtml]);
 

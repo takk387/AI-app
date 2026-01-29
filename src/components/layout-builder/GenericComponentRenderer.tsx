@@ -545,7 +545,8 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return null;
     }
 
-    const hasIconContent = content?.hasIcon && content?.iconName;
+    // Check for icon content - support both named icons and SVG path icons
+    const hasIconContent = content?.hasIcon && (content?.iconSvgPath || content?.iconName);
     const hasTextContent = content?.text;
     const hasImageContent = content?.hasImage;
 

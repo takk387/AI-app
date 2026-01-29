@@ -499,28 +499,43 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   // - UI has registered the renderToHtml callback
   // - Not already analyzing or healing
   useEffect(() => {
-    // Only trigger once per image analysis
-    if (autoHealingTriggered) return;
-
-    // Must have: components, designSpec, originalImage, and renderToHtml callback
-    if (
-      components.length === 0 ||
-      !designSpec ||
-      !originalImage ||
-      !renderToHtmlCallbackRef.current ||
-      isAnalyzing ||
-      isHealing
-    ) {
+    // Diagnostic logging: already triggered check
+    if (autoHealingTriggered) {
+      // Only log once to avoid spam (check if conditions were met)
       return;
     }
 
-    // Mark as triggered to prevent re-triggering
+    // Collect missing conditions for diagnostic logging
+    const missingConditions: string[] = [];
+    if (components.length === 0) missingConditions.push('no components');
+    if (!designSpec) missingConditions.push('no designSpec');
+    if (!originalImage) missingConditions.push('no originalImage');
+    if (!renderToHtmlCallbackRef.current) missingConditions.push('no renderToHtml callback');
+    if (isAnalyzing) missingConditions.push('still analyzing');
+    if (isHealing) missingConditions.push('already healing');
+
+    // If any conditions are missing, log and return
+    if (missingConditions.length > 0) {
+      console.log('[useLayoutBuilder] Auto-healing waiting for:', missingConditions.join(', '));
+      return;
+    }
+
+    // All conditions met - proceed with auto-healing
+    console.log('[useLayoutBuilder] Auto-healing: All conditions met, triggering...');
     setAutoHealingTriggered(true);
+
+    // Capture current values to avoid race conditions
+    const capturedImage = originalImage;
+    const capturedCallback = renderToHtmlCallbackRef.current;
 
     // Small delay to ensure DOM is painted with initial components
     const timeoutId = setTimeout(() => {
+      if (!capturedImage || !capturedCallback) {
+        console.warn('[useLayoutBuilder] Auto-healing aborted: values became null');
+        return;
+      }
       console.log('[useLayoutBuilder] Auto-triggering self-healing loop');
-      runSelfHealingLoop(originalImage, renderToHtmlCallbackRef.current!);
+      runSelfHealingLoop(capturedImage, capturedCallback);
     }, 500);
 
     return () => clearTimeout(timeoutId);
