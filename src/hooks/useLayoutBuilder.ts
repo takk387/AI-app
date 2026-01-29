@@ -10,7 +10,7 @@
  * - Self-Healing Vision Loop (Auto-refinement)
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { extractKeyframes } from '@/utils/videoProcessor';
 import { sanitizeComponents } from '@/utils/layoutValidation';
@@ -73,12 +73,123 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [isHealing, setIsHealing] = useState(false);
   const [healingProgress, setHealingProgress] = useState<VisionLoopProgress | null>(null);
   const [lastHealingResult, setLastHealingResult] = useState<SelfHealingResult | null>(null);
-  const visionLoopEngineRef = useRef<{ abort: () => void } | null>(null);
+  const visionLoopEngineRef = useRef<{ abort: () => void; executeStep: any } | null>(null);
+
+  // Step-based healing state for React re-render synchronization
+  const [healingState, setHealingState] = useState<{
+    isActive: boolean;
+    iteration: number;
+    maxIterations: number;
+    currentFidelity: number;
+    previousFidelity: number;
+    originalImage: string;
+  } | null>(null);
+  const renderToHtmlRef = useRef<(() => string) | null>(null);
 
   const clearErrors = useCallback(() => {
     setAnalysisErrors([]);
     setAnalysisWarnings([]);
   }, []);
+
+  // --- Step-Based Self-Healing Orchestration ---
+  // This useEffect triggers the next healing step AFTER React has re-rendered
+  // the updated components, ensuring screenshots capture the actual DOM state
+  useEffect(() => {
+    // Only run if healing is active
+    if (!healingState?.isActive || !isHealing) return;
+
+    // Don't run while other analysis is happening
+    if (isAnalyzing) return;
+
+    // Check stopping conditions
+    if (healingState.iteration >= healingState.maxIterations) {
+      console.log('[useLayoutBuilder] Max iterations reached, stopping healing');
+      setHealingState(null);
+      setIsHealing(false);
+      return;
+    }
+
+    if (healingState.currentFidelity >= 95) {
+      console.log('[useLayoutBuilder] Target fidelity reached, stopping healing');
+      setHealingState(null);
+      setIsHealing(false);
+      return;
+    }
+
+    // Check for diminishing returns (after first iteration)
+    if (healingState.iteration > 0) {
+      const improvement = healingState.currentFidelity - healingState.previousFidelity;
+      if (improvement < 2 && improvement >= 0) {
+        console.log('[useLayoutBuilder] Diminishing returns, stopping healing');
+        setHealingState(null);
+        setIsHealing(false);
+        return;
+      }
+    }
+
+    // Execute next step after a small delay to ensure DOM is painted
+    const timeoutId = setTimeout(async () => {
+      const engine = visionLoopEngineRef.current;
+      const renderToHtml = renderToHtmlRef.current;
+
+      if (!engine || !renderToHtml || !designSpec) {
+        console.error('[useLayoutBuilder] Missing engine, renderToHtml, or designSpec');
+        setHealingState(null);
+        setIsHealing(false);
+        return;
+      }
+
+      try {
+        console.log(`[useLayoutBuilder] Executing healing step ${healingState.iteration + 1}`);
+
+        const result = await engine.executeStep(
+          healingState.originalImage,
+          components,
+          designSpec,
+          renderToHtml,
+          healingState.iteration + 1
+        );
+
+        // Update components - this will trigger a re-render
+        // The next useEffect run will see the updated healingState
+        setComponents(result.components);
+
+        // Update healing state for next iteration
+        if (result.shouldContinue) {
+          setHealingState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  iteration: prev.iteration + 1,
+                  previousFidelity: prev.currentFidelity,
+                  currentFidelity: result.fidelityScore,
+                }
+              : null
+          );
+        } else {
+          // Healing complete
+          console.log('[useLayoutBuilder] Healing complete:', result.stopReason);
+          setLastHealingResult({
+            finalComponents: result.components,
+            finalDesignSpec: designSpec,
+            iterations: healingState.iteration + 1,
+            finalFidelityScore: result.fidelityScore,
+            targetReached: result.stopReason === 'target_reached',
+            stopReason: result.stopReason || 'max_iterations',
+            history: [],
+          });
+          setHealingState(null);
+          setIsHealing(false);
+        }
+      } catch (error) {
+        console.error('[useLayoutBuilder] Healing step error:', error);
+        setHealingState(null);
+        setIsHealing(false);
+      }
+    }, 100); // Small delay to ensure DOM paint
+
+    return () => clearTimeout(timeoutId);
+  }, [healingState, isHealing, isAnalyzing, components, designSpec]);
 
   // --- Actions ---
 
@@ -255,7 +366,8 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
 
   /**
    * Run the self-healing vision loop to automatically refine the layout
-   * Captures: Generate → Render → Capture → Critique → Heal → Verify
+   * Uses step-based architecture: each iteration waits for React to re-render
+   * before capturing the next screenshot, ensuring DOM state is accurate.
    */
   const runSelfHealingLoop = useCallback(
     async (
@@ -274,9 +386,11 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         return null;
       }
 
-      setIsHealing(true);
-      setHealingProgress(null);
-      setLastHealingResult(null);
+      // Prevent starting if already healing
+      if (isHealing) {
+        console.warn('[useLayoutBuilder] Self-healing already in progress');
+        return null;
+      }
 
       try {
         // Dynamic import VisionLoopEngine to avoid SSR issues
@@ -295,44 +409,42 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
           }
         );
 
-        // Store reference for cancellation
+        // Store references for step-based healing
         visionLoopEngineRef.current = engine;
+        renderToHtmlRef.current = renderToHtml;
 
         // Save pre-healing snapshot to history
         setHistory((h) => [...h, components]);
         console.log('[useLayoutBuilder] Saved pre-healing snapshot');
 
-        // Run the self-healing loop
-        const result = await engine.runLoop(
+        // Initialize step-based healing state
+        // The useEffect will pick this up and run the first step
+        setIsHealing(true);
+        setHealingProgress(null);
+        setLastHealingResult(null);
+        setHealingState({
+          isActive: true,
+          iteration: 0,
+          maxIterations: 3,
+          currentFidelity: 0,
+          previousFidelity: 0,
           originalImage,
-          components,
-          designSpec,
-          renderToHtml
-        );
+        });
 
-        // Apply the final components
-        if (result.finalComponents.length > 0) {
-          setComponents(result.finalComponents);
-          console.log('[useLayoutBuilder] Applied healed components:', {
-            iterations: result.iterations,
-            finalFidelity: result.finalFidelityScore,
-            history: result.history,
-          });
-        }
+        console.log('[useLayoutBuilder] Step-based healing initiated');
 
-        setLastHealingResult(result);
-        return result;
+        // Return null immediately - the actual result will be set by useEffect
+        // when healing completes. This is intentional for step-based architecture.
+        return null;
       } catch (error) {
-        console.error('[useLayoutBuilder] Self-healing error:', error);
+        console.error('[useLayoutBuilder] Self-healing initialization error:', error);
         const errorMsg = error instanceof Error ? error.message : 'Self-healing failed';
         setAnalysisErrors((prev) => [...prev, errorMsg]);
-        return null;
-      } finally {
         setIsHealing(false);
-        visionLoopEngineRef.current = null;
+        return null;
       }
     },
-    [components, designSpec]
+    [components, designSpec, isHealing]
   );
 
   /**
@@ -341,8 +453,12 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const cancelHealing = useCallback(() => {
     if (visionLoopEngineRef.current) {
       visionLoopEngineRef.current.abort();
-      console.log('[useLayoutBuilder] Self-healing cancelled by user');
     }
+    // Clear step-based healing state
+    setHealingState(null);
+    setIsHealing(false);
+    renderToHtmlRef.current = null;
+    console.log('[useLayoutBuilder] Self-healing cancelled by user');
   }, []);
 
   // --- History State ---

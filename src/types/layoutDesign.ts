@@ -670,6 +670,14 @@ export interface DetectedComponentEnhanced {
     hasImage?: boolean;
     itemCount?: number;
     placeholder?: string;
+    /** Lucide icon name (e.g. "Home", "User", "Menu") */
+    iconName?: string;
+    /** Icon color hex code */
+    iconColor?: string;
+    /** Icon position relative to text */
+    iconPosition?: 'left' | 'right' | 'center';
+    /** Icon size */
+    iconSize?: 'sm' | 'md' | 'lg';
   };
   /** Parent component ID for hierarchy */
   parentId?: string;

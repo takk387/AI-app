@@ -330,6 +330,164 @@ export class VisionLoopEngine {
   }
 
   /**
+   * Execute a single healing iteration (step-based for React integration)
+   *
+   * This method performs ONE iteration and returns the result, allowing React
+   * to re-render the updated components before the next iteration. This fixes
+   * the stale DOM issue where runLoop() captures the same screenshot repeatedly.
+   *
+   * @param originalImage - Base64 encoded original design reference
+   * @param currentComponents - Current component array (after React re-render)
+   * @param designSpec - Design specification for context
+   * @param renderToHtml - Function to get current layout HTML
+   * @param iteration - Current iteration number (1-based)
+   * @returns Step result with updated components and continuation flag
+   */
+  async executeStep(
+    originalImage: string,
+    currentComponents: DetectedComponentEnhanced[],
+    designSpec: DesignSpec | null,
+    renderToHtml: () => string,
+    iteration: number
+  ): Promise<{
+    components: DetectedComponentEnhanced[];
+    fidelityScore: number;
+    changesApplied: number;
+    shouldContinue: boolean;
+    stopReason?: 'target_reached' | 'diminishing_returns' | 'max_iterations' | 'error';
+    modifiedComponentIds: string[];
+  }> {
+    try {
+      // Phase 1: Capture screenshot of CURRENT rendered state
+      this.reportProgress({
+        phase: 'capturing',
+        iteration,
+        maxIterations: this.config.maxIterations,
+        targetFidelity: this.config.targetFidelity,
+        message: `Iteration ${iteration}: Capturing screenshot...`,
+      });
+
+      const html = renderToHtml();
+      const screenshot = await this.captureScreenshot(html);
+
+      if (!screenshot) {
+        console.warn('[VisionLoopEngine] Screenshot capture failed, using original image');
+      }
+
+      // Phase 2: Critique current vs original
+      this.reportProgress({
+        phase: 'critiquing',
+        iteration,
+        maxIterations: this.config.maxIterations,
+        targetFidelity: this.config.targetFidelity,
+        message: `Iteration ${iteration}: AI analyzing layout...`,
+      });
+
+      const critique = await this.geminiService.critiqueLayoutEnhanced(
+        originalImage,
+        screenshot || originalImage,
+        currentComponents,
+        this.config.targetFidelity
+      );
+
+      // Check if target reached
+      if (critique.passesThreshold) {
+        this.reportProgress({
+          phase: 'complete',
+          iteration,
+          maxIterations: this.config.maxIterations,
+          fidelityScore: critique.fidelityScore,
+          targetFidelity: this.config.targetFidelity,
+          message: `Target fidelity reached: ${critique.fidelityScore}%`,
+        });
+
+        return {
+          components: currentComponents,
+          fidelityScore: critique.fidelityScore,
+          changesApplied: 0,
+          shouldContinue: false,
+          stopReason: 'target_reached',
+          modifiedComponentIds: [],
+        };
+      }
+
+      // Check max iterations
+      if (iteration >= this.config.maxIterations) {
+        this.reportProgress({
+          phase: 'complete',
+          iteration,
+          maxIterations: this.config.maxIterations,
+          fidelityScore: critique.fidelityScore,
+          targetFidelity: this.config.targetFidelity,
+          message: `Max iterations reached. Final score: ${critique.fidelityScore}%`,
+        });
+
+        // Still apply fixes for the last iteration
+        const fixResult = this.autoFixEngine.applyCritique(currentComponents, critique);
+
+        return {
+          components: fixResult.components,
+          fidelityScore: critique.fidelityScore,
+          changesApplied: fixResult.appliedCount,
+          shouldContinue: false,
+          stopReason: 'max_iterations',
+          modifiedComponentIds: fixResult.modifiedComponentIds,
+        };
+      }
+
+      // Phase 3: Apply fixes
+      this.reportProgress({
+        phase: 'fixing',
+        iteration,
+        maxIterations: this.config.maxIterations,
+        fidelityScore: critique.fidelityScore,
+        targetFidelity: this.config.targetFidelity,
+        message: `Iteration ${iteration}: Applying ${critique.discrepancies.length} fixes...`,
+      });
+
+      const fixResult = this.autoFixEngine.applyCritique(currentComponents, critique);
+
+      // Phase 4: Report completion of this step
+      this.reportProgress({
+        phase: 'verifying',
+        iteration,
+        maxIterations: this.config.maxIterations,
+        fidelityScore: critique.fidelityScore,
+        targetFidelity: this.config.targetFidelity,
+        fixesApplied: fixResult.appliedCount,
+        message: `Iteration ${iteration}: Applied ${fixResult.appliedCount} fixes, score: ${critique.fidelityScore}%`,
+      });
+
+      return {
+        components: fixResult.components,
+        fidelityScore: critique.fidelityScore,
+        changesApplied: fixResult.appliedCount,
+        shouldContinue: true, // Let caller check diminishing returns with previous score
+        modifiedComponentIds: fixResult.modifiedComponentIds,
+      };
+    } catch (error) {
+      console.error(`[VisionLoopEngine] Step ${iteration} error:`, error);
+
+      this.reportProgress({
+        phase: 'error',
+        iteration,
+        maxIterations: this.config.maxIterations,
+        targetFidelity: this.config.targetFidelity,
+        message: `Error in iteration ${iteration}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+
+      return {
+        components: currentComponents,
+        fidelityScore: 0,
+        changesApplied: 0,
+        shouldContinue: false,
+        stopReason: 'error',
+        modifiedComponentIds: [],
+      };
+    }
+  }
+
+  /**
    * Run a single critique without the full loop (for manual inspection)
    */
   async runSingleCritique(

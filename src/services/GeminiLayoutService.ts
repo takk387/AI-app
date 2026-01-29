@@ -295,7 +295,11 @@ class GeminiLayoutService {
         "content": {
           "text": "<EXACT visible text>",
           "hasImage": true/false,
-          "hasIcon": true/false
+          "hasIcon": true/false,
+          "iconName": "<Lucide icon name: Home, User, Menu, Search, ArrowRight, Settings, etc.>",
+          "iconColor": "<hex color of the icon - MEASURE from image>",
+          "iconPosition": "left|right|center",
+          "iconSize": "sm|md|lg"
         },
         "zIndex": <number>,
         "confidence": 0.9
@@ -352,6 +356,16 @@ class GeminiLayoutService {
          - Transparent backgrounds should explicitly use "transparent" or "rgba(0,0,0,0)"
          - Font sizes from designSpec.typography.fontSizes
          - Spacing from designSpec.spacing.scale
+
+      8. **ICON DETECTION - IDENTIFY ALL ICONS**:
+         - When you see an icon, set hasIcon: true AND provide iconName
+         - Use Lucide icon names: "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard", etc.
+         - MEASURE iconColor from the image (hex value)
+         - Estimate iconSize based on visual proportions:
+           - "sm": 12-16px icons
+           - "md": 20-24px icons (most common)
+           - "lg": 28-36px icons
+         - Specify iconPosition relative to text content: "left" (before text), "right" (after text), or "center" (standalone icon)
 
       Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
     `;
