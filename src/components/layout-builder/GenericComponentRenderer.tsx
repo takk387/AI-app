@@ -150,7 +150,13 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // This prevents "layout: undefined" components from collapsing their children
     const layoutType = layout?.type || 'flex';
 
-    if (layoutType === 'none') return {};
+    if (layoutType === 'none') {
+      return {
+        display: 'flex',
+        flexDirection: 'column' as const, // Fix: Fallback to column layout to prevent collapse
+        gap: '0px',
+      };
+    }
 
     if (layoutType === 'flex') {
       return {
@@ -194,9 +200,11 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
         }
       : {
           // Relative positioning for children - let parent flex/grid handle layout
-          // Allow shrinking (flex-shrink: 1) for responsive layouts
+          // flex-basis = AI-assigned width, flex-shrink = 1 allows fitting within container
+          // maxWidth (not minWidth) prevents growing beyond assigned width while
+          // allowing shrink when sibling widths sum to > 100%
           flex: bounds?.width ? `0 1 ${bounds.width}%` : '1 1 auto',
-          minWidth: bounds?.width ? `${bounds.width}%` : undefined,
+          maxWidth: bounds?.width ? `${bounds.width}%` : undefined,
           height: bounds?.height ? `${bounds.height}%` : 'auto',
         }),
 

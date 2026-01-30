@@ -15,7 +15,11 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { DetectedComponentEnhanced, PageAnalysis, LayoutStructure } from '@/types/layoutDesign';
-import { sanitizeComponents, inferContainerLayouts } from '@/utils/layoutValidation';
+import {
+  sanitizeComponents,
+  inferContainerLayouts,
+  resolveRootOverlaps,
+} from '@/utils/layoutValidation';
 import type { DesignSpec } from '@/types/designSpec';
 import type {
   LayoutAnalysisResult,
@@ -530,11 +534,21 @@ class GeminiLayoutService {
          - features/content sections
          - footer (bottom)
 
-         Typically 3-7 root sections for a landing page.
+          Typically 3-7 root sections for a landing page.
+
+          ROOT COMPONENTS MUST NOT OVERLAP. Stack them vertically:
+          - Each root section's top MUST be >= the previous section's (top + height)
+          - Leave a small gap (20-40 in 0-1000 scale) between sections
+          - Full-width sections: left=0, width=1000
+          - Assign heights based on content: header ~60-80, hero ~300-500, sections ~200-400, footer ~150-250
 
       5. **CHILD BOUNDS ARE RELATIVE**:
          - Root components: bounds relative to viewport (0-1000)
          - Children: bounds relative to parent's content area (0-1000 within parent)
+         - CRITICAL: Sibling children's widths MUST fit within their container.
+           For a row layout, the sum of children widths + gaps MUST NOT exceed 1000.
+           For a column layout, each child's width should be ≤ 1000 (full parent width).
+           If children would exceed the container, REDUCE their widths proportionally.
 
       6. **LEAF COMPONENTS**:
          These have role: "leaf", no children array, and render actual content:
@@ -595,17 +609,22 @@ class GeminiLayoutService {
           - For complex animations that need @keyframes, ALWAYS provide the animationKeyframes object.
             The renderer will generate a unique keyframe name and inject a <style> tag.
 
-      12. **VISUAL EFFECTS DETECTION**:
-          - If you detect non-CSS effects (particle trails, floating shapes, sparkle effects, canvas-drawn elements):
-            Add a visualEffects array to the component.
-          - For particle effects: describe count, shape, colors, direction, speed.
-          - For CSS-achievable effects: provide cssKeyframes so the renderer can inject them.
-          - Common effects to look for:
-            * Particle trails following cursor or streaming from buttons
-            * Floating/drifting shapes in backgrounds
-            * Sparkle or confetti effects
-            * Animated gradient meshes
-            * Aurora/northern lights backgrounds
+      12. **VISUAL EFFECTS — CRITICAL FOR DESIGN FIDELITY**:
+          You MUST detect and create visualEffects entries for any non-standard visual treatment.
+          Missing visual effects make the layout look flat and lifeless.
+
+          DETECTION GUIDE — create visualEffects for ANY of these:
+            * Animated or shimmer gradients → type: "css-animation", provide cssKeyframes with gradient shifts
+            * Particle effects (sparkles, confetti, floating dots) → type: "particle-system", provide FULL particleConfig
+            * Glowing or pulsing elements → type: "css-animation", provide cssKeyframes with opacity/box-shadow changes
+            * Floating/drifting decorative shapes → type: "particle-system" with direction and shape config
+            * Aurora or mesh gradient backgrounds → type: "css-animation" with gradient-position keyframes
+
+          RULES:
+            - ALWAYS use type "css-animation" or "particle-system" — NEVER use "canvas-effect"
+            - Provide COMPLETE cssKeyframes or particleConfig — never leave them empty or undefined
+            - For hero sections with gradient backgrounds: ALSO set style.backgroundImage with the CSS gradient
+            - For animated backgrounds: set BOTH style.backgroundImage AND a visualEffects css-animation entry
 
       13. **IMAGE & LOGO DETECTION**:
           - When you see a logo, photograph, illustration, or any image:
@@ -640,10 +659,16 @@ class GeminiLayoutService {
 
       // CRITICAL: Infer layout for containers that are missing layout data
       // This fixes containers where AI didn't specify layout.type, layout.gap, etc.
-      const components = inferContainerLayouts(sanitizedComponents);
-      console.log('[GeminiLayoutService] After inferContainerLayouts:', {
+      const withInferredLayouts = inferContainerLayouts(sanitizedComponents);
+
+      // CRITICAL FIX: Resolve root overlaps
+      // Stack root sections vertically to prevent them from piling on top of each other
+      const components = resolveRootOverlaps(withInferredLayouts);
+
+      console.log('[GeminiLayoutService] After inferContainerLayouts & resolveRootOverlaps:', {
         before: sanitizedComponents.filter((c) => c.role === 'container' && !c.layout?.type).length,
         after: components.filter((c) => c.role === 'container' && !c.layout?.type).length,
+        overlapsResolved: components.length > 0,
       });
 
       // Debug: Log Stage 2 output to verify colors, hierarchy, AND LAYOUT DATA
@@ -979,7 +1004,9 @@ class GeminiLayoutService {
         console.warn('[GeminiLayoutService] Validation issues in analyzeImage:', errors);
       }
       // Infer layout for containers missing layout data
-      const components = inferContainerLayouts(sanitizedComponents);
+      const withInferredLayouts = inferContainerLayouts(sanitizedComponents);
+      // Resolve root overlaps
+      const components = resolveRootOverlaps(withInferredLayouts);
       return components;
     } catch (e) {
       console.error('Failed to parse Gemini response', e);

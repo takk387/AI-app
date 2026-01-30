@@ -6,7 +6,7 @@
  *
  * - css-animation → Handled by KeyframeInjector (no overlay needed here)
  * - particle-system → CSSParticleEffect overlay
- * - canvas-effect → Future: Canvas-based rendering
+ * - canvas-effect → CSS gradient animation fallback
  *
  * IMPORTANT: This component must be rendered as a CHILD of a positioned element
  * (position: absolute or relative). The overlay uses absolute inset-0 to cover
@@ -62,15 +62,30 @@ export const VisualEffectRenderer: React.FC<VisualEffectRendererProps> = ({
           );
         }
 
-        // canvas-effect: future implementation
-        // For now, render nothing — the effect type is recognized but not yet supported
+        // canvas-effect: CSS gradient fallback for effects the renderer can't draw natively
         if (effect.type === 'canvas-effect') {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(
-              `[VisualEffectRenderer] Canvas effect not yet supported: ${effect.description}`
-            );
-          }
-          return null;
+          const effectKey = `ce-${componentId}-${index}`;
+          return (
+            <React.Fragment key={effectKey}>
+              <style>{`
+                @keyframes ${effectKey} {
+                  0% { opacity: 0.3; background-position: 0% 50%; }
+                  50% { opacity: 0.6; background-position: 100% 50%; }
+                  100% { opacity: 0.3; background-position: 0% 50%; }
+                }
+              `}</style>
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15), rgba(102,126,234,0.15))',
+                  backgroundSize: '200% 200%',
+                  animation: `${effectKey} 8s ease-in-out infinite`,
+                  borderRadius: 'inherit',
+                }}
+              />
+            </React.Fragment>
+          );
         }
 
         return null;
