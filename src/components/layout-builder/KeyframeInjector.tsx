@@ -12,6 +12,7 @@
 
 import React, { useMemo } from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
+import { entranceToCSSAnimation, loopToCSSAnimation } from '@/services/MotionMapper';
 
 interface KeyframeInjectorProps {
   components: DetectedComponentEnhanced[];
@@ -124,7 +125,41 @@ export const KeyframeInjector: React.FC<KeyframeInjectorProps> = ({ components }
         }
       }
 
-      // Source 2: visualEffects[].cssKeyframes (visual effect CSS animations)
+      // Source 2: motionConfig (entrance/loop animations from video analysis)
+      // Entrance keyframes: only if style.animationKeyframes is NOT already set (avoids duplicates)
+      // Loop keyframes: always generated from motionConfig (independent of entrance)
+      if (component.motionConfig) {
+        if (
+          !component.style?.animationKeyframes &&
+          component.motionConfig.entrance &&
+          component.motionConfig.entrance.type !== 'none'
+        ) {
+          const cssAnim = entranceToCSSAnimation(component.motionConfig.entrance);
+          const animName = extractAnimationName(cssAnim.animation);
+          if (animName) {
+            const namespacedName = `${component.id}--${animName}`;
+            if (!seenNames.has(namespacedName)) {
+              seenNames.add(namespacedName);
+              keyframeRules.push(buildKeyframeRule(namespacedName, cssAnim.animationKeyframes));
+            }
+          }
+        }
+        // Loop keyframes are always generated independently — they have unique names
+        // and must not be blocked by entrance animationKeyframes existing
+        if (component.motionConfig.loop) {
+          const loopAnim = loopToCSSAnimation(component.motionConfig.loop, component.id);
+          const loopName = extractAnimationName(loopAnim.animation);
+          if (loopName) {
+            const namespacedName = `${component.id}--${loopName}`;
+            if (!seenNames.has(namespacedName)) {
+              seenNames.add(namespacedName);
+              keyframeRules.push(buildKeyframeRule(namespacedName, loopAnim.animationKeyframes));
+            }
+          }
+        }
+      }
+
+      // Source 3: visualEffects[].cssKeyframes (visual effect CSS animations)
       if (component.visualEffects) {
         for (const effect of component.visualEffects) {
           if (effect.cssKeyframes && effect.type === 'css-animation') {

@@ -17,6 +17,17 @@ import { sanitizeComponents } from '@/utils/layoutValidation';
 import type { LayoutAnalysisResult } from '@/types/layoutAnalysis';
 import type { DesignSpec } from '@/types/designSpec';
 import type { VisionLoopProgress, SelfHealingResult } from '@/services/VisionLoopEngine';
+import {
+  groupComponents as groupComponentsUtil,
+  ungroupComponent as ungroupComponentUtil,
+  reparentComponent as reparentComponentUtil,
+} from '@/components/layout-builder/ComponentGroupManager';
+import { analyzeVideoEnhanced } from '@/services/EnhancedVideoAnalyzer';
+import {
+  mapMotionToComponents,
+  applyBasicMotion,
+  motionToVisualEffects,
+} from '@/services/MotionMapper';
 
 interface UseLayoutBuilderReturn {
   // State
@@ -48,9 +59,23 @@ interface UseLayoutBuilderReturn {
   canRedo: boolean;
   clearErrors: () => void;
 
+  // Component Management Actions (Gap 4)
+  groupComponents: (ids: string[]) => void;
+  ungroupComponent: (groupId: string) => void;
+  reparentComponent: (componentId: string, newParentId: string | null) => void;
+  renameComponent: (id: string, name: string) => void;
+  toggleComponentVisibility: (id: string) => void;
+  toggleComponentLock: (id: string) => void;
+
+  // Direct Manipulation Actions (Gap 3)
+  updateComponentBounds: (
+    id: string,
+    bounds: { top: number; left: number; width: number; height: number }
+  ) => void;
+
   // AI Actions
-  analyzeImage: (file: File, instructions?: string) => Promise<void>;
-  analyzeVideo: (file: File, instructions?: string) => Promise<void>;
+  analyzeImage: (file: File, instructions?: string, sourceId?: string) => Promise<void>;
+  analyzeVideo: (file: File, instructions?: string, sourceId?: string) => Promise<void>;
   triggerCritique: (originalImage: string, canvasElement: HTMLElement) => Promise<void>;
   generatePhasePlan: () => Promise<void>;
 
@@ -92,6 +117,26 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [autoHealingTriggered, setAutoHealingTriggered] = useState(false);
   const renderToHtmlCallbackRef = useRef<(() => string) | null>(null);
+
+  // Pending video motion data — applied when image analysis completes
+  const pendingMotionRef = useRef<
+    import('@/types/motionConfig').EnhancedVideoMotionAnalysis | null
+  >(null);
+
+  // Apply deferred motion when components arrive after video was analyzed first
+  useEffect(() => {
+    if (pendingMotionRef.current && components.length > 0) {
+      const pendingMotion = pendingMotionRef.current;
+      pendingMotionRef.current = null;
+      if (pendingMotion.componentMotions && pendingMotion.componentMotions.length > 0) {
+        const withMotion = mapMotionToComponents(pendingMotion, components);
+        setComponents(withMotion);
+      } else if (pendingMotion.transitions && pendingMotion.transitions.length > 0) {
+        const withMotion = applyBasicMotion(pendingMotion, components);
+        setComponents(withMotion);
+      }
+    }
+  }, [components]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const clearErrors = useCallback(() => {
     setAnalysisErrors([]);
@@ -217,10 +262,31 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     );
   }, []);
 
+  // --- Source-Aware Component Application ---
+
+  /**
+   * Apply analyzed components: if sourceId is provided, tag them and append
+   * (additive merge). Otherwise replace all components (legacy behavior).
+   */
+  const applyAnalyzedComponents = useCallback(
+    (newComponents: DetectedComponentEnhanced[], sourceId?: string) => {
+      if (sourceId) {
+        // Tag all new components with sourceId
+        const tagged = newComponents.map((c) => ({ ...c, sourceId }));
+        // Additive: remove old components from this source, then append new
+        setComponents((prev) => [...prev.filter((c) => c.sourceId !== sourceId), ...tagged]);
+      } else {
+        // Legacy: replace all
+        setComponents(newComponents);
+      }
+    },
+    []
+  );
+
   // --- AI Interactions ---
 
   const analyzeImage = useCallback(
-    async (file: File, instructions?: string) => {
+    async (file: File, instructions?: string, sourceId?: string) => {
       setIsAnalyzing(true);
       setAutoHealingTriggered(false); // Reset for new image analysis
       clearErrors();
@@ -307,7 +373,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
             );
           }
 
-          setComponents(validatedComponents);
+          applyAnalyzedComponents(validatedComponents, sourceId);
         } else {
           // Fallback for legacy array response (backward compatibility)
           const validatedComponents = Array.isArray(result) ? result : [];
@@ -316,7 +382,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
             validatedComponents.length,
             'components'
           );
-          setComponents(validatedComponents);
+          applyAnalyzedComponents(validatedComponents, sourceId);
         }
       } catch (error) {
         console.error('Image analysis error:', error);
@@ -330,37 +396,70 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     [clearErrors, analysisErrors]
   );
 
-  const analyzeVideo = useCallback(async (file: File, instructions?: string) => {
-    setIsAnalyzing(true);
-    try {
-      // 1. Extract frames in browser (Client-Side Strategy)
-      const frames = await extractKeyframes(file, { keyframeCount: 3 });
-      const base64Frames = frames.map((f) => f.image);
+  const analyzeVideo = useCallback(
+    async (file: File, instructions?: string, sourceId?: string) => {
+      setIsAnalyzing(true);
+      try {
+        // 1. Extract frames in browser (Client-Side Strategy)
+        const frames = await extractKeyframes(file, { keyframeCount: 3 });
+        const base64Frames = frames.map((f) => f.image);
 
-      // 2. Send to Gemini for Motion Analysis
-      const response = await fetch('/api/layout/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'analyze-video-flow',
-          images: base64Frames,
-          instructions,
-        }),
-      });
+        // 2. Get existing component types for targeted motion extraction
+        const existingTypes = [...new Set(components.map((c) => c.type))];
 
-      if (!response.ok) throw new Error('Video analysis failed');
-      const motionData = await response.json();
+        // 3. Analyze with enhanced prompt for per-component motion assignments
+        const enhancedMotion = await analyzeVideoEnhanced(
+          base64Frames,
+          existingTypes.length > 0 ? existingTypes : undefined,
+          instructions
+        );
 
-      console.log('Video Motion Data Received:', motionData);
+        console.log('[useLayoutBuilder] Enhanced Video Motion:', enhancedMotion);
 
-      // TODO: Map motion data to component props or global animation state
-      // For now, we just log it as the "Structure" part comes from the Image/Hybrid flow
-    } catch (error) {
-      console.error('Video analysis error:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, []);
+        // 4. Apply motion to existing components (setComponents, not history-aware,
+        //    since this is an initial AI analysis, not a user edit action)
+        // 5. Extract background visual effects (particles, gradient-shift, aurora, waves)
+        const bgEffects = motionToVisualEffects(enhancedMotion);
+
+        if (components.length > 0) {
+          // Tag components with sourceId if provided (multi-source tracking)
+          const tagComponent = (c: DetectedComponentEnhanced): DetectedComponentEnhanced =>
+            sourceId ? { ...c, sourceId } : c;
+
+          let result: DetectedComponentEnhanced[];
+          if (enhancedMotion.componentMotions && enhancedMotion.componentMotions.length > 0) {
+            result = mapMotionToComponents(enhancedMotion, components).map(tagComponent);
+          } else if (enhancedMotion.transitions && enhancedMotion.transitions.length > 0) {
+            result = applyBasicMotion(enhancedMotion, components).map(tagComponent);
+          } else {
+            result = components.map(tagComponent);
+          }
+
+          // Apply background visual effects to the first root component (hero or first)
+          if (bgEffects.length > 0 && result.length > 0) {
+            const targetIdx = result.findIndex((c) => c.type === 'hero') ?? 0;
+            const idx = targetIdx >= 0 ? targetIdx : 0;
+            result = result.map((c, i) =>
+              i === idx ? { ...c, visualEffects: [...(c.visualEffects ?? []), ...bgEffects] } : c
+            );
+          }
+
+          setComponents(result);
+        } else {
+          // No components yet — store motion data for deferred application
+          console.log(
+            '[useLayoutBuilder] No components yet. Motion data stored for deferred application.'
+          );
+          pendingMotionRef.current = enhancedMotion;
+        }
+      } catch (error) {
+        console.error('Video analysis error:', error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [components]
+  );
 
   const triggerCritique = useCallback(async (originalImage: string, canvasElement: HTMLElement) => {
     setIsAnalyzing(true);
@@ -642,6 +741,67 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     [updateComponentsWithHistory]
   );
 
+  // --- Component Management Actions (Gap 4) ---
+
+  const groupComponents = useCallback(
+    (ids: string[]) => {
+      updateComponentsWithHistory((prev) => groupComponentsUtil(ids, prev));
+    },
+    [updateComponentsWithHistory]
+  );
+
+  const ungroupComponent = useCallback(
+    (groupId: string) => {
+      updateComponentsWithHistory((prev) => ungroupComponentUtil(groupId, prev));
+    },
+    [updateComponentsWithHistory]
+  );
+
+  const reparentComponent = useCallback(
+    (componentId: string, newParentId: string | null) => {
+      updateComponentsWithHistory((prev) => reparentComponentUtil(componentId, newParentId, prev));
+    },
+    [updateComponentsWithHistory]
+  );
+
+  const renameComponent = useCallback(
+    (id: string, name: string) => {
+      updateComponentsWithHistory((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, displayName: name } : c))
+      );
+    },
+    [updateComponentsWithHistory]
+  );
+
+  const toggleComponentVisibility = useCallback(
+    (id: string) => {
+      updateComponentsWithHistory((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, visible: c.visible === false } : c))
+      );
+    },
+    [updateComponentsWithHistory]
+  );
+
+  const toggleComponentLock = useCallback(
+    (id: string) => {
+      updateComponentsWithHistory((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, locked: !c.locked } : c))
+      );
+    },
+    [updateComponentsWithHistory]
+  );
+
+  // --- Direct Manipulation Actions (Gap 3) ---
+
+  const updateComponentBounds = useCallback(
+    (id: string, bounds: { top: number; left: number; width: number; height: number }) => {
+      updateComponentsWithHistory((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, bounds: { ...c.bounds, ...bounds } } : c))
+      );
+    },
+    [updateComponentsWithHistory]
+  );
+
   const applyAIEdit = useCallback(
     async (id: string, prompt: string) => {
       setIsAnalyzing(true);
@@ -723,7 +883,18 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     undo,
     redo,
     exportCode,
-    saveToWizard, // Exposed action
+    saveToWizard,
+
+    // Component Management (Gap 4)
+    groupComponents,
+    ungroupComponent,
+    reparentComponent,
+    renameComponent,
+    toggleComponentVisibility,
+    toggleComponentLock,
+
+    // Direct Manipulation (Gap 3)
+    updateComponentBounds,
     canUndo: history.length > 0,
     canRedo: future.length > 0,
     clearErrors,

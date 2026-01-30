@@ -274,6 +274,14 @@ export const DetectedComponentSchema = z
           })
           .passthrough()
           .optional(),
+        focus: z
+          .object({
+            outline: z.string().optional(),
+            boxShadow: z.string().optional(),
+            borderColor: z.string().optional(),
+          })
+          .passthrough()
+          .optional(),
       })
       .passthrough()
       .optional(),

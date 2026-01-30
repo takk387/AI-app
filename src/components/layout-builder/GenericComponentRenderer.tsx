@@ -13,6 +13,7 @@
  */
 
 import React from 'react';
+import { Lock } from 'lucide-react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { cn } from '@/lib/utils'; // Assuming cn utility exists, otherwise standard classnames
 import { VisualEffectRenderer } from '@/components/effects/VisualEffectRenderer';
@@ -239,10 +240,29 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     // When animationKeyframes exist, KeyframeInjector namespaces the @keyframes rule as
     // `{componentId}--{originalName}` to prevent collisions. Rewrite the shorthand to match.
     animation: (() => {
+      // If no style.animation but motionConfig exists, generate from motionConfig
+      // This handles components loaded from saved state that weren't processed by MotionMapper
+      if (!style.animation && component.motionConfig) {
+        const parts: string[] = [];
+        if (component.motionConfig.entrance && component.motionConfig.entrance.type !== 'none') {
+          const e = component.motionConfig.entrance;
+          const name = `${id}--entrance-${e.type}-${e.direction || 'default'}`;
+          parts.push(
+            `${name} ${e.duration || 500}ms ${e.easing || 'ease-out'} ${e.delay || 0}ms both`
+          );
+        }
+        if (component.motionConfig.loop) {
+          const l = component.motionConfig.loop;
+          const name = `${id}--loop-${l.type}-${id}`;
+          parts.push(`${name} ${l.duration || 3000}ms ease-in-out infinite`);
+        }
+        return parts.length > 0 ? parts.join(', ') : undefined;
+      }
       if (!style.animation) return undefined;
       if (!style.animationKeyframes) return style.animation;
-      // Extract and replace original name with namespaced version
-      const tokens = style.animation.trim().split(/\s+/);
+      // Extract and replace original name with namespaced version.
+      // Handle comma-separated animations (e.g., entrance + loop) by
+      // processing each animation individually to avoid corrupting commas.
       const timePattern = /^[\d.]+m?s$/;
       const keywords = new Set([
         'ease',
@@ -264,16 +284,21 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
         'paused',
         'infinite',
       ]);
-      const namespacedTokens = tokens.map((token) => {
-        const lower = token.toLowerCase();
-        if (timePattern.test(lower)) return token;
-        if (keywords.has(lower)) return token;
-        if (lower.startsWith('cubic-bezier') || lower.startsWith('steps')) return token;
-        if (/^\d+$/.test(lower)) return token;
-        // This token is the animation name — namespace it
-        return `${id}--${token}`;
-      });
-      return namespacedTokens.join(' ');
+      const namespaceAnimation = (anim: string): string => {
+        const tokens = anim.trim().split(/\s+/);
+        return tokens
+          .map((token) => {
+            const lower = token.toLowerCase();
+            if (timePattern.test(lower)) return token;
+            if (keywords.has(lower)) return token;
+            if (lower.startsWith('cubic-bezier') || lower.startsWith('steps')) return token;
+            if (/^\d+$/.test(lower)) return token;
+            // This token is the animation name — namespace it
+            return `${id}--${token}`;
+          })
+          .join(' ');
+      };
+      return style.animation.split(',').map(namespaceAnimation).join(',');
     })(),
     transition: style.transition,
 
@@ -406,6 +431,11 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       const childComponent = componentMap.get(childId);
       if (!childComponent) {
         console.warn(`[GenericComponentRenderer] Child component "${childId}" not found in map`);
+        return null;
+      }
+
+      // Skip hidden children (visibility toggle from tree panel)
+      if (childComponent.visible === false) {
         return null;
       }
 
@@ -773,7 +803,10 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
   // Build interaction styles (CSS custom properties for hover/active states)
   const interactionStyles: React.CSSProperties = {};
-  const hasInteractions = component.interactions?.hover || component.interactions?.active;
+  const hasInteractions =
+    component.interactions?.hover ||
+    component.interactions?.active ||
+    component.interactions?.focus;
 
   if (component.interactions?.hover) {
     const hover = component.interactions.hover;
@@ -795,6 +828,16 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       '--active-color': active.textColor,
       '--active-transform': active.transform,
       '--active-scale': active.scale,
+    } as React.CSSProperties);
+  }
+
+  // Add focus state CSS variables
+  if (component.interactions?.focus) {
+    const focus = component.interactions.focus;
+    Object.assign(interactionStyles, {
+      '--focus-outline': focus.outline,
+      '--focus-shadow': focus.boxShadow,
+      '--focus-border': focus.borderColor,
     } as React.CSSProperties);
   }
 
@@ -824,6 +867,12 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     if (active?.transform) classes.push('active:[transform:var(--active-transform)]');
     if (active?.scale) classes.push(`active:scale-[var(--active-scale)]`);
 
+    // Focus state classes (accessibility)
+    const focus = component.interactions?.focus;
+    if (focus?.outline) classes.push('focus:[outline:var(--focus-outline)]');
+    if (focus?.boxShadow) classes.push('focus:[box-shadow:var(--focus-shadow)]');
+    if (focus?.borderColor) classes.push('focus:border-[var(--focus-border)]');
+
     return classes.join(' ');
   };
 
@@ -852,6 +901,14 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       {renderChildren()}
       {hasVisualEffects && (
         <VisualEffectRenderer effects={component.visualEffects!} componentId={id} />
+      )}
+      {component.locked && (
+        <div
+          className="absolute top-1 right-1 z-50 p-0.5 rounded bg-gray-800/60 text-white pointer-events-none"
+          title="Locked"
+        >
+          <Lock size={10} />
+        </div>
       )}
     </div>
   );

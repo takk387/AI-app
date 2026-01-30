@@ -23,8 +23,12 @@ import {
   UploadedMedia,
 } from './layout-builder/LayoutBuilderChatPanel';
 import { LayoutCanvas } from './layout-builder/LayoutCanvas';
+import ComponentTreePanel from './layout-builder/ComponentTreePanel';
 import { useLayoutBuilder } from '@/hooks/useLayoutBuilder';
+import { useSourceRegistry } from '@/hooks/useSourceRegistry';
+import { useDirectManipulation } from '@/hooks/useDirectManipulation';
 import { useAppStore } from '@/store/useAppStore';
+import { Layers, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 // ============================================================================
 // HELPERS
@@ -81,6 +85,15 @@ export const LayoutBuilderView: React.FC = () => {
     analysisErrors,
     analysisWarnings,
     clearErrors,
+    // Component Management (Gap 4)
+    groupComponents,
+    ungroupComponent,
+    reparentComponent: _reparentComponent,
+    renameComponent,
+    toggleComponentVisibility,
+    toggleComponentLock,
+    // Direct Manipulation (Gap 3)
+    updateComponentBounds,
     // Self-Healing State
     isHealing,
     healingProgress,
@@ -90,6 +103,32 @@ export const LayoutBuilderView: React.FC = () => {
     cancelHealing,
     registerRenderToHtml,
   } = useLayoutBuilder();
+
+  // Source registry for multi-source merge pipeline
+  const { sources: _sources, addSource, updateSource, generateSourceId } = useSourceRegistry();
+
+  // Direct manipulation for drag/resize on canvas
+  const {
+    editMode,
+    setEditMode,
+    dragState,
+    activeSnapLines,
+    startMove,
+    startResize,
+    updateDrag,
+    endDrag,
+  } = useDirectManipulation();
+
+  // Commit bounds after drag/resize
+  const handleCommitBounds = useCallback(
+    (id: string, bounds: { top: number; left: number; width: number; height: number }) => {
+      updateComponentBounds(id, bounds);
+    },
+    [updateComponentBounds]
+  );
+
+  // Tree panel collapse state
+  const [isTreeOpen, setIsTreeOpen] = useState(true);
 
   // Debug: Log component count changes
   console.log('[LayoutBuilderView] components:', components.length, 'isAnalyzing:', isAnalyzing);
@@ -189,13 +228,32 @@ export const LayoutBuilderView: React.FC = () => {
       }
 
       try {
-        // Process each media file
+        // Process each media file with source tracking
         for (const item of media) {
-          if (item.type === 'video') {
-            await analyzeVideo(item.file, enhancedInstructions || undefined);
-          } else {
-            // Hook stores the original image internally for self-healing
-            await analyzeImage(item.file, enhancedInstructions || undefined);
+          const sourceId = generateSourceId();
+          const source = addSource({
+            id: sourceId,
+            type: item.type === 'video' ? 'video' : 'image',
+            name: item.file.name,
+            base64: item.previewUrl,
+            instructions: enhancedInstructions || undefined,
+          });
+
+          updateSource(source.id, { status: 'analyzing' });
+
+          try {
+            if (item.type === 'video') {
+              await analyzeVideo(item.file, enhancedInstructions || undefined, source.id);
+            } else {
+              await analyzeImage(item.file, enhancedInstructions || undefined, source.id);
+            }
+            updateSource(source.id, { status: 'complete' });
+          } catch (sourceError) {
+            updateSource(source.id, {
+              status: 'error',
+              error: sourceError instanceof Error ? sourceError.message : 'Analysis failed',
+            });
+            throw sourceError;
           }
         }
 
@@ -222,7 +280,7 @@ export const LayoutBuilderView: React.FC = () => {
         ]);
       }
     },
-    [analyzeImage, analyzeVideo, appConcept]
+    [analyzeImage, analyzeVideo, appConcept, generateSourceId, addSource, updateSource]
   );
 
   return (
@@ -237,7 +295,7 @@ export const LayoutBuilderView: React.FC = () => {
         />
       </div>
 
-      {/* Right Panel: Preview Canvas */}
+      {/* Center Panel: Preview Canvas */}
       <div className="flex-1 h-full overflow-hidden relative">
         <LayoutCanvas
           components={components}
@@ -265,8 +323,63 @@ export const LayoutBuilderView: React.FC = () => {
           onRunSelfHealing={runSelfHealingLoop}
           onCancelHealing={cancelHealing}
           registerRenderToHtml={registerRenderToHtml}
+          // Direct Manipulation Props
+          editMode={editMode}
+          onToggleEditMode={setEditMode}
+          dragState={dragState}
+          activeSnapLines={activeSnapLines}
+          onStartMove={startMove}
+          onStartResize={startResize}
+          onUpdateDrag={updateDrag}
+          onEndDrag={endDrag}
+          onCommitBounds={handleCommitBounds}
         />
+
+        {/* Tree panel toggle button (when tree is collapsed) */}
+        {!isTreeOpen && (
+          <button
+            className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors"
+            onClick={() => setIsTreeOpen(true)}
+            title="Open layers panel"
+          >
+            <PanelRightOpen size={16} />
+          </button>
+        )}
       </div>
+
+      {/* Right Panel: Component Tree (collapsible) */}
+      {isTreeOpen && (
+        <div className="w-[280px] flex-shrink-0 h-full border-l border-gray-200 flex flex-col">
+          {/* Tree panel header with close button */}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+              <Layers size={14} />
+              <span>Component Tree</span>
+            </div>
+            <button
+              className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={() => setIsTreeOpen(false)}
+              title="Close layers panel"
+            >
+              <PanelRightClose size={14} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <ComponentTreePanel
+              components={components}
+              selectedId={selectedId}
+              onSelectComponent={selectComponent}
+              onToggleVisibility={toggleComponentVisibility}
+              onToggleLock={toggleComponentLock}
+              onDeleteComponent={deleteComponent}
+              onDuplicateComponent={duplicateComponent}
+              onGroupComponents={groupComponents}
+              onUngroupComponent={ungroupComponent}
+              onRenameComponent={renameComponent}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

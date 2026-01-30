@@ -15,9 +15,11 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { DynamicLayoutRenderer } from './DynamicLayoutRenderer';
 import { FloatingEditBubble } from './FloatingEditBubble';
+import { ManipulationOverlay } from './ManipulationOverlay';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import type { VisionLoopProgress, SelfHealingResult } from '@/services/VisionLoopEngine';
 import type { DesignSpec } from '@/types/designSpec';
+import type { Bounds, DragState, SnapLine, ResizeHandle } from '@/types/manipulation';
 
 export interface LayoutCanvasProps {
   components: DetectedComponentEnhanced[];
@@ -52,6 +54,35 @@ export interface LayoutCanvasProps {
   onCancelHealing?: () => void;
   /** Register the renderToHtml callback for auto-trigger self-healing */
   registerRenderToHtml?: (callback: (() => string) | null) => void;
+
+  // Direct Manipulation Props (Gap 3)
+  editMode?: boolean;
+  onToggleEditMode?: (enabled: boolean) => void;
+  dragState?: DragState | null;
+  activeSnapLines?: SnapLine[];
+  onStartMove?: (
+    componentId: string,
+    startBounds: Bounds,
+    pointerX: number,
+    pointerY: number,
+    canvasRect: DOMRect
+  ) => void;
+  onStartResize?: (
+    componentId: string,
+    handle: ResizeHandle,
+    startBounds: Bounds,
+    pointerX: number,
+    pointerY: number,
+    canvasRect: DOMRect
+  ) => void;
+  onUpdateDrag?: (
+    pointerX: number,
+    pointerY: number,
+    canvasRect: DOMRect,
+    otherComponents: Array<{ id: string; bounds: Bounds }>
+  ) => Bounds | null;
+  onEndDrag?: () => Bounds | null;
+  onCommitBounds?: (id: string, bounds: Bounds) => void;
 }
 
 export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
@@ -81,6 +112,16 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   onRunSelfHealing,
   onCancelHealing,
   registerRenderToHtml,
+  // Direct Manipulation
+  editMode = false,
+  onToggleEditMode,
+  dragState = null,
+  activeSnapLines = [],
+  onStartMove,
+  onStartResize,
+  onUpdateDrag,
+  onEndDrag,
+  onCommitBounds,
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [showHealingResult, setShowHealingResult] = useState(false);
@@ -272,6 +313,21 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               ↪
             </button>
           </div>
+
+          {/* Edit Mode Toggle */}
+          {onToggleEditMode && (
+            <button
+              onClick={() => onToggleEditMode(!editMode)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                editMode
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              title={editMode ? 'Exit edit mode' : 'Enter edit mode (drag/resize)'}
+            >
+              {editMode ? 'Editing' : 'Edit'}
+            </button>
+          )}
 
           <button
             onClick={onExportCode}
@@ -465,7 +521,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
           />
 
           {/* Edit Bubble Overlay */}
-          {selectedComponent && (
+          {selectedComponent && !editMode && (
             <FloatingEditBubble
               component={selectedComponent}
               onClose={() => onSelectComponent(null)}
@@ -474,6 +530,26 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               onDuplicate={onDuplicateComponent}
             />
           )}
+
+          {/* Direct Manipulation Overlay (Gap 3) */}
+          {editMode &&
+            onStartMove &&
+            onStartResize &&
+            onUpdateDrag &&
+            onEndDrag &&
+            onCommitBounds && (
+              <ManipulationOverlay
+                components={components}
+                selectedId={selectedId}
+                dragState={dragState}
+                snapLines={activeSnapLines}
+                onStartMove={onStartMove}
+                onStartResize={onStartResize}
+                onUpdateDrag={onUpdateDrag}
+                onEndDrag={onEndDrag}
+                onCommitBounds={onCommitBounds}
+              />
+            )}
         </div>
 
         {/* Drag Overlay Help Text */}

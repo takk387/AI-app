@@ -837,9 +837,30 @@ export interface DetectedComponentEnhanced {
       transform?: string;
       scale?: number;
     };
+    focus?: {
+      outline?: string;
+      boxShadow?: string;
+      borderColor?: string;
+    };
   };
   /** Non-CSS visual effects (particles, canvas animations, complex motion) */
   visualEffects?: VisualEffect[];
+
+  // --- Multi-Source & Manipulation Fields ---
+
+  /** Source tracking: which uploaded media file produced this component (Gap 1) */
+  sourceId?: string;
+  /** Video-derived motion configuration (Gap 2) */
+  motionConfig?: import('@/types/motionConfig').ComponentMotionConfig;
+  /** Prevent accidental drag/resize in direct manipulation mode (Gap 3) */
+  locked?: boolean;
+  /** Group membership ID for component grouping (Gap 4) */
+  groupId?: string;
+  /** Toggle visibility in the component tree panel (Gap 4). Default: true */
+  visible?: boolean;
+  /** User-editable display name for the component tree (Gap 4) */
+  displayName?: string;
+
   /** Confidence score 0-1 */
   confidence: number;
 }

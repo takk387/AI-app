@@ -62,17 +62,19 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
       {/* Inject @keyframes CSS for any components with animationKeyframes */}
       <KeyframeInjector components={components} />
 
-      {/* Only render root components - they recursively render their children */}
-      {sortedRoots.map((component) => (
-        <GenericComponentRenderer
-          key={component.id}
-          component={component}
-          componentMap={componentMap}
-          onSelect={onSelectComponent}
-          selectedId={selectedComponentId}
-          depth={0}
-        />
-      ))}
+      {/* Only render visible root components - they recursively render their children */}
+      {sortedRoots
+        .filter((c) => c.visible !== false)
+        .map((component) => (
+          <GenericComponentRenderer
+            key={component.id}
+            component={component}
+            componentMap={componentMap}
+            onSelect={onSelectComponent}
+            selectedId={selectedComponentId}
+            depth={0}
+          />
+        ))}
 
       {/*
         Empty State / Placeholder

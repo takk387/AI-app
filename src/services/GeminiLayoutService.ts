@@ -22,6 +22,7 @@ import type {
   LayoutCritiqueEnhanced,
   LayoutDiscrepancy,
 } from '@/types/layoutAnalysis';
+import type { VideoMotionAnalysis } from '@/types/motionConfig';
 
 // ============================================================================
 // CONFIGURATION
@@ -29,20 +30,6 @@ import type {
 
 const MODEL_FLASH = 'gemini-3-flash-preview';
 // const MODEL_PRO_IMAGE = 'gemini-3-pro-preview'; // Future use for assets
-
-interface VideoMotionAnalysis {
-  keyframes: {
-    start: number; // 0-1 percentage
-    end: number;
-  };
-  transitions: {
-    type: 'fade' | 'slide' | 'scale' | 'none';
-    duration: number; // ms
-    ease: string;
-  }[];
-  hoverEffects: boolean;
-  scrollEffects: boolean;
-}
 
 interface LayoutCritique {
   score: number; // 0-100
@@ -453,7 +440,19 @@ class GeminiLayoutService {
             "textColor": "<hex - text color on hover>",
             "transform": "scale(1.05) or translateY(-2px) - transform on hover",
             "boxShadow": "<shadow value on hover - often larger than default>",
+            "opacity": "<0-1 opacity on hover, e.g. 0.8>",
             "borderColor": "<hex - border color on hover>"
+          },
+          "active": {
+            "backgroundColor": "<hex - background color when pressed/clicked>",
+            "textColor": "<hex - text color when pressed>",
+            "transform": "scale(0.95) - slight shrink on press",
+            "scale": "<number e.g., 0.95 - scale factor when active>"
+          },
+          "focus": {
+            "outline": "<CSS outline value, e.g., '2px solid #3b82f6'>",
+            "boxShadow": "<focus ring shadow, e.g., '0 0 0 3px rgba(59,130,246,0.5)'>",
+            "borderColor": "<hex - border color on focus>"
           }
         },
         "visualEffects": [
