@@ -10,6 +10,7 @@
  *
  * Persisted data (survives page refresh):
  * - appConcept, dynamicPhasePlan, currentLayoutManifest, currentAppId, currentDesignSpec
+ * - components, currentComponent (for builder to work after refresh)
  *
  * Slices:
  * - Chat: messages, userInput, isGenerating, generationProgress
@@ -586,7 +587,7 @@ export const useAppStore = create<AppState>()(
       })),
       {
         name: 'ai-app-builder-storage',
-        version: 1,
+        version: 2, // Bumped: now persists components and currentComponent
         partialize: (state) => ({
           // Only persist workflow-critical data (not UI state, chat, etc.)
           appConcept: state.appConcept,
@@ -594,6 +595,9 @@ export const useAppStore = create<AppState>()(
           currentLayoutManifest: state.currentLayoutManifest,
           currentAppId: state.currentAppId,
           currentDesignSpec: state.currentDesignSpec,
+          // Components are critical for builder to work after refresh
+          components: state.components,
+          currentComponent: state.currentComponent,
         }),
       }
     ),
