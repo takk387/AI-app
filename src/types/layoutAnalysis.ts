@@ -81,7 +81,11 @@ export interface LayoutDiscrepancy {
     | 'size_mismatch'
     | 'missing_element'
     | 'extra_element'
-    | 'content_mismatch';
+    | 'content_mismatch'
+    | 'effect_missing'
+    | 'image_missing'
+    | 'gradient_mismatch'
+    | 'animation_missing';
 
   /** Severity of the discrepancy */
   severity: 'minor' | 'moderate' | 'critical';

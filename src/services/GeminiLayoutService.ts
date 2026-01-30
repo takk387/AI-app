@@ -148,15 +148,58 @@ class GeminiLayoutService {
         ],
         "effects": {
           "borderRadius": "8px",
-          "shadows": "subtle",
-          "hasGradients": false,
-          "hasBlur": false
+          "shadows": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          "hasGradients": true/false,
+          "hasBlur": true/false,
+          "gradients": [
+            // List ALL gradients visible in the design
+            { "type": "linear|radial|mesh", "colors": ["#hex1", "#hex2"], "angle": "135deg" }
+          ],
+          "glassmorphism": {
+            // DETECT: Semi-transparent backgrounds with blur behind them
+            "detected": true/false,
+            "blur": "12px",
+            "opacity": 0.1,
+            "borderOpacity": 0.2,
+            "saturation": 180
+          },
+          "neumorphism": {
+            // DETECT: Elements that appear extruded from the background using double shadows (light & dark)
+            "detected": true/false,
+            "lightShadow": "-5px -5px 10px #ffffff",
+            "darkShadow": "5px 5px 10px #d1d1d1",
+            "intensity": "subtle|medium|strong"
+          },
+          "animations": [
+            // DETECT: Any visible motion, transitions, or animated effects
+            { "description": "gradient shift background animation", "type": "css|particle|scroll" }
+          ],
+          "backgroundEffects": [
+            // DETECT: Particles, aurora, floating shapes, waves, mesh gradient backgrounds
+            { "type": "particles|aurora|floating-shapes|waves|mesh-gradient", "description": "...", "colors": ["#hex1", "#hex2"] }
+          ]
         },
         "vibe": "Modern and minimalist" or "Bold and colorful" etc,
         "confidence": 0.9
       }
 
       FOCUS: Extract the DESIGN SYSTEM, not individual components.
+
+      ## Advanced Effects Detection (CRITICAL)
+      Look closely for these high-end UI patterns and extract exact values:
+
+      - **Glassmorphism**: Semi-transparent backgrounds with blur behind them.
+        Extract: backdrop-filter blur value, background opacity, border opacity.
+      - **Mesh Gradients / Auroras**: Soft, multi-colored blended backgrounds that are NOT simple linear gradients.
+        Extract: The specific 3-5 colors used and their approximate positions.
+      - **Neumorphism (Soft UI)**: Elements that appear extruded from the background using double shadows (light & dark).
+        Extract: Both shadow values (light and dark).
+      - **Inner Glows / Borders**: Subtle 1px inner highlights on buttons or cards.
+        Extract: box-shadow inset values.
+      - **Particle Effects**: Floating dots, sparkles, or animated particles in the background.
+        Describe the effect type and colors.
+      - **Animations**: Any visible motion - gradient shifts, floating elements, pulsing effects.
+        Describe what's animating and how.
 
       IMPORTANT FOR COLORS: Extract ALL unique colors visible in the image.
       The more complete the color palette, the better Stage 2 can match the design.
@@ -353,6 +396,17 @@ class GeminiLayoutService {
           // Cursor
           "cursor": "pointer|text|default|grab",
 
+          // Animations & Transitions (first-class support for motion)
+          "animation": "<CSS animation shorthand e.g., 'gradient-shift 3s ease infinite'>",
+          "animationKeyframes": {
+            // Define @keyframes inline - the renderer will inject a <style> tag
+            // Use percentage keys for keyframe stops
+            "0%": { "backgroundPosition": "0% 50%" },
+            "50%": { "backgroundPosition": "100% 50%" },
+            "100%": { "backgroundPosition": "0% 50%" }
+          },
+          "transition": "<CSS transition shorthand e.g., 'all 0.3s ease'>",
+
           // Flex control
           "flexGrow": "<number>",
           "flexShrink": "<number>",
@@ -374,6 +428,8 @@ class GeminiLayoutService {
         "content": {
           "text": "<EXACT visible text>",
           "hasImage": true/false,
+          "imageDescription": "<detailed description of the image for AI generation, e.g., 'Company logo: blue shield with white lightning bolt on dark navy background'>",
+          "imageAlt": "<alt text for accessibility, e.g., 'Acme Corp logo'>",
           "hasIcon": true/false,
           // ICON EXTRACTION - For exact replicas, provide SVG path data when possible
           "iconSvgPath": "<SVG path d attribute - e.g., 'M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5M2 12l10 5 10-5' - PREFERRED for exact replication>",
@@ -400,6 +456,30 @@ class GeminiLayoutService {
             "borderColor": "<hex - border color on hover>"
           }
         },
+        "visualEffects": [
+          // DETECT: Non-CSS visual effects like particles, canvas animations, complex motion
+          {
+            "description": "<what the effect looks like, e.g., 'Particle trail streaming from button on hover'>",
+            "type": "css-animation|particle-system|canvas-effect",
+            "trigger": "always|hover|click|scroll",
+            "cssKeyframes": {
+              // For CSS-achievable effects, provide the keyframe definition
+              "0%": { "<property>": "<value>" },
+              "100%": { "<property>": "<value>" }
+            },
+            "particleConfig": {
+              // For particle effects, describe the particle system
+              "count": 20,
+              "shape": "circle|square|star|custom",
+              "colors": ["#hex1", "#hex2"],
+              "direction": "up|down|left|right|radial|random",
+              "speed": "slow|medium|fast",
+              "size": { "min": 2, "max": 8 },
+              "opacity": { "start": 1, "end": 0 },
+              "lifetime": "1s|2s|3s"
+            }
+          }
+        ],
         "confidence": 0.9
       }
 
@@ -507,6 +587,35 @@ class GeminiLayoutService {
           - ANY CSS property that exists but isn't in the schema
 
           The customCSS object is our guarantee of 100% visual fidelity.
+
+      11. **ANIMATION & TRANSITION DETECTION**:
+          - If a component appears to have CSS animations (gradient shifts, pulsing, shimmer, glow):
+            Set style.animation with the shorthand and provide animationKeyframes with the full definition.
+          - If a component has visible transitions (smooth hover effects, entrance animations):
+            Set style.transition with the appropriate shorthand.
+          - For complex animations that need @keyframes, ALWAYS provide the animationKeyframes object.
+            The renderer will generate a unique keyframe name and inject a <style> tag.
+
+      12. **VISUAL EFFECTS DETECTION**:
+          - If you detect non-CSS effects (particle trails, floating shapes, sparkle effects, canvas-drawn elements):
+            Add a visualEffects array to the component.
+          - For particle effects: describe count, shape, colors, direction, speed.
+          - For CSS-achievable effects: provide cssKeyframes so the renderer can inject them.
+          - Common effects to look for:
+            * Particle trails following cursor or streaming from buttons
+            * Floating/drifting shapes in backgrounds
+            * Sparkle or confetti effects
+            * Animated gradient meshes
+            * Aurora/northern lights backgrounds
+
+      13. **IMAGE & LOGO DETECTION**:
+          - When you see a logo, photograph, illustration, or any image:
+            * Set content.hasImage = true
+            * Set content.imageDescription with a DETAILED description of what the image shows
+              (e.g., "Company logo: blue shield icon with white lightning bolt on dark navy background")
+            * Set content.imageAlt with proper accessibility alt text
+          - This allows the system to generate placeholder images or use DALL-E for actual image generation.
+          - Do NOT just set hasImage: true with no description - the description is critical.
 
       Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
     `;
@@ -1023,7 +1132,7 @@ class GeminiLayoutService {
         "discrepancies": [
           {
             "componentId": "<id from components list, or 'unknown' if can't identify>",
-            "issue": "color_drift|spacing_error|typography_mismatch|position_offset|size_mismatch|missing_element|extra_element|content_mismatch",
+            "issue": "color_drift|spacing_error|typography_mismatch|position_offset|size_mismatch|missing_element|extra_element|content_mismatch|effect_missing|image_missing|gradient_mismatch|animation_missing",
             "severity": "minor|moderate|critical",
             "expected": "<what it should be, e.g., '#FF0000' or '24px'>",
             "actual": "<what it currently is>",
@@ -1050,6 +1159,10 @@ class GeminiLayoutService {
       - missing_element: Element exists in original but not in generated
       - extra_element: Element exists in generated but not in original
       - content_mismatch: Text content is different
+      - effect_missing: Visual effect (glassmorphism, blur, shadow) exists in original but missing in generated
+      - image_missing: Image/logo shows as placeholder instead of actual content
+      - gradient_mismatch: Gradient colors, direction, or type doesn't match original
+      - animation_missing: CSS animation or particle effect exists in original but missing in generated
 
       **Recommendation Logic**:
       - "accept": fidelityScore >= ${targetFidelity} and no critical issues

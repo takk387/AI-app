@@ -69,9 +69,38 @@ export interface DesignSpec {
   // Effects & Style
   effects: {
     borderRadius: string; // "8px", "16px", "none"
-    shadows: 'none' | 'subtle' | 'medium' | 'strong';
+    shadows: string; // CSS box-shadow value or preset name
     hasGradients: boolean;
     hasBlur: boolean;
+    // Structured effect configs (expanded from boolean-only)
+    gradients?: Array<{
+      type: 'linear' | 'radial' | 'mesh';
+      colors: string[];
+      angle?: string; // e.g., "135deg"
+      positions?: string[]; // e.g., ["0%", "50%", "100%"]
+    }>;
+    glassmorphism?: {
+      detected: boolean;
+      blur: string; // e.g., "12px"
+      opacity: number; // 0-1
+      borderOpacity: number; // 0-1
+      saturation?: number; // percentage, e.g., 180
+    };
+    neumorphism?: {
+      detected: boolean;
+      lightShadow: string; // CSS shadow value
+      darkShadow: string; // CSS shadow value
+      intensity?: 'subtle' | 'medium' | 'strong';
+    };
+    animations?: Array<{
+      description: string; // e.g., "gradient shift background"
+      type: 'css' | 'particle' | 'scroll';
+    }>;
+    backgroundEffects?: Array<{
+      type: 'particles' | 'aurora' | 'floating-shapes' | 'waves' | 'mesh-gradient';
+      description: string;
+      colors?: string[];
+    }>;
   };
 
   // Overall Vibe

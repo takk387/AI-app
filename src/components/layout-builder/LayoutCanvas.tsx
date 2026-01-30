@@ -456,7 +456,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
         <div
           ref={layoutRef}
           className="w-full bg-white shadow-sm ring-1 ring-gray-200 rounded-md relative"
-          style={{ height: '800px' }}
+          style={{ minHeight: '800px', overflow: 'visible' }}
         >
           <DynamicLayoutRenderer
             components={components}

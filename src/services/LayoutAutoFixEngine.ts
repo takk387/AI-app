@@ -62,18 +62,36 @@ export interface LayoutAutoFixConfig {
  * Properties that are safe to auto-fix
  */
 const SAFE_STYLE_PROPERTIES = [
+  // Colors
   'backgroundColor',
   'textColor',
   'color',
+  'borderColor',
+  // Typography
   'fontSize',
   'fontWeight',
+  'fontFamily',
+  'textAlign',
+  'lineHeight',
+  'letterSpacing',
+  // Spacing
   'padding',
   'margin',
-  'borderRadius',
-  'borderColor',
-  'borderWidth',
   'gap',
+  'borderRadius',
+  'borderWidth',
+  // Visual effects
   'opacity',
+  'shadow',
+  'backgroundImage',
+  'backdropFilter',
+  'filter',
+  'transform',
+  'animation',
+  'animationKeyframes',
+  'transition',
+  'mixBlendMode',
+  'textShadow',
 ];
 
 /**

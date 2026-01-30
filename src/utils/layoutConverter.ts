@@ -91,6 +91,7 @@ function buildNodeTree(
     attributes: {
       text: component.content?.text,
       src: component.content?.hasImage ? 'placeholder.jpg' : undefined,
+      alt: component.content?.imageAlt || component.content?.imageDescription,
     },
     layout: {
       mode: styleObj.position === 'absolute' || component.bounds ? 'absolute' : 'flow',

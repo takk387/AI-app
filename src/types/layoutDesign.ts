@@ -588,6 +588,32 @@ export interface PageAnalysis {
 }
 
 /**
+ * Visual effect configuration for non-CSS effects (particles, canvas, complex motion)
+ * Detected by Stage 2 "The Engineer" and rendered by VisualEffectRenderer
+ */
+export interface VisualEffect {
+  /** Human-readable description of the effect */
+  description: string;
+  /** Effect implementation type */
+  type: 'css-animation' | 'particle-system' | 'canvas-effect';
+  /** When the effect activates */
+  trigger: 'always' | 'hover' | 'click' | 'scroll';
+  /** CSS keyframes definition for CSS-achievable effects */
+  cssKeyframes?: Record<string, Record<string, string>>;
+  /** Particle system configuration for particle effects */
+  particleConfig?: {
+    count?: number;
+    shape?: 'circle' | 'square' | 'star' | 'custom';
+    colors?: string[];
+    direction?: 'up' | 'down' | 'left' | 'right' | 'radial' | 'random';
+    speed?: 'slow' | 'medium' | 'fast';
+    size?: { min: number; max: number };
+    opacity?: { start: number; end: number };
+    lifetime?: string;
+  };
+}
+
+/**
  * Enhanced component detection with precise positioning for exact replication
  */
 export interface DetectedComponentEnhanced {
@@ -722,6 +748,12 @@ export interface DetectedComponentEnhanced {
     right?: string;
     bottom?: string;
     left?: string;
+    /** CSS animation shorthand (e.g., 'gradient-shift 3s ease infinite') */
+    animation?: string;
+    /** Inline @keyframes definition — renderer injects as <style> tag */
+    animationKeyframes?: Record<string, Record<string, string>>;
+    /** CSS transition shorthand (e.g., 'all 0.3s ease') */
+    transition?: string;
     /** Arbitrary CSS properties for "Zero-Preset" custom designs (e.g., gradients, filters, complex shadows) */
     customCSS?: Record<string, string | number>;
   };
@@ -730,6 +762,10 @@ export interface DetectedComponentEnhanced {
     text?: string;
     hasIcon?: boolean;
     hasImage?: boolean;
+    /** Detailed description of the image for AI generation (e.g., 'Company logo: blue shield with white lightning bolt') */
+    imageDescription?: string;
+    /** Alt text for accessibility */
+    imageAlt?: string;
     itemCount?: number;
     placeholder?: string;
     /** Lucide icon name (e.g. "Home", "User", "Menu") - FALLBACK when SVG path not available */
@@ -802,6 +838,8 @@ export interface DetectedComponentEnhanced {
       scale?: number;
     };
   };
+  /** Non-CSS visual effects (particles, canvas animations, complex motion) */
+  visualEffects?: VisualEffect[];
   /** Confidence score 0-1 */
   confidence: number;
 }

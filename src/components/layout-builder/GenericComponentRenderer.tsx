@@ -15,6 +15,7 @@
 import React from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { cn } from '@/lib/utils'; // Assuming cn utility exists, otherwise standard classnames
+import { VisualEffectRenderer } from '@/components/effects/VisualEffectRenderer';
 
 interface GenericComponentRendererProps {
   component: DetectedComponentEnhanced;
@@ -233,6 +234,48 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     transform: style.transform,
     filter: style.filter,
     mixBlendMode: style.mixBlendMode as React.CSSProperties['mixBlendMode'],
+
+    // Animation & transitions (keyframes injected by KeyframeInjector at layout level)
+    // When animationKeyframes exist, KeyframeInjector namespaces the @keyframes rule as
+    // `{componentId}--{originalName}` to prevent collisions. Rewrite the shorthand to match.
+    animation: (() => {
+      if (!style.animation) return undefined;
+      if (!style.animationKeyframes) return style.animation;
+      // Extract and replace original name with namespaced version
+      const tokens = style.animation.trim().split(/\s+/);
+      const timePattern = /^[\d.]+m?s$/;
+      const keywords = new Set([
+        'ease',
+        'ease-in',
+        'ease-out',
+        'ease-in-out',
+        'linear',
+        'step-start',
+        'step-end',
+        'normal',
+        'reverse',
+        'alternate',
+        'alternate-reverse',
+        'none',
+        'forwards',
+        'backwards',
+        'both',
+        'running',
+        'paused',
+        'infinite',
+      ]);
+      const namespacedTokens = tokens.map((token) => {
+        const lower = token.toLowerCase();
+        if (timePattern.test(lower)) return token;
+        if (keywords.has(lower)) return token;
+        if (lower.startsWith('cubic-bezier') || lower.startsWith('steps')) return token;
+        if (/^\d+$/.test(lower)) return token;
+        // This token is the animation name — namespace it
+        return `${id}--${token}`;
+      });
+      return namespacedTokens.join(' ');
+    })(),
+    transition: style.transition,
 
     // Cursor
     cursor: style.cursor,
@@ -626,12 +669,53 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return content.text;
     }
 
-    // Render image placeholder (improved - less intrusive, respects bounds)
+    // Render image content (with description-aware placeholders)
     if (hasImageContent) {
       // Check if there's a background image set on the component - if so, don't show placeholder
       if (style.backgroundImage) {
         return null; // Background image is handled by the component's styles
       }
+
+      // If we have an image description from Gemini, show a styled placeholder
+      // that communicates what the image depicts (for future DALL-E generation)
+      if (content.imageDescription) {
+        return (
+          <div
+            className="w-full h-full flex flex-col items-center justify-center gap-2 overflow-hidden"
+            style={{
+              backgroundColor: style.backgroundColor || 'rgba(229, 231, 235, 0.3)',
+              minHeight: bounds?.height ? undefined : '60px',
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="text-gray-400 flex-shrink-0"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span
+              className="text-gray-500 text-xs text-center px-2 leading-tight"
+              style={{ maxWidth: '90%' }}
+            >
+              {content.imageDescription}
+            </span>
+            {content.imageAlt && (
+              <span className="text-gray-400 text-xs italic truncate" style={{ maxWidth: '90%' }}>
+                {content.imageAlt}
+              </span>
+            )}
+          </div>
+        );
+      }
+
+      // Fallback: minimal placeholder when no description available
       return (
         <div
           className="w-full h-full flex items-center justify-center text-gray-400 text-xs"
@@ -744,6 +828,10 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   };
 
   // Use div for all component types (avoid void elements like img that can't have children)
+  // VisualEffectRenderer is rendered INSIDE the div as a child overlay,
+  // so it positions correctly relative to this positioned element.
+  const hasVisualEffects = component.visualEffects && component.visualEffects.length > 0;
+
   return (
     <div
       data-id={id}
@@ -751,7 +839,10 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       data-depth={depth}
       style={combinedStyles}
       className={cn(
-        'transition-all duration-200 cursor-pointer',
+        // Only apply Tailwind transition when no custom transition is set,
+        // to prevent overriding AI-specified transitions via inline style
+        !style.transition && 'transition-all duration-200',
+        'cursor-pointer',
         selectionClass,
         getInteractionClass()
       )}
@@ -759,6 +850,9 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     >
       {renderContent()}
       {renderChildren()}
+      {hasVisualEffects && (
+        <VisualEffectRenderer effects={component.visualEffects!} componentId={id} />
+      )}
     </div>
   );
 };

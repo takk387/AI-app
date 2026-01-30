@@ -14,6 +14,7 @@
 import React, { useMemo } from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { GenericComponentRenderer } from './GenericComponentRenderer';
+import { KeyframeInjector } from './KeyframeInjector';
 import { buildComponentTree } from '@/utils/layoutValidation';
 
 interface DynamicLayoutRendererProps {
@@ -58,6 +59,9 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
       id="layout-canvas" // ID for html2canvas
       style={{ minHeight: '600px' }} // overflow-visible allows content to extend beyond container
     >
+      {/* Inject @keyframes CSS for any components with animationKeyframes */}
+      <KeyframeInjector components={components} />
+
       {/* Only render root components - they recursively render their children */}
       {sortedRoots.map((component) => (
         <GenericComponentRenderer

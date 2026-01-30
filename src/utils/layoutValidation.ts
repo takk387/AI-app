@@ -126,6 +126,10 @@ const StyleSchema = z
     transform: z.string().optional(),
     overflow: z.string().optional(),
     customCSS: z.record(z.string(), z.unknown()).optional(),
+    // Animation & transition properties
+    animation: z.string().optional(),
+    animationKeyframes: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+    transition: z.string().optional(),
   })
   .passthrough()
   .default({});
@@ -138,6 +142,8 @@ const ContentSchema = z
     text: z.string().optional(),
     hasIcon: z.boolean().optional(),
     hasImage: z.boolean().optional(),
+    imageDescription: z.string().optional(),
+    imageAlt: z.string().optional(),
     itemCount: z.number().optional(),
     placeholder: z.string().optional(),
     // Icon properties for exact SVG replication
@@ -220,40 +226,96 @@ const LayoutConfigSchema = z
 /**
  * Full component schema with all required fields.
  */
-export const DetectedComponentSchema = z.object({
-  id: z.string().min(1),
-  type: z
-    .string()
-    .transform((val) =>
-      VALID_COMPONENT_TYPES.includes(val as (typeof VALID_COMPONENT_TYPES)[number])
-        ? val
-        : 'unknown'
-    ),
-  bounds: BoundsSchema,
-  style: StyleSchema,
-  content: ContentSchema,
-  parentId: z.string().optional(),
-  children: z.array(z.string()).optional(),
-  role: z
-    .string()
-    .transform((val) =>
-      VALID_ROLES.includes(val as (typeof VALID_ROLES)[number]) ? val : undefined
-    )
-    .optional(),
-  layout: LayoutConfigSchema,
-  zIndex: z.number().optional(),
-  navigatesTo: z.string().optional(),
-  isNavigationItem: z.boolean().optional(),
-  isInteractive: z.boolean().optional(),
-  confidence: z
-    .union([z.number(), z.string()])
-    .transform((val) => {
-      const num = typeof val === 'string' ? parseFloat(val) : val;
-      if (isNaN(num)) return 0.5;
-      return Math.max(0, Math.min(1, num));
-    })
-    .default(0.5),
-});
+export const DetectedComponentSchema = z
+  .object({
+    id: z.string().min(1),
+    type: z
+      .string()
+      .transform((val) =>
+        VALID_COMPONENT_TYPES.includes(val as (typeof VALID_COMPONENT_TYPES)[number])
+          ? val
+          : 'unknown'
+      ),
+    bounds: BoundsSchema,
+    style: StyleSchema,
+    content: ContentSchema,
+    parentId: z.string().optional(),
+    children: z.array(z.string()).optional(),
+    role: z
+      .string()
+      .transform((val) =>
+        VALID_ROLES.includes(val as (typeof VALID_ROLES)[number]) ? val : undefined
+      )
+      .optional(),
+    layout: LayoutConfigSchema,
+    zIndex: z.number().optional(),
+    navigatesTo: z.string().optional(),
+    isNavigationItem: z.boolean().optional(),
+    isInteractive: z.boolean().optional(),
+    interactions: z
+      .object({
+        hover: z
+          .object({
+            backgroundColor: z.string().optional(),
+            textColor: z.string().optional(),
+            transform: z.string().optional(),
+            boxShadow: z.string().optional(),
+            opacity: z.number().optional(),
+            borderColor: z.string().optional(),
+          })
+          .passthrough()
+          .optional(),
+        active: z
+          .object({
+            backgroundColor: z.string().optional(),
+            textColor: z.string().optional(),
+            transform: z.string().optional(),
+            scale: z.number().optional(),
+          })
+          .passthrough()
+          .optional(),
+      })
+      .passthrough()
+      .optional(),
+    visualEffects: z
+      .array(
+        z
+          .object({
+            description: z.string().default(''),
+            type: z.string().default('css-animation'),
+            trigger: z.string().default('always'),
+            cssKeyframes: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+            particleConfig: z
+              .object({
+                count: z.number().optional(),
+                shape: z.string().optional(),
+                colors: z.array(z.string()).optional(),
+                direction: z.string().optional(),
+                speed: z.string().optional(),
+                size: z
+                  .object({ min: z.number().optional(), max: z.number().optional() })
+                  .optional(),
+                opacity: z
+                  .object({ start: z.number().optional(), end: z.number().optional() })
+                  .optional(),
+                lifetime: z.string().optional(),
+              })
+              .passthrough()
+              .optional(),
+          })
+          .passthrough()
+      )
+      .optional(),
+    confidence: z
+      .union([z.number(), z.string()])
+      .transform((val) => {
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        if (isNaN(num)) return 0.5;
+        return Math.max(0, Math.min(1, num));
+      })
+      .default(0.5),
+  })
+  .passthrough();
 
 /**
  * Schema for array of components.
