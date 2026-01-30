@@ -16,7 +16,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   LayoutBuilderChatPanel,
   LayoutChatMessage,
@@ -24,6 +24,7 @@ import {
 } from './layout-builder/LayoutBuilderChatPanel';
 import { LayoutCanvas } from './layout-builder/LayoutCanvas';
 import { useLayoutBuilder } from '@/hooks/useLayoutBuilder';
+import { useAppStore } from '@/store/useAppStore';
 
 // ============================================================================
 // HELPERS
@@ -38,12 +39,25 @@ function generateMessageId(): string {
 // ============================================================================
 
 export const LayoutBuilderView: React.FC = () => {
+  // Read app context from store for personalized experience
+  const appConcept = useAppStore((state) => state.appConcept);
+
+  // Generate welcome message based on app context
+  const welcomeMessage = useMemo(() => {
+    if (appConcept?.name) {
+      const themeInfo = appConcept.uiPreferences?.colorScheme
+        ? ` I'll use your ${appConcept.uiPreferences.colorScheme} theme preferences as guidance.`
+        : '';
+      return `Welcome to the Layout Builder for **${appConcept.name}**! Upload an image or video of a design you'd like to replicate, and I'll analyze it to create a matching layout.${themeInfo} You can also add instructions to customize the result.`;
+    }
+    return "Welcome to the Layout Builder! Upload an image or video of a design you'd like to replicate, and I'll analyze it to create a matching layout. You can also add instructions to customize the result.";
+  }, [appConcept?.name, appConcept?.uiPreferences?.colorScheme]);
+
   const [messages, setMessages] = useState<LayoutChatMessage[]>([
     {
       id: generateMessageId(),
       role: 'assistant',
-      content:
-        "Welcome to the Layout Builder! Upload an image or video of a design you'd like to replicate, and I'll analyze it to create a matching layout. You can also add instructions to customize the result.",
+      content: welcomeMessage,
       timestamp: new Date(),
     },
   ]);
@@ -152,14 +166,36 @@ export const LayoutBuilderView: React.FC = () => {
       };
       setMessages((prev) => [...prev, userMessage]);
 
+      // Build enhanced instructions with app context
+      let enhancedInstructions = instructions || '';
+      if (appConcept) {
+        const contextParts: string[] = [];
+        if (appConcept.name) {
+          contextParts.push(`This design is for an app called "${appConcept.name}".`);
+        }
+        if (appConcept.uiPreferences?.colorScheme) {
+          contextParts.push(`Preferred color scheme: ${appConcept.uiPreferences.colorScheme}.`);
+        }
+        if (appConcept.uiPreferences?.primaryColor) {
+          contextParts.push(`Primary color: ${appConcept.uiPreferences.primaryColor}.`);
+        }
+        if (appConcept.uiPreferences?.style) {
+          contextParts.push(`Design style: ${appConcept.uiPreferences.style}.`);
+        }
+        if (contextParts.length > 0) {
+          const contextPrefix = `[App Context: ${contextParts.join(' ')}] `;
+          enhancedInstructions = contextPrefix + enhancedInstructions;
+        }
+      }
+
       try {
         // Process each media file
         for (const item of media) {
           if (item.type === 'video') {
-            await analyzeVideo(item.file, instructions);
+            await analyzeVideo(item.file, enhancedInstructions || undefined);
           } else {
             // Hook stores the original image internally for self-healing
-            await analyzeImage(item.file, instructions);
+            await analyzeImage(item.file, enhancedInstructions || undefined);
           }
         }
 
@@ -186,7 +222,7 @@ export const LayoutBuilderView: React.FC = () => {
         ]);
       }
     },
-    [analyzeImage, analyzeVideo]
+    [analyzeImage, analyzeVideo, appConcept]
   );
 
   return (

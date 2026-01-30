@@ -3,9 +3,13 @@
  *
  * This store mirrors all useState calls from MainBuilderView.tsx for modular architecture.
  * It uses Zustand with:
+ * - Persist middleware for localStorage persistence (workflow-critical data survives page refresh)
  * - Immer middleware for safe immutable state updates (allows direct mutations in reducers)
  * - Devtools middleware for debugging in development
  * - Shallow comparison in selectors to prevent unnecessary re-renders
+ *
+ * Persisted data (survives page refresh):
+ * - appConcept, dynamicPhasePlan, currentLayoutManifest, currentAppId, currentDesignSpec
  *
  * Slices:
  * - Chat: messages, userInput, isGenerating, generationProgress
@@ -18,7 +22,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { useShallow } from 'zustand/react/shallow';
 import type {
@@ -313,271 +317,286 @@ export interface AppState
  */
 export const useAppStore = create<AppState>()(
   devtools(
-    immer((set, _get) => ({
-      // ========================================================================
-      // CHAT SLICE
-      // ========================================================================
-      chatMessages: [] as ChatMessage[],
-      userInput: '',
-      isGenerating: false,
-      generationProgress: '',
+    persist(
+      immer((set, _get) => ({
+        // ========================================================================
+        // CHAT SLICE
+        // ========================================================================
+        chatMessages: [] as ChatMessage[],
+        userInput: '',
+        isGenerating: false,
+        generationProgress: '',
 
-      setChatMessages: (messages) =>
-        set((state) => ({
-          chatMessages: typeof messages === 'function' ? messages(state.chatMessages) : messages,
-        })),
-      setUserInput: (input) => set({ userInput: input }),
-      setIsGenerating: (isGenerating) => set({ isGenerating }),
-      setGenerationProgress: (progress) => set({ generationProgress: progress }),
-      addChatMessage: (message) =>
-        set((state) => ({
-          chatMessages: [...state.chatMessages, message],
-        })),
-      clearChatMessages: () => set({ chatMessages: [] }),
+        setChatMessages: (messages) =>
+          set((state) => ({
+            chatMessages: typeof messages === 'function' ? messages(state.chatMessages) : messages,
+          })),
+        setUserInput: (input) => set({ userInput: input }),
+        setIsGenerating: (isGenerating) => set({ isGenerating }),
+        setGenerationProgress: (progress) => set({ generationProgress: progress }),
+        addChatMessage: (message) =>
+          set((state) => ({
+            chatMessages: [...state.chatMessages, message],
+          })),
+        clearChatMessages: () => set({ chatMessages: [] }),
 
-      // ========================================================================
-      // MODE SLICE
-      // ========================================================================
-      currentMode: 'PLAN',
-      lastUserRequest: '',
+        // ========================================================================
+        // MODE SLICE
+        // ========================================================================
+        currentMode: 'PLAN',
+        lastUserRequest: '',
 
-      setCurrentMode: (mode) => set({ currentMode: mode }),
-      setLastUserRequest: (request) => set({ lastUserRequest: request }),
+        setCurrentMode: (mode) => set({ currentMode: mode }),
+        setLastUserRequest: (request) => set({ lastUserRequest: request }),
 
-      // ========================================================================
-      // COMPONENTS SLICE
-      // ========================================================================
-      components: [] as GeneratedComponent[],
-      currentComponent: null as GeneratedComponent | null,
-      loadingApps: true,
-      dbSyncError: null as string | null,
+        // ========================================================================
+        // COMPONENTS SLICE
+        // ========================================================================
+        components: [] as GeneratedComponent[],
+        currentComponent: null as GeneratedComponent | null,
+        loadingApps: true,
+        dbSyncError: null as string | null,
 
-      setComponents: (components) =>
-        set((state) => ({
-          components: typeof components === 'function' ? components(state.components) : components,
-        })),
-      setCurrentComponent: (component) => set({ currentComponent: component }),
-      setLoadingApps: (loading) => set({ loadingApps: loading }),
-      setDbSyncError: (error) => set({ dbSyncError: error }),
-      addComponent: (component) =>
-        set((state) => ({
-          components: [...state.components, component],
-        })),
-      updateComponent: (id, updates) =>
-        set((state) => ({
-          components: state.components.map((comp) =>
-            comp.id === id ? { ...comp, ...updates } : comp
-          ),
-        })),
-      removeComponent: (id) =>
-        set((state) => ({
-          components: state.components.filter((comp) => comp.id !== id),
-        })),
+        setComponents: (components) =>
+          set((state) => ({
+            components:
+              typeof components === 'function' ? components(state.components) : components,
+          })),
+        setCurrentComponent: (component) => set({ currentComponent: component }),
+        setLoadingApps: (loading) => set({ loadingApps: loading }),
+        setDbSyncError: (error) => set({ dbSyncError: error }),
+        addComponent: (component) =>
+          set((state) => ({
+            components: [...state.components, component],
+          })),
+        updateComponent: (id, updates) =>
+          set((state) => ({
+            components: state.components.map((comp) =>
+              comp.id === id ? { ...comp, ...updates } : comp
+            ),
+          })),
+        removeComponent: (id) =>
+          set((state) => ({
+            components: state.components.filter((comp) => comp.id !== id),
+          })),
 
-      // ========================================================================
-      // VERSION CONTROL SLICE
-      // ========================================================================
-      undoStack: [] as AppVersion[],
-      redoStack: [] as AppVersion[],
-      showVersionHistory: false,
+        // ========================================================================
+        // VERSION CONTROL SLICE
+        // ========================================================================
+        undoStack: [] as AppVersion[],
+        redoStack: [] as AppVersion[],
+        showVersionHistory: false,
 
-      setUndoStack: (stack) =>
-        set((state) => ({
-          undoStack: typeof stack === 'function' ? stack(state.undoStack) : stack,
-        })),
-      setRedoStack: (stack) =>
-        set((state) => ({
-          redoStack: typeof stack === 'function' ? stack(state.redoStack) : stack,
-        })),
-      setShowVersionHistory: (show) => set({ showVersionHistory: show }),
-      pushToUndoStack: (version) =>
-        set((state) => ({
-          undoStack: [...state.undoStack, version],
-        })),
-      pushToRedoStack: (version) =>
-        set((state) => ({
-          redoStack: [...state.redoStack, version],
-        })),
-      clearRedoStack: () => set({ redoStack: [] }),
+        setUndoStack: (stack) =>
+          set((state) => ({
+            undoStack: typeof stack === 'function' ? stack(state.undoStack) : stack,
+          })),
+        setRedoStack: (stack) =>
+          set((state) => ({
+            redoStack: typeof stack === 'function' ? stack(state.redoStack) : stack,
+          })),
+        setShowVersionHistory: (show) => set({ showVersionHistory: show }),
+        pushToUndoStack: (version) =>
+          set((state) => ({
+            undoStack: [...state.undoStack, version],
+          })),
+        pushToRedoStack: (version) =>
+          set((state) => ({
+            redoStack: [...state.redoStack, version],
+          })),
+        clearRedoStack: () => set({ redoStack: [] }),
 
-      // ========================================================================
-      // UI SLICE
-      // ========================================================================
-      isClient: false,
-      activeTab: 'chat',
-      showLibrary: false,
-      showDiffPreview: false,
-      showApprovalModal: false,
-      showDeploymentModal: false,
-      showCompareModal: false,
-      showConversationalWizard: false,
-      showLayoutBuilder: false,
-      showSettings: false,
-      showAdvancedPhasedBuild: false,
-      showQualityReport: false,
-      showPerformanceReport: false,
-      showNameAppModal: false,
-      showShareModal: false,
-      showExportModal: false,
-      exportModalComponent: null as GeneratedComponent | null,
-      showCreateBranchModal: false,
-      searchQuery: '',
-      // Preview mode (browser = esbuild-wasm, railway = full-stack)
-      previewMode: 'browser',
-      webContainerStatus: 'idle',
-      // Concept Panel state
-      isConceptPanelCollapsed: false,
-      conceptPanelEditMode: false,
+        // ========================================================================
+        // UI SLICE
+        // ========================================================================
+        isClient: false,
+        activeTab: 'chat',
+        showLibrary: false,
+        showDiffPreview: false,
+        showApprovalModal: false,
+        showDeploymentModal: false,
+        showCompareModal: false,
+        showConversationalWizard: false,
+        showLayoutBuilder: false,
+        showSettings: false,
+        showAdvancedPhasedBuild: false,
+        showQualityReport: false,
+        showPerformanceReport: false,
+        showNameAppModal: false,
+        showShareModal: false,
+        showExportModal: false,
+        exportModalComponent: null as GeneratedComponent | null,
+        showCreateBranchModal: false,
+        searchQuery: '',
+        // Preview mode (browser = esbuild-wasm, railway = full-stack)
+        previewMode: 'browser',
+        webContainerStatus: 'idle',
+        // Concept Panel state
+        isConceptPanelCollapsed: false,
+        conceptPanelEditMode: false,
 
-      setIsClient: (isClient) => set({ isClient }),
-      setActiveTab: (tab) => set({ activeTab: tab }),
-      setShowLibrary: (show) => set({ showLibrary: show }),
-      setShowDiffPreview: (show) => set({ showDiffPreview: show }),
-      setShowApprovalModal: (show) => set({ showApprovalModal: show }),
-      setShowDeploymentModal: (show) => set({ showDeploymentModal: show }),
-      setShowCompareModal: (show) => set({ showCompareModal: show }),
-      setShowConversationalWizard: (show) => set({ showConversationalWizard: show }),
-      setShowLayoutBuilder: (show) => set({ showLayoutBuilder: show }),
-      setShowSettings: (show) => set({ showSettings: show }),
-      setShowAdvancedPhasedBuild: (show) => set({ showAdvancedPhasedBuild: show }),
-      setShowQualityReport: (show) => set({ showQualityReport: show }),
-      setShowPerformanceReport: (show) => set({ showPerformanceReport: show }),
-      setShowNameAppModal: (show) => set({ showNameAppModal: show }),
-      setShowShareModal: (show) => set({ showShareModal: show }),
-      setShowExportModal: (show) => set({ showExportModal: show }),
-      setExportModalComponent: (component) => set({ exportModalComponent: component }),
-      setShowCreateBranchModal: (show) => set({ showCreateBranchModal: show }),
-      setSearchQuery: (query) => set({ searchQuery: query }),
-      setPreviewMode: (mode) => set({ previewMode: mode }),
-      setWebContainerStatus: (status) => set({ webContainerStatus: status }),
-      setConceptPanelCollapsed: (collapsed) => set({ isConceptPanelCollapsed: collapsed }),
-      setConceptPanelEditMode: (editMode) => set({ conceptPanelEditMode: editMode }),
+        setIsClient: (isClient) => set({ isClient }),
+        setActiveTab: (tab) => set({ activeTab: tab }),
+        setShowLibrary: (show) => set({ showLibrary: show }),
+        setShowDiffPreview: (show) => set({ showDiffPreview: show }),
+        setShowApprovalModal: (show) => set({ showApprovalModal: show }),
+        setShowDeploymentModal: (show) => set({ showDeploymentModal: show }),
+        setShowCompareModal: (show) => set({ showCompareModal: show }),
+        setShowConversationalWizard: (show) => set({ showConversationalWizard: show }),
+        setShowLayoutBuilder: (show) => set({ showLayoutBuilder: show }),
+        setShowSettings: (show) => set({ showSettings: show }),
+        setShowAdvancedPhasedBuild: (show) => set({ showAdvancedPhasedBuild: show }),
+        setShowQualityReport: (show) => set({ showQualityReport: show }),
+        setShowPerformanceReport: (show) => set({ showPerformanceReport: show }),
+        setShowNameAppModal: (show) => set({ showNameAppModal: show }),
+        setShowShareModal: (show) => set({ showShareModal: show }),
+        setShowExportModal: (show) => set({ showExportModal: show }),
+        setExportModalComponent: (component) => set({ exportModalComponent: component }),
+        setShowCreateBranchModal: (show) => set({ showCreateBranchModal: show }),
+        setSearchQuery: (query) => set({ searchQuery: query }),
+        setPreviewMode: (mode) => set({ previewMode: mode }),
+        setWebContainerStatus: (status) => set({ webContainerStatus: status }),
+        setConceptPanelCollapsed: (collapsed) => set({ isConceptPanelCollapsed: collapsed }),
+        setConceptPanelEditMode: (editMode) => set({ conceptPanelEditMode: editMode }),
 
-      // ========================================================================
-      // DATA SLICE
-      // ========================================================================
-      pendingChange: null as PendingChange | null,
-      pendingDiff: null as PendingDiff | null,
-      deploymentInstructions: null as DeploymentInstructions | null,
-      exportingApp: null as GeneratedComponent | null,
-      compareVersions: { v1: null, v2: null } as CompareVersions,
-      currentStagePlan: null as CurrentStagePlan | null,
-      newAppStagePlan: null as StagePlan | null,
-      appConcept: null as AppConcept | null,
-      implementationPlan: null as ImplementationPlan | null,
-      qualityReport: null as QualityReport | null,
-      performanceReport: null as PerformanceReport | null,
-      selectedPhaseId: null as PhaseId | null,
-      isValidating: false,
-      uploadedImage: null as string | null,
-      currentLayoutManifest: null as LayoutManifest | null,
-      savedLayoutManifests: [] as LayoutManifest[],
-      currentDesignSpec: null as DesignSpec | null,
-      dynamicPhasePlan: null as DynamicPhasePlan | null,
+        // ========================================================================
+        // DATA SLICE
+        // ========================================================================
+        pendingChange: null as PendingChange | null,
+        pendingDiff: null as PendingDiff | null,
+        deploymentInstructions: null as DeploymentInstructions | null,
+        exportingApp: null as GeneratedComponent | null,
+        compareVersions: { v1: null, v2: null } as CompareVersions,
+        currentStagePlan: null as CurrentStagePlan | null,
+        newAppStagePlan: null as StagePlan | null,
+        appConcept: null as AppConcept | null,
+        implementationPlan: null as ImplementationPlan | null,
+        qualityReport: null as QualityReport | null,
+        performanceReport: null as PerformanceReport | null,
+        selectedPhaseId: null as PhaseId | null,
+        isValidating: false,
+        uploadedImage: null as string | null,
+        currentLayoutManifest: null as LayoutManifest | null,
+        savedLayoutManifests: [] as LayoutManifest[],
+        currentDesignSpec: null as DesignSpec | null,
+        dynamicPhasePlan: null as DynamicPhasePlan | null,
 
-      setPendingChange: (change) => set({ pendingChange: change }),
-      setPendingDiff: (diff) => set({ pendingDiff: diff }),
-      setDeploymentInstructions: (instructions) => set({ deploymentInstructions: instructions }),
-      setExportingApp: (app) => set({ exportingApp: app }),
-      setCompareVersions: (versions) => set({ compareVersions: versions }),
-      setCurrentStagePlan: (plan) => set({ currentStagePlan: plan }),
-      setNewAppStagePlan: (plan) =>
-        set((state) => ({
-          newAppStagePlan: typeof plan === 'function' ? plan(state.newAppStagePlan) : plan,
-        })),
-      setAppConcept: (concept) => set({ appConcept: concept }),
-      setImplementationPlan: (plan) => set({ implementationPlan: plan }),
-      setQualityReport: (report) => set({ qualityReport: report }),
-      setPerformanceReport: (report) => set({ performanceReport: report }),
-      setSelectedPhaseId: (phaseId) => set({ selectedPhaseId: phaseId }),
-      setIsValidating: (isValidating) => set({ isValidating }),
-      setUploadedImage: (image) => set({ uploadedImage: image }),
-      setCurrentLayoutManifest: (manifest) => set({ currentLayoutManifest: manifest }),
-      setCurrentDesignSpec: (spec) => set({ currentDesignSpec: spec }),
-      setSavedLayoutManifests: (manifests) => set({ savedLayoutManifests: manifests }),
-      addSavedLayoutManifest: (manifest) =>
-        set((state) => ({
-          savedLayoutManifests: [...state.savedLayoutManifests, manifest],
-        })),
-      removeSavedLayoutManifest: (id) =>
-        set((state) => ({
-          savedLayoutManifests: state.savedLayoutManifests.filter((m) => m.id !== id),
-        })),
-      updateAppConceptField: (path, value) =>
-        set((state) => {
-          if (!state.appConcept) return state;
-          const keys = path.split('.');
-          const updated = { ...state.appConcept };
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let current: any = updated;
-          for (let i = 0; i < keys.length - 1; i++) {
-            current[keys[i]] = { ...current[keys[i]] };
-            current = current[keys[i]];
-          }
-          current[keys[keys.length - 1]] = value;
-          // Update timestamp to trigger auto-capture in documentation
-          updated.updatedAt = new Date().toISOString();
-          return { appConcept: updated };
+        setPendingChange: (change) => set({ pendingChange: change }),
+        setPendingDiff: (diff) => set({ pendingDiff: diff }),
+        setDeploymentInstructions: (instructions) => set({ deploymentInstructions: instructions }),
+        setExportingApp: (app) => set({ exportingApp: app }),
+        setCompareVersions: (versions) => set({ compareVersions: versions }),
+        setCurrentStagePlan: (plan) => set({ currentStagePlan: plan }),
+        setNewAppStagePlan: (plan) =>
+          set((state) => ({
+            newAppStagePlan: typeof plan === 'function' ? plan(state.newAppStagePlan) : plan,
+          })),
+        setAppConcept: (concept) => set({ appConcept: concept }),
+        setImplementationPlan: (plan) => set({ implementationPlan: plan }),
+        setQualityReport: (report) => set({ qualityReport: report }),
+        setPerformanceReport: (report) => set({ performanceReport: report }),
+        setSelectedPhaseId: (phaseId) => set({ selectedPhaseId: phaseId }),
+        setIsValidating: (isValidating) => set({ isValidating }),
+        setUploadedImage: (image) => set({ uploadedImage: image }),
+        setCurrentLayoutManifest: (manifest) => set({ currentLayoutManifest: manifest }),
+        setCurrentDesignSpec: (spec) => set({ currentDesignSpec: spec }),
+        setSavedLayoutManifests: (manifests) => set({ savedLayoutManifests: manifests }),
+        addSavedLayoutManifest: (manifest) =>
+          set((state) => ({
+            savedLayoutManifests: [...state.savedLayoutManifests, manifest],
+          })),
+        removeSavedLayoutManifest: (id) =>
+          set((state) => ({
+            savedLayoutManifests: state.savedLayoutManifests.filter((m) => m.id !== id),
+          })),
+        updateAppConceptField: (path, value) =>
+          set((state) => {
+            if (!state.appConcept) return state;
+            const keys = path.split('.');
+            const updated = { ...state.appConcept };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let current: any = updated;
+            for (let i = 0; i < keys.length - 1; i++) {
+              current[keys[i]] = { ...current[keys[i]] };
+              current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
+            // Update timestamp to trigger auto-capture in documentation
+            updated.updatedAt = new Date().toISOString();
+            return { appConcept: updated };
+          }),
+        setDynamicPhasePlan: (plan) => set({ dynamicPhasePlan: plan }),
+
+        // ========================================================================
+        // DOCUMENTATION SLICE
+        // ========================================================================
+        currentDocumentation: null as ProjectDocumentation | null,
+        isLoadingDocumentation: false,
+        isSavingDocumentation: false,
+        showDocumentationPanel: false,
+        documentationPanelTab: 'concept',
+        currentAppId: null as string | null,
+        buildingAppId: null as string | null,
+
+        setCurrentDocumentation: (doc) => set({ currentDocumentation: doc }),
+        setIsLoadingDocumentation: (loading) => set({ isLoadingDocumentation: loading }),
+        setIsSavingDocumentation: (saving) => set({ isSavingDocumentation: saving }),
+        setShowDocumentationPanel: (show) => set({ showDocumentationPanel: show }),
+        setDocumentationPanelTab: (tab) => set({ documentationPanelTab: tab }),
+        setCurrentAppId: (appId) => set({ currentAppId: appId }),
+        setBuildingAppId: (appId) => set({ buildingAppId: appId }),
+
+        // ========================================================================
+        // FILE STORAGE SLICE
+        // ========================================================================
+        contentTab: 'apps',
+        storageFiles: [] as FileMetadata[],
+        loadingFiles: false,
+        selectedFiles: new Set<string>(),
+        fileSearchQuery: '',
+        fileTypeFilter: 'all',
+        fileSortBy: 'created_at',
+        fileSortOrder: 'desc',
+        storageStats: null as StorageStats | null,
+        uploadingFiles: new Set<string>(),
+        deletingFiles: new Set<string>(),
+
+        setContentTab: (tab) => set({ contentTab: tab }),
+        setStorageFiles: (files) => set({ storageFiles: files }),
+        setLoadingFiles: (loading) => set({ loadingFiles: loading }),
+        setSelectedFiles: (files) => set({ selectedFiles: files }),
+        setFileSearchQuery: (query) => set({ fileSearchQuery: query }),
+        setFileTypeFilter: (filter) => set({ fileTypeFilter: filter }),
+        setFileSortBy: (sortBy) => set({ fileSortBy: sortBy }),
+        setFileSortOrder: (order) => set({ fileSortOrder: order }),
+        setStorageStats: (stats) => set({ storageStats: stats }),
+        setUploadingFiles: (files) => set({ uploadingFiles: files }),
+        setDeletingFiles: (files) => set({ deletingFiles: files }),
+        toggleFileSelection: (fileId) =>
+          set((state) => {
+            const newSelection = new Set(state.selectedFiles);
+            if (newSelection.has(fileId)) {
+              newSelection.delete(fileId);
+            } else {
+              newSelection.add(fileId);
+            }
+            return { selectedFiles: newSelection };
+          }),
+        clearFileSelection: () => set({ selectedFiles: new Set<string>() }),
+      })),
+      {
+        name: 'ai-app-builder-storage',
+        version: 1,
+        partialize: (state) => ({
+          // Only persist workflow-critical data (not UI state, chat, etc.)
+          appConcept: state.appConcept,
+          dynamicPhasePlan: state.dynamicPhasePlan,
+          currentLayoutManifest: state.currentLayoutManifest,
+          currentAppId: state.currentAppId,
+          currentDesignSpec: state.currentDesignSpec,
         }),
-      setDynamicPhasePlan: (plan) => set({ dynamicPhasePlan: plan }),
-
-      // ========================================================================
-      // DOCUMENTATION SLICE
-      // ========================================================================
-      currentDocumentation: null as ProjectDocumentation | null,
-      isLoadingDocumentation: false,
-      isSavingDocumentation: false,
-      showDocumentationPanel: false,
-      documentationPanelTab: 'concept',
-      currentAppId: null as string | null,
-      buildingAppId: null as string | null,
-
-      setCurrentDocumentation: (doc) => set({ currentDocumentation: doc }),
-      setIsLoadingDocumentation: (loading) => set({ isLoadingDocumentation: loading }),
-      setIsSavingDocumentation: (saving) => set({ isSavingDocumentation: saving }),
-      setShowDocumentationPanel: (show) => set({ showDocumentationPanel: show }),
-      setDocumentationPanelTab: (tab) => set({ documentationPanelTab: tab }),
-      setCurrentAppId: (appId) => set({ currentAppId: appId }),
-      setBuildingAppId: (appId) => set({ buildingAppId: appId }),
-
-      // ========================================================================
-      // FILE STORAGE SLICE
-      // ========================================================================
-      contentTab: 'apps',
-      storageFiles: [] as FileMetadata[],
-      loadingFiles: false,
-      selectedFiles: new Set<string>(),
-      fileSearchQuery: '',
-      fileTypeFilter: 'all',
-      fileSortBy: 'created_at',
-      fileSortOrder: 'desc',
-      storageStats: null as StorageStats | null,
-      uploadingFiles: new Set<string>(),
-      deletingFiles: new Set<string>(),
-
-      setContentTab: (tab) => set({ contentTab: tab }),
-      setStorageFiles: (files) => set({ storageFiles: files }),
-      setLoadingFiles: (loading) => set({ loadingFiles: loading }),
-      setSelectedFiles: (files) => set({ selectedFiles: files }),
-      setFileSearchQuery: (query) => set({ fileSearchQuery: query }),
-      setFileTypeFilter: (filter) => set({ fileTypeFilter: filter }),
-      setFileSortBy: (sortBy) => set({ fileSortBy: sortBy }),
-      setFileSortOrder: (order) => set({ fileSortOrder: order }),
-      setStorageStats: (stats) => set({ storageStats: stats }),
-      setUploadingFiles: (files) => set({ uploadingFiles: files }),
-      setDeletingFiles: (files) => set({ deletingFiles: files }),
-      toggleFileSelection: (fileId) =>
-        set((state) => {
-          const newSelection = new Set(state.selectedFiles);
-          if (newSelection.has(fileId)) {
-            newSelection.delete(fileId);
-          } else {
-            newSelection.add(fileId);
-          }
-          return { selectedFiles: newSelection };
-        }),
-      clearFileSelection: () => set({ selectedFiles: new Set<string>() }),
-    })),
+      }
+    ),
     {
       name: 'app-store',
       enabled: process.env.NODE_ENV === 'development',
