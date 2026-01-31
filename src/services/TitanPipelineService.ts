@@ -34,10 +34,10 @@ import type {
 // CONFIGURATION
 // ============================================================================
 
-const GEMINI_FLASH_MODEL = 'gemini-2.0-flash';
-const GEMINI_PRO_MODEL = 'gemini-2.5-pro-preview-06-05';
-const GEMINI_DEEP_THINK_MODEL = 'gemini-2.5-flash-preview-04-17';
-const CLAUDE_OPUS_MODEL = 'claude-opus-4-20250514';
+const GEMINI_FLASH_MODEL = 'gemini-3-flash-preview';
+const GEMINI_PRO_MODEL = 'gemini-3-pro-preview';
+const GEMINI_DEEP_THINK_MODEL = 'gemini-3-pro-preview';
+const CLAUDE_OPUS_MODEL = 'claude-opus-4-5-20251101';
 
 function getGeminiApiKey(): string {
   const key = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
