@@ -57,9 +57,13 @@ export function createInspectorFileContent(): string {
 
   // Click handler — select component
   document.addEventListener('click', function(e) {
+    // 1. CHECK FOR ALT KEY: If Alt is held, let the click pass through (Interact Mode)
+    if (e.altKey) return; 
+
     const el = getDataIdElement(e.target);
     if (!el) return;
 
+    // 2. Otherwise, intercept for editing
     e.preventDefault();
     e.stopPropagation();
 
@@ -80,6 +84,15 @@ export function createInspectorFileContent(): string {
 
   // Hover handler — highlight component
   document.addEventListener('mouseover', function(e) {
+    // 3. Disable highlight if Alt is held (cleaner visual)
+    if (e.altKey) {
+      if (currentHighlight) {
+        currentHighlight = null;
+        overlay.style.opacity = '0';
+      }
+      return;
+    }
+
     const el = getDataIdElement(e.target);
     if (el && el !== currentHighlight) {
       currentHighlight = el;
@@ -102,6 +115,7 @@ export function createInspectorFileContent(): string {
 
   // Prevent navigation for anchor tags
   document.addEventListener('click', function(e) {
+    if (e.altKey) return; // Allow navigation/interaction if Alt is held
     if (e.target.tagName === 'A' || e.target.closest('a')) {
       e.preventDefault();
     }
