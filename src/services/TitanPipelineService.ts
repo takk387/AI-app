@@ -29,6 +29,7 @@ import type {
   LiveEditResult,
   FileInput,
 } from '@/types/titanPipeline';
+import { geminiImageService } from '@/services/GeminiImageService';
 
 // ============================================================================
 // CONFIGURATION
@@ -103,6 +104,7 @@ Determine if we are **Creating New**, **Merging**, or **Editing**.
 - If current_code is true and new files exist: mode = "EDIT" (inject new content into existing)
 - If multiple files with different content: mode = "MERGE"
 - If single file or text only: mode = "CREATE"
+- **PHOTOREALISM RULE:** If user asks for "photorealistic", "texture", "realistic", "wood", "glass", "cloud", or specific materials (wood, glass, cloud), you MUST add them to "generate_assets".
 - Images go to measure_pixels, Videos go to extract_physics
 - Assign roles: layout_source, style_source, component_source, motion_source
 - applies_to should be ["global"] unless the user specifies specific components
@@ -121,7 +123,10 @@ Determine if we are **Creating New**, **Merging**, or **Editing**.
   "execution_plan": {
     "measure_pixels": [0, 1],
     "extract_physics": [2],
-    "preserve_existing_code": true
+    "preserve_existing_code": true,
+    "generate_assets": [
+      { "name": "cloud_texture", "description": "fluffy white realistic cloud texture", "vibe": "photorealistic" }
+    ]
   }
 }`;
 
@@ -576,15 +581,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Menu } from 'lucide-react';
 
-export default function GeneratedLayout() {
-  return (
-    <div data-id="root" className="min-h-screen bg-gray-900 text-white">
-      <nav data-id="nav-1" className="flex items-center justify-between px-6 py-4">
-        ...
-      </nav>
-    </div>
-  );
-}`;
+### Output
+Return ONLY the full App.tsx code. No markdown.`;
 
 export async function assembleCode(
   structure: ComponentStructure | null,
@@ -592,7 +590,8 @@ export async function assembleCode(
   physics: MotionPhysics | null,
   strategy: MergeStrategy,
   currentCode: string | null,
-  instructions: string
+  instructions: string,
+  assets: Record<string, string> = {} // NEW: Received assets
 ): Promise<AppFile[]> {
   const apiKey = getGeminiApiKey();
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -619,6 +618,13 @@ export async function assembleCode(
       ? `### Motion Physics\n${JSON.stringify(physics, null, 2)}`
       : '### No motion data (static layout).';
 
+  const assetsContext = Object.keys(assets).length > 0
+    ? `### AVAILABLE ASSETS
+The Photographer has generated these photorealistic textures for you. 
+USE THEM in your CSS (backgroundImage) or <img> tags instead of trying to draw them with CSS gradients.
+${JSON.stringify(assets, null, 2)}`
+    : '';
+
   const prompt = `${BUILDER_PROMPT}
 
 ${baseContext}
@@ -626,6 +632,8 @@ ${baseContext}
 ${manifestsContext}
 
 ${physicsContext}
+
+${assetsContext}
 
 ### Strategy
 ${JSON.stringify(strategy, null, 2)}
@@ -847,6 +855,35 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     stepTimings.physicist = Date.now() - physicsStart;
   }
 
+  // --- Step 3: The Photographer (Asset Generation) ---
+  const generatedAssets: Record<string, string> = {};
+  
+  // @ts-ignore
+  if (strategy.execution_plan.generate_assets?.length > 0) {
+    const photographerStart = Date.now();
+    
+    // @ts-ignore
+    const assetTasks = strategy.execution_plan.generate_assets.map(async (asset: any) => {
+      try {
+        const result = await geminiImageService.generateBackgroundFromReference({
+          referenceImage: "", // Empty for text-to-image
+          colorPalette: { primary: "#ffffff", secondary: "#888888", background: "#000000" }, // Defaults
+          vibe: "Photorealistic",
+          vibeKeywords: [asset.description, "high quality", "texture"],
+        });
+        
+        if (result.imageUrl) {
+          generatedAssets[asset.name] = result.imageUrl;
+        }
+      } catch (e) {
+        console.error(`Failed to generate asset ${asset.name}`, e);
+      }
+    });
+
+    await Promise.all(assetTasks);
+    stepTimings.photographer = Date.now() - photographerStart;
+  }
+
   // --- Step 4: Assemble Code ---
   const builderStart = Date.now();
   let files: AppFile[];
@@ -857,7 +894,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       physics,
       strategy,
       input.currentCode,
-      input.instructions
+      input.instructions,
+      generatedAssets
     );
   } catch (error) {
     warnings.push(`Builder failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
