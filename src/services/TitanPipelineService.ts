@@ -554,7 +554,12 @@ You are the **Universal UI Engineer**. You synthesize production-ready React cod
 4. **User Prompt:** The raw instructions.
 
 ### Instructions
-1. **The Base:** Start with the Base Context.
+1. **Use the Assets (Priority #1):** 
+   - If an asset URL is provided in the 'assets' object, use it!
+   - Apply it as: \`style={{ backgroundImage: \`url(\${assets.assetName})\`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}\`.
+   - **CRITICAL:** Do NOT set a \`backgroundColor\` property if a background image is active. It will obscure the photo.
+   - **CRITICAL:** Do NOT use CSS gradients (linear-gradient) if an image asset is available. The photo replaces the gradient.
+   - Remove any border-radius if the texture implies a raw material, unless requested.
 2. **The Merge:** If the Strategy says "Header comes from File 0", apply those dimensions. If "Buttons come from File 1", apply those styles.
 3. **Conflict Resolution:**
    * Specific user instructions override measured data.

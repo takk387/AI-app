@@ -107,7 +107,7 @@ class GeminiImageService {
     } = request;
 
     // Build the generation prompt
-    const prompt = this.buildBackgroundPrompt(colorPalette, vibe, vibeKeywords, styleInstructions);
+    const prompt = this.buildBackgroundPrompt(vibe, vibeKeywords, colorPalette, styleInstructions);
 
     try {
       // Use Gemini 3 Pro Image (Nano Banana Pro) for highest quality
@@ -177,47 +177,32 @@ class GeminiImageService {
    * Build a prompt for background generation
    */
   private buildBackgroundPrompt(
-    colorPalette: ColorPalette,
     vibe: string,
-    vibeKeywords: string[],
-    styleInstructions?: string
+    keywords: string[],
+    palette?: ColorPalette,
+    instructions?: string
   ): string {
-    const colorList = [
-      colorPalette.primary,
-      colorPalette.secondary,
-      colorPalette.accent,
-      colorPalette.background,
-    ]
-      .filter(Boolean)
-      .join(', ');
-
-    const keywords = vibeKeywords.length > 0 ? vibeKeywords.join(', ') : 'modern, clean';
-
-    let prompt = `Generate a seamless background image for a web application.
-
-STYLE REQUIREMENTS:
-- Visual vibe: ${vibe}
-- Keywords: ${keywords}
-- MUST use these exact colors: ${colorList}
-
-TECHNICAL REQUIREMENTS:
-- Create an abstract, artistic background suitable for a website
-- The background should be subtle enough to not distract from UI content
-- Should work as a full-screen background
-- Seamless/tileable if possible
-- No text, logos, or UI elements - just abstract artistic patterns
-
-COLOR USAGE:
-- Primary color (${colorPalette.primary}): Use as the dominant accent
-- Secondary color (${colorPalette.secondary}): Use for secondary elements
-- Background color (${colorPalette.background}): Use as the base/dominant area
-
-Based on the reference image I'm providing, create a similar style of background but regenerated with the specified colors. Match the visual complexity and artistic style.`;
-
-    if (styleInstructions) {
-      prompt += `\n\nADDITIONAL INSTRUCTIONS:\n${styleInstructions}`;
+    // The "Macro Lens" Prompt Strategy
+    let prompt = `CRITICAL INSTRUCTION: GENERATE A RAW, MACRO PHOTOGRAPH. 
+    DO NOT CREATE AN ILLUSTRATION, DRAWING, OR 3D RENDER.
+    
+    Subject: A close-up texture of ${keywords.join(', ')}.
+    Visual Style: ${vibe}, National Geographic style, 8k resolution, raw camera input.
+    Material details: Focus on surface roughness, light scattering, microscopic imperfections, and realistic grain.
+    Lighting: Natural volumetric lighting, cinematic depth of field.`;
+    
+    if (palette) {
+        // Use colors as "tint" hints rather than strict paint
+        const colors = [palette.primary, palette.secondary].filter(Boolean).join(', ');
+        prompt += ` Color Tones: ${colors} (natural materials).`;
     }
 
+    if (instructions) {
+        prompt += ` Specifics: ${instructions}`;
+    }
+
+    prompt += `\nConstraint: The image must be seamless and tileable if possible. No text overlays.`;
+    
     return prompt;
   }
 

@@ -399,11 +399,16 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
             }}
             options={{
               externalResources: [TAILWIND_CDN],
+              classes: {
+                "sp-wrapper": "h-full w-full flex flex-col",
+                "sp-layout": "h-full w-full flex flex-col",
+                "sp-stack": "h-full w-full flex-1",
+              },
             }}
           >
             <div
               ref={previewContainerRef}
-              className="w-full h-full relative"
+              className="w-full h-full relative flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <SandpackPreview
