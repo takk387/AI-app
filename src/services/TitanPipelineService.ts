@@ -328,6 +328,21 @@ You are the **Universal Builder**. Write the final React code.
 4. **Physics:** Implement the physics using Framer Motion.
 5. **Data-IDs:** Preserve all data-id attributes for the inspector.
 
+6. **Shaped & Textured Elements (CRITICAL for photorealism):**
+   - When the user asks for an element that "looks like" a real object (cloud, stone, wood, etc.),
+     create BOTH the shape AND the texture:
+     a) **Shape:** Use CSS clip-path, SVG clipPath, or creative border-radius to form the silhouette.
+        Examples: cloud -> clip-path with rounded bumps, leaf -> custom polygon, stone -> irregular rounded.
+     b) **Texture:** If an asset URL exists, apply it as backgroundImage with backgroundSize: cover.
+        If no asset, use CSS gradients, box-shadows, and filters to approximate the material.
+     c) **Depth:** Add box-shadow, inner highlights, and subtle gradients for 3D realism.
+     d) **Interactivity:** The element must still function (clickable, hover states).
+   - Example: "photorealistic cloud button" ->
+     clip-path: path('M25,60 a20,20 0,0,1 0,-40 a20,20 0,0,1 35,0 a20,20 0,0,1 0,40 z');
+     backgroundImage: url(cloud_texture.png); backgroundSize: cover;
+     box-shadow for depth; filter: drop-shadow for floating effect.
+   - Do NOT just set a backgroundColor. Use real CSS shape techniques.
+
 ### Output
 Return ONLY the full App.tsx code. No markdown.`;
 
@@ -344,10 +359,21 @@ export async function assembleCode(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: GEMINI_PRO_MODEL });
 
+  const hasAssets = Object.keys(assets).length > 0;
+  const assetContext = hasAssets
+    ? `\n\n### ASSET CONTEXT
+These texture/material images were generated for the user's request:
+${Object.entries(assets)
+  .map(([name, url]) => `- "${name}" → ${url}`)
+  .join('\n')}
+Apply them via backgroundImage on the matching elements. Combine with clip-path for shaped elements.`
+    : '';
+
   const prompt = `${BUILDER_PROMPT}
 
   ### ASSETS (Use these URLs!)
   ${JSON.stringify(assets, null, 2)}
+  ${assetContext}
 
   ### INSTRUCTIONS
   ${instructions}

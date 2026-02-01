@@ -45,15 +45,19 @@ class GeminiImageService {
   async generateBackgroundFromReference(request: BackgroundGenerationRequest) {
     if (!this.client) throw new Error('Gemini API not configured');
 
-    const targetHint = request.targetElement
-      ? `for use as a ${request.targetElement} background in a web UI`
-      : 'as a seamless texture';
+    const isShapedElement =
+      request.targetElement && !['background', 'hero section'].includes(request.targetElement);
 
-    const prompt = `Generate a photorealistic texture image ${targetHint}.
-    Subject: ${request.vibeKeywords.join(', ')}.
-    Style: ${request.vibe}, photorealistic, high detail.
-    Requirements: Suitable for web UI use. Clean edges. No text, no people.
-    If for a button: include subtle depth, lighting, and edge highlights.`;
+    const prompt = isShapedElement
+      ? `Generate a photorealistic image of a ${request.vibeKeywords.join(', ')}.
+        Style: ${request.vibe}, photorealistic, high detail.
+        Requirements: Render the full object with depth and lighting. Suitable for use as a UI element background with clip-path masking. No text, no people.
+        Include: Realistic shadows, highlights, and 3D volume.`
+      : `Generate a photorealistic texture image ${request.targetElement ? `for use as a ${request.targetElement} background in a web UI` : 'as a seamless texture'}.
+        Subject: ${request.vibeKeywords.join(', ')}.
+        Style: ${request.vibe}, photorealistic, high detail.
+        Requirements: Suitable for web UI use. Clean edges. No text, no people.
+        If for a button: include subtle depth, lighting, and edge highlights.`;
 
     try {
       const model = this.client.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
