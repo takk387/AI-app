@@ -128,6 +128,15 @@ export interface VisualManifest {
       styles?: Record<string, string>;
       children?: any[];
       text?: string;
+      // Icon fields
+      hasIcon?: boolean;
+      iconSvgPath?: string;
+      iconViewBox?: string;
+      iconName?: string;
+      iconColor?: string;
+      iconPosition?: string;
+      iconSize?: string;
+      iconContainerStyle?: Record<string, string>;
     };
     assets?: string[];
   };

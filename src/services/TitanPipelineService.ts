@@ -82,7 +82,13 @@ You are the **Pipeline Traffic Controller**.
 ### Rules
 - If current_code exists and no new files -> mode: "EDIT"
 - If new files uploaded -> mode: "CREATE" or "MERGE"
-- **PHOTOREALISM TRIGGER:** If user asks for "photorealistic", "texture", "realistic", "wood", "glass", "cloud", "grain", or specific materials, you MUST add a "generate_assets" task.
+- **PHOTOREALISM TRIGGER:** If user asks for "photorealistic", "texture", "realistic", "wood",
+  "glass", "cloud", "grain", "stone", "metal", "fabric", "leather", "marble", "material",
+  or specific materials, you MUST add a "generate_assets" task.
+- Name assets by their target: "button_bg" for buttons, "hero_bg" for hero sections,
+  "card_bg" for cards.
+- Example: User says "make the button look like polished wood" →
+  generate_assets: [{ "name": "button_bg", "description": "polished oak wood with natural grain and warm lighting", "vibe": "photorealistic" }]
 - Images -> measure_pixels. Videos -> extract_physics.
 
 ### Output Schema (JSON)
@@ -146,6 +152,10 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
 1. **Structure:** Identify Flex Rows vs Columns. Group elements logically (e.g., "Card", "Navbar").
 2. **Styles:** Extract hex codes, border-radius, shadows, and font-weights.
 3. **Content:** You MUST extract the text inside buttons, headings, and paragraphs.
+4. **Icons:** Detect and extract all icons, logos, and symbolic graphics.
+   - Prefer extracting the SVG 'd' path if clear.
+   - Fallback to closest Lucide React icon name.
+   - Measure icon color.
 
 ### Critical Instruction
 Do NOT just list bounding boxes. Output a recursive JSON tree.
@@ -155,7 +165,7 @@ If an element contains text, use the "text" field.
 {
   "canvas": { "width": number, "height": number, "background": string },
   "dom_tree": {
-    "type": "div" | "button" | "p" | "img" | "h1",
+    "type": "div" | "button" | "p" | "img" | "h1" | "svg" | "span",
     "id": "main_container",
     "styles": {
       "display": "flex",
@@ -165,6 +175,13 @@ If an element contains text, use the "text" field.
       "boxShadow": "0 4px 6px rgba(0,0,0,0.1)"
     },
     "text": "Click Me",
+    "hasIcon": boolean,
+    "iconSvgPath": "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+    "iconViewBox": "0 0 24 24",
+    "iconName": "Layers",
+    "iconColor": "#000000",
+    "iconPosition": "left",
+    "iconSize": "md",
     "children": [
       // Recursive nodes...
     ]
@@ -288,8 +305,11 @@ const BUILDER_PROMPT = `### Role
 You are the **Universal Builder**. Write the final React code.
 
 ### Instructions
-1. **Use the Assets (Priority #1):** - If an asset URL is provided, apply it via CSS \`backgroundImage\` or \`img\` tags.
-   - Do NOT set a \`backgroundColor\` property if a background image is active (it creates fog).
+1. **Use the Assets (Priority #1):**
+   - Assets maps names to URLs: {"button_bg": "https://...", "hero_bg": "https://..."}
+   - Match names to elements: "button_bg" -> apply to buttons, "hero_bg" -> hero section, "card_bg" -> cards.
+   - Apply via: style={{ backgroundImage: \`url(\${assetUrl})\`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+   - Do NOT set backgroundColor when a background image is active.
    - Do NOT use CSS gradients if an image asset is available.
 
 2. **REPLICATION MODE (CRITICAL):**
@@ -297,8 +317,16 @@ You are the **Universal Builder**. Write the final React code.
    - Map 'type' to HTML tags. Map 'styles' to Tailwind classes.
    - Do NOT simplify the structure. Pixel-perfect accuracy is key.
 
-3. **Physics:** Implement the physics using Framer Motion.
-4. **Data-IDs:** Preserve all data-id attributes for the inspector.
+3. **Icons (Rendering):**
+   - **Priority 1:** If \`iconSvgPath\` exists -> render inline \`<svg>\` with the path data, applying \`iconColor\` as stroke/fill and \`iconViewBox\`.
+   - **Priority 2:** If only \`iconName\` exists -> import from \`lucide-react\` and render \`<IconName />\`.
+   - Apply positioning via flex layout.
+   - Map sizes: sm=16px, md=20px, lg=24px.
+   - If \`iconContainerStyle\` exists -> wrap icon in a styled container div.
+   - Available Lucide icons: Home, User, Menu, Search, Settings, Star, Heart, Check, Plus, ArrowRight, etc.
+
+4. **Physics:** Implement the physics using Framer Motion.
+5. **Data-IDs:** Preserve all data-id attributes for the inspector.
 
 ### Output
 Return ONLY the full App.tsx code. No markdown.`;
@@ -454,6 +482,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
               vibe: asset.vibe || 'photorealistic',
               vibeKeywords: [asset.description],
               referenceImage: '',
+              targetElement: asset.name.includes('button')
+                ? 'button'
+                : asset.name.includes('hero')
+                  ? 'hero section'
+                  : asset.name.includes('card')
+                    ? 'card'
+                    : 'background',
             });
             if (result.imageUrl) generatedAssets[asset.name] = result.imageUrl;
           } catch (e) {

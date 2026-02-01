@@ -10,6 +10,7 @@ export interface BackgroundGenerationRequest {
   referenceImage?: string;
   vibe: string;
   vibeKeywords: string[];
+  targetElement?: string; // "button", "card", "hero", "background"
 }
 
 class GeminiImageService {
@@ -44,11 +45,15 @@ class GeminiImageService {
   async generateBackgroundFromReference(request: BackgroundGenerationRequest) {
     if (!this.client) throw new Error('Gemini API not configured');
 
-    const prompt = `CRITICAL: GENERATE A RAW, MACRO PHOTOGRAPH.
-    Subject: Close-up texture of ${request.vibeKeywords.join(', ')}.
-    Style: ${request.vibe}, photorealistic, 8k resolution.
-    Material details: Focus on surface roughness and realistic grain.
-    Constraint: NO text, NO people, NO generic rooms.`;
+    const targetHint = request.targetElement
+      ? `for use as a ${request.targetElement} background in a web UI`
+      : 'as a seamless texture';
+
+    const prompt = `Generate a photorealistic texture image ${targetHint}.
+    Subject: ${request.vibeKeywords.join(', ')}.
+    Style: ${request.vibe}, photorealistic, high detail.
+    Requirements: Suitable for web UI use. Clean edges. No text, no people.
+    If for a button: include subtle depth, lighting, and edge highlights.`;
 
     try {
       const model = this.client.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
@@ -61,8 +66,7 @@ class GeminiImageService {
     } catch (error) {
       console.error('Image Gen Error:', error);
       return {
-        imageUrl:
-          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzjwqjh//jywyLm5uf8ZGQwA5bwLglHE40IAAAAASUVORK5CYII=',
+        imageUrl: null,
         uploaded: false,
       };
     }
