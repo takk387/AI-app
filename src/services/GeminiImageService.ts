@@ -61,7 +61,24 @@ class GeminiImageService {
 
     try {
       const model = this.client.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
-      const result = await model.generateContent(prompt);
+
+      // Build multimodal content: reference image (if available) + text prompt
+      const contentParts: any[] = [];
+      if (request.referenceImage) {
+        const base64Data = request.referenceImage.includes(',')
+          ? request.referenceImage.split(',')[1]
+          : request.referenceImage;
+        contentParts.push({
+          inlineData: { data: base64Data, mimeType: 'image/png' },
+        });
+        contentParts.push({
+          text: `Reference image provided. Generate a texture matching this design's visual style.\n\n${prompt}`,
+        });
+      } else {
+        contentParts.push({ text: prompt });
+      }
+
+      const result = await model.generateContent(contentParts);
       const base64 = result.response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
       if (!base64) throw new Error('Generation failed');

@@ -114,6 +114,11 @@ export interface PipelineInput {
 
 export interface VisualManifest {
   file_index: number;
+  /** Original image reference for multimodal Builder input */
+  originalImageRef?: {
+    fileUri: string;
+    mimeType: string;
+  };
   canvas?: {
     width: number;
     height: number;
@@ -122,6 +127,8 @@ export interface VisualManifest {
   global_theme?: {
     colors?: string[];
     fonts?: string[];
+    gradients?: Array<{ type: string; css: string; usage: string }>;
+    effects?: { glassmorphism?: boolean; neumorphism?: boolean; animations?: string[] };
     dom_tree?: {
       type: string;
       id?: string;

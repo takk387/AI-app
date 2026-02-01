@@ -156,6 +156,14 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
    - Prefer extracting the SVG 'd' path if clear.
    - Fallback to closest Lucide React icon name.
    - Measure icon color.
+5. **Advanced Effects (CRITICAL for visual fidelity):**
+   - Gradients: Extract full CSS gradient syntax (type, angle, color stops with %)
+   - Glassmorphism: backdrop-filter blur, background opacity
+   - Transforms: rotation, scale, skew
+   - Filters: blur, brightness, saturation
+   - Clip-path: shaped elements (circular avatars, angled sections)
+   - Animations: describe any visible motion
+   - For ANY CSS property visible in the design, include it in the styles object
 
 ### Critical Instruction
 Do NOT just list bounding boxes. Output a recursive JSON tree.
@@ -171,8 +179,21 @@ If an element contains text, use the "text" field.
       "display": "flex",
       "flexDirection": "column",
       "backgroundColor": "#ffffff",
+      "backgroundImage": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       "borderRadius": "8px",
-      "boxShadow": "0 4px 6px rgba(0,0,0,0.1)"
+      "boxShadow": "0 4px 6px rgba(0,0,0,0.1)",
+      "backdropFilter": "blur(12px)",
+      "filter": "brightness(1.1)",
+      "opacity": "0.9",
+      "transform": "rotate(3deg)",
+      "clipPath": "polygon(...)",
+      "transition": "all 0.3s ease",
+      "fontFamily": "Inter",
+      "fontSize": "16px",
+      "fontWeight": "600",
+      "letterSpacing": "0.05em",
+      "lineHeight": "1.5",
+      "textShadow": "0 2px 4px rgba(0,0,0,0.3)"
     },
     "text": "Click Me",
     "hasIcon": boolean,
@@ -212,6 +233,7 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
 
     return {
       file_index: fileIndex,
+      originalImageRef: { fileUri: fileState.uri, mimeType: fileState.mimeType },
       canvas: data.canvas,
       global_theme: { dom_tree: data.dom_tree, assets: data.assets_needed },
       measured_components: [],
@@ -343,8 +365,30 @@ You are the **Universal Builder**. Write the final React code.
      box-shadow for depth; filter: drop-shadow for floating effect.
    - Do NOT just set a backgroundColor. Use real CSS shape techniques.
 
-### Output
-Return ONLY the full App.tsx code. No markdown.`;
+7. **ORIGINAL DESIGN REFERENCE (CRITICAL):**
+   - You may receive an original design image alongside these instructions.
+   - If provided, use it as the GROUND TRUTH for visual accuracy.
+   - Match exact colors, gradients, spacing, typography, and element positioning.
+   - Pay special attention to: logos (recreate as inline SVG), icons (extract exact paths),
+     custom button styles, background patterns, and gradient directions.
+   - For logos/icons you cannot extract as SVG: describe them in a comment and use the
+     closest visual approximation with CSS shapes and colors.
+   - The manifests provide structured data, but the image is the ultimate reference.
+
+### Output Format
+Return TWO files separated by markers:
+
+--- FILE: App.tsx ---
+[Full App.tsx code with import './styles.css' at the top]
+
+--- FILE: styles.css ---
+[@keyframes, CSS custom properties, complex hover/focus selectors. Leave empty if not needed.]
+
+Rules:
+- App.tsx MUST include: import './styles.css';
+- Use CSS classes from styles.css for animations, complex hover effects, and pseudo-selectors.
+- Use inline styles for simple properties (colors, spacing, sizing).
+- No markdown fences. Just the raw code.`;
 
 export async function assembleCode(
   _structure: ComponentStructure | null,
@@ -353,7 +397,8 @@ export async function assembleCode(
   _strategy: MergeStrategy,
   _currentCode: string | null,
   instructions: string,
-  assets: Record<string, string>
+  assets: Record<string, string>,
+  originalImageRef?: { fileUri: string; mimeType: string }
 ): Promise<AppFile[]> {
   const apiKey = getGeminiApiKey();
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -385,20 +430,48 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
   ${JSON.stringify(physics)}
   `;
 
-  const result = await model.generateContent(prompt);
-  const code = result.response
+  // Build multimodal content: original image (if available) + text prompt
+  const contentParts: any[] = [];
+  if (originalImageRef) {
+    contentParts.push({
+      fileData: { mimeType: originalImageRef.mimeType, fileUri: originalImageRef.fileUri },
+    });
+  }
+  contentParts.push({ text: prompt });
+
+  const result = await model.generateContent(contentParts);
+  const responseText = result.response
     .text()
-    .replace(/^```(?:tsx?|jsx?|typescript|javascript)?\n?/gm, '')
+    .replace(/^```(?:tsx?|jsx?|typescript|javascript|css)?\n?/gm, '')
     .replace(/\n?```$/gm, '')
     .trim();
 
-  return [
-    { path: '/src/App.tsx', content: code },
-    {
-      path: '/src/index.tsx',
-      content: `import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App';\nimport './inspector';\n\nconst root = createRoot(document.getElementById('root')!);\nroot.render(<React.StrictMode><App /></React.StrictMode>);`,
-    },
-  ];
+  // Parse multi-file output (App.tsx + optional styles.css)
+  const appMatch = responseText.match(
+    /---\s*FILE:\s*App\.tsx\s*---\s*\n([\s\S]*?)(?=---\s*FILE:|$)/
+  );
+  const cssMatch = responseText.match(/---\s*FILE:\s*styles\.css\s*---\s*\n([\s\S]*?)$/);
+
+  const files: AppFile[] = [];
+
+  // App.tsx: use parsed content, or entire response as fallback (backward compat)
+  files.push({
+    path: '/src/App.tsx',
+    content: appMatch ? appMatch[1].trim() : responseText,
+  });
+
+  // styles.css: only include if non-empty
+  if (cssMatch && cssMatch[1].trim()) {
+    files.push({ path: '/src/styles.css', content: cssMatch[1].trim() });
+  }
+
+  // index.tsx: always include
+  files.push({
+    path: '/src/index.tsx',
+    content: `import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App';\nimport './inspector';\n\nconst root = createRoot(document.getElementById('root')!);\nroot.render(<React.StrictMode><App /></React.StrictMode>);`,
+  });
+
+  return files;
 }
 
 // ============================================================================
@@ -507,7 +580,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
             const result = await geminiImageService.generateBackgroundFromReference({
               vibe: asset.vibe || 'photorealistic',
               vibeKeywords: [asset.description],
-              referenceImage: '',
+              referenceImage: input.files.length > 0 ? input.files[0].base64 : '',
               targetElement: asset.name.includes('button')
                 ? 'button'
                 : asset.name.includes('hero')
@@ -530,6 +603,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   stepTimings.architect = Date.now() - structStart;
 
   const buildStart = Date.now();
+  const primaryImageRef = manifests[0]?.originalImageRef;
   const files = await assembleCode(
     structure,
     manifests,
@@ -537,7 +611,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     strategy,
     input.currentCode,
     input.instructions,
-    generatedAssets
+    generatedAssets,
+    primaryImageRef
   );
   stepTimings.builder = Date.now() - buildStart;
 
