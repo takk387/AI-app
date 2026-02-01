@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Jan 31, 2026)
+> **Status**: VERIFIED (Feb 1, 2026)
 
 ---
 
@@ -9,12 +9,12 @@
 
 | Metric               | Previous | Verified (Actual) |
 | -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 523      | **538**           |
-| API Route Handlers   | 58       | **59**            |
-| Custom Hooks         | 39       | **35**            |
-| Service Classes      | 76       | **73**            |
-| Type Definitions     | ~11,988  | **~12,833 lines** |
-| Utilities            | ~23,437  | **~24,728 lines** |
+| TypeScript/TSX Files | 538      | **547**           |
+| API Route Handlers   | 59       | **60**            |
+| Custom Hooks         | 35       | **35**            |
+| Service Classes      | 73       | **73**            |
+| Type Definitions     | ~12,833  | **~12,953 lines** |
+| Utilities            | ~24,728  | **~24,728 lines** |
 
 **Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
 
@@ -97,6 +97,23 @@ Live Editor (Refinement)
 
 ---
 
+## Agents Architecture (Added Feb 1, 2026)
+
+New agentic architecture for code transformation and deployment workflows.
+
+**Key Files:**
+
+| File                    | Lines | Purpose                          |
+| ----------------------- | ----- | -------------------------------- |
+| `CodeTransformAgent.ts` | 437   | AST-based code transformations   |
+| `DeploymentAgent.ts`    | 444   | Deployment workflow orchestrator |
+| `types.ts`              | 393   | Agent type definitions           |
+| `index.ts`              | 46    | Agent exports                    |
+
+**Location:** `src/agents/`
+
+---
+
 ## Motion & Effects System (Added Jan 31, 2026)
 
 New animation and visual effects infrastructure.
@@ -174,13 +191,13 @@ Lower risk, but still follow patterns.
 
 | File                            | Lines     | Purpose                              | Risk                                          |
 | ------------------------------- | --------- | ------------------------------------ | --------------------------------------------- |
-| `useAppStore.ts`                | **761**   | Centralized Zustand state (8 slices) | 24+ files break                               |
+| `useAppStore.ts`                | **790**   | Centralized Zustand state (8 slices) | 24+ files break                               |
 | `types/layoutDesign.ts`         | **2,999** | Comprehensive design type system     | 14 files — **RECOMMEND SPLITTING**            |
 | `middleware.ts`                 | **87**    | Auth flow for all routes             | Auth breaks                                   |
 | `DynamicPhaseGenerator.ts`      | **2,646** | Phase planning engine                | Build system breaks — **RECOMMEND SPLITTING** |
 | `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator         | Build system breaks                           |
 | `GeminiLayoutService.ts`        | **1,351** | Layout AI with Gemini                | Layout builder breaks                         |
-| `MainBuilderView.tsx`           | **1,164** | Main orchestrator (PLAN/ACT modes)   | UI breaks                                     |
+| `MainBuilderView.tsx`           | **1,494** | Main orchestrator (PLAN/ACT modes)   | UI breaks                                     |
 | `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                  | Planning breaks                               |
 | `TitanPipelineService.ts`       | **511**   | Agentic vision pipeline              | Advanced layout breaks                        |
 
@@ -244,26 +261,31 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 
 ```
 src/
-├── app/              # Next.js App Router + API routes (59 handlers)
+├── agents/           # Agentic architecture (1,320 lines) [NEW]
+│   ├── CodeTransformAgent.ts   # Code transformations
+│   ├── DeploymentAgent.ts      # Deployment workflows
+│   └── types.ts                # Agent types
+├── app/              # Next.js App Router + API routes (60 handlers)
+│   └── (protected)/app/review/ # Review page [NEW]
 ├── components/       # 29 top-level + modals + sub-components
-│   ├── effects/      # Visual effects (CSS particles, renderers) [NEW]
+│   ├── effects/      # Visual effects (CSS particles, renderers)
 │   ├── layout-builder/  # Layout builder components
 │   └── ...
 ├── hooks/            # 35 custom hooks
 ├── services/         # 73 business logic services
-│   ├── TitanPipelineService.ts  # Agentic pipeline [NEW]
-│   ├── MotionMapper.ts          # Animation mapping [NEW]
-│   ├── SourceMergeEngine.ts     # Source merging [NEW]
+│   ├── TitanPipelineService.ts  # Agentic pipeline
+│   ├── MotionMapper.ts          # Animation mapping
+│   ├── SourceMergeEngine.ts     # Source merging
 │   └── ...
 ├── store/            # Zustand centralized state
-├── types/            # 12,833 lines of TypeScript types
-│   ├── titanPipeline.ts   # Pipeline types [NEW]
-│   ├── motionConfig.ts    # Motion types [NEW]
+├── types/            # 12,953 lines of TypeScript types
+│   ├── titanPipeline.ts   # Pipeline types
+│   ├── motionConfig.ts    # Motion types
 │   └── ...
 ├── utils/            # 24,728 lines of utilities
-│   ├── snapEngine.ts           # Alignment engine [NEW]
-│   ├── inspectorBridge.ts      # Inspector bridge [NEW]
-│   ├── responsiveTypography.ts # Typography utils [NEW]
+│   ├── snapEngine.ts           # Alignment engine
+│   ├── inspectorBridge.ts      # Inspector bridge
+│   ├── responsiveTypography.ts # Typography utils
 │   └── ...
 └── prompts/          # AI system prompts
 ```
@@ -301,9 +323,9 @@ Phase-by-phase code generation → quality checks → live preview
 
 | File                            | Lines | Purpose                                                  |
 | ------------------------------- | ----- | -------------------------------------------------------- |
-| `MainBuilderView.tsx`           | 1,164 | Main orchestrator — imports 15+ hooks, coordinates modes |
+| `MainBuilderView.tsx`           | 1,494 | Main orchestrator — imports 15+ hooks, coordinates modes |
 | `NaturalConversationWizard.tsx` | 806   | PLAN mode wizard UI                                      |
-| `useAppStore.ts`                | 761   | Centralized state                                        |
+| `useAppStore.ts`                | 790   | Centralized state                                        |
 | `DynamicPhaseGenerator.ts`      | 2,646 | Phase planning                                           |
 | `PhaseExecutionManager.ts`      | 2,095 | Phase execution                                          |
 | `GeminiLayoutService.ts`        | 1,351 | Layout AI service                                        |
@@ -333,6 +355,17 @@ Phase-by-phase code generation → quality checks → live preview
 ---
 
 ## Recent Changes Log
+
+### Feb 1, 2026
+
+- **Added**: `src/agents/` directory with agentic architecture (1,320 lines)
+  - `CodeTransformAgent.ts` (437 lines) - AST-based code transformations
+  - `DeploymentAgent.ts` (444 lines) - Deployment workflow orchestrator
+  - `types.ts` (393 lines) - Agent type definitions
+- **Added**: Review page at `src/app/(protected)/app/review/page.tsx` (165 lines)
+- **Updated**: `MainBuilderView.tsx` expanded from 1,164 to 1,494 lines (+330)
+- **Updated**: `useAppStore.ts` expanded from 761 to 790 lines (+29)
+- **Stats**: +9 TypeScript files, +1 API route, +120 lines in types
 
 ### Jan 31, 2026
 
