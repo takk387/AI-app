@@ -144,6 +144,11 @@ export interface VisualManifest {
       iconPosition?: string;
       iconSize?: string;
       iconContainerStyle?: Record<string, string>;
+      interactionStates?: {
+        hover?: Record<string, string>;
+        active?: Record<string, string>;
+        focus?: Record<string, string>;
+      };
     };
     assets?: string[];
   };

@@ -164,6 +164,15 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
    - Clip-path: shaped elements (circular avatars, angled sections)
    - Animations: describe any visible motion
    - For ANY CSS property visible in the design, include it in the styles object
+6. **Interactive States:**
+   - For buttons, links, and interactive cards: infer likely hover/active/focus states
+     based on the visual design (shadow changes, color shifts, scale effects).
+   - Include an "interactionStates" field on the element node (sibling to "styles"):
+     "interactionStates": { "hover": { ...css }, "active": { ...css }, "focus": { ...css } }
+7. **Icon & Logo Containers:**
+   - If an icon/logo sits inside a visible container (circle, badge, rounded rect),
+     include the container as a parent node with its own styles.
+   - Extract spacing between icon and adjacent text.
 
 ### Critical Instruction
 Do NOT just list bounding boxes. Output a recursive JSON tree.
@@ -194,6 +203,11 @@ If an element contains text, use the "text" field.
       "letterSpacing": "0.05em",
       "lineHeight": "1.5",
       "textShadow": "0 2px 4px rgba(0,0,0,0.3)"
+    },
+    "interactionStates": {
+      "hover": { "boxShadow": "0 8px 16px rgba(0,0,0,0.15)", "transform": "translateY(-1px)" },
+      "active": { "transform": "scale(0.98)" },
+      "focus": { "outline": "2px solid #3b82f6", "outlineOffset": "2px" }
     },
     "text": "Click Me",
     "hasIcon": boolean,
@@ -254,9 +268,21 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
 // ============================================================================
 
 const ARCHITECT_PROMPT = `### Role
-You are the **Architect**. Output a clean structure.json (DOM Tree).
-If 'dom_tree' is provided in manifests, RESPECT IT.
-Use semantic tags. Add data-id to everything. Return JSON.`;
+You are the **Architect**. Convert visual manifests into a component structure tree.
+
+### Rules
+1. If 'dom_tree' is provided in manifests, USE IT AS-IS. Do not simplify or restructure.
+2. PRESERVE every style property from the Surveyor's output — do not drop any CSS values.
+3. Add data-id attributes to every element for the inspector system.
+4. Use semantic HTML tags (nav, header, main, section, article, button, footer).
+5. Preserve ALL nested elements — do not flatten or merge nodes.
+6. Keep any interactionStates objects intact for the Builder to use.
+
+### Output Schema (JSON)
+{
+  "tree": [{ "type": "div", "data_id": "root", "styles": {}, "children": [] }],
+  "layout_strategy": "flex" | "grid"
+}`;
 
 export async function buildStructure(
   manifests: VisualManifest[],
@@ -334,12 +360,25 @@ You are the **Universal Builder**. Write the final React code.
    - Do NOT set backgroundColor when a background image is active.
    - Do NOT use CSS gradients if an image asset is available.
 
-2. **REPLICATION MODE (CRITICAL):**
-   - If the Manifests contain a 'dom_tree', you MUST recursively build that exact structure.
-   - Map 'type' to HTML tags. Map 'styles' to Tailwind classes.
-   - Do NOT simplify the structure. Pixel-perfect accuracy is key.
+2. **DATA-ID ATTRIBUTES (MANDATORY — DO NOT SKIP):**
+   - You MUST add a unique data-id attribute to EVERY HTML element you generate.
+   - Format: data-id="descriptive_name" (e.g., "hero_section", "nav_logo", "cta_button")
+   - This is REQUIRED for the visual inspector. Without data-id, the editor breaks.
+   - Every div, button, p, h1, span, img, nav, section, footer MUST have data-id.
 
-3. **Icons (Rendering):**
+3. **REPLICATION MODE (CRITICAL):**
+   - If the Manifests contain a 'dom_tree', you MUST recursively build that exact structure.
+   - Map 'type' to HTML tags. Apply styles with EXACT values from the manifest — do not approximate.
+   - **Style application strategy:**
+     - Use inline style={{}} with the exact CSS values from the manifest for all visual properties.
+     - Use Tailwind only for structural layout (flex, grid, display, positioning).
+     - Use CSS classes in styles.css for anything that needs selectors (hover, focus, active,
+       transitions, @keyframes, pseudo-elements).
+   - NEVER replace an exact value with a "close enough" Tailwind utility class.
+   - If the manifest says boxShadow: "0 8px 32px rgba(0,0,0,0.15)", use that exact value.
+   - Pixel-perfect accuracy is the goal.
+
+4. **Icons (Rendering):**
    - **Priority 1:** If \`iconSvgPath\` exists -> render inline \`<svg>\` with the path data, applying \`iconColor\` as stroke/fill and \`iconViewBox\`.
    - **Priority 2:** If only \`iconName\` exists -> import from \`lucide-react\` and render \`<IconName />\`.
    - Apply positioning via flex layout.
@@ -347,8 +386,7 @@ You are the **Universal Builder**. Write the final React code.
    - If \`iconContainerStyle\` exists -> wrap icon in a styled container div.
    - Available Lucide icons: Home, User, Menu, Search, Settings, Star, Heart, Check, Plus, ArrowRight, etc.
 
-4. **Physics:** Implement the physics using Framer Motion.
-5. **Data-IDs:** Preserve all data-id attributes for the inspector.
+5. **Physics:** Implement the physics using Framer Motion.
 
 6. **Shaped & Textured Elements (CRITICAL for photorealism):**
    - When the user asks for an element that "looks like" a real object (cloud, stone, wood, etc.),
@@ -374,6 +412,13 @@ You are the **Universal Builder**. Write the final React code.
    - For logos/icons you cannot extract as SVG: describe them in a comment and use the
      closest visual approximation with CSS shapes and colors.
    - The manifests provide structured data, but the image is the ultimate reference.
+
+8. **Interaction States (REQUIRED for buttons and links):**
+   - For every button and interactive element, implement hover, active, and focus states.
+   - If the manifest includes "interactionStates", use those exact values in styles.css.
+   - If no explicit states are provided, derive natural transitions from the default styles
+     (e.g., subtle shadow increase on hover, slight scale on active, ring on focus).
+   - Define these as CSS classes in styles.css and apply them in App.tsx.
 
 ### Output Format
 Return TWO files separated by markers:
@@ -460,10 +505,11 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
     content: appMatch ? appMatch[1].trim() : responseText,
   });
 
-  // styles.css: only include if non-empty
-  if (cssMatch && cssMatch[1].trim()) {
-    files.push({ path: '/src/styles.css', content: cssMatch[1].trim() });
-  }
+  // styles.css: always include (App.tsx imports it; missing file breaks Sandpack)
+  files.push({
+    path: '/src/styles.css',
+    content: cssMatch && cssMatch[1].trim() ? cssMatch[1].trim() : '/* Generated styles */',
+  });
 
   // index.tsx: always include
   files.push({
