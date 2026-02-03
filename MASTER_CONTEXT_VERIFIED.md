@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Feb 1, 2026 PM)
+> **Status**: VERIFIED (Feb 3, 2026)
 
 ---
 
@@ -20,80 +20,87 @@
 
 ---
 
-## System Architecture Flow
+## System Architecture Flow (4-Step Page Navigation)
 
 ```
-User Input → NaturalConversationWizard (PLAN mode)
+Step 1: /app/wizard (NaturalConversationWizard)
+    → User builds AppConcept via natural conversation
+    → Architecture + Phase Plan generated
+    → Navigates to /app/design
     ↓
-AppConcept created (51 files import this type)
+Step 2: /app/design (LayoutBuilderView)
+    → User uploads reference images / sketches
+    → Gemini Vision analyzes layout (GeminiLayoutService)
+    → Self-healing vision loop refines components
+    → Layout saved to Zustand store
+    → Navigates to /app/review
     ↓
-DynamicPhaseGenerator → 3-25+ adaptive phases
+Step 3: /app/review (ReviewPage - 13 components)
+    → User reviews concept, features, phases, layout, settings
+    → "Build App" triggers Titan Pipeline
+    → Navigates to /app
     ↓
-useAppStore (central state - 24 files depend on this)
-    ↓
-PhaseExecutionManager → SSE streaming code generation
-    ↓
-CodeReviewService → Quality validation (lazy-loaded)
-    ↓
-Preview (Sandpack) + Version History
+Step 4: /app (MainBuilderView)
+    → Titan Pipeline: Router → Surveyor → Photographer → Builder
+    → Phase 1 auto-completes by injecting layout code
+    → Subsequent phases use Claude AI via PhaseExecutionManager
+    → Sandpack preview + self-healing vision loop
+    → Version history and rollback
 ```
 
-### Step-Based Navigation Flow
+**Key Data Persistence Points (Zustand + localStorage):**
 
-```
-/app/wizard  →  /app/design  →  /app/build  →  /app (builder)
-     ↓              ↓               ↓              ↓
- AppConcept    LayoutManifest   Build Phases    Code Editor
- PhasePlan     DesignSpec       Quality Check   Preview
-     └────────────────────────────────────────────┘
-              Data persists via Zustand + localStorage
-```
-
-**Key Data Persistence Points:**
-
-- `appConcept` - Created in Wizard, used throughout
-- `dynamicPhasePlan` - Created in Wizard, used in Build
-- `currentLayoutManifest` - Created in Design, used in Builder
-- `currentDesignSpec` - Extracted from images in Design
+- `appConcept` - Created in Wizard (Step 1), used throughout
+- `dynamicPhasePlan` - Created in Wizard (Step 1), used in Builder (Step 4)
+- `layoutBuilderFiles` - Created in Design (Step 2), injected in Phase 1 (Step 4)
+- `currentLayoutManifest` - Created in Design (Step 2), used in Builder (Step 4)
+- `currentDesignSpec` - Extracted from images in Design (Step 2)
 - `components` / `currentComponent` - Generated code, persists across navigation
 
 ---
 
-## Titan Pipeline (Added Jan 31, 2026)
+## Titan Pipeline (Updated Feb 3, 2026)
 
-A new agentic pipeline for advanced layout generation from visual sources (images/videos).
+Core agentic pipeline for transforming visual sources (images/sketches) + instructions into generated React/Tailwind code.
 
 ```
-Input (Image/Video/Text) → Router (Traffic Control)
+Input (Images + Instructions) → Router (Intent Analysis)
     ↓
-Surveyor (Vision Analysis via Gemini)
+Surveyor (Gemini Vision → VisualManifest[])
     ↓
-Architect (Structure via Claude Opus)
+Architect → Currently bypassed (returns null)
     ↓
-Physicist (Animation/Motion Math)
+Physicist → Currently bypassed (returns null)
     ↓
-Photographer (Asset Generation)
+Photographer (Gemini Image Generation → Asset URLs)
     ↓
-Builder (Code Synthesis)
+Builder (Gemini → React/Tailwind Code)
     ↓
-Live Editor (Refinement)
+Self-Healing Vision Loop (Screenshot → Critique → Fix → Repeat)
 ```
 
 **Key Files:**
 
-- `src/services/TitanPipelineService.ts` (511 lines) - Main orchestrator
-- `src/types/titanPipeline.ts` (196 lines) - Pipeline types
-- `src/app/api/layout/pipeline/route.ts` - API endpoint
+- `src/services/TitanPipelineService.ts` (~1,074 lines) - Main pipeline orchestrator
+- `src/services/GeminiLayoutService.ts` (~1,364 lines) - Vision analysis + critique
+- `src/services/GeminiImageService.ts` (~116 lines) - Multimodal image generation
+- `src/services/AppImageGenerator.ts` (~277 lines) - Image generation + Supabase upload
+- `src/services/AssetExtractionService.ts` (~251 lines) - Sharp-based image cropping
+- `src/services/VisionLoopEngine.ts` (~499 lines) - Self-healing vision loop
+- `src/services/LayoutAutoFixEngine.ts` (~465 lines) - Auto-fix from AI critique
+- `src/types/titanPipeline.ts` (~219 lines) - Pipeline types
+- `src/types/layoutAnalysis.ts` (~192 lines) - Critique/healing types
+- `src/utils/layoutValidation.ts` (~1,111 lines) - Zod schema validation
 
 **Pipeline Steps:**
 | Step | Model | Purpose |
 |------|-------|---------|
-| Router | Gemini Flash | Intent analysis, traffic control |
-| Surveyor | Gemini Flash + Agentic Vision | Vision analysis, UI reverse engineering (uses @google/genai SDK) |
-| Architect | Claude Opus | Component structure generation (currently skipped to save cost) |
-| Physicist | Gemini | Motion/animation extraction |
-| Photographer | DALL-E/Gemini | Asset generation (shaped elements support) |
-| Builder | Claude | Code synthesis (multimodal, shape+texture support) |
+| Router | Gemini Flash | Intent analysis, MergeStrategy (CREATE/MERGE/EDIT), reference image detection |
+| Surveyor | Gemini Flash + Agentic Vision | Vision analysis, UI reverse engineering → VisualManifest[] (uses @google/genai SDK) |
+| Architect | Bypassed | (Placeholder for future component structure generation) |
+| Physicist | Bypassed | (Placeholder for future motion/animation extraction) |
+| Photographer | Gemini Pro | Multimodal asset generation (text-only or reference image) |
+| Builder | Gemini Pro | Code synthesis with multimodal input (image + manifest + assets) |
 
 ---
 
@@ -163,17 +170,17 @@ New animation and visual effects infrastructure.
 | `types/codeReview.ts`       | **15 files** | Validation layer types              |
 | `DynamicPhaseGenerator.ts`  | ~8 files     | Core planning engine (2,646 lines)  |
 | `PhaseExecutionManager.ts`  | ~4 files     | Core execution engine (2,095 lines) |
-| `GeminiLayoutService.ts`    | ~5 files     | Layout AI service (1,351 lines)     |
+| `GeminiLayoutService.ts`    | ~5 files     | Layout AI service (1,364 lines)     |
 | Deployment services cluster | 10+ files    |                                     |
 
 ### TIER 3: NEW PIPELINE SERVICES (1-3 dependents each)
 
-| File                       | Lines | Notes                         |
-| -------------------------- | ----- | ----------------------------- |
-| `TitanPipelineService.ts`  | 511   | Agentic pipeline orchestrator |
-| `MotionMapper.ts`          | 350   | Animation mapping             |
-| `SourceMergeEngine.ts`     | 322   | Multi-source merging          |
-| `EnhancedVideoAnalyzer.ts` | 166   | Video motion extraction       |
+| File                       | Lines | Notes                       |
+| -------------------------- | ----- | --------------------------- |
+| `TitanPipelineService.ts`  | 1,074 | Titan Pipeline orchestrator |
+| `MotionMapper.ts`          | 350   | Animation mapping           |
+| `SourceMergeEngine.ts`     | 322   | Multi-source merging        |
+| `EnhancedVideoAnalyzer.ts` | 166   | Video motion extraction     |
 
 ### TIER 4: HOOKS & COMPONENTS (1-3 dependents each)
 
@@ -194,12 +201,12 @@ Lower risk, but still follow patterns.
 | `useAppStore.ts`                | **804**   | Centralized Zustand state (8 slices) | 24+ files break                               |
 | `types/layoutDesign.ts`         | **2,999** | Comprehensive design type system     | 14 files — **RECOMMEND SPLITTING**            |
 | `middleware.ts`                 | **87**    | Auth flow for all routes             | Auth breaks                                   |
-| `DynamicPhaseGenerator.ts`      | **2,696** | Phase planning engine                | Build system breaks — **RECOMMEND SPLITTING** |
+| `DynamicPhaseGenerator.ts`      | **2,718** | Phase planning engine                | Build system breaks — **RECOMMEND SPLITTING** |
 | `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator         | Build system breaks                           |
-| `GeminiLayoutService.ts`        | **1,351** | Layout AI with Gemini                | Layout builder breaks                         |
-| `MainBuilderView.tsx`           | **1,622** | Main orchestrator (PLAN/ACT modes)   | UI breaks                                     |
+| `GeminiLayoutService.ts`        | **1,364** | Layout AI with Gemini Vision         | Layout builder breaks                         |
+| `MainBuilderView.tsx`           | **1,622** | Main orchestrator + Titan Pipeline   | UI breaks                                     |
 | `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                  | Planning breaks                               |
-| `TitanPipelineService.ts`       | **696**   | Agentic vision pipeline              | Advanced layout breaks                        |
+| `TitanPipelineService.ts`       | **1,075** | Titan Pipeline orchestrator          | Pipeline breaks                               |
 
 ---
 
@@ -243,17 +250,17 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 
 ## Key Patterns
 
-| Pattern           | Implementation                                                  |
-| ----------------- | --------------------------------------------------------------- |
-| State Management  | Zustand + Immer middleware, 8 slices                            |
-| Context Selection | `CodeContextService` — smart file selection to reduce tokens    |
-| Live Preview      | Sandpack                                                        |
-| Code Parsing      | Tree-sitter for AST analysis                                    |
-| Background Jobs   | Inngest                                                         |
-| AI Providers      | Claude (logic/code), Gemini (vision/layout), DALL-E 3 (images)  |
-| Motion Mapping    | `MotionMapper` — extracts animations from video/design (NEW)    |
-| Visual Effects    | `effects/` components — CSS particles, keyframe injection (NEW) |
-| Agentic Pipelines | `TitanPipelineService` — multi-agent orchestration (NEW)        |
+| Pattern           | Implementation                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| State Management  | Zustand + Immer middleware, 8 slices                                               |
+| Context Selection | `CodeContextService` — smart file selection to reduce tokens                       |
+| Live Preview      | Sandpack                                                                           |
+| Code Parsing      | Tree-sitter for AST analysis                                                       |
+| Background Jobs   | Inngest                                                                            |
+| AI Providers      | Claude (logic/code), Gemini (vision/layout/images), OpenAI (embeddings/proxy only) |
+| Motion Mapping    | `MotionMapper` — extracts animations from video/design (NEW)                       |
+| Visual Effects    | `effects/` components — CSS particles, keyframe injection (NEW)                    |
+| Agentic Pipelines | `TitanPipelineService` — multi-agent orchestration (NEW)                           |
 
 ---
 
@@ -321,15 +328,15 @@ Phase-by-phase code generation → quality checks → live preview
 
 ## Key Entry Points
 
-| File                            | Lines | Purpose                                                  |
-| ------------------------------- | ----- | -------------------------------------------------------- |
-| `MainBuilderView.tsx`           | 1,622 | Main orchestrator — imports 15+ hooks, coordinates modes |
-| `NaturalConversationWizard.tsx` | 806   | PLAN mode wizard UI                                      |
-| `useAppStore.ts`                | 804   | Centralized state                                        |
-| `DynamicPhaseGenerator.ts`      | 2,696 | Phase planning                                           |
-| `PhaseExecutionManager.ts`      | 2,095 | Phase execution                                          |
-| `GeminiLayoutService.ts`        | 1,351 | Layout AI service                                        |
-| `TitanPipelineService.ts`       | 696   | Agentic vision pipeline (Gemini @google/genai SDK)       |
+| File                            | Lines | Purpose                                                       |
+| ------------------------------- | ----- | ------------------------------------------------------------- |
+| `MainBuilderView.tsx`           | 1,622 | Main orchestrator — Titan Pipeline integration, phase control |
+| `NaturalConversationWizard.tsx` | 806   | PLAN mode wizard UI                                           |
+| `useAppStore.ts`                | 804   | Centralized state                                             |
+| `DynamicPhaseGenerator.ts`      | 2,718 | Phase planning                                                |
+| `PhaseExecutionManager.ts`      | 2,095 | Phase execution                                               |
+| `GeminiLayoutService.ts`        | 1,364 | Layout AI + Vision critique                                   |
+| `TitanPipelineService.ts`       | 1,075 | Titan Pipeline orchestrator                                   |
 
 ---
 
@@ -367,7 +374,7 @@ Phase-by-phase code generation → quality checks → live preview
 - **Updated**: `TitanPipelineService.ts` 511 → 696 lines (+185)
 - **Updated**: `MainBuilderView.tsx` 1,494 → 1,622 lines (+128)
 - **Updated**: `useLayoutBuilder.ts` 383 → 496 lines (+113)
-- **Updated**: `DynamicPhaseGenerator.ts` 2,646 → 2,696 lines (+50)
+- **Updated**: `DynamicPhaseGenerator.ts` 2,646 → 2,718 lines (+50)
 - **Updated**: `useAppStore.ts` 790 → 804 lines (+14)
 - **Added**: `docs/visual-fidelity-fix-plan.md`, `docs/plans/fix-shaped-textured-elements.md`
 

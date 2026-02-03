@@ -109,7 +109,7 @@ AI App Builder is a conversational tool that lets users **build complete web app
 
 **Components:**
 
-- `LayoutBuilderWizard.tsx` - Main layout builder
+- `LayoutBuilderView.tsx` - Main layout builder
 - `src/components/layout-builder/` - Layout tools
 - Endpoint: `/api/layout/chat` - Vision-enabled chat
 
@@ -135,19 +135,19 @@ AI App Builder is a conversational tool that lets users **build complete web app
 - Error boundaries with graceful fallbacks
 - Component: `PreviewPanel.tsx`
 
-### 9. Image Generation (DALL-E 3)
+### 9. Image Generation (Gemini)
 
 **Types:**
 
 - Hero images for landing pages
-- Card thumbnails
-- Background patterns
+- Card thumbnails, buttons with reference photos
+- Background patterns and textures
 - Design-context aware prompts
 
 **Service:**
 
-- `dalleService.ts` - DALL-E 3 API wrapper
-- `AppImageGenerator.ts` - Batch processing, rate limiting, caching
+- `GeminiImageService.ts` - Multimodal image generation (text-only or reference image)
+- `AppImageGenerator.ts` - Generation coordinator + Supabase upload
 - Endpoint: `/api/images/generate`
 
 ### 10. Cloud Storage
@@ -240,7 +240,7 @@ AI App Builder is a conversational tool that lets users **build complete web app
 | `/api/wizard/chat`                | PLAN mode conversations     |
 | `/api/layout/chat`                | Layout builder with vision  |
 | `/api/builder/chat`               | ACT mode expert chat        |
-| `/api/images/generate`            | DALL-E 3 generation         |
+| `/api/images/generate`            | Gemini image generation     |
 | `/api/embeddings`                 | Text embeddings             |
 
 ## When Implementing Features

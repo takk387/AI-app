@@ -4,34 +4,34 @@
 
 Personal AI App Builder that generates complete React apps through natural conversation with Claude AI.
 
-### Three Entry Points for App Creation
+### 4-Step Page-Based Flow
 
-1. **Natural Conversation Wizard** (`NaturalConversationWizard.tsx`) - Chat-based planning that builds an `AppConcept` through fluid conversation with Claude
-2. **Layout Builder** (`LayoutBuilderWizard.tsx`) - Visual design mode where Claude can "see" layouts via screenshots and provide design feedback
-3. **Direct Chat** (`AIBuilder.tsx` in ACT mode) - Quick builds for simple apps
-
-### Dual-Mode System
-
-- **PLAN Mode**: Brainstorm, discuss, architect without generating code. Uses `/api/wizard/chat` and `/api/builder/chat`
-- **ACT Mode**: Generate and modify working code. Uses `/api/ai-builder/*` routes
+1. **Wizard** (`NaturalConversationWizard.tsx` at `/app/wizard`) - Chat-based planning that builds an `AppConcept` through conversation with Claude
+2. **Layout Builder** (`LayoutBuilderView.tsx` at `/app/design`) - Visual design mode with Gemini Vision layout analysis
+3. **Review** (13 review components at `/app/review`) - Review concept, features, phases, layout before building
+4. **Builder** (`MainBuilderView.tsx` at `/app`) - Titan Pipeline execution + Sandpack preview
 
 ### Core Data Flow
 
 ```
-Wizard/Layout Builder → AppConcept + LayoutDesign
-                             ↓
-                    DynamicPhaseGenerator (3-25+ phases based on complexity)
-                             ↓
-                    PhaseExecutionManager (context accumulation, code generation)
-                             ↓
-                    Sandpack Preview + Version History
+Step 1: /app/wizard → AppConcept + PhasePlan (via NaturalConversationWizard)
+    ↓
+Step 2: /app/design → LayoutManifest + DesignSpec (via LayoutBuilderView + Gemini Vision)
+    ↓
+Step 3: /app/review → User reviews all gathered data
+    ↓
+Step 4: /app → Titan Pipeline: Router → Surveyor → Photographer → Builder
+    → Phase 1 auto-injects layout code
+    → Phases 2+ use Claude AI via PhaseExecutionManager
+    → Sandpack Preview + Version History
 ```
 
 ## Tech Stack
 
 - **Frontend:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS
 - **State:** Zustand 4.5 with Immer middleware (8 slices in `useAppStore.ts`)
-- **AI:** Anthropic Claude SDK (Sonnet with extended thinking), OpenAI SDK (DALL-E 3)
+- **AI:** Anthropic Claude SDK (Sonnet), Google GenAI SDK (Gemini 2.5 Flash/Pro for vision + image generation)
+- **AI (Secondary):** OpenAI SDK (embeddings/proxy only - DALL-E removed)
 - **Backend:** Next.js API Routes with SSE streaming
 - **Database:** Supabase (PostgreSQL, Auth, Storage)
 - **Parsing:** Tree-sitter for AST analysis, TypeScript Compiler API for semantic analysis
@@ -40,12 +40,14 @@ Wizard/Layout Builder → AppConcept + LayoutDesign
 
 ### Orchestration Layer
 
-| File                                           | Purpose                                                                       |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| `src/components/AIBuilder.tsx`                 | Main orchestrator (~2000 lines) - mode switching, phase control, panel layout |
-| `src/store/useAppStore.ts`                     | Central Zustand store (665 lines, 8 slices) - all shared state                |
-| `src/components/NaturalConversationWizard.tsx` | PLAN mode wizard - builds AppConcept via conversation                         |
-| `src/components/LayoutBuilderWizard.tsx`       | Visual design mode (~1950 lines) with Claude vision                           |
+| File                                           | Purpose                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| `src/components/MainBuilderView.tsx`           | Main orchestrator (~1622 lines) - Titan Pipeline, phase control |
+| `src/store/useAppStore.ts`                     | Central Zustand store (790 lines, 8 slices) - all shared state  |
+| `src/components/NaturalConversationWizard.tsx` | Step 1 wizard - builds AppConcept via conversation              |
+| `src/components/LayoutBuilderView.tsx`         | Step 2 - visual design with Gemini Vision                       |
+| `src/services/TitanPipelineService.ts`         | Titan Pipeline orchestrator (~1074 lines)                       |
+| `src/services/GeminiLayoutService.ts`          | Gemini Vision layout analysis + critique (~1364 lines)          |
 
 ### Services Layer (Stateless)
 
@@ -217,7 +219,8 @@ npm run test:all      # All tests including integration
 NEXT_PUBLIC_SUPABASE_URL      # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY # Supabase anon key
 ANTHROPIC_API_KEY             # Claude API key (required)
-OPENAI_API_KEY                # DALL-E image generation (optional)
+GOOGLE_GENERATIVE_AI_API_KEY  # Gemini API key (vision, image generation)
+OPENAI_API_KEY                # OpenAI (embeddings/proxy only)
 NEXT_PUBLIC_MOCK_AI=true      # Enable mock mode for dev without API
 NEXT_PUBLIC_DEBUG_PANEL=true  # Enable debug panels
 ```

@@ -1,115 +1,149 @@
 ---
 paths:
-  - src/components/AIBuilder.tsx
-  - src/services/DynamicPhaseGenerator.ts
+  - src/components/MainBuilderView.tsx
+  - src/services/TitanPipelineService.ts
+  - src/services/GeminiLayoutService.ts
+  - src/services/VisionLoopEngine.ts
   - src/services/PhaseExecutionManager.ts
-  - src/types/dynamicPhases.ts
   - src/hooks/useDynamicBuildPhases.ts
+  - src/types/dynamicPhases.ts
+  - src/types/titanPipeline.ts
+  - src/app/(protected)/app/page.tsx
+  - src/app/(protected)/app/wizard/page.tsx
+  - src/app/(protected)/app/design/page.tsx
+  - src/app/(protected)/app/review/page.tsx
 ---
 
-# AI Builder Core Domain
+# Builder Core Domain
+
+## 4-Step Page-Based Architecture
+
+The app uses a linear 4-step flow with page-based navigation under the `(protected)` route group:
+
+```
+/app/wizard → /app/design → /app/review → /app
+```
+
+| Step | Route         | Component                   | Purpose                                  |
+| ---- | ------------- | --------------------------- | ---------------------------------------- |
+| 1    | `/app/wizard` | `NaturalConversationWizard` | Build AppConcept via conversation        |
+| 2    | `/app/design` | `LayoutBuilderView`         | Visual layout design with Gemini Vision  |
+| 3    | `/app/review` | Review page (13 components) | Review concept, features, phases, layout |
+| 4    | `/app`        | `MainBuilderView`           | Execute Titan Pipeline, build app        |
+
+Each step saves its output to Zustand store (`useAppStore`), and the next step reads from it. Navigation is via `router.push()`.
 
 ## Main Orchestrator
 
-**Component:** `AIBuilder.tsx` (~1570 lines)
+**Component:** `MainBuilderView.tsx` (~1622 lines)
 
 Central component managing:
 
-- PLAN vs ACT mode switching
-- Phase execution control
-- Component preview and editing
+- Titan Pipeline execution (Router → Surveyor → Photographer → Builder)
+- Phase execution control and progress tracking
+- Sandpack preview with live editing
 - Version history and rollback
-- Modal coordination
+- Self-healing vision loop integration
 
-## Dual-Mode System
+**Replaces the former `AIBuilder.tsx`** which no longer exists.
 
-### PLAN Mode
+## Titan Pipeline
 
-- User planning phase
-- NaturalConversationWizard active
-- Building AppConcept
-- No code generation yet
+**Service:** `TitanPipelineService.ts` (~1074 lines)
 
-### ACT Mode
+The core pipeline that transforms user input (images + instructions) into generated code.
 
-- Building phase
-- Phase execution in progress
-- Code being generated
-- Preview panel active
+### Pipeline Steps
 
-**Mode state in useAppStore:**
+```
+Router (Gemini) → Analyzes intent, creates MergeStrategy
+    ↓
+Surveyor (Gemini Vision) → Reverse-engineers UI from screenshots
+    → Produces VisualManifest[] with measured components
+    ↓
+Architect → Currently bypassed (returns null)
+    ↓
+Physicist → Currently bypassed (returns null)
+    ↓
+Photographer (Gemini) → Generates material assets (textures, images)
+    → Uses GeminiImageService for multimodal generation
+    → Uploads to Supabase, injects URLs into Builder context
+    ↓
+Builder (Gemini) → Synthesizes final React/Tailwind code
+    → Receives original image + VisualManifest + assets
+    → Produces AppFile[] (code files)
+```
+
+### Key Types
 
 ```typescript
-{
-  builderMode: 'plan' | 'act'
-  setBuilderMode(mode): void
+interface PipelineInput {
+  files: FileInput[]; // Uploaded images
+  instructions: string; // User's request
+  currentCode: string | null; // Existing code for MERGE/EDIT
+  appContext?: AppContext; // App name, colors, style
+}
+
+interface PipelineResult {
+  files: AppFile[]; // Generated code files
+  strategy: MergeStrategy; // CREATE | MERGE | EDIT
+  manifests: VisualManifest[];
+  physics: MotionPhysics | null;
+  warnings: string[];
+  stepTimings: Record<string, number>;
 }
 ```
 
-## Phase Generation
+### Router Intent Detection
 
-### DynamicPhaseGenerator Service
+The Router classifies user intent and creates `MergeStrategy`:
 
-**Location:** `src/services/DynamicPhaseGenerator.ts`
+- **CREATE** - No existing code, build from scratch
+- **MERGE** - Existing code + new elements to add
+- **EDIT** - Modify specific parts of existing code
 
-Analyzes AppConcept and generates optimal phase plan:
+The Router also detects:
 
-```typescript
-static async generatePhases(
-  appConcept: AppConcept,
-  options?: GenerationOptions
-): Promise<DynamicPhasePlan>
-```
+- **UI screenshots** → `measure_pixels` array (Surveyor analyzes these)
+- **Reference images** → `generate_assets` with `source: "reference_image"` (Photographer uses these)
+- **Text-only generation** → `generate_assets` without `source` field
 
-**Output:**
+### Progress Callbacks
 
-```typescript
-interface DynamicPhasePlan {
-  totalPhases: number; // 2-25+ based on complexity
-  estimatedLines: number;
-  phases: DynamicPhase[];
-  dependencies: PhaseDependency[];
-  contextStrategy: 'sliding_window' | 'accumulation';
-}
-```
-
-### Phase Structure
+Pipeline reports progress via callback:
 
 ```typescript
-interface DynamicPhase {
-  id: string;
-  name: string;
-  description: string;
-  category: PhaseCategory;
-  dependencies: string[]; // Phase IDs this depends on
-  estimatedTokens: number;
-  priority: number;
-  files: string[]; // Files to create/modify
+type ProgressCallback = (progress: PipelineProgress) => void;
+
+interface PipelineProgress {
+  currentStep: PipelineStepName; // 'routing' | 'surveying' | ... | 'assembling'
+  status: PipelineStepStatus; // 'idle' | 'running' | 'completed' | 'error'
+  steps: Record<PipelineStepName, { status: PipelineStepStatus; message?: string }>;
 }
 ```
 
 ## Phase Execution
 
-### PhaseExecutionManager Service
+### Phase 1 Auto-Complete
 
-**Location:** `src/services/PhaseExecutionManager.ts` (~50KB)
+Phase 1 is special: it auto-completes by directly injecting layout builder code (from Zustand store) without making an AI call. This ensures the layout design from Step 2 is preserved exactly.
 
-Orchestrates code generation for each phase:
+### Subsequent Phases
 
-```typescript
-static async executePhase(
-  phase: DynamicPhase,
-  context: ExecutionContext
-): Promise<PhaseResult>
+Phases 2+ use Claude AI via `PhaseExecutionManager`:
+
 ```
-
-**Key responsibilities:**
-
-- Context extraction for current phase
-- AI prompt construction
-- Code generation via API
-- Result validation
-- Error recovery
+DynamicPhaseGenerator.generatePhases() → DynamicPhasePlan
+    ↓
+For each phase:
+    PhaseExecutionManager.executePhase()
+        → Context extraction
+        → API call to /api/ai-builder/full-app-stream (SSE)
+        → Code validation
+        → AST modification if needed
+    ↓
+    Update version history
+```
 
 ### useDynamicBuildPhases Hook
 
@@ -128,61 +162,41 @@ React hook wrapping phase execution:
 }
 ```
 
-## Code Generation Flow
+## Self-Healing Vision Loop
+
+**Service:** `VisionLoopEngine.ts` (~499 lines)
+
+After code generation, the vision loop improves fidelity:
 
 ```
-AppConcept
+Generated HTML → Puppeteer screenshot
     ↓
-DynamicPhaseGenerator.generatePhases()
+GeminiLayoutService.critiqueLayout() → LayoutCritiqueEnhanced
+    → fidelityScore (0-100)
+    → discrepancies[] with correctionJSON
     ↓
-DynamicPhasePlan (phases + dependencies)
+LayoutAutoFixEngine.applyCritique() → Apply corrections
     ↓
-For each phase:
-    ↓
-    PhaseExecutionManager.executePhase()
-        ↓
-        Context extraction (relevant code only)
-        ↓
-        API call to /api/ai-builder/full-app-stream
-        ↓
-        SSE streaming response
-        ↓
-        Code validation (codeValidator.ts)
-        ↓
-        AST modification if needed (astModifier.ts)
-    ↓
-    Update version history
-    ↓
-    Next phase
+Re-screenshot → Re-critique → Repeat (up to 2 iterations)
 ```
 
-## Context Strategy
-
-Two strategies based on app complexity:
-
-### Sliding Window
-
-- For complex apps (10+ phases)
-- Only includes recent context
-- Prevents token overflow
-
-### Accumulation
-
-- For simpler apps (<10 phases)
-- Includes all previous code
-- Better coherence
+Stops when: target fidelity reached, max iterations hit, or diminishing returns.
 
 ## Critical Dependencies
 
-- `AIBuilder.tsx` ← All modes flow through here
+- `MainBuilderView.tsx` ← All build flow goes through here
+- `TitanPipelineService.ts` ← Core pipeline orchestration
+- `GeminiLayoutService.ts` ← Vision analysis and critique
 - `DynamicPhaseGenerator` ← Determines build strategy
 - `PhaseExecutionManager` ← Code generation engine
 - `useDynamicBuildPhases` ← React integration
 - `dynamicPhases.ts` types ← Contract between services
+- `titanPipeline.ts` types ← Pipeline type definitions
 
 ## Error Handling
 
+- Pipeline step failures reported via progress callback with `'error'` status
 - Phase failures trigger retry with modified context
-- AutoFixEngine attempts automatic fixes
+- AutoFixEngine attempts automatic fixes from critique
 - User can manually intervene via chat
 - Rollback available via version history

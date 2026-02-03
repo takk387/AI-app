@@ -1,18 +1,217 @@
 ---
 paths:
+  - src/services/TitanPipelineService.ts
+  - src/services/GeminiLayoutService.ts
+  - src/services/GeminiImageService.ts
+  - src/services/AppImageGenerator.ts
+  - src/services/AssetExtractionService.ts
+  - src/services/VisionLoopEngine.ts
+  - src/services/LayoutAutoFixEngine.ts
   - src/services/CodeContextService.ts
   - src/services/ContextCache.ts
   - src/services/CodeParser.ts
   - src/utils/contextCompression.ts
+  - src/utils/layoutValidation.ts
   - src/utils/semanticMemory.ts
   - src/hooks/useSmartContext.ts
 ---
 
-# Context & Parsing Services
+# Services Layer
 
 ## Overview
 
-These services handle context extraction, compression, and caching for AI code generation.
+This layer contains two major service groups:
+
+1. **Titan Pipeline Services** - Gemini-powered vision, image generation, and code synthesis
+2. **Context & Parsing Services** - Context extraction, compression, and caching for AI code generation
+
+---
+
+## Titan Pipeline Services
+
+### TitanPipelineService
+
+**Location:** `src/services/TitanPipelineService.ts` (~1074 lines)
+
+Main pipeline orchestrator. Executes a 6-step pipeline to transform user input (images + instructions) into generated React/Tailwind code.
+
+```typescript
+class TitanPipelineService {
+  static async execute(
+    input: PipelineInput,
+    onProgress?: (progress: PipelineProgress) => void
+  ): Promise<PipelineResult>;
+}
+```
+
+**Pipeline steps:** Router → Surveyor → Architect (bypassed) → Physicist (bypassed) → Photographer → Builder
+
+**Key patterns:**
+
+- Each step is a separate Gemini API call with specialized prompts
+- Router determines `MergeStrategy` (CREATE | MERGE | EDIT)
+- Router detects reference images vs UI screenshots
+- Surveyor produces `VisualManifest[]` from screenshots
+- Photographer generates material assets via `GeminiImageService`
+- Builder synthesizes final code with multimodal input (image + manifest + assets)
+- Progress reported via callback for UI updates
+
+### GeminiLayoutService
+
+**Location:** `src/services/GeminiLayoutService.ts` (~1364 lines)
+
+Gemini Vision-based layout analysis, component building, and critique. Used by both the Layout Builder (Step 2) and the self-healing vision loop.
+
+```typescript
+class GeminiLayoutService {
+  // Two-stage layout analysis from image
+  static async analyzeLayoutImage(
+    imageBase64: string,
+    mimeType: string
+  ): Promise<LayoutAnalysisResult>;
+
+  // Critique rendered output against original
+  static async critiqueLayout(
+    originalImage: string,
+    renderedScreenshot: string,
+    components: DetectedComponentEnhanced[]
+  ): Promise<LayoutCritiqueEnhanced>;
+}
+```
+
+**Key patterns:**
+
+- Two-stage analysis: Stage 1 extracts `DesignSpec`, Stage 2 builds `DetectedComponentEnhanced[]`
+- Zod validation with `.passthrough()` for open-ended AI outputs
+- Critique produces `fidelityScore` (0-100) and `correctionJSON` patches
+- Open-ended issue types (string, not enum) for flexible AI critique
+
+### GeminiImageService
+
+**Location:** `src/services/GeminiImageService.ts` (~116 lines)
+
+Multimodal image generation via `gemini-3-pro-image-preview` model.
+
+```typescript
+class GeminiImageService {
+  static async generateBackgroundFromReference(
+    request: BackgroundGenerationRequest
+  ): Promise<{ imageBase64: string; mimeType: string } | null>;
+}
+```
+
+**Key patterns:**
+
+- Accepts optional `referenceImage` for multimodal (image+text) generation
+- Contextual prompt: shaped elements (button, card) get "incorporate this photo" prompt; backgrounds get "match visual style" prompt
+- `isShapedElement` detection for prompt switching
+- Returns base64 image for Supabase upload
+
+### AppImageGenerator
+
+**Location:** `src/services/AppImageGenerator.ts` (~277 lines)
+
+Coordinates image generation requests and uploads results to Supabase.
+
+```typescript
+class AppImageGenerator {
+  static async generateAndUpload(request: BackgroundGenerationRequest): Promise<string | null>; // Returns public URL or null
+}
+```
+
+**Key patterns:**
+
+- Calls `GeminiImageService` for generation
+- Uploads result to Supabase Storage
+- Returns public URL for injection into Builder context
+- Used by Photographer step in Titan Pipeline
+
+### AssetExtractionService
+
+**Location:** `src/services/AssetExtractionService.ts` (~251 lines)
+
+Sharp-based image cropping from screenshots, with Supabase upload.
+
+```typescript
+class AssetExtractionService {
+  static async extractCustomVisualAssets(
+    screenshotBase64: string,
+    manifest: VisualManifest
+  ): Promise<ExtractedAsset[]>;
+}
+```
+
+**Key patterns:**
+
+- Uses Sharp library for server-side image manipulation
+- Crops individual components from full-page screenshots
+- Uploads cropped images to Supabase Storage
+- Returns public URLs for Builder to use as `background-image`
+- Wired into pipeline after Surveyor step
+
+### VisionLoopEngine
+
+**Location:** `src/services/VisionLoopEngine.ts` (~499 lines)
+
+Self-healing vision loop that iteratively improves layout fidelity.
+
+```typescript
+class VisionLoopEngine {
+  async executeStep(
+    components: DetectedComponentEnhanced[],
+    designSpec: DesignSpec | null,
+    config: SelfHealingConfig
+  ): Promise<SelfHealingResult>;
+}
+```
+
+**Key patterns:**
+
+- Captures Puppeteer screenshots of rendered HTML
+- Sends to `GeminiLayoutService.critiqueLayout()` for fidelity scoring
+- Applies corrections via `LayoutAutoFixEngine.applyCritique()`
+- Iterates up to `maxIterations` (default 2)
+- Stops on: target fidelity reached, max iterations, or diminishing returns
+
+### LayoutAutoFixEngine
+
+**Location:** `src/services/LayoutAutoFixEngine.ts` (~465 lines)
+
+Applies corrections from AI critique to layout components.
+
+```typescript
+class LayoutAutoFixEngine {
+  applyCritique(
+    components: DetectedComponentEnhanced[],
+    critique: LayoutCritiqueEnhanced
+  ): LayoutAutoFixResult;
+}
+```
+
+**Key patterns:**
+
+- **Blocklist security strategy**: blocks only dangerous properties (`content`, `behavior`, `-moz-binding`), allows everything else
+- Applies style, bounds, and content corrections from `correctionJSON`
+- Mirrors content properties to top-level for backwards compatibility
+- Validates bounds changes don't break layout (0-1000 range)
+- Returns audit trail of all applied/failed/skipped fixes
+
+### Layout Validation
+
+**Location:** `src/utils/layoutValidation.ts` (~1111 lines)
+
+Zod schema validation for AI-generated layout data.
+
+**Key patterns:**
+
+- Zod schemas with `.passthrough()` to accept unknown properties from AI
+- Open-ended component types and roles (not restricted to enums)
+- Recovery path for partial/malformed data
+- Transforms and sanitizes AI output before pipeline consumption
+
+---
+
+## Context & Parsing Services
 
 ## CodeContextService
 

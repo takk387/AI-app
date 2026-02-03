@@ -146,6 +146,10 @@ Sequential 3-phase generation pipeline:
    - Generates DynamicPhasePlan for execution
    - Auto-regenerates if concept changes significantly
 
+4. **Navigation** - Wizard complete → `router.push('/app/design')`
+   - AppConcept saved to Zustand store
+   - User proceeds to Layout Builder (LayoutBuilderView) for visual design
+
 ## AppConcept Type Structure
 
 **Location:** `src/types/appConcept.ts`
@@ -210,7 +214,8 @@ State managed by `useDraftPersistence` hook (not useAppStore):
 - **Layout Builder** → Can import `layoutDesign` into AppConcept
 - **Architecture Generation** → Generates `architectureSpec` before phases
 - **DynamicPhaseGenerator** → Receives completed AppConcept
-- **AIBuilder** → Receives phase plan for execution
+- **Navigation** → After completion, navigates to `/app/design` (LayoutBuilderView)
+- **MainBuilderView** → Eventually receives phase plan for execution (via Zustand store)
 
 ## Critical Dependencies
 

@@ -92,12 +92,13 @@ The platform features a **dual-mode system** (PLAN for discussion, ACT for gener
 - **Console Panel** - View logs and errors
 - **Error Boundaries** - Graceful error handling
 
-### DALL-E 3 Image Generation
+### Gemini Image Generation
 
-- **Context-Aware Images** - Hero images, card thumbnails, backgrounds
-- **Batch Processing** - Rate-limited parallel generation
+- **Multimodal Generation** - Text-only or reference image-based generation via Gemini Pro
+- **Context-Aware Images** - Hero images, card thumbnails, backgrounds, buttons
+- **Reference Image Support** - Upload a photo and use it as part of generated UI elements
 - **Design Integration** - Images matched to your color palette
-- **Caching** - Avoid regenerating identical images
+- **Supabase Upload** - Generated images uploaded to cloud storage with public URLs
 
 ---
 
@@ -213,7 +214,7 @@ Central Zustand store with 8 slices:
 
 - **Anthropic Claude SDK** - Sonnet 4.5 with extended thinking
 - **Google Generative AI SDK** - Gemini 2.0 Flash for vision
-- **OpenAI SDK** - DALL-E 3 for image generation
+- **OpenAI SDK** - Embeddings and proxy services only (DALL-E removed)
 - **js-tiktoken** - Token counting and budget management
 - **Model Router** - Intelligent AI selection per task
 
@@ -274,8 +275,8 @@ src/
 │
 ├── components/                   # React components (168 files)
 │   ├── NaturalConversationWizard.tsx  # PLAN mode wizard
-│   ├── LayoutBuilderWizard.tsx        # Visual design mode
-│   ├── MainBuilderView.tsx            # ACT mode main view
+│   ├── LayoutBuilderView.tsx           # Step 2: Visual design mode
+│   ├── MainBuilderView.tsx            # Step 4: Main builder + Titan Pipeline
 │   ├── layout-builder/          # Layout sub-components
 │   ├── conversation-wizard/     # Planning sub-components
 │   ├── build/                   # Build UI (phase controls, progress)
@@ -389,10 +390,10 @@ src/
 
 ### Images
 
-| Endpoint                          | Method | Description         |
-| --------------------------------- | ------ | ------------------- |
-| `/api/images/generate`            | POST   | DALL-E 3 generation |
-| `/api/images/generate-background` | POST   | Background patterns |
+| Endpoint                          | Method | Description             |
+| --------------------------------- | ------ | ----------------------- |
+| `/api/images/generate`            | POST   | Gemini image generation |
+| `/api/images/generate-background` | POST   | Background patterns     |
 
 ---
 
@@ -605,7 +606,7 @@ Private repository. Contact the owner for licensing information.
 
 - [Anthropic](https://anthropic.com/) - Claude AI
 - [Google AI](https://ai.google.dev/) - Gemini AI
-- [OpenAI](https://openai.com/) - DALL-E 3
+- [OpenAI](https://openai.com/) - Embeddings
 - [Supabase](https://supabase.com/) - Backend infrastructure
 - [Railway](https://railway.app/) - Deployment platform
 - [Vercel](https://vercel.com/) - Next.js framework
