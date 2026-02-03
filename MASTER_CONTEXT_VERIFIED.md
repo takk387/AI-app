@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Feb 1, 2026)
+> **Status**: VERIFIED (Feb 1, 2026 PM)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Metric               | Previous | Verified (Actual) |
 | -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 538      | **547**           |
-| API Route Handlers   | 59       | **60**            |
+| TypeScript/TSX Files | 547      | **547**           |
+| API Route Handlers   | 60       | **60**            |
 | Custom Hooks         | 35       | **35**            |
 | Service Classes      | 73       | **73**            |
-| Type Definitions     | ~12,833  | **~12,953 lines** |
+| Type Definitions     | ~12,953  | **~12,987 lines** |
 | Utilities            | ~24,728  | **~24,728 lines** |
 
 **Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
@@ -89,11 +89,11 @@ Live Editor (Refinement)
 | Step | Model | Purpose |
 |------|-------|---------|
 | Router | Gemini Flash | Intent analysis, traffic control |
-| Surveyor | Gemini Pro | Vision analysis, UI reverse engineering |
-| Architect | Claude Opus | Component structure generation |
+| Surveyor | Gemini Flash + Agentic Vision | Vision analysis, UI reverse engineering (uses @google/genai SDK) |
+| Architect | Claude Opus | Component structure generation (currently skipped to save cost) |
 | Physicist | Gemini | Motion/animation extraction |
-| Photographer | DALL-E/Gemini | Asset generation |
-| Builder | Claude | Code synthesis |
+| Photographer | DALL-E/Gemini | Asset generation (shaped elements support) |
+| Builder | Claude | Code synthesis (multimodal, shape+texture support) |
 
 ---
 
@@ -191,15 +191,15 @@ Lower risk, but still follow patterns.
 
 | File                            | Lines     | Purpose                              | Risk                                          |
 | ------------------------------- | --------- | ------------------------------------ | --------------------------------------------- |
-| `useAppStore.ts`                | **790**   | Centralized Zustand state (8 slices) | 24+ files break                               |
+| `useAppStore.ts`                | **804**   | Centralized Zustand state (8 slices) | 24+ files break                               |
 | `types/layoutDesign.ts`         | **2,999** | Comprehensive design type system     | 14 files — **RECOMMEND SPLITTING**            |
 | `middleware.ts`                 | **87**    | Auth flow for all routes             | Auth breaks                                   |
-| `DynamicPhaseGenerator.ts`      | **2,646** | Phase planning engine                | Build system breaks — **RECOMMEND SPLITTING** |
+| `DynamicPhaseGenerator.ts`      | **2,696** | Phase planning engine                | Build system breaks — **RECOMMEND SPLITTING** |
 | `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator         | Build system breaks                           |
 | `GeminiLayoutService.ts`        | **1,351** | Layout AI with Gemini                | Layout builder breaks                         |
-| `MainBuilderView.tsx`           | **1,494** | Main orchestrator (PLAN/ACT modes)   | UI breaks                                     |
+| `MainBuilderView.tsx`           | **1,622** | Main orchestrator (PLAN/ACT modes)   | UI breaks                                     |
 | `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                  | Planning breaks                               |
-| `TitanPipelineService.ts`       | **511**   | Agentic vision pipeline              | Advanced layout breaks                        |
+| `TitanPipelineService.ts`       | **696**   | Agentic vision pipeline              | Advanced layout breaks                        |
 
 ---
 
@@ -278,7 +278,7 @@ src/
 │   ├── SourceMergeEngine.ts     # Source merging
 │   └── ...
 ├── store/            # Zustand centralized state
-├── types/            # 12,953 lines of TypeScript types
+├── types/            # 12,987 lines of TypeScript types
 │   ├── titanPipeline.ts   # Pipeline types
 │   ├── motionConfig.ts    # Motion types
 │   └── ...
@@ -323,25 +323,25 @@ Phase-by-phase code generation → quality checks → live preview
 
 | File                            | Lines | Purpose                                                  |
 | ------------------------------- | ----- | -------------------------------------------------------- |
-| `MainBuilderView.tsx`           | 1,494 | Main orchestrator — imports 15+ hooks, coordinates modes |
+| `MainBuilderView.tsx`           | 1,622 | Main orchestrator — imports 15+ hooks, coordinates modes |
 | `NaturalConversationWizard.tsx` | 806   | PLAN mode wizard UI                                      |
-| `useAppStore.ts`                | 790   | Centralized state                                        |
-| `DynamicPhaseGenerator.ts`      | 2,646 | Phase planning                                           |
+| `useAppStore.ts`                | 804   | Centralized state                                        |
+| `DynamicPhaseGenerator.ts`      | 2,696 | Phase planning                                           |
 | `PhaseExecutionManager.ts`      | 2,095 | Phase execution                                          |
 | `GeminiLayoutService.ts`        | 1,351 | Layout AI service                                        |
-| `TitanPipelineService.ts`       | 511   | Agentic vision pipeline [NEW]                            |
+| `TitanPipelineService.ts`       | 696   | Agentic vision pipeline (Gemini @google/genai SDK)       |
 
 ---
 
 ## Layout Builder System
 
-### Core Files (Refactored Jan 31, 2026)
+### Core Files (Updated Feb 1, 2026)
 
-| File                    | Lines | Purpose                          |
-| ----------------------- | ----- | -------------------------------- |
-| `LayoutBuilderView.tsx` | 286   | Main layout builder view         |
-| `LayoutCanvas.tsx`      | 492   | Canvas rendering/interaction     |
-| `useLayoutBuilder.ts`   | 383   | Layout builder hook (refactored) |
+| File                    | Lines | Purpose                                            |
+| ----------------------- | ----- | -------------------------------------------------- |
+| `LayoutBuilderView.tsx` | 286   | Main layout builder view                           |
+| `LayoutCanvas.tsx`      | 512   | Canvas rendering/interaction (+preflight fix)      |
+| `useLayoutBuilder.ts`   | 496   | Layout builder hook (expanded for data flow fixes) |
 
 ### Supporting Components
 
@@ -356,7 +356,22 @@ Phase-by-phase code generation → quality checks → live preview
 
 ## Recent Changes Log
 
-### Feb 1, 2026
+### Feb 1, 2026 (PM) - Visual Fidelity Overhaul
+
+- **Migrated**: `TitanPipelineService.ts` from `@google/generative-ai` → `@google/genai` SDK
+- **Enabled**: Agentic Vision in Surveyor (Think→Act→Observe loop for precise CSS extraction)
+- **Added**: `maxOutputTokens` to prevent truncation on complex designs
+- **Fixed**: Tailwind preflight resets in Sandpack (CSS `revert` injection)
+- **Added**: Shaped + textured element support (clip-path, SVG masks, photorealistic textures)
+- **Skipped**: Architect step (saves Claude Opus cost + latency, preserves code for future)
+- **Updated**: `TitanPipelineService.ts` 511 → 696 lines (+185)
+- **Updated**: `MainBuilderView.tsx` 1,494 → 1,622 lines (+128)
+- **Updated**: `useLayoutBuilder.ts` 383 → 496 lines (+113)
+- **Updated**: `DynamicPhaseGenerator.ts` 2,646 → 2,696 lines (+50)
+- **Updated**: `useAppStore.ts` 790 → 804 lines (+14)
+- **Added**: `docs/visual-fidelity-fix-plan.md`, `docs/plans/fix-shaped-textured-elements.md`
+
+### Feb 1, 2026 (AM)
 
 - **Added**: `src/agents/` directory with agentic architecture (1,320 lines)
   - `CodeTransformAgent.ts` (437 lines) - AST-based code transformations

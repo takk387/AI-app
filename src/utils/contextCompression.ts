@@ -555,3 +555,46 @@ export function buildContextWithTruncationNotice(
 
   return conversationContext;
 }
+
+// ============================================================================
+// TEXT TRUNCATION UTILITIES
+// ============================================================================
+
+/**
+ * Truncate text at a word boundary, avoiding mid-word cuts.
+ * Searches backward from maxLength to find the last space, period, newline, or punctuation.
+ *
+ * @param text - The text to truncate
+ * @param maxLength - Maximum length (default 500)
+ * @param suffix - Suffix to append if truncated (default '...')
+ * @returns Truncated text at word boundary
+ */
+export function truncateAtWordBoundary(
+  text: string,
+  maxLength: number = 500,
+  suffix: string = '...'
+): string {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+
+  // Search backward from maxLength for a natural break point
+  // Look within the last 50 characters for a word boundary
+  const searchStart = Math.max(0, maxLength - 50);
+  let breakIndex = maxLength;
+
+  for (let i = maxLength - 1; i >= searchStart; i--) {
+    const char = text[i];
+    if (char === ' ' || char === '\n' || char === '.' || char === ',' || char === ';') {
+      breakIndex = i;
+      break;
+    }
+  }
+
+  // If we found a break point at a sentence-ending punctuation, include it
+  if (text[breakIndex] === '.') {
+    return text.slice(0, breakIndex + 1).trimEnd() + suffix;
+  }
+
+  return text.slice(0, breakIndex).trimEnd() + suffix;
+}

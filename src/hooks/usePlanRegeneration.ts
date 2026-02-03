@@ -32,6 +32,8 @@ interface WizardState {
   }>;
   isComplete: boolean;
   readyForPhases: boolean;
+  /** True when user has confirmed the plan (prevents auto-regeneration) */
+  planConfirmed?: boolean;
 }
 
 interface UsePlanRegenerationOptions {
@@ -116,6 +118,12 @@ export function usePlanRegeneration({
     if (!phasePlan) {
       previousStateRef.current = wizardState;
       previousSignatureRef.current = computeConceptSignature(wizardState);
+      return;
+    }
+
+    // Skip if plan has been confirmed by user (locked state)
+    // User must explicitly unlock via "adjust_plan" action to allow regeneration
+    if (wizardState.planConfirmed) {
       return;
     }
 

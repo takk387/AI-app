@@ -72,6 +72,8 @@ interface WizardState {
   }>;
   isComplete: boolean;
   readyForPhases: boolean;
+  /** True when user has confirmed the plan (prevents auto-regeneration) */
+  planConfirmed?: boolean;
 }
 
 interface SuggestedAction {
@@ -358,6 +360,7 @@ What would you like to build?`,
             currentState: wizardState,
             referenceImages: images,
             contextSummary, // Include compressed summary if conversation was large
+            hasPhasePlan: phasePlan !== null, // For plan locking detection
           }),
         });
 
@@ -478,6 +481,8 @@ What would you like to build?`,
           break;
 
         case 'adjust_plan':
+          // Clear plan confirmation to allow regeneration
+          setWizardState((prev) => ({ ...prev, planConfirmed: false }));
           sendMessage("I'd like to adjust the implementation plan");
           break;
 

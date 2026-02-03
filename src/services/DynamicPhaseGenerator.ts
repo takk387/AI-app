@@ -30,6 +30,7 @@ import {
   DEFAULT_PHASE_GENERATOR_CONFIG as defaultConfig,
 } from '@/types/dynamicPhases';
 import { DEFAULT_COLORS } from '@/constants/themeDefaults';
+import { truncateAtWordBoundary } from '@/utils/contextCompression';
 
 // ============================================================================
 // PHASE CONTEXT KEYWORDS
@@ -183,37 +184,50 @@ const PHASE_KEYWORDS: Record<FeatureDomain, string[]> = {
  * Keywords for detecting memory/persistence infrastructure needs.
  * Used by detectMemoryNeeds() for auto-detection during phase generation.
  * Organized by the type of infrastructure they indicate.
+ *
+ * Context persistence uses weighted scoring to reduce false positives:
+ * - Strong signals (2 points each): explicit memory/learning keywords
+ * - Weak signals (1 point each): generic words that could have other meanings
+ * - Threshold: 2+ points required to trigger
  */
 const MEMORY_DETECTION_KEYWORDS = {
-  // Context persistence: cross-session memory, user preferences, learning
-  contextPersistence: [
-    'remember',
-    'remembers',
-    'memory',
-    'memories',
-    'recall',
-    'forget',
-    'learns',
-    'adapts',
-    'personalize',
-    'personalized',
-    'preferences',
-    'habits',
-    'conversation',
-    'context',
-    'previous',
-    'past',
-    'earlier',
-    'before',
-    'save',
-    'persist',
-    'store',
-    'keep',
-    'maintain',
-    'retain',
-    'previous session',
-    'conversation history',
-  ],
+  // Context persistence: split into strong and weak signals to reduce false positives
+  contextPersistence: {
+    // Strong signals (2 points each) - explicitly about memory/learning
+    strong: [
+      'remember',
+      'remembers',
+      'memory',
+      'memories',
+      'recall',
+      'forget',
+      'learns',
+      'adapts',
+      'personalize',
+      'personalized',
+      'conversation history',
+      'previous session',
+      'cross-session',
+    ],
+    // Weak signals (1 point each) - generic words that could have other meanings
+    // e.g., "save time" doesn't mean persistence, "store page" means e-commerce
+    weak: [
+      'preferences',
+      'habits',
+      'conversation',
+      'context',
+      'previous',
+      'past',
+      'earlier',
+      'before',
+      'save',
+      'persist',
+      'store',
+      'keep',
+      'maintain',
+      'retain',
+    ],
+  },
   // State history: undo/redo, drafts, versioning
   stateHistory: [
     'undo',
@@ -997,10 +1011,17 @@ export class DynamicPhaseGenerator {
       ...features.map((f) => `${f.name.toLowerCase()} ${f.description.toLowerCase()}`),
     ].join(' ');
 
-    // Use centralized MEMORY_DETECTION_KEYWORDS for consistent detection
-    const needsContextPersistence = MEMORY_DETECTION_KEYWORDS.contextPersistence.some((kw) =>
+    // Use weighted scoring for context persistence to reduce false positives
+    // Strong signals count as 2 points, weak signals count as 1 point
+    // Threshold is 2 points to trigger (e.g., 1 strong match OR 2 weak matches)
+    const strongMatches = MEMORY_DETECTION_KEYWORDS.contextPersistence.strong.filter((kw) =>
       allText.includes(kw)
-    );
+    ).length;
+    const weakMatches = MEMORY_DETECTION_KEYWORDS.contextPersistence.weak.filter((kw) =>
+      allText.includes(kw)
+    ).length;
+    const contextScore = strongMatches * 2 + weakMatches;
+    const needsContextPersistence = contextScore >= 2;
 
     const needsStateHistory = MEMORY_DETECTION_KEYWORDS.stateHistory.some((kw) =>
       allText.includes(kw)
@@ -2196,10 +2217,11 @@ export class DynamicPhaseGenerator {
       technicalConstraints: validationRules.length > 0 ? validationRules : undefined,
     };
 
-    // Build enhanced description with context
+    // Build enhanced description with context (using word-boundary-aware truncation)
     let enhancedDescription = phase.description;
     if (relevantContext) {
-      enhancedDescription += '\n\nContext from requirements:\n' + relevantContext.slice(0, 500);
+      enhancedDescription +=
+        '\n\nContext from requirements:\n' + truncateAtWordBoundary(relevantContext, 500);
     }
 
     return {

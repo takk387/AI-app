@@ -39,6 +39,8 @@ interface WizardState {
   roles?: Array<{ name: string; capabilities: string[] }>;
   isComplete: boolean;
   readyForPhases: boolean;
+  /** True when user has confirmed the plan (prevents auto-regeneration) */
+  planConfirmed?: boolean;
 }
 
 interface WizardRequest {
@@ -47,6 +49,7 @@ interface WizardRequest {
   currentState: WizardState;
   referenceImages?: string[]; // Base64 encoded images
   contextSummary?: string; // Compressed summary of older conversation messages
+  hasPhasePlan?: boolean; // Whether a phase plan already exists (for plan locking)
 }
 
 interface WizardResponse {
@@ -119,18 +122,23 @@ async function extractStateFromConversation(
     {"name": "feature name", "description": "what it does", "priority": "high|medium|low"}
   ],
   "technical": {
-    "needsAuth": true/false if discussed,
-    "authType": "email|phone|oauth if discussed",
-    "needsDatabase": true/false if discussed,
-    "needsRealtime": true/false if discussed,
-    "needsFileUpload": true/false if discussed,
-    "needsAPI": true/false if discussed
+    "needsAuth": true or false or null,
+    "authType": "email|phone|oauth" or null,
+    "needsDatabase": true or false or null,
+    "needsRealtime": true or false or null,
+    "needsFileUpload": true or false or null,
+    "needsAPI": true or false or null
   },
   "roles": [
     {"name": "role name", "capabilities": ["what they can do"]}
   ],
   "isComplete": true if all major areas covered, false otherwise
 }
+
+IMPORTANT for "technical" fields:
+- Use true ONLY if the user explicitly said they NEED this feature (e.g., "I need login", "users should authenticate")
+- Use false ONLY if the user explicitly said they DON'T need this feature (e.g., "no auth needed", "doesn't need a database", "local storage only")
+- Use null if the topic hasn't been discussed yet or is unclear
 
 Only include information that was explicitly discussed. Use null for anything not yet determined.
 
@@ -224,7 +232,14 @@ function isRequestingPhases(message: string): boolean {
 export async function POST(request: Request) {
   try {
     const body: WizardRequest = await request.json();
-    const { message, conversationHistory, currentState, referenceImages, contextSummary } = body;
+    const {
+      message,
+      conversationHistory,
+      currentState,
+      referenceImages,
+      contextSummary,
+      hasPhasePlan,
+    } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -411,11 +426,16 @@ Ask any final technical questions if needed (platform, technology preferences) b
       });
     }
 
+    // Check if user is confirming an existing plan (should lock it from auto-regeneration)
+    const isConfirmingPlan = hasPhasePlan && isConfirmingCompletion(message);
+
     const result: WizardResponse = {
       message: assistantMessage,
       updatedState: {
         ...updatedState,
         readyForPhases: wantsPhases && isComplete,
+        // Lock the plan when user confirms it (prevents auto-regeneration)
+        planConfirmed: updatedState.planConfirmed || isConfirmingPlan,
       },
       suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
       isConceptComplete: isComplete,

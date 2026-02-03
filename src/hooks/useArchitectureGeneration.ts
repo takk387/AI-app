@@ -33,6 +33,8 @@ interface WizardState {
   }>;
   isComplete: boolean;
   readyForPhases: boolean;
+  /** True when user has confirmed the plan (prevents auto-regeneration) */
+  planConfirmed?: boolean;
 }
 
 interface UseArchitectureGenerationOptions {

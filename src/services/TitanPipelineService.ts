@@ -684,16 +684,17 @@ async function captureRenderedScreenshot(code: string): Promise<string | null> {
     // Wait for Tailwind to process classes and fonts to load
     await new Promise<void>((resolve) => setTimeout(resolve, 1000));
 
-    // Capture screenshot as PNG
+    // Capture screenshot as PNG with base64 encoding
     const screenshot = await page.screenshot({
       type: 'png',
       fullPage: true,
+      encoding: 'base64',
     });
 
     console.log('[TitanPipeline] Screenshot captured successfully');
 
-    // Convert to base64
-    return `data:image/png;base64,${screenshot.toString('base64')}`;
+    // Return as data URL (screenshot is already base64 string)
+    return `data:image/png;base64,${screenshot}`;
   } catch (error) {
     console.error('[TitanPipeline] Screenshot capture failed:', error);
     return null;
