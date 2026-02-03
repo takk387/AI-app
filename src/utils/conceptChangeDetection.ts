@@ -5,28 +5,7 @@
  * that should trigger phase plan regeneration.
  */
 
-import type { TechnicalRequirements } from '@/types/appConcept';
-
-interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Array<{ name: string; description?: string; priority: 'high' | 'medium' | 'low' }>;
-  technical: Partial<TechnicalRequirements>;
-  uiPreferences: Record<string, unknown>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  workflows?: Array<{
-    name: string;
-    description?: string;
-    steps: string[];
-    involvedRoles: string[];
-  }>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-  /** True when user has confirmed the plan (prevents auto-regeneration) */
-  planConfirmed?: boolean;
-}
+import type { WizardState } from '@/types/wizardState';
 
 export interface ConceptChangeResult {
   hasSignificantChanges: boolean;

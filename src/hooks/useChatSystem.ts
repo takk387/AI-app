@@ -7,24 +7,15 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { ChatMessage, BuilderMode } from '@/types/aiBuilderTypes';
+import type { WizardState } from '@/types/wizardState';
 
-/**
- * WizardState - Tracks app concept during PLAN mode conversations
- */
-export interface WizardState {
-  name?: string;
-  description?: string;
-  features: Array<{ name: string; description: string; priority: string }>;
-  technical: Record<string, boolean | string | undefined>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-}
+// Re-export WizardState from consolidated types for backwards compatibility
+export type { WizardState } from '@/types/wizardState';
 
 const INITIAL_WIZARD_STATE: WizardState = {
   features: [],
   technical: {},
   isComplete: false,
-  readyForPhases: false,
 };
 
 /**

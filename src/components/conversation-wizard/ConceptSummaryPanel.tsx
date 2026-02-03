@@ -1,18 +1,7 @@
 'use client';
 
-import type { Feature, TechnicalRequirements } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
-
-interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Feature[];
-  technical: Partial<TechnicalRequirements>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  isComplete: boolean;
-}
+import type { WizardState } from '@/types/wizardState';
 
 interface ConceptSummaryPanelProps {
   wizardState: WizardState;

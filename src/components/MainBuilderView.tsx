@@ -38,6 +38,7 @@ import { ConceptUpdateConfirmDialog } from './modals/ConceptUpdateConfirmDialog'
 import type { ConceptChange, ConceptUpdateResponse } from '@/types/reviewTypes';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { AppConcept } from '@/types/appConcept';
+import { generateFeatureId } from '@/types/wizardState';
 import SettingsPage from './SettingsPage';
 
 // Documentation components
@@ -229,8 +230,8 @@ export function MainBuilderView() {
   const adaptedWizardState = useMemo(
     () => ({
       ...wizardState,
-      features: wizardState.features.map((f, idx) => ({
-        id: `feature-${idx}`,
+      features: wizardState.features.map((f) => ({
+        id: f.id || generateFeatureId(),
         name: f.name,
         description: f.description || '',
         priority: f.priority as 'high' | 'medium' | 'low',

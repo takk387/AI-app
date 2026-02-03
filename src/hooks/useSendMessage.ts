@@ -21,6 +21,7 @@ import type {
 import type { AppConcept } from '@/types/appConcept';
 import type { LayoutMessage } from '@/types/layoutDesign';
 import type { PhaseExecutionResult, DynamicPhasePlan } from '@/types/dynamicPhases';
+import type { WizardState } from '@/types/wizardState';
 import {
   compressConversation,
   buildCompressedContext,
@@ -32,17 +33,8 @@ import { captureLayoutPreview } from '@/utils/screenshotCapture';
 // TYPES
 // ============================================================================
 
-/**
- * Wizard state for PLAN mode conversations
- */
-export interface WizardState {
-  name?: string;
-  description?: string;
-  features: Array<{ name: string; description: string; priority: string }>;
-  technical: Record<string, boolean | string | undefined>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-}
+// Re-export WizardState from consolidated types for backwards compatibility
+export type { WizardState } from '@/types/wizardState';
 
 /**
  * Return type from useMessageSender hook

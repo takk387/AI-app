@@ -15,9 +15,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+import type { AppConcept, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { LayoutManifest } from '@/types/schema';
+import type { WizardState } from '@/types/wizardState';
+import { wizardFeaturesToFeatures } from '@/types/wizardState';
 import { useToast } from '@/components/Toast';
 import { LoaderIcon } from './ui/Icons';
 import { useAppStore } from '@/store/useAppStore';
@@ -53,27 +55,6 @@ interface Message {
   content: string;
   timestamp: Date;
   attachments?: string[]; // Base64 images
-}
-
-interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Feature[];
-  technical: Partial<TechnicalRequirements>;
-  uiPreferences: Partial<UIPreferences>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  workflows?: Array<{
-    name: string;
-    description?: string;
-    steps: string[];
-    involvedRoles: string[];
-  }>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-  /** True when user has confirmed the plan (prevents auto-regeneration) */
-  planConfirmed?: boolean;
 }
 
 interface SuggestedAction {
@@ -185,7 +166,6 @@ What would you like to build?`,
     !!wizardState.technical.needsAuth ||
     !!wizardState.technical.needsDatabase ||
     !!wizardState.technical.needsRealtime ||
-    !!wizardState.technical.needsRealtime ||
     !!wizardState.technical.needsFileUpload;
 
   // Fix 3: Architecture Gate Logic
@@ -245,12 +225,15 @@ What would you like to build?`,
   // This creates the sequential flow: architecture → plan
   const prevArchitectureRef = useRef<typeof architectureSpec>(null);
   useEffect(() => {
-    // Check if architecture just finished generating (transitioned from null to a value)
-    // and we don't have a plan yet
-    if (architectureSpec && !prevArchitectureRef.current && !phasePlan && !isGeneratingPhases) {
-      // Auto-trigger phase generation with the new architecture
+    // Detect if architecture changed (including from one spec to another after regeneration)
+    const architectureJustCompleted =
+      architectureSpec !== null && architectureSpec !== prevArchitectureRef.current;
+
+    // Auto-trigger phase generation when architecture completes AND we need a plan
+    if (architectureJustCompleted && !phasePlan && !isGeneratingPhases) {
       generatePhases(architectureSpec);
     }
+
     prevArchitectureRef.current = architectureSpec;
   }, [architectureSpec, phasePlan, isGeneratingPhases, generatePhases]);
 
@@ -424,7 +407,21 @@ What would you like to build?`,
         setIsLoading(false);
       }
     },
-    [messages, wizardState, showToast, setMessages, setWizardState]
+    [
+      messages,
+      wizardState,
+      showToast,
+      setMessages,
+      setWizardState,
+      phasePlan,
+      isGeneratingPhases,
+      generatePhases,
+      architectureSpec,
+      setUserInput,
+      setPendingImages,
+      setError,
+      setSuggestedActions,
+    ]
   );
 
   // ============================================================================
@@ -450,7 +447,7 @@ What would you like to build?`,
               description: wizardState.description || '',
               purpose: wizardState.purpose || '',
               targetUsers: wizardState.targetUsers || '',
-              coreFeatures: wizardState.features,
+              coreFeatures: wizardFeaturesToFeatures(wizardState.features),
               uiPreferences: wizardState.uiPreferences as UIPreferences,
               technical: wizardState.technical as TechnicalRequirements,
               // Preserve roles from wizard conversation
@@ -512,6 +509,10 @@ What would you like to build?`,
       extractWorkflowsFromConversation,
       buildConversationContext,
       importedLayoutManifest,
+      currentLayoutManifest,
+      showToast,
+      setWizardState,
+      setSuggestedActions,
     ]
   );
 

@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import type { AppConcept, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 import type { LayoutManifest } from '@/types/schema';
+import type { WizardState } from '@/types/wizardState';
+import { generateFeatureId } from '@/types/wizardState';
 
 /**
  * Architecture generation hook for wizard components
@@ -14,27 +16,6 @@ interface Message {
   content: string;
   timestamp: Date;
   attachments?: string[];
-}
-
-interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Array<{ name: string; description?: string; priority: 'high' | 'medium' | 'low' }>;
-  technical: Partial<TechnicalRequirements>;
-  uiPreferences: Partial<UIPreferences>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  workflows?: Array<{
-    name: string;
-    description?: string;
-    steps: string[];
-    involvedRoles: string[];
-  }>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-  /** True when user has confirmed the plan (prevents auto-regeneration) */
-  planConfirmed?: boolean;
 }
 
 interface UseArchitectureGenerationOptions {
@@ -112,8 +93,8 @@ export function useArchitectureGeneration({
         description: wizardState.description || '',
         purpose: wizardState.purpose || '',
         targetUsers: wizardState.targetUsers || '',
-        coreFeatures: wizardState.features.map((f, idx) => ({
-          id: `feature-${idx}`,
+        coreFeatures: wizardState.features.map((f) => ({
+          id: f.id || generateFeatureId(),
           name: f.name,
           description: f.description || '',
           priority: f.priority,

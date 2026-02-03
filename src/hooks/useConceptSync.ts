@@ -3,31 +3,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
-import type { AppConcept, Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+import type { AppConcept, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+import type { WizardState } from '@/types/wizardState';
+import { generateFeatureId } from '@/types/wizardState';
 
-/**
- * Wizard state structure (from NaturalConversationWizard)
- */
-export interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Feature[];
-  technical: Partial<TechnicalRequirements>;
-  uiPreferences?: Partial<UIPreferences>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  workflows?: Array<{
-    name: string;
-    description?: string;
-    steps: string[];
-    involvedRoles: string[];
-  }>;
-  isComplete: boolean;
-  readyForPhases?: boolean;
-  /** True when user has confirmed the plan (prevents auto-regeneration) */
-  planConfirmed?: boolean;
-}
+// Re-export WizardState from consolidated types for backwards compatibility
+export type { WizardState } from '@/types/wizardState';
 
 interface UseConceptSyncOptions {
   /** External wizard state to sync from */
@@ -93,7 +74,7 @@ export function useConceptSync({
       purpose: state.purpose || state.description || '',
       targetUsers: state.targetUsers || 'General users',
       coreFeatures: state.features.map((f, i) => ({
-        id: f.id || `feature-${i}`,
+        id: f.id || generateFeatureId(),
         name: f.name,
         description: f.description || '',
         priority: f.priority || 'medium',

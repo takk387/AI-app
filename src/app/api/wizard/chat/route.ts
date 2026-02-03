@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { WIZARD_SYSTEM_PROMPT } from '@/prompts/wizardSystemPrompt';
-import type { Feature, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
+import type { WizardState } from '@/types/wizardState';
 
 // Vercel serverless function config
 export const maxDuration = 120;
@@ -26,21 +26,6 @@ interface WizardMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
-}
-
-interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Feature[];
-  technical: Partial<TechnicalRequirements>;
-  uiPreferences: Partial<UIPreferences>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-  /** True when user has confirmed the plan (prevents auto-regeneration) */
-  planConfirmed?: boolean;
 }
 
 interface WizardRequest {

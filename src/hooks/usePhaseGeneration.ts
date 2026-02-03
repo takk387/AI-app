@@ -8,6 +8,8 @@ import type {
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { LayoutManifest } from '@/types/schema';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
+import type { WizardState } from '@/types/wizardState';
+import { generateFeatureId } from '@/types/wizardState';
 import {
   segmentConversation,
   getHighImportanceSegments,
@@ -26,27 +28,6 @@ interface Message {
   content: string;
   timestamp: Date;
   attachments?: string[];
-}
-
-interface WizardState {
-  name?: string;
-  description?: string;
-  purpose?: string;
-  targetUsers?: string;
-  features: Array<{ name: string; description?: string; priority: 'high' | 'medium' | 'low' }>;
-  technical: Partial<TechnicalRequirements>;
-  uiPreferences: Partial<UIPreferences>;
-  roles?: Array<{ name: string; capabilities: string[] }>;
-  workflows?: Array<{
-    name: string;
-    description?: string;
-    steps: string[];
-    involvedRoles: string[];
-  }>;
-  isComplete: boolean;
-  readyForPhases: boolean;
-  /** True when user has confirmed the plan (prevents auto-regeneration) */
-  planConfirmed?: boolean;
 }
 
 interface UsePhaseGenerationOptions {
@@ -273,8 +254,8 @@ Does this look good? You can:
           description: wizardState.description || `A ${wizardState.name} application`,
           purpose: wizardState.purpose || wizardState.description || '',
           targetUsers: wizardState.targetUsers || 'General users',
-          coreFeatures: wizardState.features.map((f, i) => ({
-            id: `feature-${i}`,
+          coreFeatures: wizardState.features.map((f) => ({
+            id: f.id || generateFeatureId(),
             name: f.name,
             description: f.description || '',
             priority: f.priority,

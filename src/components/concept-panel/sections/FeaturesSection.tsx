@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { PlusIcon, ChevronDownIcon, ChevronRightIcon } from '@/components/ui/Icons';
 import type { AppConcept, Feature } from '@/types/appConcept';
+import { generateFeatureId } from '@/types/wizardState';
 import { FeatureCard } from '../FeatureCard';
 
 interface FeaturesSectionProps {
@@ -31,7 +32,7 @@ export function FeaturesSection({ appConcept, onUpdate, readOnly = false }: Feat
 
   const handleAddFeature = () => {
     const newFeature: Feature = {
-      id: `feature-${Date.now()}`,
+      id: generateFeatureId(),
       name: 'New Feature',
       description: '',
       priority: 'medium',
