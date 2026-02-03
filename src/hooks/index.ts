@@ -82,3 +82,7 @@ export type { UseVersionHandlersOptions, UseVersionHandlersReturn } from './useV
 // App CRUD hook (extracted from MainBuilderView)
 export { useAppCrud } from './useAppCrud';
 export type { UseAppCrudOptions, UseAppCrudReturn } from './useAppCrud';
+
+// Auto-save on navigation hook (ensures wizard/design data persists on page changes)
+export { useAutoSaveOnNavigation } from './useAutoSaveOnNavigation';
+export type { UseAutoSaveOnNavigationOptions } from './useAutoSaveOnNavigation';

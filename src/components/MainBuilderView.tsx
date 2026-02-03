@@ -1022,32 +1022,43 @@ export function MainBuilderView() {
     components,
   ]);
 
-  // Debounced auto-save for chat messages, code changes, and phase plans (2000ms)
+  // Get layout manifest from store for auto-save sync
+  const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
+  const layoutThumbnail = useAppStore((state) => state.layoutThumbnail);
+
+  // Debounced auto-save for chat messages, code changes, phase plans, AND wizard data (2000ms)
+  // This ensures that modifications to appConcept, layoutManifest, etc. are persisted
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<{
     chatLength: number;
     code: string;
     phasePlanId: string | null;
     hasImplPlan: boolean;
+    appConceptUpdatedAt: string | null;
+    layoutManifestId: string | null;
   } | null>(null);
 
   useEffect(() => {
     // Don't auto-save if no component is loaded or if still loading
     if (!currentComponent || loadingApps || isGenerating) return;
 
-    // Skip if nothing has changed since last save
+    // Skip if nothing has changed since last save (including wizard data)
     const currentState = {
       chatLength: chatMessages.length,
       code: currentComponent.code,
       phasePlanId: dynamicPhasePlan?.id ?? null,
       hasImplPlan: !!implementationPlan,
+      appConceptUpdatedAt: appConcept?.updatedAt ?? null,
+      layoutManifestId: currentLayoutManifest?.id ?? null,
     };
     if (
       lastSavedRef.current &&
       lastSavedRef.current.chatLength === currentState.chatLength &&
       lastSavedRef.current.code === currentState.code &&
       lastSavedRef.current.phasePlanId === currentState.phasePlanId &&
-      lastSavedRef.current.hasImplPlan === currentState.hasImplPlan
+      lastSavedRef.current.hasImplPlan === currentState.hasImplPlan &&
+      lastSavedRef.current.appConceptUpdatedAt === currentState.appConceptUpdatedAt &&
+      lastSavedRef.current.layoutManifestId === currentState.layoutManifestId
     ) {
       return;
     }
@@ -1064,13 +1075,33 @@ export function MainBuilderView() {
         ? toImplementationPlanSnapshot(implementationPlan)
         : currentComponent.implementationPlan;
 
-      // Update component with current state from store before saving
+      // CRITICAL FIX: Sync ALL store state (including wizard data) to component before saving
+      // This ensures appConcept, layoutManifest, layoutThumbnail modifications are persisted
       const updatedComponent = {
         ...currentComponent,
         conversationHistory: chatMessages,
         dynamicPhasePlan: dynamicPhasePlan ?? currentComponent.dynamicPhasePlan,
         implementationPlan: implPlanSnapshot,
+        // Sync wizard/design data from store
+        appConcept: appConcept ?? currentComponent.appConcept,
+        layoutManifest: currentLayoutManifest ?? currentComponent.layoutManifest,
+        layoutThumbnail: layoutThumbnail ?? currentComponent.layoutThumbnail,
+        // Update build status based on what data we have
+        buildStatus: appConcept
+          ? currentLayoutManifest
+            ? currentComponent.code
+              ? 'building'
+              : 'designing'
+            : 'planning'
+          : currentComponent.buildStatus,
       };
+
+      // Update store with synced component
+      setCurrentComponent(updatedComponent);
+      setComponents((prev) =>
+        prev.map((comp) => (comp.id === currentComponent.id ? updatedComponent : comp))
+      );
+
       await saveComponentToDb(updatedComponent);
       lastSavedRef.current = currentState;
     }, 2000);
@@ -1088,6 +1119,11 @@ export function MainBuilderView() {
     saveComponentToDb,
     dynamicPhasePlan,
     implementationPlan,
+    appConcept,
+    currentLayoutManifest,
+    layoutThumbnail,
+    setCurrentComponent,
+    setComponents,
   ]);
 
   // Sync global dynamic phase plan to local hook manager

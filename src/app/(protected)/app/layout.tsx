@@ -6,7 +6,7 @@ import { AppNavigation } from '@/components/AppNavigation';
 import { SideDrawer } from '@/components/SideDrawer';
 import { ToastProvider } from '@/components/Toast';
 import { useAppStore } from '@/store/useAppStore';
-import { useDatabaseSync } from '@/hooks';
+import { useDatabaseSync, useAutoSaveOnNavigation } from '@/hooks';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,23 +15,77 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Get project info from store
   const currentComponent = useAppStore((state) => state.currentComponent);
+  const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
   const components = useAppStore((state) => state.components);
+  const setComponents = useAppStore((state) => state.setComponents);
   const setShowVersionHistory = useAppStore((state) => state.setShowVersionHistory);
   const showVersionHistory = useAppStore((state) => state.showVersionHistory);
   const setShowLibrary = useAppStore((state) => state.setShowLibrary);
   const showLibrary = useAppStore((state) => state.showLibrary);
   const setShowSettings = useAppStore((state) => state.setShowSettings);
 
+  // Get wizard/design data that needs to be synced to currentComponent before save
+  const appConcept = useAppStore((state) => state.appConcept);
+  const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
+  const layoutThumbnail = useAppStore((state) => state.layoutThumbnail);
+  const dynamicPhasePlan = useAppStore((state) => state.dynamicPhasePlan);
+  const layoutBuilderFiles = useAppStore((state) => state.layoutBuilderFiles);
+
   // Database sync
   const { saveComponent, isLoading: isSyncing } = useDatabaseSync({
     userId: user?.id || null,
   });
 
+  // Auto-save on page navigation - ensures wizard/design data is persisted when changing pages
+  useAutoSaveOnNavigation({
+    enabled: !!currentComponent && !!user?.id,
+  });
+
+  /**
+   * Save with store sync - ensures wizard/design data is synced to currentComponent before saving
+   * This fixes the bug where modifications to appConcept, layoutManifest, etc. in wizard/design
+   * pages were not being saved because they only updated the Zustand store, not currentComponent.
+   */
   const handleSave = useCallback(async () => {
     if (currentComponent) {
-      await saveComponent(currentComponent);
+      // Sync the latest store state to currentComponent before saving
+      const syncedComponent = {
+        ...currentComponent,
+        appConcept: appConcept ?? currentComponent.appConcept,
+        layoutManifest: currentLayoutManifest ?? currentComponent.layoutManifest,
+        layoutThumbnail: layoutThumbnail ?? currentComponent.layoutThumbnail,
+        dynamicPhasePlan: dynamicPhasePlan ?? currentComponent.dynamicPhasePlan,
+        // Determine build status based on what data we have
+        buildStatus: appConcept
+          ? currentLayoutManifest
+            ? currentComponent.code
+              ? 'building'
+              : 'designing'
+            : 'planning'
+          : currentComponent.buildStatus,
+      };
+
+      // Update currentComponent in store with synced data
+      setCurrentComponent(syncedComponent);
+
+      // Also update in components array
+      setComponents((prev) =>
+        prev.map((comp) => (comp.id === currentComponent.id ? syncedComponent : comp))
+      );
+
+      // Save to database
+      await saveComponent(syncedComponent);
     }
-  }, [currentComponent, saveComponent]);
+  }, [
+    currentComponent,
+    appConcept,
+    currentLayoutManifest,
+    layoutThumbnail,
+    dynamicPhasePlan,
+    saveComponent,
+    setCurrentComponent,
+    setComponents,
+  ]);
 
   const handleShowHistory = useCallback(() => {
     setShowVersionHistory(!showVersionHistory);
