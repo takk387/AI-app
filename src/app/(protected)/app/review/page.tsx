@@ -18,6 +18,7 @@ import { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import type { GeneratedComponent } from '@/types/aiBuilderTypes';
 import {
   ConceptCard,
   LayoutCard,
@@ -37,13 +38,61 @@ export default function ReviewPage() {
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
   const layoutBuilderFiles = useAppStore((state) => state.layoutBuilderFiles);
   const buildSettings = useAppStore((state) => state.buildSettings);
+  const currentAppId = useAppStore((state) => state.currentAppId);
   const setIsReviewed = useAppStore((state) => state.setIsReviewed);
   const setBuildSettings = useAppStore((state) => state.setBuildSettings);
+  const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
+  const setCurrentAppId = useAppStore((state) => state.setCurrentAppId);
+  const setCurrentMode = useAppStore((state) => state.setCurrentMode);
 
   const handleProceedToBuilder = useCallback(() => {
+    // Generate or use existing app ID
+    const componentId = currentAppId || crypto.randomUUID();
+
+    // Create GeneratedComponent from wizard data
+    const newComponent: GeneratedComponent = {
+      id: componentId,
+      name: appConcept?.name || 'Untitled App',
+      code: '', // Will be populated by layout injection or AI generation
+      description: appConcept?.description || appConcept?.purpose || '',
+      timestamp: new Date().toISOString(),
+      isFavorite: false,
+      conversationHistory: [],
+      versions: [],
+      // Link all wizard data to the component
+      appConcept: appConcept ?? undefined,
+      dynamicPhasePlan: dynamicPhasePlan ?? undefined,
+      layoutManifest: currentLayoutManifest ?? undefined,
+      layoutThumbnail: layoutThumbnail ?? undefined,
+      buildStatus: 'building',
+    };
+
+    // Set in store
+    setCurrentComponent(newComponent);
+    if (!currentAppId) {
+      setCurrentAppId(componentId);
+    }
+
+    // Set mode to ACT for builder
+    setCurrentMode('ACT');
+
+    // Mark as reviewed
     setIsReviewed(true);
+
+    // Navigate to builder
     router.push('/app');
-  }, [router, setIsReviewed]);
+  }, [
+    router,
+    setIsReviewed,
+    setCurrentComponent,
+    setCurrentAppId,
+    setCurrentMode,
+    currentAppId,
+    appConcept,
+    dynamicPhasePlan,
+    currentLayoutManifest,
+    layoutThumbnail,
+  ]);
 
   const handleGoToWizard = useCallback(() => {
     router.push('/app/wizard');
