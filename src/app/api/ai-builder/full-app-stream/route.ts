@@ -375,7 +375,13 @@ ${
     ? `
 MODIFICATION MODE for "${currentAppName}":
 - Classify: MAJOR_CHANGE (new features, redesigns) or MINOR_CHANGE (bug fixes, tweaks)
-- PRESERVE all existing UI/styling/functionality not mentioned
+- PRESERVE all existing UI, styling, components, and functionality NOT mentioned in the user's request
+- Only modify the specific elements the user asked about
+- Do NOT reorganize, restructure, or "clean up" code the user didn't mention
+- Do NOT change colors, fonts, layouts, or spacing unless explicitly requested
+- Do NOT remove components, features, or sections unless explicitly asked
+- If adding a new feature, integrate it INTO the existing structure — do not rebuild from scratch
+- The output must include ALL existing code with the targeted changes applied, not just the changed parts
 - Use EXACT delimiter format (===NAME===, ===FILE:===, etc.)
 `
     : ''

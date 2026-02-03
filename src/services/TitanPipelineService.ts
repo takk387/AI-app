@@ -147,14 +147,17 @@ export async function routeIntent(input: PipelineInput): Promise<MergeStrategy> 
   try {
     return JSON.parse(text);
   } catch {
+    const hasFiles = input.files.length > 0;
+    console.warn('[TitanPipeline] Router returned invalid JSON, using fallback strategy');
     return {
       mode: input.currentCode ? 'EDIT' : 'CREATE',
       base_source: input.currentCode ? 'codebase' : null,
       file_roles: [],
       execution_plan: {
-        measure_pixels: [],
+        measure_pixels: hasFiles ? [0] : [],
         extract_physics: [],
-        preserve_existing_code: false,
+        preserve_existing_code: !!input.currentCode,
+        generate_assets: [],
       },
     };
   }
@@ -173,9 +176,17 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
 2. **Styles:** Extract hex codes, border-radius, shadows, and font-weights.
 3. **Content:** You MUST extract the text inside buttons, headings, and paragraphs.
 4. **Icons:** Detect and extract all icons, logos, and symbolic graphics.
-   - Prefer extracting the SVG 'd' path if clear.
-   - Fallback to closest Lucide React icon name.
-   - Measure icon color.
+   - **Priority 1:** If the icon is a common UI icon (arrow, chevron, check, search, menu,
+     settings, home, user, star, heart, plus, close) → provide \`iconName\` with the Lucide React name.
+   - **Priority 2:** If you can clearly extract the SVG 'd' path → provide \`iconSvgPath\` and \`iconViewBox\`.
+   - **Priority 3 (Custom Icons/Logos):** If the icon is a custom logo, brand icon, or complex
+     graphic that is NOT a standard UI icon and you CANNOT extract a clean SVG path →
+     DO NOT guess a Lucide name. Instead:
+     - Set \`hasCustomVisual\`: true
+     - Set \`extractionAction\`: "crop"
+     - Provide precise \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
+     - This will crop the exact pixels from the original image for pixel-perfect reproduction.
+   - Measure icon color in all cases.
 5. **CRITICAL - CUSTOM VISUAL DETECTION:**
    For ANY non-standard visual element (textured buttons, custom icons, logos, unique gradients, images):
    - Set "hasCustomVisual": true
@@ -289,9 +300,12 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
       measured_components: [],
     };
   } catch (e) {
-    console.error('Surveyor Failed:', e);
+    console.error('[TitanPipeline] Surveyor failed:', e);
     return {
       file_index: fileIndex,
+      originalImageRef: fileState?.uri
+        ? { fileUri: fileState.uri, mimeType: fileState.mimeType! }
+        : undefined,
       measured_components: [],
       canvas: { width: 1440, height: 900 },
       global_theme: {},
@@ -417,14 +431,29 @@ You are the **Universal Builder**. Write the final React code.
    - Pixel-perfect accuracy is the goal.
 
 4. **Icons (Rendering):**
-   - **Priority 1:** If \`iconSvgPath\` exists -> render inline \`<svg>\` with the path data, applying \`iconColor\` as stroke/fill and \`iconViewBox\`.
-   - **Priority 2:** If only \`iconName\` exists -> import from \`lucide-react\` and render \`<IconName />\`.
+   - **Priority 1:** If \`iconSvgPath\` exists → render inline \`<svg>\` with the path data,
+     applying \`iconColor\` as stroke/fill and \`iconViewBox\`.
+   - **Priority 2:** If \`hasCustomVisual\` is true on the node AND the node's \`id\` appears
+     as a key in the ASSETS map → render as \`<img src={assets[nodeId]} alt="..." />\`
+     with appropriate width/height from iconSize. This preserves custom logos and brand
+     icons that were cropped from the original image.
+   - **Priority 3:** If only \`iconName\` exists → import from \`lucide-react\` and render
+     \`<IconName />\`. Only use this for standard UI icons.
    - Apply positioning via flex layout.
-   - Map sizes: sm=16px, md=20px, lg=24px.
-   - If \`iconContainerStyle\` exists -> wrap icon in a styled container div.
+   - Map sizes: sm=16px, md=20px, lg=24px, or use explicit pixel values from styles.
+   - If \`iconContainerStyle\` exists → wrap icon in a styled container div.
    - Available Lucide icons: Home, User, Menu, Search, Settings, Star, Heart, Check, Plus, ArrowRight, etc.
+   - NEVER use a generic Lucide icon as a stand-in for a brand logo or custom graphic.
 
-5. **Physics:** Implement the physics using Framer Motion.
+5. **Physics (CONDITIONAL — Read Carefully):**
+   - You will receive a PHYSICS section below. If it is absent, null, or contains an empty
+     "component_motions" array, then the design is STATIC. Do NOT add any Framer Motion
+     imports, animations, motion.div wrappers, spring physics, or transition effects.
+   - ONLY use Framer Motion if the PHYSICS section contains actual motion data with
+     non-empty "component_motions" entries that specify velocity, mass, and spring values.
+   - Zero Hallucination Policy: Never invent animations. If the physics data is empty,
+     the output must be completely static. No "subtle" animations, no "gentle" transitions,
+     no hover motion effects beyond what is specified in interactionStates from the manifest.
 
 6. **Shaped & Textured Elements (CRITICAL for photorealism):**
    - When the user asks for an element that "looks like" a real object (cloud, stone, wood, etc.),
@@ -447,8 +476,9 @@ You are the **Universal Builder**. Write the final React code.
    - Match exact colors, gradients, spacing, typography, and element positioning.
    - Pay special attention to: logos (recreate as inline SVG), icons (extract exact paths),
      custom button styles, background patterns, and gradient directions.
-   - For logos/icons you cannot extract as SVG: describe them in a comment and use the
-     closest visual approximation with CSS shapes and colors.
+   - For logos/icons you cannot extract as SVG: check if the node's id exists in the ASSETS
+     map (from extraction). If so, render as \`<img src={assets[nodeId]} />\`. Only if no
+     extracted asset exists, describe the element in a comment with its data-id for manual replacement.
    - The manifests provide structured data, but the image is the ultimate reference.
 
 8. **Interaction States (REQUIRED for buttons and links):**
@@ -477,11 +507,17 @@ export async function assembleCode(
   _structure: ComponentStructure | null,
   manifests: VisualManifest[],
   physics: MotionPhysics | null,
-  _strategy: MergeStrategy,
-  _currentCode: string | null,
+  strategy: MergeStrategy,
+  currentCode: string | null,
   instructions: string,
   assets: Record<string, string>,
-  originalImageRef?: { fileUri: string; mimeType: string }
+  originalImageRef?: { fileUri: string; mimeType: string },
+  healingContext?: {
+    iteration: number;
+    previousFidelityScore: number;
+    modifiedComponentIds: string[];
+    issuesSummary: string;
+  }
 ): Promise<AppFile[]> {
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -496,6 +532,45 @@ ${Object.entries(assets)
 Apply them via backgroundImage on the matching elements. Combine with clip-path for shaped elements.`
     : '';
 
+  const hasPhysicsData =
+    physics && Array.isArray(physics.component_motions) && physics.component_motions.length > 0;
+
+  const physicsSection = hasPhysicsData
+    ? `\n  ### PHYSICS (Implement these motions using Framer Motion)\n  ${JSON.stringify(physics, null, 2)}`
+    : `\n  ### PHYSICS\n  No motion data provided. This design is STATIC. Do NOT add Framer Motion or any animations.`;
+
+  const healingSection = healingContext
+    ? `\n  ### HEALING CONTEXT (You are in refinement iteration #${healingContext.iteration})
+  Previous code scored ${healingContext.previousFidelityScore.toFixed(1)}% fidelity.
+
+  Issues detected that you MUST fix:
+  ${healingContext.issuesSummary}
+
+  Modified components to focus on: ${healingContext.modifiedComponentIds.join(', ')}
+
+  Rules for healing iterations:
+  - Fix the specific issues listed above. Do not rewrite unrelated code.
+  - Preserve everything that was correct in the previous version.
+  - If a discrepancy mentions "unwanted animation" or "unexpected motion", remove ALL
+    Framer Motion usage for that component.`
+    : '';
+
+  const mergeSection =
+    currentCode && (strategy.mode === 'EDIT' || strategy.mode === 'MERGE')
+      ? `\n  ### EXISTING CODE (You MUST merge with this)
+  Mode: ${strategy.mode}
+  ${
+    strategy.mode === 'EDIT'
+      ? 'Modify the existing code below according to the user instructions. Preserve all existing functionality, styles, and structure unless the user specifically asks to change them.'
+      : 'Merge the new layout/design with the existing code below. Keep existing components and add new ones from the manifests.'
+  }
+
+  Existing App.tsx:
+  \`\`\`tsx
+  ${currentCode}
+  \`\`\``
+      : '';
+
   const prompt = `${BUILDER_PROMPT}
 
   ### ASSETS (Use these URLs!)
@@ -507,9 +582,9 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
 
   ### MANIFESTS (Look for dom_tree)
   ${JSON.stringify(manifests, null, 2)}
-
-  ### PHYSICS
-  ${JSON.stringify(physics)}
+  ${physicsSection}
+  ${healingSection}
+  ${mergeSection}
   `;
 
   // Build multimodal content: original image (if available) + text prompt
@@ -537,10 +612,22 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
 
   const files: AppFile[] = [];
 
-  // App.tsx: use parsed content, or entire response as fallback (backward compat)
+  // App.tsx: use parsed content, or entire response as fallback with validation
+  let appContent: string;
+  if (appMatch) {
+    appContent = appMatch[1].trim();
+  } else {
+    appContent = responseText;
+    if (!responseText.includes('export default') && !responseText.includes('function App')) {
+      console.warn(
+        '[TitanPipeline] Builder output missing file markers and does not appear to be React code'
+      );
+    }
+  }
+
   files.push({
     path: '/src/App.tsx',
-    content: appMatch ? appMatch[1].trim() : responseText,
+    content: appContent,
   });
 
   // styles.css: always include (App.tsx imports it; missing file breaks Sandpack)
@@ -793,39 +880,42 @@ async function extractCustomVisualAssets(
   const tasks: Promise<void>[] = [];
 
   function walkTree(node: Record<string, unknown>) {
-    if (
-      node.hasCustomVisual === true &&
-      node.extractionAction === 'crop' &&
-      node.extractionBounds &&
-      typeof node.id === 'string'
-    ) {
-      const bounds = node.extractionBounds as {
-        top: number;
-        left: number;
-        width: number;
-        height: number;
-      };
-      const nodeId = node.id as string;
+    if (node.hasCustomVisual === true && node.extractionAction === 'crop') {
+      if (!node.extractionBounds || typeof node.id !== 'string') {
+        console.warn(`[TitanPipeline] Node flagged for extraction but missing bounds or id:`, {
+          id: node.id,
+          hasCustomVisual: node.hasCustomVisual,
+          hasBounds: !!node.extractionBounds,
+        });
+      } else {
+        const bounds = node.extractionBounds as {
+          top: number;
+          left: number;
+          width: number;
+          height: number;
+        };
+        const nodeId = node.id as string;
 
-      tasks.push(
-        extractionService
-          .extractAsset({
-            originalImage: originalImageBase64,
-            bounds,
-            targetElement: nodeId,
-          })
-          .then((result) => {
-            if (result.success) {
-              extractedAssets[nodeId] = result.url;
-              console.log(`[AssetExtraction] Extracted: ${nodeId} → ${result.url}`);
-            } else {
-              console.warn(`[AssetExtraction] Failed for ${nodeId}: ${result.error}`);
-            }
-          })
-          .catch((e) => {
-            console.error(`[AssetExtraction] Error extracting ${nodeId}:`, e);
-          })
-      );
+        tasks.push(
+          extractionService
+            .extractAsset({
+              originalImage: originalImageBase64,
+              bounds,
+              targetElement: nodeId,
+            })
+            .then((result) => {
+              if (result.success) {
+                extractedAssets[nodeId] = result.url;
+                console.log(`[AssetExtraction] Extracted: ${nodeId} → ${result.url}`);
+              } else {
+                console.warn(`[AssetExtraction] Failed for ${nodeId}: ${result.error}`);
+              }
+            })
+            .catch((e) => {
+              console.error(`[AssetExtraction] Error extracting ${nodeId}:`, e);
+            })
+        );
+      }
     }
 
     const children = node.children as Record<string, unknown>[] | undefined;
@@ -859,15 +949,30 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const routeStart = Date.now();
   const strategy = await routeIntent(input);
   stepTimings.router = Date.now() - routeStart;
+  console.log(
+    '[TitanPipeline] Router strategy:',
+    JSON.stringify({
+      mode: strategy.mode,
+      measure_pixels: strategy.execution_plan.measure_pixels,
+      generate_assets: strategy.execution_plan.generate_assets?.length ?? 0,
+      hasFiles: input.files.length,
+    })
+  );
 
   const manifests: VisualManifest[] = [];
   let physics: MotionPhysics | null = null;
   const generatedAssets: Record<string, string> = {};
 
   await Promise.all([
-    // Surveyor
+    // Surveyor — also runs for reference images so Builder has structural context
     (async () => {
-      if (strategy.execution_plan.measure_pixels.length && input.files.length > 0) {
+      const shouldSurvey =
+        strategy.execution_plan.measure_pixels.length > 0 ||
+        strategy.execution_plan.generate_assets?.some(
+          (a: { source?: string }) => a.source === 'reference_image'
+        );
+
+      if (shouldSurvey && input.files.length > 0) {
         manifests.push(await surveyLayout(input.files[0], 0));
       }
     })(),
@@ -898,14 +1003,29 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
                     ? 'card'
                     : 'background',
             });
-            if (result.imageUrl) generatedAssets[asset.name] = result.imageUrl;
+            if (result.imageUrl) {
+              generatedAssets[asset.name] = result.imageUrl;
+            } else {
+              warnings.push(
+                `Asset "${asset.name}" generation returned no image — Gemini may have declined the request`
+              );
+            }
           } catch (e) {
-            console.error('Asset generation failed', e);
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error('[TitanPipeline] Asset generation failed:', msg);
+            warnings.push(`Asset generation failed for "${asset.name}": ${msg}`);
           }
         }
       }
     })(),
   ]);
+
+  // Warn if Surveyor ran but couldn't extract DOM structure
+  if (manifests.length > 0 && !manifests[0]?.global_theme?.dom_tree) {
+    warnings.push(
+      'Surveyor could not extract DOM structure — Builder will work from image reference only'
+    );
+  }
 
   // Architect step bypassed — its output was not consumed by assembleCode.
   // buildStructure() and ARCHITECT_PROMPT are preserved for future integration.
@@ -1016,6 +1136,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
 
         // 5. Update manifest and regenerate code for next iteration
         manifests[0].global_theme.dom_tree = stepResult.components[0];
+
+        const issuesSummary =
+          stepResult.modifiedComponentIds.length > 0
+            ? `${stepResult.changesApplied} discrepancies found. Components modified: ${stepResult.modifiedComponentIds.join(', ')}. ` +
+              `Current fidelity: ${stepResult.fidelityScore}%. Target: ${TARGET_FIDELITY}%.`
+            : `Fidelity: ${stepResult.fidelityScore}%. Overall visual accuracy needs improvement.`;
+
         files = await assembleCode(
           structure,
           manifests,
@@ -1024,7 +1151,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
           input.currentCode,
           input.instructions,
           finalAssets,
-          primaryImageRef
+          primaryImageRef,
+          {
+            iteration,
+            previousFidelityScore: stepResult.fidelityScore,
+            modifiedComponentIds: stepResult.modifiedComponentIds,
+            issuesSummary,
+          }
         );
       }
 

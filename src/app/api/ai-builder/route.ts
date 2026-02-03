@@ -9,6 +9,11 @@ import {
 } from '@/utils/analytics';
 import { isMockAIEnabled, mockComponentResponse } from '@/utils/mockAI';
 import { logAPI } from '@/utils/debug';
+import {
+  BUILDER_EXPERT_PROMPT,
+  generateBuilderContext,
+  RESPONSE_TYPES,
+} from '@/prompts/builderExpertPrompt';
 
 // Vercel serverless function config
 export const maxDuration = 300;
@@ -40,7 +45,7 @@ export async function POST(request: Request) {
   const perfTracker = new PerformanceTracker();
 
   try {
-    const { prompt, conversationHistory } = await request.json();
+    const { prompt, conversationHistory, currentAppState } = await request.json();
     perfTracker.checkpoint('request_parsed');
 
     // Log request start after parsing body
@@ -58,64 +63,26 @@ export async function POST(request: Request) {
       });
     }
 
-    // Create a comprehensive system prompt for conversation-based generation
-    const systemPrompt = `You are an expert React/TypeScript component generator. Generate production-ready, modern React components through natural conversation.
+    // Build intent-aware system prompt using BUILDER_EXPERT_PROMPT
+    const appContext = generateBuilderContext(currentAppState || null);
+    const systemPrompt = `${BUILDER_EXPERT_PROMPT}${appContext}
 
-Rules:
-1. Use functional components with TypeScript
-2. Include proper TypeScript interfaces/types for reusability
-3. Use modern React hooks (useState, useEffect, etc.) ONLY when necessary
-4. Apply Tailwind CSS for styling
-5. Follow React best practices and patterns
-6. Include proper error handling and validation where needed
-7. Make components accessible (ARIA labels, semantic HTML)
-8. Keep components clean and modular
+## RESPONSE FORMAT
 
-CRITICAL FOR PREVIEW - Use this exact pattern:
-- Generate a default export function that returns PURE HTML with hardcoded values
-- Include the reusable component definition separately, but the default export should show it in action
-- NO props in the main return statement - use actual text values
-- Example structure:
+You MUST respond in one of these formats depending on user intent.
+CRITICAL: Always start with ===RESPONSE_TYPE=== to indicate your intent.
 
-\`\`\`typescript
-import React from 'react';
+### For QUESTIONS (user asks a question, wants explanation):
+===RESPONSE_TYPE===
+question
+===MESSAGE===
+Your helpful answer here
 
-// Reusable component with props
-interface ButtonProps {
-  label: string;
-  onClick?: () => void;
-}
-
-const Button: React.FC<ButtonProps> = ({ label, onClick }) => {
-  return (
-    <button 
-      onClick={onClick}
-      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-    >
-      {label}
-    </button>
-  );
-};
-
-// Demo with hardcoded values for preview
-export default function Demo() {
-  return (
-    <div className="p-8 space-y-4">
-      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Click Me
-      </button>
-      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Submit
-      </button>
-    </div>
-  );
-}
-\`\`\`
-
-Notice: The Demo function returns plain HTML elements with hardcoded text like "Click Me" and "Submit", NOT {label} or props.
-
-Respond in this EXACT format using these delimiters:
-
+### For BUILD requests (user wants a NEW app/component created):
+===RESPONSE_TYPE===
+build
+===MESSAGE===
+Brief description of what you're building
 ===NAME===
 Short component name (3-5 words)
 ===EXPLANATION===
@@ -124,14 +91,31 @@ Brief explanation of what you built and key features
 The complete TypeScript/React component code here
 ===END===
 
-CRITICAL RULES:
-- The default export Demo must have ZERO curly braces with variables - only hardcoded text values!
-- Use the EXACT delimiters shown above (===NAME===, ===EXPLANATION===, ===CODE===, ===END===)
-- Code goes between ===CODE=== and ===END===
-- Code can have any formatting - no escaping needed
+CODE RULES for BUILD:
+- Use functional components with TypeScript
+- Use Tailwind CSS for styling
+- Generate a default export function that returns PURE HTML with hardcoded values for preview
+- NO props in the main return statement - use actual text values
+- Use the EXACT delimiters shown above
 - Do NOT wrap in markdown code blocks
-- Do NOT add any text before ===NAME=== or after ===END===
-`;
+
+### For MODIFY requests (user wants to change/update/fix existing code):
+===RESPONSE_TYPE===
+modify
+===MESSAGE===
+Brief description of the changes you'll make (e.g., "I'll change the button color to red and keep everything else the same.")
+
+### For CLARIFY (ambiguous request, need more info):
+===RESPONSE_TYPE===
+clarify
+===MESSAGE===
+Your clarifying question
+
+DETECTION RULES:
+- If the user has an existing app loaded (see CURRENT APP CONTEXT above) AND asks to change, update, fix, add to, or modify something → respond with "modify" type.
+- If the user wants a brand new app/component → respond with "build" type.
+- If the user asks a question → respond with "question" type.
+- If ambiguous → respond with "clarify" type.`;
 
     // Build conversation context for Claude
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,6 +205,54 @@ CRITICAL RULES:
       throw new Error('No response from Claude');
     }
 
+    // ========================================================================
+    // INTENT DETECTION: Parse ===RESPONSE_TYPE=== first
+    // ========================================================================
+    const responseTypeMatch = responseText.match(/===RESPONSE_TYPE===\s*(\w+)/);
+    const detectedType = responseTypeMatch?.[1]?.trim().toLowerCase();
+    const messageMatch = responseText.match(
+      /===MESSAGE===\s*([\s\S]*?)(?====(?:NAME|RESPONSE_TYPE|EXPLANATION|CODE|END)===|$)/
+    );
+    const intentMessage = messageMatch?.[1]?.trim() || '';
+
+    // --- MODIFY: Route to surgical edit path ---
+    if (detectedType === 'modify') {
+      perfTracker.checkpoint('response_parsed');
+      analytics.logRequestComplete(requestId, {
+        modelUsed: modelName,
+        promptLength: Math.round(systemPrompt.length / 4),
+        responseLength: responseText.length,
+        validationRan: false,
+        validationIssuesFound: 0,
+        validationIssuesFixed: 0,
+        metadata: { responseType: 'modify' },
+      });
+      return NextResponse.json({
+        shouldTriggerModify: true,
+        message: intentMessage,
+        responseType: RESPONSE_TYPES.MODIFY,
+      });
+    }
+
+    // --- QUESTION / CLARIFY: Return message only, no code ---
+    if (detectedType === 'question' || detectedType === 'clarify') {
+      perfTracker.checkpoint('response_parsed');
+      analytics.logRequestComplete(requestId, {
+        modelUsed: modelName,
+        promptLength: Math.round(systemPrompt.length / 4),
+        responseLength: responseText.length,
+        validationRan: false,
+        validationIssuesFound: 0,
+        validationIssuesFixed: 0,
+        metadata: { responseType: detectedType },
+      });
+      return NextResponse.json({
+        message: intentMessage,
+        responseType: detectedType === 'clarify' ? RESPONSE_TYPES.CLARIFY : RESPONSE_TYPES.QUESTION,
+      });
+    }
+
+    // --- BUILD (explicit or fallback): Parse name/explanation/code ---
     // Parse using delimiters - primary method
     const nameMatch = responseText.match(/===NAME===\s*([\s\S]*?)\s*===EXPLANATION===/);
     const explanationMatch = responseText.match(/===EXPLANATION===\s*([\s\S]*?)\s*===CODE===/);
@@ -229,7 +261,6 @@ CRITICAL RULES:
     let aiResponse: { name: string; explanation: string; code: string };
 
     if (nameMatch && explanationMatch && codeMatch) {
-      // Primary delimiter parsing succeeded
       aiResponse = {
         name: nameMatch[1].trim(),
         explanation: explanationMatch[1].trim(),
@@ -237,23 +268,16 @@ CRITICAL RULES:
       };
     } else {
       // Fallback 1: Try markdown code block extraction
-      console.log('Delimiter parsing failed, trying markdown fallback...');
-
       const markdownCodeMatch = responseText.match(
         /```(?:tsx?|typescript|javascript|jsx?)?\s*([\s\S]*?)```/
       );
 
       if (markdownCodeMatch) {
-        // Extract code from markdown block
         const code = markdownCodeMatch[1].trim();
-
-        // Try to extract a name from the response (look for component export)
         const componentNameMatch = code.match(/export\s+default\s+function\s+(\w+)/);
         const name = componentNameMatch
           ? componentNameMatch[1].replace(/([A-Z])/g, ' $1').trim()
           : 'Generated Component';
-
-        // Use text before the code block as explanation (if any)
         const beforeCode = responseText.substring(0, responseText.indexOf('```')).trim();
         const explanation =
           beforeCode.length > 10 ? beforeCode.substring(0, 500) : 'Component generated by AI';
@@ -266,8 +290,6 @@ CRITICAL RULES:
         });
       } else {
         // Fallback 2: Try to extract any React component pattern
-        console.log('Markdown parsing failed, trying component pattern fallback...');
-
         const componentPattern = /(import[\s\S]*?export\s+default\s+function\s+\w+[\s\S]*?^\})/m;
         const componentMatch = responseText.match(componentPattern);
 
@@ -278,11 +300,7 @@ CRITICAL RULES:
             ? componentNameMatch[1].replace(/([A-Z])/g, ' $1').trim()
             : 'Generated Component';
 
-          aiResponse = {
-            name,
-            explanation: 'Component generated by AI',
-            code,
-          };
+          aiResponse = { name, explanation: 'Component generated by AI', code };
 
           analytics.logRequestError(
             requestId,
@@ -323,22 +341,16 @@ CRITICAL RULES:
     // ============================================================================
     // VALIDATION LAYER - Validate generated component code
     // ============================================================================
-
-    // Assume TypeScript component (this route generates .tsx components)
     const validation = await validateGeneratedCode(aiResponse.code, 'Component.tsx');
 
     let validationWarnings;
 
     if (!validation.valid) {
-      // Attempt auto-fix
       const fixedCode = autoFixCode(aiResponse.code, validation.errors);
       if (fixedCode !== aiResponse.code) {
         aiResponse.code = fixedCode;
-
-        // Re-validate after fix
         const revalidation = await validateGeneratedCode(fixedCode, 'Component.tsx');
         if (!revalidation.valid) {
-          // Some errors couldn't be auto-fixed
           validationWarnings = {
             hasWarnings: true,
             message: `Code validation detected ${revalidation.errors.length} potential issue(s). The component has been generated but may need manual review.`,
@@ -346,7 +358,6 @@ CRITICAL RULES:
           };
         }
       } else {
-        // No auto-fix possible
         validationWarnings = {
           hasWarnings: true,
           message: `Code validation detected ${validation.errors.length} potential issue(s). The component has been generated but may need manual review.`,
@@ -357,7 +368,6 @@ CRITICAL RULES:
 
     perfTracker.checkpoint('validation_complete');
 
-    // Log validation to analytics
     const totalErrors = validation.valid ? 0 : validation.errors.length;
     const fixedErrors = validationWarnings
       ? totalErrors - (validationWarnings.errors?.length || 0)
@@ -369,7 +379,6 @@ CRITICAL RULES:
 
     perfTracker.checkpoint('response_prepared');
 
-    // Log successful completion
     analytics.logRequestComplete(requestId, {
       modelUsed: modelName,
       promptLength: Math.round(systemPrompt.length / 4),
@@ -380,6 +389,7 @@ CRITICAL RULES:
       metadata: {
         componentName: aiResponse.name,
         codeLength: aiResponse.code.length,
+        responseType: detectedType || 'build',
       },
     });
 
@@ -388,7 +398,10 @@ CRITICAL RULES:
     }
 
     return NextResponse.json({
+      shouldTriggerBuild: true,
+      message: intentMessage || aiResponse.explanation,
       ...aiResponse,
+      responseType: RESPONSE_TYPES.BUILD,
       ...(validationWarnings && { validationWarnings }),
     });
   } catch (error) {

@@ -458,7 +458,7 @@ class GeminiLayoutService {
           // ICON EXTRACTION - For exact replicas, provide SVG path data when possible
           "iconSvgPath": "<SVG path d attribute - e.g., 'M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5M2 12l10 5 10-5' - PREFERRED for exact replication>",
           "iconViewBox": "0 0 24 24",  // viewBox dimensions if different from 24x24
-          "iconName": "<Lucide icon name as FALLBACK: Home, User, Menu, Search, ArrowRight, Settings, Info, Check, Plus, Star, Heart, etc.>",
+          "iconName": "<Lucide icon name — ONLY for standard UI icons (Home, User, Menu, Search, ArrowRight, Settings, Check, Plus, Star, Heart). For custom logos/brand icons, leave empty and set hasCustomVisual instead.>",
           "iconColor": "<hex color of the icon - MEASURE from image>",
           "iconPosition": "left|right|center|top|bottom - use 'top' when icon is ABOVE text",
           "iconSize": "sm|md|lg",
@@ -607,8 +607,11 @@ class GeminiLayoutService {
          - When you see an icon, set hasIcon: true
          - FOR EXACT REPLICAS: Extract the actual SVG path data and provide it in iconSvgPath
            Example: "iconSvgPath": "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5"
-         - If you cannot extract the path, use iconName as FALLBACK with Lucide names:
-           "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard", "Microscope", "Leaf", "Cloud", "Graph", etc.
+         - If you cannot extract the SVG path:
+           * For standard UI icons (arrows, checkmarks, menus, etc.) → use iconName with Lucide name:
+             "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard"
+           * For custom logos, brand icons, or complex graphics → set hasCustomVisual: true and
+             extractionAction: "crop" with extractionBounds. Do NOT guess a Lucide name.
          - Specify iconPosition relative to text content: "left" (before), "right" (after), "top" (above), "bottom" (below), or "center" (standalone)
          - ALWAYS measure iconColor from the image - don't guess
 
@@ -672,7 +675,9 @@ class GeminiLayoutService {
             * Set content.imageDescription with a DETAILED description of what the image shows
               (e.g., "Company logo: blue shield icon with white lightning bolt on dark navy background")
             * Set content.imageAlt with proper accessibility alt text
-          - This allows the system to generate placeholder images or use DALL-E for actual image generation.
+          - For photographs, illustrations, or complex graphics: also set hasCustomVisual: true
+            with extractionAction: "crop" and extractionBounds so the system can extract exact
+            pixels from the original. The imageDescription serves as fallback context only.
           - Do NOT just set hasImage: true with no description - the description is critical.
 
       Return ONLY a JSON array of components. No markdown, no explanation, no wrapping object.
