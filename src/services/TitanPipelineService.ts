@@ -13,6 +13,7 @@
 
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import Anthropic from '@anthropic-ai/sdk';
+import puppeteer from 'puppeteer';
 import type { AppFile } from '@/types/railway';
 import type {
   PipelineInput,
@@ -25,6 +26,8 @@ import type {
   FileInput,
 } from '@/types/titanPipeline';
 import { geminiImageService } from '@/services/GeminiImageService';
+import { createVisionLoopEngine } from './VisionLoopEngine';
+import { getAssetExtractionService } from './AssetExtractionService';
 
 // ============================================================================
 // CONFIGURATION (CONFIRMED 2026 SPECS)
@@ -81,9 +84,13 @@ You are the **Pipeline Traffic Controller**.
 ### Rules
 - If current_code exists and no new files -> mode: "EDIT"
 - If new files uploaded -> mode: "CREATE" or "MERGE"
-- **PHOTOREALISM TRIGGER:** If user asks for "photorealistic", "texture", "realistic", "wood",
-  "glass", "cloud", "grain", "stone", "metal", "fabric", "leather", "marble", "material",
-  or specific materials, you MUST add a "generate_assets" task.
+- **PHOTOREALISM & TEXTURE DETECTION (CRITICAL):**
+  If the user request mentions ANY specific material, texture, photographic element,
+  or realistic visual effect, you MUST add a "generate_assets" task.
+  Do not rely on a fixed keyword list. If it sounds like a visual texture or material, generate it.
+  Examples: "wood", "glass", "marble", "fabric", "leather", "stone", "metal", "cloud",
+  "iridescent sheen", "holographic card", "crumpled paper", "carbon fiber", "aqueous",
+  "crystalline", or any other material/texture/visual reference.
 - Name assets by their target: "button_bg" for buttons, "hero_bg" for hero sections,
   "card_bg" for cards.
 - Example: User says "make the button look like polished wood" →
@@ -155,7 +162,21 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
    - Prefer extracting the SVG 'd' path if clear.
    - Fallback to closest Lucide React icon name.
    - Measure icon color.
-5. **Advanced Effects (CRITICAL for visual fidelity):**
+5. **CRITICAL - CUSTOM VISUAL DETECTION:**
+   For ANY non-standard visual element (textured buttons, custom icons, logos, unique gradients, images):
+   - Set "hasCustomVisual": true
+   - Set "extractionAction": "crop" (to extract exact pixels from original)
+   - Provide precise bounds for cropping: { top, left, width, height } in percentage (0-100)
+   - DO NOT provide "imageDescription" - we extract, not generate
+   
+   Examples of custom visuals to flag:
+   - Company logos (always extract)
+   - Custom icons (not standard Lucide)
+   - Textured backgrounds (wood, fabric, clouds, etc.)
+   - Photographs or realistic images
+   - Hand-drawn elements
+   - Unique gradient combinations
+6. **Advanced Effects (CRITICAL for visual fidelity):**
    - Gradients: Extract full CSS gradient syntax (type, angle, color stops with %)
    - Glassmorphism: backdrop-filter blur, background opacity
    - Transforms: rotation, scale, skew
@@ -524,6 +545,156 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
 }
 
 // ============================================================================
+// HEALING LOOP HELPER: Screenshot Capture
+// ============================================================================
+
+/**
+ * Extract JSX markup from React component code
+ * Converts React component to static HTML for screenshot capture
+ */
+function extractJSXMarkup(reactCode: string): string {
+  try {
+    // Find the return statement in the component
+    const returnMatch = reactCode.match(/return\s*\(([\s\S]*?)\);?\s*}/);
+    if (!returnMatch) {
+      // Try single-line return
+      const singleLineMatch = reactCode.match(/return\s+(<[\s\S]*?>[\s\S]*?<\/[\s\S]*?>)/);
+      if (!singleLineMatch) {
+        console.warn('[TitanPipeline] Could not extract JSX from React component');
+        return '<div>Error: Could not extract JSX</div>';
+      }
+      return singleLineMatch[1];
+    }
+
+    let jsx = returnMatch[1].trim();
+
+    // Remove React-specific syntax that won't work in static HTML
+    // Remove className -> class
+    jsx = jsx.replace(/className=/g, 'class=');
+
+    // Remove style objects and convert to inline styles (basic conversion)
+    jsx = jsx.replace(/style=\{\{([^}]+)\}\}/g, (match, styleContent) => {
+      // Convert JS object to CSS string
+      const cssString = styleContent
+        .split(',')
+        .map((prop: string) => {
+          const [key, value] = prop.split(':').map((s: string) => s.trim());
+          if (!key || !value) return '';
+          // Convert camelCase to kebab-case
+          const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+          // Remove quotes from value
+          const cssValue = value.replace(/['"]/g, '');
+          return `${cssKey}:${cssValue}`;
+        })
+        .filter(Boolean)
+        .join(';');
+      return `style="${cssString}"`;
+    });
+
+    // Remove event handlers (onClick, onChange, etc.)
+    jsx = jsx.replace(/\s+on[A-Z]\w+={[^}]+}/g, '');
+
+    // Remove {variable} interpolations - replace with placeholder
+    jsx = jsx.replace(/\{[\w.]+\}/g, '[dynamic]');
+
+    // Remove lucide-react icon components - replace with placeholder
+    jsx = jsx.replace(/<([A-Z]\w+)\s*\/>/g, '<span class="icon-placeholder">[$1 Icon]</span>');
+
+    return jsx;
+  } catch (error) {
+    console.error('[TitanPipeline] JSX extraction error:', error);
+    return '<div>Error extracting JSX</div>';
+  }
+}
+
+/**
+ * Render generated code and capture screenshot using Puppeteer
+ * This captures the ACTUAL rendered output for comparison with original
+ */
+async function captureRenderedScreenshot(code: string): Promise<string | null> {
+  let browser = null;
+  try {
+    console.log('[TitanPipeline] Launching headless browser for screenshot...');
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+    });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 900 });
+
+    // Extract static HTML from React component
+    const staticHTML = extractJSXMarkup(code);
+
+    // Create full HTML document with Tailwind CDN and necessary fonts
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      margin: 0; 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      width: 100%;
+      height: 100%;
+    }
+    .icon-placeholder {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  ${staticHTML}
+</body>
+</html>
+    `;
+
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
+
+    // Wait for Tailwind to process classes and fonts to load
+    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+
+    // Capture screenshot as PNG
+    const screenshot = await page.screenshot({
+      type: 'png',
+      fullPage: true,
+    });
+
+    console.log('[TitanPipeline] Screenshot captured successfully');
+
+    // Convert to base64
+    return `data:image/png;base64,${screenshot.toString('base64')}`;
+  } catch (error) {
+    console.error('[TitanPipeline] Screenshot capture failed:', error);
+    return null;
+  } finally {
+    if (browser) {
+      try {
+        await browser.close();
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  }
+}
+
+// ============================================================================
 // STEP 5: LIVE EDITOR (RESTORED)
 // ============================================================================
 
@@ -591,6 +762,78 @@ data-id="${selectedDataId}"
 }
 
 // ============================================================================
+// STEP 0.5: ASSET EXTRACTOR (Crop custom visuals from original image)
+// ============================================================================
+
+/**
+ * Walk manifest dom_tree, find nodes flagged for extraction, crop them from
+ * the original image in parallel, and return a map of node ID → public URL.
+ */
+async function extractCustomVisualAssets(
+  manifests: VisualManifest[],
+  originalImageBase64: string
+): Promise<Record<string, string>> {
+  const extractionService = getAssetExtractionService();
+  const extractedAssets: Record<string, string> = {};
+  const tasks: Promise<void>[] = [];
+
+  function walkTree(node: Record<string, unknown>) {
+    if (
+      node.hasCustomVisual === true &&
+      node.extractionAction === 'crop' &&
+      node.extractionBounds &&
+      typeof node.id === 'string'
+    ) {
+      const bounds = node.extractionBounds as {
+        top: number;
+        left: number;
+        width: number;
+        height: number;
+      };
+      const nodeId = node.id as string;
+
+      tasks.push(
+        extractionService
+          .extractAsset({
+            originalImage: originalImageBase64,
+            bounds,
+            targetElement: nodeId,
+          })
+          .then((result) => {
+            if (result.success) {
+              extractedAssets[nodeId] = result.url;
+              console.log(`[AssetExtraction] Extracted: ${nodeId} → ${result.url}`);
+            } else {
+              console.warn(`[AssetExtraction] Failed for ${nodeId}: ${result.error}`);
+            }
+          })
+          .catch((e) => {
+            console.error(`[AssetExtraction] Error extracting ${nodeId}:`, e);
+          })
+      );
+    }
+
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) {
+        if (child && typeof child === 'object') {
+          walkTree(child);
+        }
+      }
+    }
+  }
+
+  for (const manifest of manifests) {
+    if (manifest.global_theme?.dom_tree) {
+      walkTree(manifest.global_theme.dom_tree as unknown as Record<string, unknown>);
+    }
+  }
+
+  await Promise.all(tasks);
+  return extractedAssets;
+}
+
+// ============================================================================
 // MAIN ORCHESTRATOR
 // ============================================================================
 
@@ -651,19 +894,137 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const structure = null;
   stepTimings.architect = 0;
 
+  // Asset Extraction: crop custom visuals from original image
+  const extractStart = Date.now();
+  let extractedAssets: Record<string, string> = {};
+  if (input.files.length > 0 && manifests.length > 0) {
+    try {
+      extractedAssets = await extractCustomVisualAssets(manifests, input.files[0].base64);
+      if (Object.keys(extractedAssets).length > 0) {
+        console.log(
+          `[TitanPipeline] Extracted ${Object.keys(extractedAssets).length} custom visual assets`
+        );
+      }
+    } catch (e) {
+      console.error(
+        '[TitanPipeline] Asset extraction failed, continuing with generated assets:',
+        e
+      );
+    }
+  }
+  stepTimings.extraction = Date.now() - extractStart;
+
+  // Merge: extracted assets override generated ones (fidelity > hallucination)
+  const finalAssets = { ...generatedAssets, ...extractedAssets };
+
   const buildStart = Date.now();
   const primaryImageRef = manifests[0]?.originalImageRef;
-  const files = await assembleCode(
+  let files = await assembleCode(
     structure,
     manifests,
     physics,
     strategy,
     input.currentCode,
     input.instructions,
-    generatedAssets,
+    finalAssets,
     primaryImageRef
   );
   stepTimings.builder = Date.now() - buildStart;
+
+  // HEALING LOOP: Compare rendered output vs original and apply fixes iteratively
+  const MAX_HEAL_ITERATIONS = 2;
+  const TARGET_FIDELITY = 95;
+
+  if (input.files.length > 0 && manifests.length > 0 && manifests[0]?.global_theme?.dom_tree) {
+    console.log(
+      `[TitanPipeline] Starting healing loop (up to ${MAX_HEAL_ITERATIONS} iterations)...`
+    );
+    const healStart = Date.now();
+    let totalFixesApplied = 0;
+    let lastFidelity = 0;
+
+    try {
+      const visionEngine = createVisionLoopEngine({
+        maxIterations: MAX_HEAL_ITERATIONS,
+        targetFidelity: TARGET_FIDELITY,
+      });
+      const originalImage = input.files[0].base64;
+
+      for (let iteration = 1; iteration <= MAX_HEAL_ITERATIONS; iteration++) {
+        // 1. Get current App.tsx
+        const appFile = files.find((f) => f.path === '/src/App.tsx');
+        if (!appFile) {
+          warnings.push('No App.tsx found, skipping healing loop');
+          break;
+        }
+
+        // 2. Render and capture screenshot
+        const screenshot = await captureRenderedScreenshot(appFile.content);
+        if (!screenshot) {
+          warnings.push(`Screenshot capture failed on iteration ${iteration}, stopping healing`);
+          break;
+        }
+
+        // 3. Critique and fix
+        const currentComponents = [manifests[0].global_theme.dom_tree] as any;
+        const stepResult = await visionEngine.executeStep(
+          originalImage,
+          currentComponents,
+          null,
+          async () => screenshot,
+          iteration
+        );
+
+        lastFidelity = stepResult.fidelityScore;
+        totalFixesApplied += stepResult.changesApplied;
+
+        console.log(`[TitanPipeline] Healing iteration ${iteration}:`, {
+          fidelityScore: stepResult.fidelityScore,
+          changesApplied: stepResult.changesApplied,
+          modifiedComponents: stepResult.modifiedComponentIds.length,
+        });
+
+        // 4. Stop early if fidelity target reached or no changes
+        if (stepResult.fidelityScore >= TARGET_FIDELITY) {
+          console.log(
+            `[TitanPipeline] Target fidelity reached (${stepResult.fidelityScore}%), stopping`
+          );
+          break;
+        }
+        if (stepResult.changesApplied === 0) {
+          console.log('[TitanPipeline] No fixes applied, stopping healing loop');
+          break;
+        }
+
+        // 5. Update manifest and regenerate code for next iteration
+        manifests[0].global_theme.dom_tree = stepResult.components[0];
+        files = await assembleCode(
+          structure,
+          manifests,
+          physics,
+          strategy,
+          input.currentCode,
+          input.instructions,
+          finalAssets,
+          primaryImageRef
+        );
+      }
+
+      if (totalFixesApplied > 0) {
+        warnings.push(
+          `Healing loop applied ${totalFixesApplied} fixes across iterations (fidelity: ${lastFidelity.toFixed(1)}%)`
+        );
+      } else {
+        warnings.push(`Healing loop: No fixes needed (fidelity: ${lastFidelity.toFixed(1)}%)`);
+      }
+    } catch (error) {
+      console.error('[TitanPipeline] Healing loop error:', error);
+      warnings.push('Healing loop encountered an error but pipeline continued');
+    }
+
+    stepTimings.healing = Date.now() - healStart;
+    console.log(`[TitanPipeline] Healing loop completed in ${stepTimings.healing}ms`);
+  }
 
   return { files, strategy, manifests, physics, warnings, stepTimings };
 }

@@ -1,13 +1,12 @@
 /**
  * App Image Generator Service
  *
- * Orchestrates DALL-E 3 image generation for the AI App Builder.
+ * Orchestrates Gemini Imagen (Nanobanana Pro 2) image generation for the AI App Builder.
  * Generates hero images, card images, and backgrounds that match
  * the app's design system and purpose.
  */
 
-import { getDalleService, type DesignContext, getImageCost } from './dalleService';
-import { getDalleRateLimiter } from '@/utils/dalleRateLimiter';
+import { getGeminiImageService } from './GeminiImageService';
 import { detectAppType } from '@/utils/imagePromptBuilder';
 import { generateLayoutFallbackImages } from '@/utils/imageAssets';
 import type { LayoutManifest } from '@/types/schema';
@@ -52,35 +51,6 @@ const DEFAULT_OPTIONS: AppImageGenerationOptions = {
 };
 
 // ============================================================================
-// Design Context Builder
-// ============================================================================
-
-/**
- * Build design context from LayoutManifest or fallback to defaults
- */
-function buildDesignContext(manifest?: LayoutManifest): DesignContext {
-  if (!manifest) {
-    return {
-      colorScheme: 'dark',
-      style: 'modern',
-    };
-  }
-
-  // Extract colors from manifest designSystem
-  const colors = manifest.designSystem?.colors || {};
-  const bgColor = colors.background || '#1a1a1a';
-  // Determine color scheme from background luminance
-  const isLight = bgColor.toLowerCase().includes('fff') || bgColor.toLowerCase().includes('f9f');
-
-  return {
-    colorScheme: isLight ? 'light' : 'dark',
-    style: 'modern',
-    primaryColor: colors.primary,
-    mood: 'modern and innovative',
-  };
-}
-
-// ============================================================================
 // Main Generation Function
 // ============================================================================
 
@@ -88,11 +58,10 @@ function buildDesignContext(manifest?: LayoutManifest): DesignContext {
  * Generate images for an app build
  *
  * This function orchestrates the complete image generation process:
- * 1. Checks rate limits and DALL-E availability
- * 2. Builds design context from LayoutManifest
- * 3. Generates hero, card, and background images
- * 4. Falls back to free services if DALL-E unavailable
- * 5. Tracks costs and generation time
+ * 1. Checks Gemini availability
+ * 2. Generates hero, card, and background images using Nanobanana Pro 2
+ * 3. Falls back to free services if Gemini unavailable
+ * 4. Tracks generation time
  */
 export async function generateImagesForApp(
   appName: string,
@@ -103,28 +72,30 @@ export async function generateImagesForApp(
 ): Promise<AppImageGenerationResult> {
   const startTime = Date.now();
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const rateLimiter = getDalleRateLimiter();
-  const dalleService = getDalleService();
+  const geminiService = getGeminiImageService();
 
   // Check if we can generate images
-  const canGenerate = rateLimiter.canGenerate();
-  const dalleAvailable = dalleService.checkAvailability();
+  const geminiAvailable = geminiService.checkAvailability();
 
-  if (!canGenerate || !dalleAvailable) {
+  if (!geminiAvailable) {
     return buildFallbackResult(appDescription, features.length, startTime);
   }
 
-  // Build design context
-  const designContext = buildDesignContext(layoutManifest);
+  // Detect app type for context
   const appType = detectAppType(appDescription);
-
-  // Add app type to design context
-  designContext.appType = appType;
+  const vibe =
+    appType === 'portfolio'
+      ? 'creative and artistic'
+      : appType === 'blog'
+        ? 'clean and editorial'
+        : appType === 'dashboard'
+          ? 'professional and data-focused'
+          : 'modern and engaging';
 
   const result: AppImageGenerationResult = {
     cards: [],
     fallbackUsed: false,
-    totalCost: 0,
+    totalCost: 0, // Gemini pricing is different - would need to implement
     generationTime: 0,
   };
 
@@ -132,20 +103,18 @@ export async function generateImagesForApp(
     // Generate hero image
     if (opts.generateHero) {
       try {
-        const heroImage = await dalleService.generateHeroImage({
-          appName,
-          appDescription,
-          designContext,
+        const heroImage = await geminiService.generateBackgroundFromReference({
+          vibe,
+          vibeKeywords: [appName, appDescription, 'hero banner', 'wide format'],
+          targetElement: 'hero section',
         });
 
-        result.hero = {
-          url: heroImage.url,
-          prompt: heroImage.revisedPrompt,
-        };
-
-        // Record usage and cost
-        rateLimiter.recordGeneration('hero', 'high', '1536x1024'); // Hero is always high quality wide
-        result.totalCost += getImageCost('high', '1536x1024');
+        if (heroImage.imageUrl) {
+          result.hero = {
+            url: heroImage.imageUrl,
+            prompt: `Hero image for ${appName}`,
+          };
+        }
       } catch (error) {
         console.error('Hero image generation failed:', error);
         // Continue with card generation even if hero fails
@@ -157,23 +126,32 @@ export async function generateImagesForApp(
       const cardsToGenerate = features.slice(0, opts.maxCards || 4);
 
       try {
-        const cardImages = await dalleService.generateCardImages(
-          cardsToGenerate.map((title) => ({ title, context: appDescription })),
-          designContext,
-          4 // Max concurrent
-        );
+        // Generate cards sequentially (Gemini service doesn't have batch method yet)
+        const cardPromises = cardsToGenerate.map(async (feature, index) => {
+          try {
+            const cardImage = await geminiService.generateBackgroundFromReference({
+              vibe,
+              vibeKeywords: [feature, 'card illustration', 'icon style'],
+              targetElement: 'card',
+            });
 
-        result.cards = cardImages.map((img, index) => ({
-          url: img.url,
-          prompt: img.revisedPrompt,
-          title: cardsToGenerate[index] || `Feature ${index + 1}`,
-        }));
-
-        // Record usage and cost for each card
-        cardImages.forEach(() => {
-          rateLimiter.recordGeneration('card', 'medium', '1024x1024');
-          result.totalCost += getImageCost('medium', '1024x1024');
+            return cardImage.imageUrl
+              ? {
+                  url: cardImage.imageUrl,
+                  prompt: `Card image for ${feature}`,
+                  title: feature,
+                }
+              : null;
+          } catch (error) {
+            console.error(`Card ${index} generation failed:`, error);
+            return null;
+          }
         });
+
+        const cardResults = await Promise.all(cardPromises);
+        result.cards = cardResults.filter(
+          (card): card is NonNullable<typeof card> => card !== null
+        );
       } catch (error) {
         console.error('Card image generation failed:', error);
         // Continue without cards
@@ -183,18 +161,18 @@ export async function generateImagesForApp(
     // Generate background image (optional)
     if (opts.generateBackground) {
       try {
-        const backgroundImage = await dalleService.generateBackgroundImage({
-          designContext,
-          pattern: 'abstract',
+        const backgroundImage = await geminiService.generateBackgroundFromReference({
+          vibe: `${vibe}, abstract pattern`,
+          vibeKeywords: ['background', 'texture', 'seamless'],
+          targetElement: 'background',
         });
 
-        result.background = {
-          url: backgroundImage.url,
-          prompt: backgroundImage.revisedPrompt,
-        };
-
-        rateLimiter.recordGeneration('background', 'medium', '1024x1024');
-        result.totalCost += getImageCost('medium', '1024x1024');
+        if (backgroundImage.imageUrl) {
+          result.background = {
+            url: backgroundImage.imageUrl,
+            prompt: 'Abstract background pattern',
+          };
+        }
       } catch (error) {
         console.error('Background image generation failed:', error);
         // Continue without background
@@ -250,26 +228,18 @@ function buildFallbackResult(
 // ============================================================================
 
 /**
- * Check if image generation is available and allowed
+ * Check if image generation is available
  */
 export function canGenerateImages(): {
   available: boolean;
   reason?: string;
 } {
-  const rateLimiter = getDalleRateLimiter();
-  const dalleService = getDalleService();
+  const geminiService = getGeminiImageService();
 
-  if (!dalleService.checkAvailability()) {
+  if (!geminiService.checkAvailability()) {
     return {
       available: false,
-      reason: 'DALL-E service not available (check OPENAI_API_KEY)',
-    };
-  }
-
-  if (!rateLimiter.canGenerate()) {
-    return {
-      available: false,
-      reason: `Daily limit reached (${rateLimiter.getRemainingGenerations()} remaining)`,
+      reason: 'Gemini Imagen service not available (check GOOGLE_API_KEY)',
     };
   }
 
@@ -277,27 +247,14 @@ export function canGenerateImages(): {
 }
 
 /**
- * Estimate cost for generating images
+ * Estimate cost for generating images (Gemini pricing TBD)
  */
 export function estimateImageGenerationCost(
   options: AppImageGenerationOptions = DEFAULT_OPTIONS
 ): number {
-  let cost = 0;
-
-  if (options.generateHero) {
-    cost += getImageCost('high', '1536x1024'); // $0.064
-  }
-
-  if (options.generateCards) {
-    const cardCount = options.maxCards || 4;
-    cost += cardCount * getImageCost('medium', '1024x1024'); // $0.016 each
-  }
-
-  if (options.generateBackground) {
-    cost += getImageCost('medium', '1024x1024'); // $0.016
-  }
-
-  return cost;
+  // Gemini Imagen pricing is different from DALL-E
+  // For now, return 0 until proper pricing is implemented
+  return 0;
 }
 
 /**
@@ -309,13 +266,12 @@ export function getImageGenerationStats(): {
   todayCost: number;
   costWarning: boolean;
 } {
-  const rateLimiter = getDalleRateLimiter();
-  const stats = rateLimiter.getStats();
-
+  // Gemini doesn't have the same rate limiting as DALL-E
+  // Return default values
   return {
-    remaining: rateLimiter.getRemainingGenerations(),
-    todayCount: stats.today.images,
-    todayCost: stats.today.cost,
-    costWarning: rateLimiter.isCostWarning(),
+    remaining: 100, // Placeholder
+    todayCount: 0,
+    todayCost: 0,
+    costWarning: false,
   };
 }

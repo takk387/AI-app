@@ -151,17 +151,18 @@ const ContentSchema = z
     iconSvgPath: z.string().optional(), // Raw SVG path for exact replication
     iconViewBox: z.string().optional(), // SVG viewBox if different from default
     iconColor: z.string().optional(),
-    iconPosition: z.enum(['left', 'right', 'center', 'top', 'bottom']).optional(),
-    iconSize: z.enum(['sm', 'md', 'lg']).optional(),
+    iconPosition: z.string().optional(),
+    iconSize: z.string().optional(),
   })
   .passthrough()
   .optional();
 
 /**
- * List of valid component types.
- * Falls back to 'unknown' for unrecognized types.
+ * Reference list of known component types.
+ * Not used for validation (types are open-ended), but serves as documentation.
  */
-const VALID_COMPONENT_TYPES = [
+const _VALID_COMPONENT_TYPES = [
+  // Layout sections
   'header',
   'sidebar',
   'hero',
@@ -200,20 +201,54 @@ const VALID_COMPONENT_TYPES = [
   'avatar',
   'divider',
   'progress',
+  // Expanded: commonly missing abstract UI types
+  'notification',
+  'drawer',
+  'toast',
+  'popover',
+  'tooltip',
+  'spinner',
+  'skeleton',
+  'slider',
+  'toggle',
+  'checkbox',
+  'radio',
+  'select',
+  'accordion',
+  'alert',
+  'banner',
+  'chip',
+  'tag',
+  'rating',
+  'calendar',
+  'datepicker',
+  'dialog',
+  'switch',
+  'upload',
+  'tree',
   'unknown',
 ] as const;
 
 /**
  * Valid component roles for positioning strategy
  */
-const VALID_ROLES = ['container', 'leaf', 'overlay'] as const;
+const VALID_ROLES = [
+  'container',
+  'leaf',
+  'overlay',
+  'fixed',
+  'sticky',
+  'modal',
+  'background',
+  'wrapper',
+] as const;
 
 /**
  * Schema for container layout configuration
  */
 const LayoutConfigSchema = z
   .object({
-    type: z.enum(['flex', 'grid', 'none']),
+    type: z.enum(['flex', 'grid', 'none', 'absolute', 'block']),
     direction: z.enum(['row', 'column']).optional(),
     gap: z.string().optional(),
     justify: z.enum(['start', 'center', 'end', 'between', 'around', 'evenly']).optional(),
@@ -229,13 +264,12 @@ const LayoutConfigSchema = z
 export const DetectedComponentSchema = z
   .object({
     id: z.string().min(1),
-    type: z
-      .string()
-      .transform((val) =>
-        VALID_COMPONENT_TYPES.includes(val as (typeof VALID_COMPONENT_TYPES)[number])
-          ? val
-          : 'unknown'
-      ),
+    type: z.string().transform(
+      (val) =>
+        // Keep unrecognized types as-is instead of forcing to 'unknown'
+        // The AI may generate valid component types not in our list
+        val || 'unknown'
+    ),
     bounds: BoundsSchema,
     style: StyleSchema,
     content: ContentSchema,
@@ -243,8 +277,11 @@ export const DetectedComponentSchema = z
     children: z.array(z.string()).optional(),
     role: z
       .string()
-      .transform((val) =>
-        VALID_ROLES.includes(val as (typeof VALID_ROLES)[number]) ? val : undefined
+      .transform(
+        (val) =>
+          // Keep unrecognized roles as-is instead of dropping them
+          // The AI may generate valid roles not in our known list
+          val || undefined
       )
       .optional(),
     layout: LayoutConfigSchema,
@@ -377,11 +414,9 @@ export function sanitizeComponent(
       const id =
         typeof obj.id === 'string' && obj.id.trim() ? obj.id : `component-${index}-${Date.now()}`;
 
-      // Extract type with fallback - cast to valid type
+      // Extract type with fallback - keep original type even if not in known list
       const rawType = typeof obj.type === 'string' ? obj.type : 'unknown';
-      const type = VALID_COMPONENT_TYPES.includes(rawType as (typeof VALID_COMPONENT_TYPES)[number])
-        ? (rawType as DetectedComponentEnhanced['type'])
-        : 'unknown';
+      const type = rawType as DetectedComponentEnhanced['type'];
 
       // Extract bounds with deep fallbacks
       const rawBounds = obj.bounds as Record<string, unknown> | undefined;
@@ -399,11 +434,11 @@ export function sanitizeComponent(
       const content =
         typeof obj.content === 'object' && obj.content !== null ? obj.content : undefined;
 
-      // Extract role with validation
+      // Extract role with validation (use VALID_ROLES, not hardcoded subset)
       const rawRole = typeof obj.role === 'string' ? obj.role : undefined;
       const role =
-        rawRole && ['container', 'leaf', 'overlay'].includes(rawRole)
-          ? (rawRole as 'container' | 'leaf' | 'overlay')
+        rawRole && VALID_ROLES.includes(rawRole as (typeof VALID_ROLES)[number])
+          ? (rawRole as (typeof VALID_ROLES)[number])
           : undefined;
 
       // Extract layout configuration
@@ -411,7 +446,7 @@ export function sanitizeComponent(
       const layout =
         rawLayout && typeof rawLayout === 'object' && rawLayout.type
           ? {
-              type: rawLayout.type as 'flex' | 'grid' | 'none',
+              type: rawLayout.type as 'flex' | 'grid' | 'none' | 'absolute' | 'block',
               direction: rawLayout.direction as 'row' | 'column' | undefined,
               gap: typeof rawLayout.gap === 'string' ? rawLayout.gap : undefined,
               justify: rawLayout.justify as

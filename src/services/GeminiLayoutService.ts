@@ -1173,14 +1173,27 @@ class GeminiLayoutService {
       generationConfig: { responseMimeType: 'application/json' },
     });
 
-    // Build component context for the AI
+    // Build rich component context for the AI (enables content + style corrections)
     const componentContext = components.map((c) => ({
       id: c.id,
       type: c.type,
       bounds: c.bounds,
-      hasText: !!c.content?.text,
-      backgroundColor: c.style?.backgroundColor,
-      textColor: c.style?.textColor,
+      style: {
+        backgroundColor: c.style?.backgroundColor,
+        textColor: c.style?.textColor,
+        fontSize: c.style?.fontSize,
+        fontWeight: c.style?.fontWeight,
+        borderRadius: c.style?.borderRadius,
+        backgroundImage: c.style?.backgroundImage,
+        opacity: c.style?.opacity,
+      },
+      content: {
+        text: typeof c.content?.text === 'string' ? c.content.text.substring(0, 80) : undefined,
+        hasIcon: c.content?.hasIcon,
+        hasImage: c.content?.hasImage,
+        iconName: c.content?.iconName,
+        iconSvgPath: c.content?.iconSvgPath ? '[SVG path present]' : undefined,
+      },
     }));
 
     const prompt = `
@@ -1209,12 +1222,14 @@ class GeminiLayoutService {
         "discrepancies": [
           {
             "componentId": "<id from components list, or 'unknown' if can't identify>",
-            "issue": "color_drift|spacing_error|typography_mismatch|position_offset|size_mismatch|missing_element|extra_element|content_mismatch|effect_missing|image_missing|gradient_mismatch|animation_missing",
+            "issue": "<descriptive_snake_case_type>",
             "severity": "minor|moderate|critical",
             "expected": "<what it should be, e.g., '#FF0000' or '24px'>",
             "actual": "<what it currently is>",
             "correctionJSON": {
-              "style": { "<property>": "<corrected value>" }
+              "style": { "<css_property>": "<corrected value>" },
+              "content": { "<content_property>": "<corrected value>" },
+              "bounds": { "<bounds_property>": <corrected number> }
             }
           }
         ],
@@ -1222,24 +1237,22 @@ class GeminiLayoutService {
         "recommendation": "accept|refine|regenerate"
       }
 
+      **correctionJSON rules**:
+      - "style": Use for ANY CSS property (color, padding, flexDirection, clipPath, zIndex, etc.)
+      - "content": Use for text, icons, images, SVG paths (text, iconName, iconSvgPath, src, etc.)
+      - "bounds": Use for position/size (width, height, top, left)
+      - Include only the sections that need corrections (omit empty sections)
+
       **Severity Guidelines**:
       - critical: Major visual difference that breaks the design (wrong colors, missing elements, broken layout)
       - moderate: Noticeable difference that affects quality (spacing off by >10px, wrong font weight)
       - minor: Small difference that most users wouldn't notice (spacing off by <5px, slight color variation)
 
-      **Issue Types**:
-      - color_drift: Background or text color doesn't match
-      - spacing_error: Padding, margin, or gap is incorrect
-      - typography_mismatch: Font size, weight, or family is wrong
-      - position_offset: Element is in the wrong position
-      - size_mismatch: Element has wrong dimensions
-      - missing_element: Element exists in original but not in generated
-      - extra_element: Element exists in generated but not in original
-      - content_mismatch: Text content is different
-      - effect_missing: Visual effect (glassmorphism, blur, shadow) exists in original but missing in generated
-      - image_missing: Image/logo shows as placeholder instead of actual content
-      - gradient_mismatch: Gradient colors, direction, or type doesn't match original
-      - animation_missing: CSS animation or particle effect exists in original but missing in generated
+      **Issue Types** (use descriptive snake_case - these are examples, use ANY type that fits):
+      color_drift, spacing_error, typography_mismatch, position_offset, size_mismatch,
+      missing_element, extra_element, content_mismatch, effect_missing, image_missing,
+      gradient_mismatch, animation_missing, layout_mismatch, shape_mismatch,
+      border_mismatch, icon_mismatch, shadow_mismatch, opacity_mismatch, or any other descriptive type
 
       **Recommendation Logic**:
       - "accept": fidelityScore >= ${targetFidelity} and no critical issues

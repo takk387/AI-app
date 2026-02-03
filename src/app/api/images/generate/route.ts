@@ -1,25 +1,20 @@
 /**
  * Image Generation API Route
  *
- * Provides endpoints for generating images using DALL-E 3.
+ * Provides endpoints for generating images using Gemini Imagen (Nanobanana Pro 2).
  * Supports hero images, card thumbnails, and background images.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  getDalleService,
-  getImageCost,
-  type DesignContext,
-  type ImageSize,
-  type ImageQuality,
-} from '@/services/dalleService';
+import { getGeminiImageService } from '@/services/GeminiImageService';
 
 // ============================================================================
 // Request Types
 // ============================================================================
 
 interface BaseImageRequest {
-  designContext: DesignContext;
+  vibe: string;
+  vibeKeywords: string[];
 }
 
 interface HeroImageRequest extends BaseImageRequest {
@@ -42,15 +37,14 @@ interface BackgroundImageRequest extends BaseImageRequest {
 interface BatchCardRequest extends BaseImageRequest {
   type: 'batch-cards';
   cards: Array<{ title: string; context?: string }>;
-  maxConcurrent?: number;
 }
 
 interface CustomImageRequest {
   type: 'custom';
-  prompt: string;
-  size?: ImageSize;
-  quality?: ImageQuality;
-  // style removed - not supported by GPT Image 1.5
+  vibe: string;
+  vibeKeywords: string[];
+  targetElement?: string;
+  referenceImage?: string;
 }
 
 type ImageRequest =
@@ -68,17 +62,12 @@ interface SuccessResponse {
   success: true;
   image?: {
     url: string;
-    revisedPrompt: string;
-    size: string;
-    quality: string;
+    prompt: string;
   };
   images?: Array<{
     url: string;
-    revisedPrompt: string;
-    size: string;
-    quality: string;
+    prompt: string;
   }>;
-  estimatedCost: number;
 }
 
 interface ErrorResponse {
@@ -116,25 +105,6 @@ function checkRateLimit(clientId: string): { allowed: boolean; retryAfter?: numb
 // Request Validation
 // ============================================================================
 
-function validateDesignContext(context: unknown): context is DesignContext {
-  if (!context || typeof context !== 'object') return false;
-
-  const ctx = context as Record<string, unknown>;
-
-  if (!ctx.colorScheme || !['light', 'dark'].includes(ctx.colorScheme as string)) {
-    return false;
-  }
-
-  if (
-    !ctx.style ||
-    !['modern', 'minimalist', 'playful', 'professional', 'custom'].includes(ctx.style as string)
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
 function validateRequest(
   body: unknown
 ): { valid: true; request: ImageRequest } | { valid: false; error: string } {
@@ -148,13 +118,15 @@ function validateRequest(
     return { valid: false, error: 'Missing or invalid "type" field' };
   }
 
+  // All request types need vibe and vibeKeywords
+  if (req.type !== 'custom' && (!req.vibe || !Array.isArray(req.vibeKeywords))) {
+    return { valid: false, error: 'Missing or invalid "vibe" or "vibeKeywords" fields' };
+  }
+
   switch (req.type) {
     case 'hero':
       if (!req.appDescription || typeof req.appDescription !== 'string') {
         return { valid: false, error: 'Hero image requires "appDescription" string' };
-      }
-      if (!validateDesignContext(req.designContext)) {
-        return { valid: false, error: 'Invalid or missing "designContext"' };
       }
       return { valid: true, request: req as unknown as HeroImageRequest };
 
@@ -162,29 +134,20 @@ function validateRequest(
       if (!req.cardTitle || typeof req.cardTitle !== 'string') {
         return { valid: false, error: 'Card image requires "cardTitle" string' };
       }
-      if (!validateDesignContext(req.designContext)) {
-        return { valid: false, error: 'Invalid or missing "designContext"' };
-      }
       return { valid: true, request: req as unknown as CardImageRequest };
 
     case 'background':
-      if (!validateDesignContext(req.designContext)) {
-        return { valid: false, error: 'Invalid or missing "designContext"' };
-      }
       return { valid: true, request: req as unknown as BackgroundImageRequest };
 
     case 'batch-cards':
       if (!Array.isArray(req.cards) || req.cards.length === 0) {
         return { valid: false, error: 'Batch cards requires non-empty "cards" array' };
       }
-      if (!validateDesignContext(req.designContext)) {
-        return { valid: false, error: 'Invalid or missing "designContext"' };
-      }
       return { valid: true, request: req as unknown as BatchCardRequest };
 
     case 'custom':
-      if (!req.prompt || typeof req.prompt !== 'string') {
-        return { valid: false, error: 'Custom image requires "prompt" string' };
+      if (!req.vibe || !Array.isArray(req.vibeKeywords)) {
+        return { valid: false, error: 'Custom image requires "vibe" and "vibeKeywords"' };
       }
       return { valid: true, request: req as unknown as CustomImageRequest };
 
@@ -201,14 +164,14 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
   try {
-    // Check if DALL-E is available
-    const dalleService = getDalleService();
-    if (!dalleService.checkAvailability()) {
+    // Check if Gemini is available
+    const geminiService = getGeminiImageService();
+    if (!geminiService.checkAvailability()) {
       return NextResponse.json(
         {
           success: false,
           error:
-            'DALL-E 3 service is not configured. Please set OPENAI_API_KEY environment variable.',
+            'Gemini Imagen service is not configured. Please set GOOGLE_API_KEY environment variable.',
           code: 'SERVICE_UNAVAILABLE',
         },
         { status: 503 }
@@ -254,98 +217,118 @@ export async function POST(
     // Process request based on type
     switch (imageRequest.type) {
       case 'hero': {
-        const result = await dalleService.generateHeroImage({
-          appName: imageRequest.appName,
-          appDescription: imageRequest.appDescription,
-          designContext: imageRequest.designContext,
+        const result = await geminiService.generateBackgroundFromReference({
+          vibe: imageRequest.vibe,
+          vibeKeywords: [
+            ...(imageRequest.vibeKeywords || []),
+            imageRequest.appName || '',
+            imageRequest.appDescription,
+            'hero banner',
+          ],
+          targetElement: 'hero section',
         });
+
+        if (!result.imageUrl) {
+          throw new Error('Image generation failed');
+        }
 
         return NextResponse.json({
           success: true,
           image: {
-            url: result.url,
-            revisedPrompt: result.revisedPrompt,
-            size: result.size,
-            quality: result.quality,
+            url: result.imageUrl,
+            prompt: `Hero image: ${imageRequest.appDescription}`,
           },
-          estimatedCost: getImageCost(result.quality, result.size),
         });
       }
 
       case 'card': {
-        const result = await dalleService.generateCardImage({
-          cardTitle: imageRequest.cardTitle,
-          cardContext: imageRequest.cardContext,
-          designContext: imageRequest.designContext,
+        const result = await geminiService.generateBackgroundFromReference({
+          vibe: imageRequest.vibe,
+          vibeKeywords: [
+            ...(imageRequest.vibeKeywords || []),
+            imageRequest.cardTitle,
+            imageRequest.cardContext || '',
+          ],
+          targetElement: 'card',
         });
+
+        if (!result.imageUrl) {
+          throw new Error('Image generation failed');
+        }
 
         return NextResponse.json({
           success: true,
           image: {
-            url: result.url,
-            revisedPrompt: result.revisedPrompt,
-            size: result.size,
-            quality: result.quality,
+            url: result.imageUrl,
+            prompt: `Card image: ${imageRequest.cardTitle}`,
           },
-          estimatedCost: getImageCost(result.quality, result.size),
         });
       }
 
       case 'background': {
-        const result = await dalleService.generateBackgroundImage({
-          designContext: imageRequest.designContext,
-          pattern: imageRequest.pattern,
+        const result = await geminiService.generateBackgroundFromReference({
+          vibe: `${imageRequest.vibe}, ${imageRequest.pattern || 'abstract'}`,
+          vibeKeywords: [...(imageRequest.vibeKeywords || []), 'background', 'seamless'],
+          targetElement: 'background',
         });
+
+        if (!result.imageUrl) {
+          throw new Error('Image generation failed');
+        }
 
         return NextResponse.json({
           success: true,
           image: {
-            url: result.url,
-            revisedPrompt: result.revisedPrompt,
-            size: result.size,
-            quality: result.quality,
+            url: result.imageUrl,
+            prompt: `Background: ${imageRequest.pattern || 'abstract'}`,
           },
-          estimatedCost: getImageCost(result.quality, result.size),
         });
       }
 
       case 'batch-cards': {
-        const results = await dalleService.generateCardImages(
-          imageRequest.cards,
-          imageRequest.designContext,
-          imageRequest.maxConcurrent
+        const results = await Promise.all(
+          imageRequest.cards.map(async (card) => {
+            const result = await geminiService.generateBackgroundFromReference({
+              vibe: imageRequest.vibe,
+              vibeKeywords: [...(imageRequest.vibeKeywords || []), card.title, card.context || ''],
+              targetElement: 'card',
+            });
+
+            return result.imageUrl
+              ? {
+                  url: result.imageUrl,
+                  prompt: `Card: ${card.title}`,
+                }
+              : null;
+          })
         );
 
-        const totalCost = results.reduce((sum, r) => sum + getImageCost(r.quality, r.size), 0);
+        const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
 
         return NextResponse.json({
           success: true,
-          images: results.map((r) => ({
-            url: r.url,
-            revisedPrompt: r.revisedPrompt,
-            size: r.size,
-            quality: r.quality,
-          })),
-          estimatedCost: totalCost,
+          images: validResults,
         });
       }
 
       case 'custom': {
-        const result = await dalleService.generateImage({
-          prompt: imageRequest.prompt,
-          size: imageRequest.size,
-          quality: imageRequest.quality,
+        const result = await geminiService.generateBackgroundFromReference({
+          vibe: imageRequest.vibe,
+          vibeKeywords: imageRequest.vibeKeywords,
+          targetElement: imageRequest.targetElement,
+          referenceImage: imageRequest.referenceImage,
         });
+
+        if (!result.imageUrl) {
+          throw new Error('Image generation failed');
+        }
 
         return NextResponse.json({
           success: true,
           image: {
-            url: result.url,
-            revisedPrompt: result.revisedPrompt,
-            size: result.size,
-            quality: result.quality,
+            url: result.imageUrl,
+            prompt: `Custom: ${imageRequest.vibeKeywords.join(', ')}`,
           },
-          estimatedCost: getImageCost(result.quality, result.size),
         });
       }
 
@@ -361,43 +344,6 @@ export async function POST(
     }
   } catch (error) {
     console.error('Image generation API error:', error);
-
-    // Handle OpenAI-specific errors
-    if (error instanceof Error) {
-      if (error.message.includes('rate limit')) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'OpenAI rate limit exceeded. Please try again later.',
-            code: 'OPENAI_RATE_LIMIT',
-          },
-          { status: 429 }
-        );
-      }
-
-      if (error.message.includes('content policy')) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'The image request was rejected due to content policy. Please modify your request.',
-            code: 'CONTENT_POLICY',
-          },
-          { status: 400 }
-        );
-      }
-
-      if (error.message.includes('billing')) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'OpenAI billing issue. Please check your account.',
-            code: 'BILLING_ERROR',
-          },
-          { status: 402 }
-        );
-      }
-    }
 
     return NextResponse.json(
       {
@@ -415,18 +361,13 @@ export async function POST(
 // ============================================================================
 
 export async function GET(): Promise<NextResponse> {
-  const dalleService = getDalleService();
-  const available = dalleService.checkAvailability();
-  const cacheStats = dalleService.getCacheStats();
+  const geminiService = getGeminiImageService();
+  const available = geminiService.checkAvailability();
 
   return NextResponse.json({
-    service: 'dalle-image-generation',
+    service: 'gemini-imagen-generation',
+    model: 'gemini-3-pro-image-preview (Nanobanana Pro 2)',
     available,
-    cache: cacheStats,
-    pricing: {
-      hero: { size: '1536x1024', quality: 'high', cost: '$0.064' },
-      card: { size: '1024x1024', quality: 'medium', cost: '$0.016' },
-      background: { size: '1024x1024', quality: 'medium', cost: '$0.016' },
-    },
+    note: 'Gemini Imagen replaces DALL-E for all image generation',
   });
 }

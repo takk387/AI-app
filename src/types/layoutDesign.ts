@@ -795,11 +795,11 @@ export interface DetectedComponentEnhanced {
   /** Child component IDs */
   children?: string[];
   /** Component role for positioning strategy */
-  role?: 'container' | 'leaf' | 'overlay';
+  role?: 'container' | 'leaf' | 'overlay' | 'fixed' | 'sticky' | 'modal' | 'background' | 'wrapper';
   /** Container layout configuration (for role: 'container') */
   layout?: {
-    /** Layout type: flex, grid, or none (absolute) */
-    type: 'flex' | 'grid' | 'none';
+    /** Layout type */
+    type: 'flex' | 'grid' | 'none' | 'absolute' | 'block';
     /** Flex direction */
     direction?: 'row' | 'column';
     /** Gap between children */

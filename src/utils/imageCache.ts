@@ -1,7 +1,7 @@
 /**
  * Image Cache
  *
- * Client-side caching for DALL-E generated images to minimize API costs.
+ * Client-side caching for Gemini Imagen generated images to minimize API costs.
  * Uses localStorage with automatic expiration and cleanup.
  */
 
@@ -43,7 +43,7 @@ export interface CacheConfig {
 const DEFAULT_CONFIG: CacheConfig = {
   maxEntries: 50,
   defaultTTL: 24 * 60 * 60 * 1000, // 24 hours
-  storageKey: 'dalle-image-cache',
+  storageKey: 'gemini-image-cache',
 };
 
 // Stats tracking

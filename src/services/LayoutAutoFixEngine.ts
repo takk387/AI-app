@@ -59,46 +59,41 @@ export interface LayoutAutoFixConfig {
 }
 
 /**
- * Properties that are safe to auto-fix
+ * BLOCKLIST STRATEGY: Block only dangerous properties, allow everything else.
+ * This enables the AI to fix ANY CSS property without being limited by a whitelist.
  */
-const SAFE_STYLE_PROPERTIES = [
-  // Colors
-  'backgroundColor',
-  'textColor',
-  'color',
-  'borderColor',
-  // Typography
-  'fontSize',
-  'fontWeight',
-  'fontFamily',
-  'textAlign',
-  'lineHeight',
-  'letterSpacing',
-  // Spacing
-  'padding',
-  'margin',
-  'gap',
-  'borderRadius',
-  'borderWidth',
-  // Visual effects
-  'opacity',
-  'shadow',
-  'backgroundImage',
-  'backdropFilter',
-  'filter',
-  'transform',
-  'animation',
-  'animationKeyframes',
-  'transition',
-  'mixBlendMode',
-  'textShadow',
-  'whiteSpace',
+const BLOCKED_STYLE_PROPERTIES = [
+  'content', // CSS content injection
+  'behavior', // IE-specific security risk
+  '-moz-binding', // XSS vector
 ];
 
 /**
- * Properties that affect layout and need validation
+ * Validate that a style value doesn't contain dangerous patterns
  */
-const LAYOUT_PROPERTIES = ['width', 'height', 'top', 'left', 'position'];
+function isUnsafeStyleValue(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const lower = value.toLowerCase();
+  return (
+    lower.includes('expression(') ||
+    lower.includes('javascript:') ||
+    lower.includes('url(javascript:')
+  );
+}
+
+/**
+ * BLOCKLIST STRATEGY: Block only dangerous content properties, allow everything else.
+ * This enables the AI to fix ANY content property (text, icons, images, SVG, etc.)
+ */
+const BLOCKED_CONTENT_PROPERTIES = [
+  'innerHTML',
+  'outerHTML',
+  'dangerouslySetInnerHTML',
+  'script',
+  'iframe',
+  'object',
+  'embed',
+];
 
 /**
  * Layout Auto Fix Engine Class
@@ -245,6 +240,17 @@ export class LayoutAutoFixEngine {
       }
     }
 
+    // Apply content corrections (icons, images, text, SVG paths)
+    // THIS IS THE KEY FIX: Previously this was completely ignored!
+    if (discrepancy.correctionJSON.content) {
+      const contentUpdates = discrepancy.correctionJSON.content;
+
+      for (const [property, value] of Object.entries(contentUpdates)) {
+        const fixResult = this.applyContentFix(component, property, value);
+        results.push(fixResult);
+      }
+    }
+
     // Update the component in the array
     components[componentIndex] = component;
 
@@ -267,15 +273,15 @@ export class LayoutAutoFixEngine {
 
     const oldValue = (component.style as Record<string, unknown>)[property];
 
-    // Check if property is safe to modify
-    if (!SAFE_STYLE_PROPERTIES.includes(property) && !LAYOUT_PROPERTIES.includes(property)) {
+    // BLOCKLIST CHECK: block dangerous properties and unsafe values
+    if (BLOCKED_STYLE_PROPERTIES.includes(property) || isUnsafeStyleValue(value)) {
       return {
         componentId: component.id,
         success: false,
         property,
         oldValue: oldValue as string | number | undefined,
         newValue: value as string | number | undefined,
-        error: `Property ${property} is not in the safe-to-modify list`,
+        error: `Property ${property} is blocked for security/safety`,
       };
     }
 
@@ -286,6 +292,62 @@ export class LayoutAutoFixEngine {
       componentId: component.id,
       success: true,
       property,
+      oldValue: oldValue as string | number | undefined,
+      newValue: value as string | number | undefined,
+    };
+  }
+
+  /**
+   * Apply a single content property fix (icons, images, text, SVG paths)
+   * This was the MISSING PIECE that made the healing loop "toothless"!
+   */
+  private applyContentFix(
+    component: DetectedComponentEnhanced,
+    property: string,
+    value: unknown
+  ): LayoutFixResult {
+    // Ensure content object exists
+    if (!component.content) {
+      component.content = {};
+    }
+
+    const oldValue = (component.content as Record<string, unknown>)[property];
+
+    // BLOCKLIST CHECK: block dangerous properties and event handlers
+    if (BLOCKED_CONTENT_PROPERTIES.includes(property) || property.startsWith('on')) {
+      return {
+        componentId: component.id,
+        success: false,
+        property: `content.${property}`,
+        oldValue: oldValue as string | number | undefined,
+        newValue: value as string | number | undefined,
+        error: `Content property ${property} is blocked for security/safety`,
+      };
+    }
+
+    // Apply the fix to component.content
+    (component.content as Record<string, unknown>)[property] = value;
+
+    // Mirror commonly top-level properties for backwards compatibility
+    const MIRRORED_PROPERTIES = [
+      'text',
+      'src',
+      'icon',
+      'iconName',
+      'iconSvgPath',
+      'hasImage',
+      'hasIcon',
+      'iconColor',
+      'url',
+    ];
+    if (MIRRORED_PROPERTIES.includes(property) && property in component) {
+      (component as unknown as Record<string, unknown>)[property] = value;
+    }
+
+    return {
+      componentId: component.id,
+      success: true,
+      property: `content.${property}`,
       oldValue: oldValue as string | number | undefined,
       newValue: value as string | number | undefined,
     };
@@ -384,9 +446,16 @@ export class LayoutAutoFixEngine {
         continue;
       }
 
-      const props = Object.keys(discrepancy.correctionJSON.style || {});
+      const styleProps = Object.keys(discrepancy.correctionJSON.style || {});
+      const contentProps = Object.keys(discrepancy.correctionJSON.content || {});
+      const boundsProps = Object.keys(discrepancy.correctionJSON.bounds || {});
+      const allProps = [
+        ...styleProps,
+        ...contentProps.map((p) => `content.${p}`),
+        ...boundsProps.map((p) => `bounds.${p}`),
+      ];
       details.push(
-        `APPLY: ${discrepancy.componentId} - ${discrepancy.issue} (${props.join(', ')})`
+        `APPLY: ${discrepancy.componentId} - ${discrepancy.issue} (${allProps.join(', ')})`
       );
       wouldApply++;
     }

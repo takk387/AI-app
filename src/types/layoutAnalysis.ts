@@ -72,20 +72,8 @@ export interface LayoutDiscrepancy {
   /** ID of the affected component */
   componentId: string;
 
-  /** Type of issue detected */
-  issue:
-    | 'color_drift'
-    | 'spacing_error'
-    | 'typography_mismatch'
-    | 'position_offset'
-    | 'size_mismatch'
-    | 'missing_element'
-    | 'extra_element'
-    | 'content_mismatch'
-    | 'effect_missing'
-    | 'image_missing'
-    | 'gradient_mismatch'
-    | 'animation_missing';
+  /** Type of issue detected (open-ended - AI can use any descriptive type) */
+  issue: string;
 
   /** Severity of the discrepancy */
   severity: 'minor' | 'moderate' | 'critical';
