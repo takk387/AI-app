@@ -71,8 +71,12 @@ class GeminiImageService {
         contentParts.push({
           inlineData: { data: base64Data, mimeType: 'image/png' },
         });
+        const referenceInstruction = isShapedElement
+          ? `Reference photo provided. Incorporate this photo's visual content into a photorealistic ${request.targetElement || 'element'}. The result should feature the photo as the visual content, adapted to work as a UI ${request.targetElement || 'element'}.`
+          : `Reference image provided. Generate a texture that incorporates or matches this image's visual style and content.`;
+
         contentParts.push({
-          text: `Reference image provided. Generate a texture matching this design's visual style.\n\n${prompt}`,
+          text: `${referenceInstruction}\n\n${prompt}`,
         });
       } else {
         contentParts.push({ text: prompt });

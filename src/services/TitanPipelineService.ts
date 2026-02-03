@@ -91,11 +91,24 @@ You are the **Pipeline Traffic Controller**.
   Examples: "wood", "glass", "marble", "fabric", "leather", "stone", "metal", "cloud",
   "iridescent sheen", "holographic card", "crumpled paper", "carbon fiber", "aqueous",
   "crystalline", or any other material/texture/visual reference.
+- **REFERENCE IMAGE DETECTION (CRITICAL):**
+  If the user uploads a file AND their request indicates they want to USE that image
+  as part of the generated UI (not reverse-engineer it), you MUST:
+  1. Add a "generate_assets" entry with "source": "reference_image"
+  2. Do NOT put the file index in "measure_pixels" (it is not a UI screenshot)
+  Detect this intent from phrases like: "using this photo", "with this image",
+  "incorporate this picture", "use this as", "make a ... from this",
+  "based on this photo", "put this image on", or any phrasing where the
+  uploaded image is source material, not a design to replicate.
+  If the intent is ambiguous (could be both), put the file in BOTH measure_pixels
+  AND generate_assets with source: "reference_image".
 - Name assets by their target: "button_bg" for buttons, "hero_bg" for hero sections,
   "card_bg" for cards.
-- Example: User says "make the button look like polished wood" →
+- Example 1: User says "make the button look like polished wood" →
   generate_assets: [{ "name": "button_bg", "description": "polished oak wood with natural grain and warm lighting", "vibe": "photorealistic" }]
-- Images -> measure_pixels. Videos -> extract_physics.
+- Example 2: User uploads a photo and says "create a button using this photo" →
+  measure_pixels: [], generate_assets: [{ "name": "button_bg", "description": "create a photorealistic button incorporating the uploaded photo", "vibe": "photorealistic", "source": "reference_image" }]
+- Images that ARE UI screenshots -> measure_pixels. Images that ARE reference material for generation -> generate_assets with source: "reference_image". Videos -> extract_physics.
 
 ### Output Schema (JSON)
 {
@@ -107,7 +120,8 @@ You are the **Pipeline Traffic Controller**.
     "extract_physics": [],
     "preserve_existing_code": false,
     "generate_assets": [
-      { "name": "cloud_texture", "description": "fluffy white realistic cloud texture", "vibe": "photorealistic" }
+      { "name": "cloud_texture", "description": "fluffy white realistic cloud texture", "vibe": "photorealistic" },
+      { "name": "button_bg", "description": "button using uploaded photo", "vibe": "photorealistic", "source": "reference_image" }
     ]
   }
 }`;
@@ -871,7 +885,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
             const result = await geminiImageService.generateBackgroundFromReference({
               vibe: asset.vibe || 'photorealistic',
               vibeKeywords: [asset.description],
-              referenceImage: input.files.length > 0 ? input.files[0].base64 : '',
+              referenceImage:
+                asset.source === 'reference_image' && input.files.length > 0
+                  ? input.files[0].base64
+                  : undefined,
               targetElement: asset.name.includes('button')
                 ? 'button'
                 : asset.name.includes('hero')

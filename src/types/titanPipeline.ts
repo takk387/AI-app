@@ -192,6 +192,7 @@ export interface MergeStrategy {
       description: string;
       vibe?: string;
       type?: 'texture' | 'image' | 'icon';
+      source?: 'text_only' | 'reference_image';
     }>;
   };
 }
