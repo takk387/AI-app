@@ -11,8 +11,7 @@
  * - Live Editor (Refinement)
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GoogleAIFileManager } from '@google/generative-ai/server';
+import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import Anthropic from '@anthropic-ai/sdk';
 import type { AppFile } from '@/types/railway';
 import type {
@@ -53,23 +52,23 @@ function getAnthropicApiKey(): string {
 // ============================================================================
 
 async function uploadFileToGemini(apiKey: string, file: FileInput) {
-  const fileManager = new GoogleAIFileManager(apiKey);
+  const ai = new GoogleGenAI({ apiKey });
   const base64Data = file.base64.includes(',') ? file.base64.split(',')[1] : file.base64;
   const buffer = Buffer.from(base64Data, 'base64');
+  const blob = new Blob([buffer], { type: file.mimeType });
 
-  const uploadResult = await fileManager.uploadFile(buffer, {
-    mimeType: file.mimeType,
-    displayName: file.filename,
+  let uploadedFile = await ai.files.upload({
+    file: blob,
+    config: { displayName: file.filename, mimeType: file.mimeType },
   });
 
-  let fileState = uploadResult.file;
-  while (fileState.state === 'PROCESSING') {
+  while (uploadedFile.state === 'PROCESSING') {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    fileState = await fileManager.getFile(fileState.name);
+    uploadedFile = await ai.files.get({ name: uploadedFile.name! });
   }
 
-  if (fileState.state === 'FAILED') throw new Error(`Upload failed: ${file.filename}`);
-  return fileState;
+  if (uploadedFile.state === 'FAILED') throw new Error(`Upload failed: ${file.filename}`);
+  return uploadedFile;
 }
 
 // ============================================================================
@@ -108,11 +107,7 @@ You are the **Pipeline Traffic Controller**.
 
 export async function routeIntent(input: PipelineInput): Promise<MergeStrategy> {
   const apiKey = getGeminiApiKey();
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_FLASH_MODEL,
-    generationConfig: { responseMimeType: 'application/json' },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `${ROUTER_PROMPT}
 
@@ -121,8 +116,12 @@ export async function routeIntent(input: PipelineInput): Promise<MergeStrategy> 
   Code Exists: ${!!input.currentCode}
   `;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  const result = await ai.models.generateContent({
+    model: GEMINI_FLASH_MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json' },
+  });
+  const text = result.text ?? '';
 
   try {
     return JSON.parse(text);
@@ -226,20 +225,22 @@ If an element contains text, use the "text" field.
 
 export async function surveyLayout(file: FileInput, fileIndex: number): Promise<VisualManifest> {
   const apiKey = getGeminiApiKey();
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const ai = new GoogleGenAI({ apiKey });
   const fileState = await uploadFileToGemini(apiKey, file);
 
-  const model = genAI.getGenerativeModel({
+  // Enable Agentic Vision: code execution activates Think→Act→Observe loop
+  // for precise CSS extraction (zoom, crop, annotate capabilities)
+  const result = await ai.models.generateContent({
     model: GEMINI_FLASH_MODEL,
+    contents: [createPartFromUri(fileState.uri!, fileState.mimeType!), { text: SURVEYOR_PROMPT }],
+    config: {
+      tools: [{ codeExecution: {} }],
+      maxOutputTokens: 65536,
+    },
   });
 
-  const result = await model.generateContent([
-    { fileData: { mimeType: fileState.mimeType, fileUri: fileState.uri } },
-    { text: SURVEYOR_PROMPT },
-  ]);
-
   try {
-    const text = result.response.text();
+    const text = result.text ?? '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON found');
 
@@ -247,7 +248,7 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
 
     return {
       file_index: fileIndex,
-      originalImageRef: { fileUri: fileState.uri, mimeType: fileState.mimeType },
+      originalImageRef: { fileUri: fileState.uri!, mimeType: fileState.mimeType! },
       canvas: data.canvas,
       global_theme: { dom_tree: data.dom_tree, assets: data.assets_needed },
       measured_components: [],
@@ -324,21 +325,23 @@ export async function extractPhysics(
   files: FileInput[],
   _strategy?: MergeStrategy
 ): Promise<MotionPhysics> {
+  if (files.length === 0) return { component_motions: [] };
+
   const apiKey = getGeminiApiKey();
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: GEMINI_DEEP_THINK_MODEL });
+  const ai = new GoogleGenAI({ apiKey });
 
   const parts: any[] = [{ text: PHYSICIST_PROMPT }];
   for (const f of files) {
     const up = await uploadFileToGemini(apiKey, f);
-    parts.push({ fileData: { mimeType: up.mimeType, fileUri: up.uri } });
+    parts.push(createPartFromUri(up.uri!, up.mimeType!));
   }
 
-  if (files.length === 0) return { component_motions: [] };
-
-  const result = await model.generateContent(parts);
+  const result = await ai.models.generateContent({
+    model: GEMINI_DEEP_THINK_MODEL,
+    contents: parts,
+  });
   try {
-    const jsonMatch = result.response.text().match(/\{[\s\S]*\}/);
+    const jsonMatch = (result.text ?? '').match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { component_motions: [] };
   } catch {
     return { component_motions: [] };
@@ -446,8 +449,7 @@ export async function assembleCode(
   originalImageRef?: { fileUri: string; mimeType: string }
 ): Promise<AppFile[]> {
   const apiKey = getGeminiApiKey();
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: GEMINI_PRO_MODEL });
+  const ai = new GoogleGenAI({ apiKey });
 
   const hasAssets = Object.keys(assets).length > 0;
   const assetContext = hasAssets
@@ -478,15 +480,16 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
   // Build multimodal content: original image (if available) + text prompt
   const contentParts: any[] = [];
   if (originalImageRef) {
-    contentParts.push({
-      fileData: { mimeType: originalImageRef.mimeType, fileUri: originalImageRef.fileUri },
-    });
+    contentParts.push(createPartFromUri(originalImageRef.fileUri, originalImageRef.mimeType));
   }
   contentParts.push({ text: prompt });
 
-  const result = await model.generateContent(contentParts);
-  const responseText = result.response
-    .text()
+  const result = await ai.models.generateContent({
+    model: GEMINI_PRO_MODEL,
+    contents: contentParts,
+    config: { maxOutputTokens: 65536 },
+  });
+  const responseText = (result.text ?? '')
     .replace(/^```(?:tsx?|jsx?|typescript|javascript|css)?\n?/gm, '')
     .replace(/\n?```$/gm, '')
     .trim();
@@ -514,7 +517,7 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
   // index.tsx: always include
   files.push({
     path: '/src/index.tsx',
-    content: `import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App';\nimport './inspector';\n\nconst root = createRoot(document.getElementById('root')!);\nroot.render(<React.StrictMode><App /></React.StrictMode>);`,
+    content: `import './preflight-undo';\nimport React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App';\nimport './inspector';\n\nconst root = createRoot(document.getElementById('root')!);\nroot.render(<React.StrictMode><App /></React.StrictMode>);`,
   });
 
   return files;
@@ -550,12 +553,7 @@ export async function liveEdit(
 ): Promise<LiveEditResult> {
   try {
     const apiKey = getGeminiApiKey();
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_PRO_MODEL,
-      generationConfig: { temperature: 0.2, maxOutputTokens: 16384 },
-    });
+    const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `${LIVE_EDITOR_PROMPT}
 
@@ -570,8 +568,12 @@ data-id="${selectedDataId}"
 ### Instruction
 "${instruction}"`;
 
-    const result = await model.generateContent(prompt);
-    let updatedCode = result.response.text();
+    const result = await ai.models.generateContent({
+      model: GEMINI_PRO_MODEL,
+      contents: prompt,
+      config: { temperature: 0.2, maxOutputTokens: 16384 },
+    });
+    let updatedCode = result.text ?? currentCode;
 
     updatedCode = updatedCode
       .replace(/^```(?:tsx?|jsx?|typescript|javascript)?\n?/gm, '')
@@ -644,9 +646,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     })(),
   ]);
 
-  const structStart = Date.now();
-  const structure = await buildStructure(manifests, strategy, input.instructions);
-  stepTimings.architect = Date.now() - structStart;
+  // Architect step bypassed — its output was not consumed by assembleCode.
+  // buildStructure() and ARCHITECT_PROMPT are preserved for future integration.
+  const structure = null;
+  stepTimings.architect = 0;
 
   const buildStart = Date.now();
   const primaryImageRef = manifests[0]?.originalImageRef;

@@ -35,6 +35,7 @@ const TAILWIND_CDN = 'https://cdn.tailwindcss.com';
 
 /** Default entry file when Builder doesn't output one */
 const DEFAULT_ENTRY_CODE = [
+  "import './preflight-undo';",
   "import React from 'react';",
   "import { createRoot } from 'react-dom/client';",
   "import App from './App';",
@@ -112,6 +113,24 @@ function toSandpackFiles(files: AppFile[]): Record<string, { code: string; hidde
   // Inject inspector script (self-executing IIFE, imported by entry file)
   result['/inspector.ts'] = {
     code: createInspectorFileContent(),
+    hidden: true,
+  };
+
+  // Undo Tailwind preflight resets for accurate design replication.
+  // CSS `revert` restores user-agent defaults that preflight overrides.
+  result['/preflight-undo.ts'] = {
+    code: `const style = document.createElement('style');
+style.textContent = \`
+  h1, h2, h3, h4, h5, h6 { font-size: revert; font-weight: revert; margin: revert; }
+  p { margin: revert; }
+  ol, ul { list-style: revert; margin: revert; padding: revert; }
+  img, svg, video { display: revert; }
+  a { color: revert; text-decoration: revert; }
+  hr { border-top-width: revert; }
+  blockquote, dd, dl, figure, pre { margin: revert; }
+\`;
+document.head.appendChild(style);
+`,
     hidden: true,
   };
 
