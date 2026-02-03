@@ -7,15 +7,18 @@
  * Includes edit link to navigate back to Design page.
  */
 
-import { ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Image as ImageIcon, FileCode, Palette } from 'lucide-react';
 import type { LayoutThumbnail } from '@/types/reviewTypes';
+import type { LayoutManifest } from '@/types/schema';
 
 interface LayoutCardProps {
   thumbnail: LayoutThumbnail | null;
+  layoutManifest?: LayoutManifest | null;
+  fileCount?: number;
   onEdit: () => void;
 }
 
-export function LayoutCard({ thumbnail, onEdit }: LayoutCardProps) {
+export function LayoutCard({ thumbnail, layoutManifest, fileCount = 0, onEdit }: LayoutCardProps) {
   return (
     <div
       className="p-6 rounded-xl"
@@ -72,6 +75,46 @@ export function LayoutCard({ thumbnail, onEdit }: LayoutCardProps) {
           >
             Go to Design →
           </button>
+        </div>
+      )}
+
+      {/* Layout manifest summary */}
+      {(layoutManifest || fileCount > 0) && (
+        <div className="mt-3 p-3 rounded-lg space-y-2" style={{ background: 'var(--bg-tertiary)' }}>
+          {fileCount > 0 && (
+            <div className="flex items-center gap-2">
+              <FileCode className="w-3.5 h-3.5" style={{ color: 'var(--accent-primary)' }} />
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {fileCount} file{fileCount !== 1 ? 's' : ''} ready for injection
+              </span>
+            </div>
+          )}
+          {layoutManifest?.designSystem && (
+            <div className="flex items-center gap-2">
+              <Palette className="w-3.5 h-3.5" style={{ color: 'var(--accent-primary)' }} />
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {Object.keys(layoutManifest.designSystem.colors).length} colors,{' '}
+                {layoutManifest.designSystem.fonts.heading}/{layoutManifest.designSystem.fonts.body}{' '}
+                fonts
+              </span>
+            </div>
+          )}
+          {layoutManifest?.detectedFeatures && layoutManifest.detectedFeatures.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {layoutManifest.detectedFeatures.slice(0, 5).map((feature) => (
+                <span
+                  key={feature}
+                  className="px-1.5 py-0.5 rounded text-[10px]"
+                  style={{
+                    background: 'var(--accent-muted)',
+                    color: 'var(--accent-primary)',
+                  }}
+                >
+                  {feature}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

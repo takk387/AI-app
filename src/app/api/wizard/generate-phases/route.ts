@@ -19,6 +19,7 @@ import type {
   SerializedPhaseContext,
 } from '@/types/dynamicPhases';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
+import type { AppFile } from '@/types/railway';
 import { extractContextForAllPhases, type PhaseContext } from '@/utils/phaseContextExtractor';
 
 // Vercel serverless function config
@@ -30,6 +31,7 @@ interface GeneratePhasesRequest {
   config?: Partial<PhaseGeneratorConfig>;
   conversationMessages?: ChatMessage[]; // Optional: for phase-specific context extraction
   architectureSpec?: ArchitectureSpec; // Optional: pre-generated architecture from wizard
+  layoutBuilderFiles?: AppFile[]; // Optional: pre-built layout files from Layout Builder
 }
 
 /**
@@ -51,7 +53,13 @@ function serializePhaseContext(context: PhaseContext): SerializedPhaseContext {
 export async function POST(request: Request) {
   try {
     const body: GeneratePhasesRequest = await request.json();
-    const { concept, config, conversationMessages, architectureSpec: preGeneratedSpec } = body;
+    const {
+      concept,
+      config,
+      conversationMessages,
+      architectureSpec: preGeneratedSpec,
+      layoutBuilderFiles,
+    } = body;
 
     // Validate concept
     if (!concept) {
@@ -227,10 +235,15 @@ export async function POST(request: Request) {
       }
     }
 
+    // Attach layout builder files to plan if provided
+    if (layoutBuilderFiles && layoutBuilderFiles.length > 0 && result.plan) {
+      result.plan.layoutBuilderFiles = layoutBuilderFiles;
+    }
+
     return NextResponse.json({
       success: true,
       plan: result.plan,
-      architectureSpec, // NEW: Include architecture spec for downstream use
+      architectureSpec, // Include architecture spec for downstream use
       warnings: result.warnings,
       analysisDetails: result.analysisDetails,
     });

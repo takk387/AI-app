@@ -15,6 +15,7 @@ import type {
 } from '@/types/appConcept';
 import type { LayoutManifest } from '@/types/schema';
 import type { ArchitectureSpec, APIRouteSpec, BackendFileSpec } from '@/types/architectureSpec';
+import type { AppFile } from '@/types/railway';
 
 // ============================================================================
 // FEATURE CLASSIFICATION
@@ -183,6 +184,10 @@ export interface DynamicPhase {
   // Rich concept context for phase execution (preserves detail)
   conceptContext?: PhaseConceptContext;
 
+  // If true, this phase injects pre-built layout code from Layout Builder
+  // instead of generating code from scratch via AI
+  isLayoutInjection?: boolean;
+
   // Role context: which user roles interact with this phase's features
   relevantRoles?: string[];
 
@@ -288,6 +293,9 @@ export interface DynamicPhasePlan {
 
   // Backend architecture specification (from BackendArchitectureAgent)
   architectureSpec?: ArchitectureSpec;
+
+  // Pre-built layout files from Layout Builder (for layout injection phase)
+  layoutBuilderFiles?: AppFile[];
 }
 
 /**
@@ -439,6 +447,11 @@ export interface PhaseExecutionContext {
     prismaSchema?: string;
     apiRoutes?: APIRouteSpec[];
   };
+
+  // Layout injection: if true, inject pre-built layout code instead of AI generation
+  isLayoutInjection?: boolean;
+  // Pre-built layout files to inject for layout injection phases
+  layoutBuilderFiles?: AppFile[];
 }
 
 /**

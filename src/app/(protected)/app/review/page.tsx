@@ -34,6 +34,8 @@ export default function ReviewPage() {
   const appConcept = useAppStore((state) => state.appConcept);
   const dynamicPhasePlan = useAppStore((state) => state.dynamicPhasePlan);
   const layoutThumbnail = useAppStore((state) => state.layoutThumbnail);
+  const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
+  const layoutBuilderFiles = useAppStore((state) => state.layoutBuilderFiles);
   const buildSettings = useAppStore((state) => state.buildSettings);
   const setIsReviewed = useAppStore((state) => state.setIsReviewed);
   const setBuildSettings = useAppStore((state) => state.setBuildSettings);
@@ -113,7 +115,12 @@ export default function ReviewPage() {
           {/* Two-column grid for concept and layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <ConceptCard concept={appConcept} onEdit={handleGoToWizard} />
-            <LayoutCard thumbnail={layoutThumbnail} onEdit={handleGoToDesign} />
+            <LayoutCard
+              thumbnail={layoutThumbnail}
+              layoutManifest={currentLayoutManifest}
+              fileCount={layoutBuilderFiles?.length ?? 0}
+              onEdit={handleGoToDesign}
+            />
           </div>
 
           {/* Features */}

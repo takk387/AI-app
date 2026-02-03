@@ -1109,13 +1109,12 @@ export class DynamicPhaseGenerator {
     const phases: DynamicPhase[] = [];
     let phaseNumber = 1;
 
-    // Phase 1: ALWAYS start with Setup
-    phases.push(this.createSetupPhase(phaseNumber++, concept));
-
-    // Phase 2: Design System (if layoutManifest exists) - creates design tokens and base components
-    // This ensures all subsequent phases have access to the complete design specification
+    // Phase 1: Layout Injection (replaces Setup + Design System) when layout exists,
+    // otherwise standard Setup phase
     if (concept.layoutManifest) {
-      phases.push(this.createDesignSystemPhase(phaseNumber++, concept, concept.layoutManifest));
+      phases.push(this.createLayoutInjectionPhase(phaseNumber++, concept));
+    } else {
+      phases.push(this.createSetupPhase(phaseNumber++, concept));
     }
 
     // Phase 2/3: Database (if needed) - always comes early
@@ -1408,6 +1407,57 @@ export class DynamicPhaseGenerator {
         targetUsers: concept.targetUsers,
         uiPreferences: concept.uiPreferences,
         layoutManifest: concept.layoutManifest, // Include layout manifest for setup phase
+        roles: concept.roles,
+      },
+    };
+  }
+
+  /**
+   * Create the Layout Injection phase.
+   * Replaces both Setup and Design System when the user built a layout
+   * in the Layout Builder. The Builder will inject the pre-built code
+   * directly (no AI call), auto-completing this phase instantly.
+   */
+  private createLayoutInjectionPhase(phaseNumber: number, concept: AppConcept): DynamicPhase {
+    const layoutManifest = concept.layoutManifest!;
+    const designSystem = layoutManifest.designSystem || {
+      colors: {},
+      fonts: { heading: 'Inter', body: 'Inter' },
+    };
+    const detectedFeatures = layoutManifest.detectedFeatures || [];
+
+    return {
+      number: phaseNumber,
+      name: 'Layout Injection',
+      description: `Inject pre-built layout code from Layout Builder as the app foundation for "${concept.name}". Includes design system tokens, responsive layout, and navigation structure.`,
+      domain: 'setup',
+      isLayoutInjection: true,
+      features: [
+        'Pre-built layout structure from Layout Builder',
+        `Design system: ${Object.keys(designSystem.colors).length} color tokens, ${designSystem.fonts.heading}/${designSystem.fonts.body} typography`,
+        'Navigation framework and routing structure',
+        'Responsive layout with mobile-first approach',
+        ...(detectedFeatures.length > 0
+          ? [`Detected components: ${detectedFeatures.slice(0, 6).join(', ')}`]
+          : []),
+      ],
+      featureDetails: [],
+      estimatedTokens: 500, // Low — injecting pre-built code, not generating
+      estimatedTime: 'Instant',
+      dependencies: [],
+      dependencyNames: [],
+      testCriteria: [
+        'Layout renders correctly in preview',
+        'Design tokens (colors, fonts) are applied',
+        'Navigation structure works',
+        'Responsive at all breakpoints',
+      ],
+      status: 'pending',
+      conceptContext: {
+        purpose: concept.purpose,
+        targetUsers: concept.targetUsers,
+        uiPreferences: concept.uiPreferences,
+        layoutManifest: layoutManifest,
         roles: concept.roles,
       },
     };

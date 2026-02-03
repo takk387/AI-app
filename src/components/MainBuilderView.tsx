@@ -219,6 +219,9 @@ export function MainBuilderView() {
     // Review state
     isReviewed,
     buildSettings,
+
+    // Layout Builder data
+    layoutBuilderFiles,
   } = useAppStore();
 
   // Sync wizard state to app concept in store during PLAN mode
@@ -1102,7 +1105,70 @@ export function MainBuilderView() {
       !dynamicBuildPhases.isBuilding &&
       !dynamicBuildPhases.currentPhase
     ) {
-      dynamicBuildPhases.startPhase(1);
+      const phase1 = dynamicBuildPhases.plan.phases.find((p) => p.number === 1);
+      const isPhase1Done = phase1?.status === 'completed' || phase1?.status === 'skipped';
+
+      // Layout Injection: if Phase 1 is layout injection, inject pre-built code directly
+      // Guard: skip if currentComponent already exists (prevents re-injection on page refresh)
+      if (
+        phase1?.isLayoutInjection &&
+        layoutBuilderFiles?.length &&
+        !isPhase1Done &&
+        !currentComponent
+      ) {
+        dynamicBuildPhases.startPhase(1);
+
+        // Build FullAppData structure (matches what FullAppPreview/BrowserPreview expects)
+        const appData = {
+          name: appConcept?.name || 'App',
+          description: appConcept?.description || '',
+          appType: 'FRONTEND_ONLY' as const,
+          files: layoutBuilderFiles,
+          dependencies: {},
+          setupInstructions: '',
+        };
+
+        const newComponent = {
+          id: generateId(),
+          name: appConcept?.name || 'My App',
+          code: JSON.stringify(appData, null, 2),
+          description: 'Layout injected from Layout Builder',
+          timestamp: new Date().toISOString(),
+          isFavorite: false,
+          conversationHistory: [] as ChatMessage[],
+          versions: [],
+          appConcept: appConcept,
+          layoutManifest: appConcept?.layoutManifest ?? null,
+          dynamicPhasePlan: dynamicBuildPhases.plan,
+        };
+
+        setCurrentComponent(newComponent);
+
+        // Auto-complete Phase 1 — no AI call needed
+        dynamicBuildPhases.completePhase({
+          phaseNumber: 1,
+          phaseName: 'Layout Injection',
+          success: true,
+          generatedCode: JSON.stringify(appData),
+          generatedFiles: layoutBuilderFiles.map((f) => f.path),
+          implementedFeatures: ['Layout structure', 'Design system', 'Navigation'],
+          duration: 0,
+          tokensUsed: { input: 0, output: 0 },
+        });
+
+        // Notify user via chat
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: generateId(),
+            role: 'system' as const,
+            content: `**Phase 1: Layout Injection Complete!**\n\nYour layout from the Layout Builder has been injected as the starting code. ${layoutBuilderFiles.length} file(s) loaded.\n\nPhase 2 is ready — send a message to continue building.`,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } else if (!isPhase1Done) {
+        dynamicBuildPhases.startPhase(1);
+      }
     }
   }, [
     currentMode,
@@ -1111,6 +1177,11 @@ export function MainBuilderView() {
     dynamicBuildPhases.isBuilding,
     dynamicBuildPhases.currentPhase,
     dynamicBuildPhases.startPhase,
+    dynamicBuildPhases.completePhase,
+    layoutBuilderFiles,
+    appConcept,
+    setCurrentComponent,
+    setChatMessages,
   ]);
 
   // Persist UI state to localStorage
@@ -1277,7 +1348,64 @@ export function MainBuilderView() {
                     !dynamicBuildPhases.isBuilding &&
                     !dynamicBuildPhases.currentPhase
                   ) {
-                    dynamicBuildPhases.startPhase(1);
+                    const phase1 = dynamicBuildPhases.plan.phases.find((p) => p.number === 1);
+                    const isPhase1Done =
+                      phase1?.status === 'completed' || phase1?.status === 'skipped';
+
+                    if (
+                      phase1?.isLayoutInjection &&
+                      layoutBuilderFiles?.length &&
+                      !isPhase1Done &&
+                      !currentComponent
+                    ) {
+                      dynamicBuildPhases.startPhase(1);
+
+                      const appData = {
+                        name: appConcept?.name || 'App',
+                        description: appConcept?.description || '',
+                        appType: 'FRONTEND_ONLY' as const,
+                        files: layoutBuilderFiles,
+                        dependencies: {},
+                        setupInstructions: '',
+                      };
+
+                      setCurrentComponent({
+                        id: generateId(),
+                        name: appConcept?.name || 'My App',
+                        code: JSON.stringify(appData, null, 2),
+                        description: 'Layout injected from Layout Builder',
+                        timestamp: new Date().toISOString(),
+                        isFavorite: false,
+                        conversationHistory: [],
+                        versions: [],
+                        appConcept: appConcept,
+                        layoutManifest: appConcept?.layoutManifest ?? null,
+                        dynamicPhasePlan: dynamicBuildPhases.plan,
+                      });
+
+                      dynamicBuildPhases.completePhase({
+                        phaseNumber: 1,
+                        phaseName: 'Layout Injection',
+                        success: true,
+                        generatedCode: JSON.stringify(appData),
+                        generatedFiles: layoutBuilderFiles.map((f) => f.path),
+                        implementedFeatures: ['Layout structure', 'Design system', 'Navigation'],
+                        duration: 0,
+                        tokensUsed: { input: 0, output: 0 },
+                      });
+
+                      setChatMessages((prev) => [
+                        ...prev,
+                        {
+                          id: generateId(),
+                          role: 'system' as const,
+                          content: `**Phase 1: Layout Injection Complete!**\n\nYour layout from the Layout Builder has been injected. ${layoutBuilderFiles.length} file(s) loaded.\n\nPhase 2 is ready — send a message to continue building.`,
+                          timestamp: new Date().toISOString(),
+                        },
+                      ]);
+                    } else if (!isPhase1Done) {
+                      dynamicBuildPhases.startPhase(1);
+                    }
                   }
                 }}
                 buildState={{

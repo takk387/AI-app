@@ -19,8 +19,11 @@ import type {
   PipelineStepName,
   AppContext,
   FileInput,
+  VisualManifest,
 } from '@/types/titanPipeline';
 import { createInitialProgress } from '@/types/titanPipeline';
+import type { LayoutManifest } from '@/types/schema';
+import { useAppStore } from '@/store/useAppStore';
 
 // ============================================================================
 // RETURN TYPE
@@ -117,10 +120,94 @@ function buildFinalProgress(hasImages: boolean, hasVideos: boolean): PipelinePro
 }
 
 // ============================================================================
+// VISUAL MANIFEST → LAYOUT MANIFEST CONVERSION
+// ============================================================================
+
+/**
+ * Convert pipeline VisualManifest[] into a LayoutManifest for the store.
+ * Extracts design system tokens (colors, fonts) and detected features
+ * from the Surveyor output so downstream phases can reference them.
+ */
+function convertVisualManifestToLayoutManifest(manifests: VisualManifest[]): LayoutManifest {
+  // Merge colors from all manifests into a keyed record
+  const colorSet = new Map<string, string>();
+  const fontSet = new Set<string>();
+  const featureSet = new Set<string>();
+
+  for (const manifest of manifests) {
+    // Colors
+    if (manifest.global_theme?.colors) {
+      manifest.global_theme.colors.forEach((color) => {
+        // Name colors by index; duplicates are deduped by Map
+        const key =
+          colorSet.size < 10
+            ? ([
+                'primary',
+                'secondary',
+                'accent',
+                'background',
+                'surface',
+                'text',
+                'muted',
+                'border',
+                'success',
+                'error',
+              ][colorSet.size] ?? `color-${colorSet.size}`)
+            : `color-${colorSet.size}`;
+        if (!Array.from(colorSet.values()).includes(color)) {
+          colorSet.set(key, color);
+        }
+      });
+    }
+
+    // Fonts
+    if (manifest.global_theme?.fonts) {
+      manifest.global_theme.fonts.forEach((font) => fontSet.add(font));
+    }
+
+    // Detected features from measured components
+    if (manifest.measured_components) {
+      manifest.measured_components.forEach((comp) => {
+        if (comp.type) featureSet.add(comp.type);
+      });
+    }
+  }
+
+  const fontsArray = Array.from(fontSet);
+
+  return {
+    id: `layout-${Date.now()}`,
+    version: '1.0',
+    root: {
+      id: 'root',
+      type: 'container',
+      semanticTag: 'main',
+      styles: { tailwindClasses: 'min-h-screen' },
+      attributes: {},
+      children: [],
+    },
+    definitions: {},
+    detectedFeatures: Array.from(featureSet),
+    designSystem: {
+      colors: Object.fromEntries(colorSet),
+      fonts: {
+        heading: fontsArray[0] ?? 'Inter',
+        body: fontsArray[1] ?? fontsArray[0] ?? 'Inter',
+      },
+    },
+  };
+}
+
+// ============================================================================
 // HOOK
 // ============================================================================
 
 export function useLayoutBuilder(): UseLayoutBuilderReturn {
+  // --- Store Actions (persist layout data to Zustand for downstream pipeline) ---
+  const setLayoutBuilderFiles = useAppStore((s) => s.setLayoutBuilderFiles);
+  const setCurrentLayoutManifest = useAppStore((s) => s.setCurrentLayoutManifest);
+  const updateAppConceptField = useAppStore((s) => s.updateAppConceptField);
+
   // --- Core State ---
   const [generatedFiles, setGeneratedFiles] = useState<AppFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -233,6 +320,16 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         // 6. Store generated files
         if (result.files && result.files.length > 0) {
           updateFilesWithHistory(result.files);
+
+          // Persist to Zustand store for downstream pipeline (Review → Builder)
+          setLayoutBuilderFiles(result.files);
+
+          // Convert and persist manifest if pipeline returned one
+          if (result.manifests && result.manifests.length > 0) {
+            const layoutManifest = convertVisualManifestToLayoutManifest(result.manifests);
+            setCurrentLayoutManifest(layoutManifest);
+            updateAppConceptField('layoutManifest', layoutManifest);
+          }
         } else {
           setErrors((prev) => [...prev, 'Pipeline completed but returned no files']);
         }
@@ -251,7 +348,15 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         setTimeout(() => setPipelineProgress(null), 2000);
       }
     },
-    [isProcessing, generatedFiles, clearErrors, updateFilesWithHistory]
+    [
+      isProcessing,
+      generatedFiles,
+      clearErrors,
+      updateFilesWithHistory,
+      setLayoutBuilderFiles,
+      setCurrentLayoutManifest,
+      updateAppConceptField,
+    ]
   );
 
   /**
@@ -300,6 +405,8 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
             return f;
           });
           updateFilesWithHistory(newFiles);
+          // Keep store in sync with refined files
+          setLayoutBuilderFiles(newFiles);
         } else {
           throw new Error(result.error || 'Live edit returned no updated code');
         }
@@ -311,7 +418,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         setIsProcessing(false);
       }
     },
-    [generatedFiles, clearErrors, updateFilesWithHistory]
+    [generatedFiles, clearErrors, updateFilesWithHistory, setLayoutBuilderFiles]
   );
 
   /** Undo: pop from history, push current to future. */
@@ -326,9 +433,12 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         return previousState;
       });
 
+      // Keep store in sync
+      setLayoutBuilderFiles(previousState);
+
       return newHistory;
     });
-  }, []);
+  }, [setLayoutBuilderFiles]);
 
   /** Redo: shift from future, push current to history. */
   const redo = useCallback(() => {
@@ -342,9 +452,12 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         return nextState;
       });
 
+      // Keep store in sync
+      setLayoutBuilderFiles(nextState);
+
       return newFuture;
     });
-  }, []);
+  }, [setLayoutBuilderFiles]);
 
   /** Copy all generated code files to clipboard with path headers. */
   const exportCode = useCallback(() => {

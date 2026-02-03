@@ -48,7 +48,7 @@ import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { FileMetadata, StorageStats } from '@/types/storage';
 import type { DeploymentInstructions } from '@/utils/exportApp';
 import type { ProjectDocumentation } from '@/types/projectDocumentation';
-import type { PreviewMode } from '@/types/railway';
+import type { PreviewMode, AppFile } from '@/types/railway';
 import type { DesignSpec } from '@/types/designSpec';
 import type { BuildSettings, LayoutThumbnail } from '@/types/reviewTypes';
 
@@ -207,6 +207,8 @@ interface DataSlice {
   currentDesignSpec: DesignSpec | null;
   // Dynamic Phase Plan
   dynamicPhasePlan: DynamicPhasePlan | null;
+  // Layout Builder generated code (persisted for layout injection into builder)
+  layoutBuilderFiles: AppFile[] | null;
   // Review state
   isReviewed: boolean;
   buildSettings: BuildSettings;
@@ -240,6 +242,8 @@ interface DataSlice {
   updateAppConceptField: (path: string, value: unknown) => void;
   // Dynamic Phase Plan action
   setDynamicPhasePlan: (plan: DynamicPhasePlan | null) => void;
+  // Layout Builder files action
+  setLayoutBuilderFiles: (files: AppFile[] | null) => void;
   // Review actions
   setIsReviewed: (reviewed: boolean) => void;
   setBuildSettings: (settings: Partial<BuildSettings>) => void;
@@ -497,6 +501,7 @@ export const useAppStore = create<AppState>()(
         buildSettings: { autoAdvance: true } as BuildSettings,
         layoutThumbnail: null as LayoutThumbnail | null,
         phasePlanGeneratedAt: null as string | null,
+        layoutBuilderFiles: null as AppFile[] | null,
 
         setPendingChange: (change) => set({ pendingChange: change }),
         setPendingDiff: (diff) => set({ pendingDiff: diff }),
@@ -551,6 +556,7 @@ export const useAppStore = create<AppState>()(
           })),
         setLayoutThumbnail: (thumbnail) => set({ layoutThumbnail: thumbnail }),
         setPhasePlanGeneratedAt: (timestamp) => set({ phasePlanGeneratedAt: timestamp }),
+        setLayoutBuilderFiles: (files) => set({ layoutBuilderFiles: files }),
 
         // ========================================================================
         // DOCUMENTATION SLICE
@@ -611,7 +617,7 @@ export const useAppStore = create<AppState>()(
       })),
       {
         name: 'ai-app-builder-storage',
-        version: 2, // Bumped: now persists components and currentComponent
+        version: 3, // Bumped: now persists layoutBuilderFiles
         // Migration function to preserve data when version changes
         migrate: (persistedState: unknown, version: number) => {
           const state = persistedState as Record<string, unknown>;
@@ -621,6 +627,13 @@ export const useAppStore = create<AppState>()(
               ...state,
               components: state.components ?? [],
               currentComponent: state.currentComponent ?? null,
+            };
+          }
+          if (version === 2) {
+            // Migration from v2 to v3: add layoutBuilderFiles
+            return {
+              ...state,
+              layoutBuilderFiles: state.layoutBuilderFiles ?? null,
             };
           }
           return state;
@@ -640,6 +653,7 @@ export const useAppStore = create<AppState>()(
           buildSettings: state.buildSettings,
           layoutThumbnail: state.layoutThumbnail,
           phasePlanGeneratedAt: state.phasePlanGeneratedAt,
+          layoutBuilderFiles: state.layoutBuilderFiles,
         }),
       }
     ),
