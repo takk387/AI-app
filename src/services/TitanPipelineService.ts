@@ -2,19 +2,18 @@
  * Titan Pipeline Service (Full Agentic Stack)
  *
  * Orchestrator for:
- * - Router (Traffic Control)
- * - Surveyor (Vision Analysis via Python)
- * - Architect (Structure via Claude)
- * - Physicist (Animation Math)
- * - Photographer (Asset Generation)
- * - Builder (Code Synthesis)
- * - Live Editor (Refinement)
+ * - Router (Traffic Control) → TitanRouter.ts
+ * - Surveyor (Vision Analysis) → TitanSurveyor.ts
+ * - Architect (Structure via Claude) — bypassed, preserved here
+ * - Physicist (Animation Math) — bypassed, preserved here
+ * - Photographer (Asset Generation) — inline, uses GeminiImageService
+ * - Builder (Code Synthesis) → TitanBuilder.ts
+ * - Healing Loop (Self-healing) → TitanHealingLoop.ts
+ * - Live Editor (Refinement) — preserved here (lightweight)
  */
 
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import Anthropic from '@anthropic-ai/sdk';
-import puppeteer from 'puppeteer';
-import type { AppFile } from '@/types/railway';
 import type {
   PipelineInput,
   MergeStrategy,
@@ -26,14 +25,33 @@ import type {
   FileInput,
 } from '@/types/titanPipeline';
 import { geminiImageService } from '@/services/GeminiImageService';
-import { createVisionLoopEngine } from './VisionLoopEngine';
 import { getAssetExtractionService } from './AssetExtractionService';
+
+// Import from split modules
+import { routeIntent as _routeIntent } from './TitanRouter';
+import {
+  surveyLayout as _surveyLayout,
+  uploadFileToGemini as _uploadFileToGemini,
+} from './TitanSurveyor';
+import { assembleCode as _assembleCode } from './TitanBuilder';
+import {
+  runHealingLoop,
+  captureRenderedScreenshot as _captureRenderedScreenshot,
+  extractJSXMarkup as _extractJSXMarkup,
+} from './TitanHealingLoop';
+
+// Re-export from split modules for backward compatibility
+export const routeIntent = _routeIntent;
+export const surveyLayout = _surveyLayout;
+export const uploadFileToGemini = _uploadFileToGemini;
+export const assembleCode = _assembleCode;
+export const captureRenderedScreenshot = _captureRenderedScreenshot;
+export const extractJSXMarkup = _extractJSXMarkup;
 
 // ============================================================================
 // CONFIGURATION (CONFIRMED 2026 SPECS)
 // ============================================================================
 
-const GEMINI_FLASH_MODEL = 'gemini-3-flash-preview';
 const GEMINI_PRO_MODEL = 'gemini-3-pro-preview';
 const GEMINI_DEEP_THINK_MODEL = 'gemini-3-pro-preview';
 const CLAUDE_OPUS_MODEL = 'claude-opus-4-5-20251101';
@@ -51,270 +69,7 @@ function getAnthropicApiKey(): string {
 }
 
 // ============================================================================
-// SHARED HELPER: FILE UPLOAD
-// ============================================================================
-
-async function uploadFileToGemini(apiKey: string, file: FileInput) {
-  const ai = new GoogleGenAI({ apiKey });
-  const base64Data = file.base64.includes(',') ? file.base64.split(',')[1] : file.base64;
-  const buffer = Buffer.from(base64Data, 'base64');
-  const blob = new Blob([buffer], { type: file.mimeType });
-
-  let uploadedFile = await ai.files.upload({
-    file: blob,
-    config: { displayName: file.filename, mimeType: file.mimeType },
-  });
-
-  while (uploadedFile.state === 'PROCESSING') {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    uploadedFile = await ai.files.get({ name: uploadedFile.name! });
-  }
-
-  if (uploadedFile.state === 'FAILED') throw new Error(`Upload failed: ${file.filename}`);
-  return uploadedFile;
-}
-
-// ============================================================================
-// STEP -1: UNIVERSAL ROUTER
-// ============================================================================
-
-const ROUTER_PROMPT = `### Role
-You are the **Pipeline Traffic Controller**.
-
-### Rules
-- If current_code exists and no new files -> mode: "EDIT"
-- If new files uploaded -> mode: "CREATE" or "MERGE"
-- **PHOTOREALISM & TEXTURE DETECTION (CRITICAL):**
-  If the user request mentions ANY specific material, texture, photographic element,
-  or realistic visual effect, you MUST add a "generate_assets" task.
-  Do not rely on a fixed keyword list. If it sounds like a visual texture or material, generate it.
-  Examples: "wood", "glass", "marble", "fabric", "leather", "stone", "metal", "cloud",
-  "iridescent sheen", "holographic card", "crumpled paper", "carbon fiber", "aqueous",
-  "crystalline", or any other material/texture/visual reference.
-- **REFERENCE IMAGE DETECTION (CRITICAL):**
-  If the user uploads a file AND their request indicates they want to USE that image
-  as part of the generated UI (not reverse-engineer it), you MUST:
-  1. Add a "generate_assets" entry with "source": "reference_image"
-  2. Do NOT put the file index in "measure_pixels" (it is not a UI screenshot)
-  Detect this intent from phrases like: "using this photo", "with this image",
-  "incorporate this picture", "use this as", "make a ... from this",
-  "based on this photo", "put this image on", or any phrasing where the
-  uploaded image is source material, not a design to replicate.
-  If the intent is ambiguous (could be both), put the file in BOTH measure_pixels
-  AND generate_assets with source: "reference_image".
-- Name assets by their target: "button_bg" for buttons, "hero_bg" for hero sections,
-  "card_bg" for cards.
-- Example 1: User says "make the button look like polished wood" →
-  generate_assets: [{ "name": "button_bg", "description": "polished oak wood with natural grain and warm lighting", "vibe": "photorealistic" }]
-- Example 2: User uploads a photo and says "create a button using this photo" →
-  measure_pixels: [], generate_assets: [{ "name": "button_bg", "description": "create a photorealistic button incorporating the uploaded photo", "vibe": "photorealistic", "source": "reference_image" }]
-- Images that ARE UI screenshots -> measure_pixels. Images that ARE reference material for generation -> generate_assets with source: "reference_image". Videos -> extract_physics.
-
-### Output Schema (JSON)
-{
-  "mode": "CREATE" | "MERGE" | "EDIT",
-  "base_source": "codebase" | "file_0" | null,
-  "file_roles": [],
-  "execution_plan": {
-    "measure_pixels": [0],
-    "extract_physics": [],
-    "preserve_existing_code": false,
-    "generate_assets": [
-      { "name": "cloud_texture", "description": "fluffy white realistic cloud texture", "vibe": "photorealistic" },
-      { "name": "button_bg", "description": "button using uploaded photo", "vibe": "photorealistic", "source": "reference_image" }
-    ]
-  }
-}`;
-
-export async function routeIntent(input: PipelineInput): Promise<MergeStrategy> {
-  const apiKey = getGeminiApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-
-  const prompt = `${ROUTER_PROMPT}
-
-  User Request: "${input.instructions}"
-  Files: ${input.files.length}
-  Code Exists: ${!!input.currentCode}
-  `;
-
-  const result = await ai.models.generateContent({
-    model: GEMINI_FLASH_MODEL,
-    contents: prompt,
-    config: { responseMimeType: 'application/json' },
-  });
-  const text = result.text ?? '';
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    const hasFiles = input.files.length > 0;
-    console.warn('[TitanPipeline] Router returned invalid JSON, using fallback strategy');
-    return {
-      mode: input.currentCode ? 'EDIT' : 'CREATE',
-      base_source: input.currentCode ? 'codebase' : null,
-      file_roles: [],
-      execution_plan: {
-        measure_pixels: hasFiles ? [0] : [],
-        extract_physics: [],
-        preserve_existing_code: !!input.currentCode,
-        generate_assets: [],
-      },
-    };
-  }
-}
-
-// ============================================================================
-// STEP 0: SURVEYOR (Visual Reverse Engineering)
-// ============================================================================
-
-const SURVEYOR_PROMPT = `### Role
-You are the **UI Reverse Engineer**.
-
-### Task
-Analyze the image and reconstruct the **exact DOM Component Tree**.
-1. **Structure:** Identify Flex Rows vs Columns. Group elements logically (e.g., "Card", "Navbar").
-2. **Styles:** Extract hex codes, border-radius, shadows, and font-weights.
-3. **Content:** You MUST extract the text inside buttons, headings, and paragraphs.
-4. **Icons:** Detect and extract all icons, logos, and symbolic graphics.
-   - **Priority 1:** If the icon is a common UI icon (arrow, chevron, check, search, menu,
-     settings, home, user, star, heart, plus, close) → provide \`iconName\` with the Lucide React name.
-   - **Priority 2:** If you can clearly extract the SVG 'd' path → provide \`iconSvgPath\` and \`iconViewBox\`.
-   - **Priority 3 (Custom Icons/Logos):** If the icon is a custom logo, brand icon, or complex
-     graphic that is NOT a standard UI icon and you CANNOT extract a clean SVG path →
-     DO NOT guess a Lucide name. Instead:
-     - Set \`hasCustomVisual\`: true
-     - Set \`extractionAction\`: "crop"
-     - Provide precise \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
-     - This will crop the exact pixels from the original image for pixel-perfect reproduction.
-   - Measure icon color in all cases.
-5. **CRITICAL - CUSTOM VISUAL DETECTION:**
-   For ANY non-standard visual element (textured buttons, custom icons, logos, unique gradients, images):
-   - Set "hasCustomVisual": true
-   - Set "extractionAction": "crop" (to extract exact pixels from original)
-   - Provide precise bounds for cropping: { top, left, width, height } in percentage (0-100)
-   - DO NOT provide "imageDescription" - we extract, not generate
-   
-   Examples of custom visuals to flag:
-   - Company logos (always extract)
-   - Custom icons (not standard Lucide)
-   - Textured backgrounds (wood, fabric, clouds, etc.)
-   - Photographs or realistic images
-   - Hand-drawn elements
-   - Unique gradient combinations
-6. **Advanced Effects (CRITICAL for visual fidelity):**
-   - Gradients: Extract full CSS gradient syntax (type, angle, color stops with %)
-   - Glassmorphism: backdrop-filter blur, background opacity
-   - Transforms: rotation, scale, skew
-   - Filters: blur, brightness, saturation
-   - Clip-path: shaped elements (circular avatars, angled sections)
-   - Animations: describe any visible motion
-   - For ANY CSS property visible in the design, include it in the styles object
-6. **Interactive States:**
-   - For buttons, links, and interactive cards: infer likely hover/active/focus states
-     based on the visual design (shadow changes, color shifts, scale effects).
-   - Include an "interactionStates" field on the element node (sibling to "styles"):
-     "interactionStates": { "hover": { ...css }, "active": { ...css }, "focus": { ...css } }
-7. **Icon & Logo Containers:**
-   - If an icon/logo sits inside a visible container (circle, badge, rounded rect),
-     include the container as a parent node with its own styles.
-   - Extract spacing between icon and adjacent text.
-
-### Critical Instruction
-Do NOT just list bounding boxes. Output a recursive JSON tree.
-If an element contains text, use the "text" field.
-
-### Output Schema (Strict JSON)
-{
-  "canvas": { "width": number, "height": number, "background": string },
-  "dom_tree": {
-    "type": "div" | "button" | "p" | "img" | "h1" | "svg" | "span",
-    "id": "main_container",
-    "styles": {
-      "display": "flex",
-      "flexDirection": "column",
-      "backgroundColor": "#ffffff",
-      "backgroundImage": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      "borderRadius": "8px",
-      "boxShadow": "0 4px 6px rgba(0,0,0,0.1)",
-      "backdropFilter": "blur(12px)",
-      "filter": "brightness(1.1)",
-      "opacity": "0.9",
-      "transform": "rotate(3deg)",
-      "clipPath": "polygon(...)",
-      "transition": "all 0.3s ease",
-      "fontFamily": "Inter",
-      "fontSize": "16px",
-      "fontWeight": "600",
-      "letterSpacing": "0.05em",
-      "lineHeight": "1.5",
-      "textShadow": "0 2px 4px rgba(0,0,0,0.3)"
-    },
-    "interactionStates": {
-      "hover": { "boxShadow": "0 8px 16px rgba(0,0,0,0.15)", "transform": "translateY(-1px)" },
-      "active": { "transform": "scale(0.98)" },
-      "focus": { "outline": "2px solid #3b82f6", "outlineOffset": "2px" }
-    },
-    "text": "Click Me",
-    "hasIcon": boolean,
-    "iconSvgPath": "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
-    "iconViewBox": "0 0 24 24",
-    "iconName": "Layers",
-    "iconColor": "#000000",
-    "iconPosition": "left",
-    "iconSize": "md",
-    "children": [
-      // Recursive nodes...
-    ]
-  },
-  "assets_needed": []
-}`;
-
-export async function surveyLayout(file: FileInput, fileIndex: number): Promise<VisualManifest> {
-  const apiKey = getGeminiApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-  const fileState = await uploadFileToGemini(apiKey, file);
-
-  // Enable Agentic Vision: code execution activates Think→Act→Observe loop
-  // for precise CSS extraction (zoom, crop, annotate capabilities)
-  const result = await ai.models.generateContent({
-    model: GEMINI_FLASH_MODEL,
-    contents: [createPartFromUri(fileState.uri!, fileState.mimeType!), { text: SURVEYOR_PROMPT }],
-    config: {
-      tools: [{ codeExecution: {} }],
-      maxOutputTokens: 65536,
-    },
-  });
-
-  try {
-    const text = result.text ?? '';
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found');
-
-    const data = JSON.parse(jsonMatch[0]);
-
-    return {
-      file_index: fileIndex,
-      originalImageRef: { fileUri: fileState.uri!, mimeType: fileState.mimeType! },
-      canvas: data.canvas,
-      global_theme: { dom_tree: data.dom_tree, assets: data.assets_needed },
-      measured_components: [],
-    };
-  } catch (e) {
-    console.error('[TitanPipeline] Surveyor failed:', e);
-    return {
-      file_index: fileIndex,
-      originalImageRef: fileState?.uri
-        ? { fileUri: fileState.uri, mimeType: fileState.mimeType! }
-        : undefined,
-      measured_components: [],
-      canvas: { width: 1440, height: 900 },
-      global_theme: {},
-    };
-  }
-}
-
-// ============================================================================
-// STEP 1: ARCHITECT (Structure)
+// STEP 1: ARCHITECT (Structure) — BYPASSED, preserved for future integration
 // ============================================================================
 
 const ARCHITECT_PROMPT = `### Role
@@ -336,7 +91,7 @@ You are the **Architect**. Convert visual manifests into a component structure t
 
 export async function buildStructure(
   manifests: VisualManifest[],
-  strategy: MergeStrategy,
+  _strategy: MergeStrategy,
   instructions: string
 ): Promise<ComponentStructure> {
   const apiKey = getAnthropicApiKey();
@@ -363,7 +118,7 @@ export async function buildStructure(
 }
 
 // ============================================================================
-// STEP 2: PHYSICIST (Motion)
+// STEP 2: PHYSICIST (Motion) — BYPASSED, preserved for future integration
 // ============================================================================
 
 const PHYSICIST_PROMPT = `### Role
@@ -381,7 +136,7 @@ export async function extractPhysics(
 
   const parts: any[] = [{ text: PHYSICIST_PROMPT }];
   for (const f of files) {
-    const up = await uploadFileToGemini(apiKey, f);
+    const up = await _uploadFileToGemini(apiKey, f);
     parts.push(createPartFromUri(up.uri!, up.mimeType!));
   }
 
@@ -398,406 +153,7 @@ export async function extractPhysics(
 }
 
 // ============================================================================
-// STEP 4: BUILDER (Code Synthesis)
-// ============================================================================
-
-const BUILDER_PROMPT = `### Role
-You are the **Universal Builder**. Write the final React code.
-
-### Instructions
-1. **Use the Assets (Priority #1):**
-   - Assets maps names to URLs: {"button_bg": "https://...", "hero_bg": "https://..."}
-   - Match names to elements: "button_bg" -> apply to buttons, "hero_bg" -> hero section, "card_bg" -> cards.
-   - Apply via: style={{ backgroundImage: \`url(\${assetUrl})\`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-   - Do NOT set backgroundColor when a background image is active.
-   - Do NOT use CSS gradients if an image asset is available.
-
-2. **DATA-ID ATTRIBUTES (MANDATORY — DO NOT SKIP):**
-   - You MUST add a unique data-id attribute to EVERY HTML element you generate.
-   - Format: data-id="descriptive_name" (e.g., "hero_section", "nav_logo", "cta_button")
-   - This is REQUIRED for the visual inspector. Without data-id, the editor breaks.
-   - Every div, button, p, h1, span, img, nav, section, footer MUST have data-id.
-
-3. **REPLICATION MODE (CRITICAL):**
-   - If the Manifests contain a 'dom_tree', you MUST recursively build that exact structure.
-   - Map 'type' to HTML tags. Apply styles with EXACT values from the manifest — do not approximate.
-   - **Style application strategy:**
-     - Use inline style={{}} with the exact CSS values from the manifest for all visual properties.
-     - Use Tailwind only for structural layout (flex, grid, display, positioning).
-     - Use CSS classes in styles.css for anything that needs selectors (hover, focus, active,
-       transitions, @keyframes, pseudo-elements).
-   - NEVER replace an exact value with a "close enough" Tailwind utility class.
-   - If the manifest says boxShadow: "0 8px 32px rgba(0,0,0,0.15)", use that exact value.
-   - Pixel-perfect accuracy is the goal.
-
-4. **Icons (Rendering):**
-   - **Priority 1:** If \`iconSvgPath\` exists → render inline \`<svg>\` with the path data,
-     applying \`iconColor\` as stroke/fill and \`iconViewBox\`.
-   - **Priority 2:** If \`hasCustomVisual\` is true on the node AND the node's \`id\` appears
-     as a key in the ASSETS map → render as \`<img src={assets[nodeId]} alt="..." />\`
-     with appropriate width/height from iconSize. This preserves custom logos and brand
-     icons that were cropped from the original image.
-   - **Priority 3:** If only \`iconName\` exists → import from \`lucide-react\` and render
-     \`<IconName />\`. Only use this for standard UI icons.
-   - Apply positioning via flex layout.
-   - Map sizes: sm=16px, md=20px, lg=24px, or use explicit pixel values from styles.
-   - If \`iconContainerStyle\` exists → wrap icon in a styled container div.
-   - Available Lucide icons: Home, User, Menu, Search, Settings, Star, Heart, Check, Plus, ArrowRight, etc.
-   - NEVER use a generic Lucide icon as a stand-in for a brand logo or custom graphic.
-
-5. **Physics (CONDITIONAL — Read Carefully):**
-   - You will receive a PHYSICS section below. If it is absent, null, or contains an empty
-     "component_motions" array, then the design is STATIC. Do NOT add any Framer Motion
-     imports, animations, motion.div wrappers, spring physics, or transition effects.
-   - ONLY use Framer Motion if the PHYSICS section contains actual motion data with
-     non-empty "component_motions" entries that specify velocity, mass, and spring values.
-   - Zero Hallucination Policy: Never invent animations. If the physics data is empty,
-     the output must be completely static. No "subtle" animations, no "gentle" transitions,
-     no hover motion effects beyond what is specified in interactionStates from the manifest.
-
-6. **Shaped & Textured Elements (CRITICAL for photorealism):**
-   - When the user asks for an element that "looks like" a real object (cloud, stone, wood, etc.),
-     create BOTH the shape AND the texture:
-     a) **Shape:** Use CSS clip-path, SVG clipPath, or creative border-radius to form the silhouette.
-        Examples: cloud -> clip-path with rounded bumps, leaf -> custom polygon, stone -> irregular rounded.
-     b) **Texture:** If an asset URL exists, apply it as backgroundImage with backgroundSize: cover.
-        If no asset, use CSS gradients, box-shadows, and filters to approximate the material.
-     c) **Depth:** Add box-shadow, inner highlights, and subtle gradients for 3D realism.
-     d) **Interactivity:** The element must still function (clickable, hover states).
-   - Example: "photorealistic cloud button" ->
-     clip-path: path('M25,60 a20,20 0,0,1 0,-40 a20,20 0,0,1 35,0 a20,20 0,0,1 0,40 z');
-     backgroundImage: url(cloud_texture.png); backgroundSize: cover;
-     box-shadow for depth; filter: drop-shadow for floating effect.
-   - Do NOT just set a backgroundColor. Use real CSS shape techniques.
-
-7. **ORIGINAL DESIGN REFERENCE (CRITICAL):**
-   - You may receive an original design image alongside these instructions.
-   - If provided, use it as the GROUND TRUTH for visual accuracy.
-   - Match exact colors, gradients, spacing, typography, and element positioning.
-   - Pay special attention to: logos (recreate as inline SVG), icons (extract exact paths),
-     custom button styles, background patterns, and gradient directions.
-   - For logos/icons you cannot extract as SVG: check if the node's id exists in the ASSETS
-     map (from extraction). If so, render as \`<img src={assets[nodeId]} />\`. Only if no
-     extracted asset exists, describe the element in a comment with its data-id for manual replacement.
-   - The manifests provide structured data, but the image is the ultimate reference.
-
-8. **Interaction States (REQUIRED for buttons and links):**
-   - For every button and interactive element, implement hover, active, and focus states.
-   - If the manifest includes "interactionStates", use those exact values in styles.css.
-   - If no explicit states are provided, derive natural transitions from the default styles
-     (e.g., subtle shadow increase on hover, slight scale on active, ring on focus).
-   - Define these as CSS classes in styles.css and apply them in App.tsx.
-
-### Output Format
-Return TWO files separated by markers:
-
---- FILE: App.tsx ---
-[Full App.tsx code with import './styles.css' at the top]
-
---- FILE: styles.css ---
-[@keyframes, CSS custom properties, complex hover/focus selectors. Leave empty if not needed.]
-
-Rules:
-- App.tsx MUST include: import './styles.css';
-- Use CSS classes from styles.css for animations, complex hover effects, and pseudo-selectors.
-- Use inline styles for simple properties (colors, spacing, sizing).
-- No markdown fences. Just the raw code.`;
-
-export async function assembleCode(
-  _structure: ComponentStructure | null,
-  manifests: VisualManifest[],
-  physics: MotionPhysics | null,
-  strategy: MergeStrategy,
-  currentCode: string | null,
-  instructions: string,
-  assets: Record<string, string>,
-  originalImageRef?: { fileUri: string; mimeType: string },
-  healingContext?: {
-    iteration: number;
-    previousFidelityScore: number;
-    modifiedComponentIds: string[];
-    issuesSummary: string;
-  }
-): Promise<AppFile[]> {
-  const apiKey = getGeminiApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-
-  const hasAssets = Object.keys(assets).length > 0;
-  const assetContext = hasAssets
-    ? `\n\n### ASSET CONTEXT
-These texture/material images were generated for the user's request:
-${Object.entries(assets)
-  .map(([name, url]) => `- "${name}" → ${url}`)
-  .join('\n')}
-Apply them via backgroundImage on the matching elements. Combine with clip-path for shaped elements.`
-    : '';
-
-  const hasPhysicsData =
-    physics && Array.isArray(physics.component_motions) && physics.component_motions.length > 0;
-
-  const physicsSection = hasPhysicsData
-    ? `\n  ### PHYSICS (Implement these motions using Framer Motion)\n  ${JSON.stringify(physics, null, 2)}`
-    : `\n  ### PHYSICS\n  No motion data provided. This design is STATIC. Do NOT add Framer Motion or any animations.`;
-
-  const healingSection = healingContext
-    ? `\n  ### HEALING CONTEXT (You are in refinement iteration #${healingContext.iteration})
-  Previous code scored ${healingContext.previousFidelityScore.toFixed(1)}% fidelity.
-
-  Issues detected that you MUST fix:
-  ${healingContext.issuesSummary}
-
-  Modified components to focus on: ${healingContext.modifiedComponentIds.join(', ')}
-
-  Rules for healing iterations:
-  - Fix the specific issues listed above. Do not rewrite unrelated code.
-  - Preserve everything that was correct in the previous version.
-  - If a discrepancy mentions "unwanted animation" or "unexpected motion", remove ALL
-    Framer Motion usage for that component.`
-    : '';
-
-  const mergeSection =
-    currentCode && (strategy.mode === 'EDIT' || strategy.mode === 'MERGE')
-      ? `\n  ### EXISTING CODE (You MUST merge with this)
-  Mode: ${strategy.mode}
-  ${
-    strategy.mode === 'EDIT'
-      ? 'Modify the existing code below according to the user instructions. Preserve all existing functionality, styles, and structure unless the user specifically asks to change them.'
-      : 'Merge the new layout/design with the existing code below. Keep existing components and add new ones from the manifests.'
-  }
-
-  Existing App.tsx:
-  \`\`\`tsx
-  ${currentCode}
-  \`\`\``
-      : '';
-
-  const prompt = `${BUILDER_PROMPT}
-
-  ### ASSETS (Use these URLs!)
-  ${JSON.stringify(assets, null, 2)}
-  ${assetContext}
-
-  ### INSTRUCTIONS
-  ${instructions}
-
-  ### MANIFESTS (Look for dom_tree)
-  ${JSON.stringify(manifests, null, 2)}
-  ${physicsSection}
-  ${healingSection}
-  ${mergeSection}
-  `;
-
-  // Build multimodal content: original image (if available) + text prompt
-  const contentParts: any[] = [];
-  if (originalImageRef) {
-    contentParts.push(createPartFromUri(originalImageRef.fileUri, originalImageRef.mimeType));
-  }
-  contentParts.push({ text: prompt });
-
-  const result = await ai.models.generateContent({
-    model: GEMINI_PRO_MODEL,
-    contents: contentParts,
-    config: { maxOutputTokens: 65536 },
-  });
-  const responseText = (result.text ?? '')
-    .replace(/^```(?:tsx?|jsx?|typescript|javascript|css)?\n?/gm, '')
-    .replace(/\n?```$/gm, '')
-    .trim();
-
-  // Parse multi-file output (App.tsx + optional styles.css)
-  const appMatch = responseText.match(
-    /---\s*FILE:\s*App\.tsx\s*---\s*\n([\s\S]*?)(?=---\s*FILE:|$)/
-  );
-  const cssMatch = responseText.match(/---\s*FILE:\s*styles\.css\s*---\s*\n([\s\S]*?)$/);
-
-  const files: AppFile[] = [];
-
-  // App.tsx: use parsed content, or entire response as fallback with validation
-  let appContent: string;
-  if (appMatch) {
-    appContent = appMatch[1].trim();
-  } else {
-    appContent = responseText;
-    if (!responseText.includes('export default') && !responseText.includes('function App')) {
-      console.warn(
-        '[TitanPipeline] Builder output missing file markers and does not appear to be React code'
-      );
-    }
-  }
-
-  files.push({
-    path: '/src/App.tsx',
-    content: appContent,
-  });
-
-  // styles.css: always include (App.tsx imports it; missing file breaks Sandpack)
-  files.push({
-    path: '/src/styles.css',
-    content: cssMatch && cssMatch[1].trim() ? cssMatch[1].trim() : '/* Generated styles */',
-  });
-
-  // index.tsx: always include
-  files.push({
-    path: '/src/index.tsx',
-    content: `import './preflight-undo';\nimport React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App';\nimport './inspector';\n\nconst root = createRoot(document.getElementById('root')!);\nroot.render(<React.StrictMode><App /></React.StrictMode>);`,
-  });
-
-  return files;
-}
-
-// ============================================================================
-// HEALING LOOP HELPER: Screenshot Capture
-// ============================================================================
-
-/**
- * Extract JSX markup from React component code
- * Converts React component to static HTML for screenshot capture
- */
-function extractJSXMarkup(reactCode: string): string {
-  try {
-    // Find the return statement in the component
-    const returnMatch = reactCode.match(/return\s*\(([\s\S]*?)\);?\s*}/);
-    if (!returnMatch) {
-      // Try single-line return
-      const singleLineMatch = reactCode.match(/return\s+(<[\s\S]*?>[\s\S]*?<\/[\s\S]*?>)/);
-      if (!singleLineMatch) {
-        console.warn('[TitanPipeline] Could not extract JSX from React component');
-        return '<div>Error: Could not extract JSX</div>';
-      }
-      return singleLineMatch[1];
-    }
-
-    let jsx = returnMatch[1].trim();
-
-    // Remove React-specific syntax that won't work in static HTML
-    // Remove className -> class
-    jsx = jsx.replace(/className=/g, 'class=');
-
-    // Remove style objects and convert to inline styles (basic conversion)
-    jsx = jsx.replace(/style=\{\{([^}]+)\}\}/g, (match, styleContent) => {
-      // Convert JS object to CSS string
-      const cssString = styleContent
-        .split(',')
-        .map((prop: string) => {
-          const [key, value] = prop.split(':').map((s: string) => s.trim());
-          if (!key || !value) return '';
-          // Convert camelCase to kebab-case
-          const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-          // Remove quotes from value
-          const cssValue = value.replace(/['"]/g, '');
-          return `${cssKey}:${cssValue}`;
-        })
-        .filter(Boolean)
-        .join(';');
-      return `style="${cssString}"`;
-    });
-
-    // Remove event handlers (onClick, onChange, etc.)
-    jsx = jsx.replace(/\s+on[A-Z]\w+={[^}]+}/g, '');
-
-    // Remove {variable} interpolations - replace with placeholder
-    jsx = jsx.replace(/\{[\w.]+\}/g, '[dynamic]');
-
-    // Remove lucide-react icon components - replace with placeholder
-    jsx = jsx.replace(/<([A-Z]\w+)\s*\/>/g, '<span class="icon-placeholder">[$1 Icon]</span>');
-
-    return jsx;
-  } catch (error) {
-    console.error('[TitanPipeline] JSX extraction error:', error);
-    return '<div>Error extracting JSX</div>';
-  }
-}
-
-/**
- * Render generated code and capture screenshot using Puppeteer
- * This captures the ACTUAL rendered output for comparison with original
- */
-async function captureRenderedScreenshot(code: string): Promise<string | null> {
-  let browser = null;
-  try {
-    console.log('[TitanPipeline] Launching headless browser for screenshot...');
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-      ],
-    });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1440, height: 900 });
-
-    // Extract static HTML from React component
-    const staticHTML = extractJSXMarkup(code);
-
-    // Create full HTML document with Tailwind CDN and necessary fonts
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      margin: 0; 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      width: 100%;
-      height: 100%;
-    }
-    .icon-placeholder {
-      display: inline-block;
-      padding: 4px 8px;
-      background: #e5e7eb;
-      border-radius: 4px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  ${staticHTML}
-</body>
-</html>
-    `;
-
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
-
-    // Wait for Tailwind to process classes and fonts to load
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-
-    // Capture screenshot as PNG with base64 encoding
-    const screenshot = await page.screenshot({
-      type: 'png',
-      fullPage: true,
-      encoding: 'base64',
-    });
-
-    console.log('[TitanPipeline] Screenshot captured successfully');
-
-    // Return as data URL (screenshot is already base64 string)
-    return `data:image/png;base64,${screenshot}`;
-  } catch (error) {
-    console.error('[TitanPipeline] Screenshot capture failed:', error);
-    return null;
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  }
-}
-
-// ============================================================================
-// STEP 5: LIVE EDITOR (RESTORED)
+// STEP 5: LIVE EDITOR
 // ============================================================================
 
 const LIVE_EDITOR_PROMPT = `### Role
@@ -947,7 +303,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const stepTimings: Record<string, number> = {};
 
   const routeStart = Date.now();
-  const strategy = await routeIntent(input);
+  const strategy = await _routeIntent(input);
   stepTimings.router = Date.now() - routeStart;
   console.log(
     '[TitanPipeline] Router strategy:',
@@ -973,7 +329,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
         );
 
       if (shouldSurvey && input.files.length > 0) {
-        manifests.push(await surveyLayout(input.files[0], 0));
+        manifests.push(await _surveyLayout(input.files[0], 0));
       }
     })(),
     // Physicist
@@ -1057,7 +413,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
 
   const buildStart = Date.now();
   const primaryImageRef = manifests[0]?.originalImageRef;
-  let files = await assembleCode(
+  let files = await _assembleCode(
     structure,
     manifests,
     physics,
@@ -1070,118 +426,32 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   stepTimings.builder = Date.now() - buildStart;
 
   // HEALING LOOP: Compare rendered output vs original and apply fixes iteratively
-  const MAX_HEAL_ITERATIONS = 2;
-  const TARGET_FIDELITY = 95;
-
   if (input.files.length > 0 && manifests.length > 0 && manifests[0]?.global_theme?.dom_tree) {
-    console.log(
-      `[TitanPipeline] Starting healing loop (up to ${MAX_HEAL_ITERATIONS} iterations)...`
-    );
-    const healStart = Date.now();
-    let totalFixesApplied = 0;
-    let lastFidelity = 0;
+    console.log('[TitanPipeline] Starting healing loop (up to 2 iterations)...');
 
-    try {
-      const visionEngine = createVisionLoopEngine({
-        maxIterations: MAX_HEAL_ITERATIONS,
-        targetFidelity: TARGET_FIDELITY,
-      });
-      const originalImage = input.files[0].base64;
+    const healResult = await runHealingLoop({
+      files,
+      manifests,
+      physics,
+      strategy,
+      structure,
+      input,
+      finalAssets,
+      primaryImageRef,
+      maxIterations: 2,
+      targetFidelity: 95,
+    });
 
-      for (let iteration = 1; iteration <= MAX_HEAL_ITERATIONS; iteration++) {
-        // 1. Get current App.tsx
-        const appFile = files.find((f) => f.path === '/src/App.tsx');
-        if (!appFile) {
-          warnings.push('No App.tsx found, skipping healing loop');
-          break;
-        }
-
-        // 2. Render and capture screenshot
-        const screenshot = await captureRenderedScreenshot(appFile.content);
-        if (!screenshot) {
-          warnings.push(`Screenshot capture failed on iteration ${iteration}, stopping healing`);
-          break;
-        }
-
-        // 3. Critique and fix
-        const currentComponents = [manifests[0].global_theme.dom_tree] as any;
-        const stepResult = await visionEngine.executeStep(
-          originalImage,
-          currentComponents,
-          null,
-          async () => screenshot,
-          iteration
-        );
-
-        lastFidelity = stepResult.fidelityScore;
-        totalFixesApplied += stepResult.changesApplied;
-
-        console.log(`[TitanPipeline] Healing iteration ${iteration}:`, {
-          fidelityScore: stepResult.fidelityScore,
-          changesApplied: stepResult.changesApplied,
-          modifiedComponents: stepResult.modifiedComponentIds.length,
-        });
-
-        // 4. Stop early if fidelity target reached or no changes
-        if (stepResult.fidelityScore >= TARGET_FIDELITY) {
-          console.log(
-            `[TitanPipeline] Target fidelity reached (${stepResult.fidelityScore}%), stopping`
-          );
-          break;
-        }
-        if (stepResult.changesApplied === 0) {
-          console.log('[TitanPipeline] No fixes applied, stopping healing loop');
-          break;
-        }
-
-        // 5. Update manifest and regenerate code for next iteration
-        manifests[0].global_theme.dom_tree = stepResult.components[0];
-
-        const issuesSummary =
-          stepResult.modifiedComponentIds.length > 0
-            ? `${stepResult.changesApplied} discrepancies found. Components modified: ${stepResult.modifiedComponentIds.join(', ')}. ` +
-              `Current fidelity: ${stepResult.fidelityScore}%. Target: ${TARGET_FIDELITY}%.`
-            : `Fidelity: ${stepResult.fidelityScore}%. Overall visual accuracy needs improvement.`;
-
-        files = await assembleCode(
-          structure,
-          manifests,
-          physics,
-          strategy,
-          input.currentCode,
-          input.instructions,
-          finalAssets,
-          primaryImageRef,
-          {
-            iteration,
-            previousFidelityScore: stepResult.fidelityScore,
-            modifiedComponentIds: stepResult.modifiedComponentIds,
-            issuesSummary,
-          }
-        );
-      }
-
-      if (totalFixesApplied > 0) {
-        warnings.push(
-          `Healing loop applied ${totalFixesApplied} fixes across iterations (fidelity: ${lastFidelity.toFixed(1)}%)`
-        );
-      } else {
-        warnings.push(`Healing loop: No fixes needed (fidelity: ${lastFidelity.toFixed(1)}%)`);
-      }
-    } catch (error) {
-      console.error('[TitanPipeline] Healing loop error:', error);
-      warnings.push('Healing loop encountered an error but pipeline continued');
-    }
-
-    stepTimings.healing = Date.now() - healStart;
-    console.log(`[TitanPipeline] Healing loop completed in ${stepTimings.healing}ms`);
+    files = healResult.files;
+    warnings.push(...healResult.warnings);
+    stepTimings.healing = healResult.timingMs;
   }
 
   return { files, strategy, manifests, physics, warnings, stepTimings };
 }
 
 // ============================================================================
-// SINGLETON ACCESSOR (RESTORED)
+// SINGLETON ACCESSOR
 // ============================================================================
 
 let _instance: TitanPipelineServiceInstance | null = null;
