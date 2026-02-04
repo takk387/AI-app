@@ -58,17 +58,19 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
 1. **Structure:** Identify Flex Rows vs Columns. Group elements logically (e.g., "Card", "Navbar").
 2. **Styles:** Extract hex codes, border-radius, shadows, and font-weights.
 3. **Content:** You MUST extract the text inside buttons, headings, and paragraphs.
-4. **Icons:** Detect and extract all icons, logos, and symbolic graphics.
-   - **Priority 1:** If the icon is a common UI icon (arrow, chevron, check, search, menu,
-     settings, home, user, star, heart, plus, close) → provide \`iconName\` with the Lucide React name.
-   - **Priority 2:** If you can clearly extract the SVG 'd' path → provide \`iconSvgPath\` and \`iconViewBox\`.
-   - **Priority 3 (Custom Icons/Logos):** If the icon is a custom logo, brand icon, or complex
-     graphic that is NOT a standard UI icon and you CANNOT extract a clean SVG path →
-     DO NOT guess a Lucide name. Instead:
+4. **Icons — CRITICAL PRIORITY ORDER (do NOT skip to Lucide):**
+   - **Priority 1 (Custom/Artistic Icons):** If the icon has ANY artistic styling, unique design,
+     brand identity, or is NOT an obvious standard UI element:
      - Set \`hasCustomVisual\`: true
      - Set \`extractionAction\`: "crop"
-     - Provide precise \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
-     - This will crop the exact pixels from the original image for pixel-perfect reproduction.
+     - Provide \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
+     - This extracts exact pixels for pixel-perfect reproduction.
+   - **Priority 2 (SVG Path):** If you can clearly extract the SVG 'd' path from a vector icon,
+     provide \`iconSvgPath\` and \`iconViewBox\`. Only use this for clean vector shapes.
+   - **Priority 3 (Lucide — LAST RESORT ONLY):** ONLY use Lucide for OBVIOUS standard UI icons
+     like navigation arrows, chevrons, close buttons. If there's ANY doubt, use Priority 1.
+     Valid Lucide: ChevronLeft, ChevronRight, X, Menu, Check, Plus, Minus, Search.
+     DO NOT use Lucide for: stylized icons, brand icons, decorative icons, custom graphics.
    - Measure icon color in all cases.
 5. **CRITICAL - CUSTOM VISUAL DETECTION:**
    For ANY non-standard visual element (textured buttons, custom icons, logos, unique gradients, images):

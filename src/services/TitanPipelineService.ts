@@ -237,8 +237,18 @@ async function extractCustomVisualAssets(
   const extractedAssets: Record<string, string> = {};
   const tasks: Promise<void>[] = [];
 
+  // Diagnostic counters
+  let customVisualCount = 0;
+  let iconNameCount = 0;
+  let iconSvgPathCount = 0;
+
   function walkTree(node: Record<string, unknown>) {
+    // Track icon detection patterns
+    if (node.iconName) iconNameCount++;
+    if (node.iconSvgPath) iconSvgPathCount++;
+
     if (node.hasCustomVisual === true && node.extractionAction === 'crop') {
+      customVisualCount++;
       if (!node.extractionBounds || typeof node.id !== 'string') {
         console.warn(`[TitanPipeline] Node flagged for extraction but missing bounds or id:`, {
           id: node.id,
@@ -291,6 +301,17 @@ async function extractCustomVisualAssets(
       walkTree(manifest.global_theme.dom_tree as unknown as Record<string, unknown>);
     }
   }
+
+  // Log diagnostic summary
+  console.log(`[TitanPipeline] Icon detection summary:`, {
+    hasCustomVisual: customVisualCount,
+    iconName: iconNameCount,
+    iconSvgPath: iconSvgPathCount,
+    note:
+      iconNameCount > customVisualCount
+        ? '⚠️ More iconName than hasCustomVisual — Surveyor may be using Lucide fallbacks'
+        : '✅ Custom visual extraction preferred',
+  });
 
   await Promise.all(tasks);
   return extractedAssets;

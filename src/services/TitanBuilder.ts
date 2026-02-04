@@ -159,12 +159,17 @@ export async function assembleCode(
 
   const hasAssets = Object.keys(assets).length > 0;
   const assetContext = hasAssets
-    ? `\n\n### ASSET CONTEXT
-These texture/material images were generated for the user's request:
+    ? `\n\n### ASSET CONTEXT (CRITICAL — Use these for custom visuals!)
+These assets were EXTRACTED from the original design (icons, logos, textures):
 ${Object.entries(assets)
   .map(([name, url]) => `- "${name}" → ${url}`)
   .join('\n')}
-Apply them via backgroundImage on the matching elements. Combine with clip-path for shaped elements.`
+
+RULES:
+1. For ANY manifest node where id matches a key above AND hasCustomVisual=true:
+   → Use <img src="${'{'}assets[nodeId]{'}'}" /> — NOT a Lucide icon!
+2. For textured backgrounds: apply via backgroundImage: url(...)
+3. NEVER substitute a Lucide icon for an extracted asset.`
     : '';
 
   const hasPhysicsData =
