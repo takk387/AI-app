@@ -62,6 +62,15 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   selectedId,
   depth = 0,
 }) => {
+  // Prevent infinite recursion with depth limit
+  if (depth >= MAX_DEPTH) {
+    console.warn(
+      `[GenericComponentRenderer] MAX_DEPTH (${MAX_DEPTH}) reached for component "${component.id}". ` +
+        `This may indicate a circular reference or excessively nested layout.`
+    );
+    return null;
+  }
+
   const {
     id,
     type,

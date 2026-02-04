@@ -112,7 +112,8 @@ export async function buildStructure(
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { tree: [], layout_strategy: 'flex' };
-  } catch {
+  } catch (error) {
+    console.warn('[TitanPipeline] Architect JSON parse failed:', error);
     return { tree: [], layout_strategy: 'flex' };
   }
 }
@@ -147,7 +148,8 @@ export async function extractPhysics(
   try {
     const jsonMatch = (result.text ?? '').match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { component_motions: [] };
-  } catch {
+  } catch (error) {
+    console.warn('[TitanPipeline] Physicist JSON parse failed:', error);
     return { component_motions: [] };
   }
 }

@@ -10,13 +10,123 @@
  * app builder) is untouched.
  */
 
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  Component,
+  ErrorInfo,
+  ReactNode,
+} from 'react';
 import { SandpackProvider, SandpackPreview } from '@codesandbox/sandpack-react';
 import { FloatingEditBubble } from './FloatingEditBubble';
 import { useInspectorBridge, createInspectorFileContent } from '@/utils/inspectorBridge';
 import type { AppFile } from '@/types/railway';
 import type { PipelineProgress, PipelineStepName, PipelineStepStatus } from '@/types/titanPipeline';
 import { PIPELINE_STEP_LABELS } from '@/types/titanPipeline';
+
+// ============================================================================
+// ERROR BOUNDARY FOR SANDPACK
+// ============================================================================
+
+interface SandpackErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+/**
+ * Error Boundary to catch crashes in the Sandpack preview.
+ * Displays a friendly fallback UI instead of breaking the entire Layout Builder.
+ */
+class SandpackErrorBoundary extends Component<
+  { children: ReactNode; onRetry?: () => void },
+  SandpackErrorBoundaryState
+> {
+  state: SandpackErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): SandpackErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[SandpackErrorBoundary] Preview crashed:', error, errorInfo);
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+    this.props.onRetry?.();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8 bg-red-50 text-center">
+          <svg
+            className="w-12 h-12 text-red-400 mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Preview Error</h3>
+          <p className="text-sm text-red-600 mb-4 max-w-md">
+            The generated code caused an error. This usually happens when the AI produces invalid
+            syntax.
+          </p>
+          <button
+            onClick={this.handleRetry}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+          >
+            Retry Preview
+          </button>
+          {this.state.error && (
+            <pre className="mt-4 p-3 text-xs text-left bg-red-100 rounded max-w-full overflow-auto max-h-32">
+              {this.state.error.message}
+            </pre>
+          )}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ============================================================================
+// VIEWPORT PRESETS
+// ============================================================================
+
+type ViewportPreset = 'desktop' | 'tablet' | 'phone';
+
+const VIEWPORT_PRESETS: Record<
+  ViewportPreset,
+  { width: number; height: number; label: string; icon: string }
+> = {
+  desktop: {
+    width: 1440,
+    height: 900,
+    label: 'Desktop',
+    icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+  },
+  tablet: {
+    width: 768,
+    height: 1024,
+    label: 'Tablet',
+    icon: 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z',
+  },
+  phone: {
+    width: 375,
+    height: 812,
+    label: 'Phone',
+    icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z',
+  },
+};
 
 // ============================================================================
 // SANDPACK CONFIGURATION
@@ -194,12 +304,14 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   canRedo,
 }) => {
   const [dragActive, setDragActive] = useState(false);
+  const [viewport, setViewport] = useState<ViewportPreset>('desktop');
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const inspector = useInspectorBridge();
 
   const hasFiles = generatedFiles.length > 0;
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
+  const currentViewport = VIEWPORT_PRESETS[viewport];
 
   // Convert AppFile[] to Sandpack format (memoized to avoid re-renders)
   const sandpackFiles = useMemo(() => {
@@ -275,6 +387,34 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               {warnings.length} warning{warnings.length > 1 ? 's' : ''}
             </span>
           )}
+        </div>
+
+        {/* Viewport Switcher */}
+        <div className="flex items-center gap-1 px-3 border-l border-r border-gray-200">
+          {(['desktop', 'tablet', 'phone'] as ViewportPreset[]).map((preset) => (
+            <button
+              key={preset}
+              onClick={() => setViewport(preset)}
+              className={`p-2 rounded transition-colors ${
+                viewport === preset
+                  ? 'bg-blue-100 text-blue-600'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+              title={`${VIEWPORT_PRESETS[preset].label} (${VIEWPORT_PRESETS[preset].width}×${VIEWPORT_PRESETS[preset].height})`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d={VIEWPORT_PRESETS[preset].icon}
+                />
+              </svg>
+            </button>
+          ))}
+          <span className="text-xs text-gray-400 ml-2">
+            {currentViewport.width}×{currentViewport.height}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -402,8 +542,8 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
 
       {/* ── Main Canvas Area ───────────────────────────────────────── */}
       <div
-        className={`flex-1 overflow-hidden relative transition-colors layout-canvas-sandpack ${
-          dragActive ? 'bg-blue-50' : ''
+        className={`flex-1 overflow-auto relative transition-colors layout-canvas-sandpack flex items-start justify-center p-4 ${
+          dragActive ? 'bg-blue-50' : 'bg-gray-100'
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -413,50 +553,69 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
       >
         {/* Sandpack Preview (when generated code exists) */}
         {hasFiles && sandpackFiles && (
-          <SandpackProvider
-            template="react-ts"
-            files={sandpackFiles}
-            customSetup={{
-              dependencies: SANDPACK_DEPENDENCIES,
-            }}
-            options={{
-              externalResources: [TAILWIND_CDN],
-              classes: {
-                'sp-wrapper': 'h-full w-full flex flex-col',
-                'sp-layout': 'h-full w-full flex flex-col',
-                'sp-stack': 'h-full w-full flex-1',
-              },
+          <div
+            className={`bg-white shadow-xl rounded-lg overflow-hidden transition-all duration-300 ${
+              viewport === 'desktop' ? 'w-full h-full' : ''
+            }`}
+            style={{
+              width: viewport === 'desktop' ? '100%' : currentViewport.width,
+              height: viewport === 'desktop' ? '100%' : currentViewport.height,
+              maxWidth: '100%',
+              maxHeight: '100%',
+              // Device frame effect for mobile/tablet
+              boxShadow:
+                viewport !== 'desktop'
+                  ? '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+                  : undefined,
             }}
           >
-            <div
-              id="layout-builder-preview"
-              ref={previewContainerRef}
-              className="w-full h-full relative flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SandpackPreview
-                showNavigator={false}
-                showRefreshButton={false}
-                style={{ height: '100%', width: '100%' }}
-              />
-
-              {/* FloatingEditBubble — positioned over the selected element */}
-              {inspector.selectedComponentId &&
-                inspector.selectedHTML &&
-                inspector.selectedTagName &&
-                inspector.selectedRect && (
-                  <FloatingEditBubble
-                    dataId={inspector.selectedComponentId}
-                    componentType={inspector.selectedTagName}
-                    outerHTML={inspector.selectedHTML}
-                    rect={inspector.selectedRect}
-                    containerOffset={containerOffset}
-                    onRefine={onRefineComponent}
-                    onClose={inspector.clearSelection}
+            <SandpackErrorBoundary>
+              <SandpackProvider
+                template="react-ts"
+                files={sandpackFiles}
+                customSetup={{
+                  dependencies: SANDPACK_DEPENDENCIES,
+                }}
+                options={{
+                  externalResources: [TAILWIND_CDN],
+                  classes: {
+                    'sp-wrapper': 'h-full w-full flex flex-col',
+                    'sp-layout': 'h-full w-full flex flex-col',
+                    'sp-stack': 'h-full w-full flex-1',
+                  },
+                }}
+              >
+                <div
+                  id="layout-builder-preview"
+                  ref={previewContainerRef}
+                  className="w-full h-full relative flex flex-col"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SandpackPreview
+                    showNavigator={false}
+                    showRefreshButton={false}
+                    style={{ height: '100%', width: '100%' }}
                   />
-                )}
-            </div>
-          </SandpackProvider>
+
+                  {/* FloatingEditBubble — positioned over the selected element */}
+                  {inspector.selectedComponentId &&
+                    inspector.selectedHTML &&
+                    inspector.selectedTagName &&
+                    inspector.selectedRect && (
+                      <FloatingEditBubble
+                        dataId={inspector.selectedComponentId}
+                        componentType={inspector.selectedTagName}
+                        outerHTML={inspector.selectedHTML}
+                        rect={inspector.selectedRect}
+                        containerOffset={containerOffset}
+                        onRefine={onRefineComponent}
+                        onClose={inspector.clearSelection}
+                      />
+                    )}
+                </div>
+              </SandpackProvider>
+            </SandpackErrorBoundary>
+          </div>
         )}
 
         {/* Empty State / Drop Zone */}

@@ -286,9 +286,14 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       // 5. Update manifest and regenerate code for next iteration
       manifests[0].global_theme!.dom_tree = stepResult.components[0];
 
+      // NOTE: Describe what was ALREADY FIXED, not what needs fixing.
+      // The manifest now contains the corrected components, so telling the AI
+      // what to fix again causes a double-layer bug.
       const issuesSummary =
         stepResult.modifiedComponentIds.length > 0
-          ? `${stepResult.changesApplied} discrepancies found. Components modified: ${stepResult.modifiedComponentIds.join(', ')}. ` +
+          ? `${stepResult.changesApplied} corrections have been APPLIED to the manifest. ` +
+            `Components already fixed: ${stepResult.modifiedComponentIds.join(', ')}. ` +
+            `DO NOT re-fix these components — use their current values exactly as-is. ` +
             `Current fidelity: ${stepResult.fidelityScore}%. Target: ${targetFidelity}%.`
           : `Fidelity: ${stepResult.fidelityScore}%. Overall visual accuracy needs improvement.`;
 

@@ -325,6 +325,19 @@ export class LayoutAutoFixEngine {
       };
     }
 
+    // GUARD: Don't replace existing iconSvgPath with a generic iconName
+    // This prevents the healing loop from substituting custom icons with Lucide fallbacks
+    if (property === 'iconName' && component.content.iconSvgPath) {
+      return {
+        componentId: component.id,
+        success: false,
+        property: `content.${property}`,
+        oldValue: undefined,
+        newValue: value as string | number | undefined,
+        error: 'Skipped: iconSvgPath exists, not replacing with generic iconName',
+      };
+    }
+
     // Apply the fix to component.content
     (component.content as Record<string, unknown>)[property] = value;
 

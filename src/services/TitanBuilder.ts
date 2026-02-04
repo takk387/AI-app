@@ -175,17 +175,16 @@ Apply them via backgroundImage on the matching elements. Combine with clip-path 
     : `\n  ### PHYSICS\n  No motion data provided. This design is STATIC. Do NOT add Framer Motion or any animations.`;
 
   const healingSection = healingContext
-    ? `\n  ### HEALING CONTEXT (You are in refinement iteration #${healingContext.iteration})
-  Previous code scored ${healingContext.previousFidelityScore.toFixed(1)}% fidelity.
+    ? `\n  ### HEALING CONTEXT (Refinement iteration #${healingContext.iteration})
+  Fidelity: ${healingContext.previousFidelityScore.toFixed(1)}%.
 
-  Issues detected that you MUST fix:
+  IMPORTANT: The manifest has ALREADY been patched with corrections.
   ${healingContext.issuesSummary}
 
-  Modified components to focus on: ${healingContext.modifiedComponentIds.join(', ')}
-
   Rules for healing iterations:
-  - Fix the specific issues listed above. Do not rewrite unrelated code.
-  - Preserve everything that was correct in the previous version.
+  - The components listed above have ALREADY been fixed in the manifest.
+  - USE THE MANIFEST VALUES EXACTLY — do NOT re-interpret, re-calculate, or re-fix them.
+  - Preserve everything from the previous version that is not explicitly changed in the manifest.
   - If a discrepancy mentions "unwanted animation" or "unexpected motion", remove ALL
     Framer Motion usage for that component.`
     : '';

@@ -135,7 +135,12 @@ export async function critiqueLayoutEnhanced(
       hasIcon: c.content?.hasIcon,
       hasImage: c.content?.hasImage,
       iconName: c.content?.iconName,
-      iconSvgPath: c.content?.iconSvgPath ? '[SVG path present]' : undefined,
+      // Include actual path (truncated) so AI can preserve it in corrections
+      iconSvgPath: c.content?.iconSvgPath
+        ? c.content.iconSvgPath.length > 200
+          ? c.content.iconSvgPath.substring(0, 200) + '...[truncated]'
+          : c.content.iconSvgPath
+        : undefined,
     },
   }));
 

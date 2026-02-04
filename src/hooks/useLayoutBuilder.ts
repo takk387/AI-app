@@ -40,6 +40,8 @@ export interface UseLayoutBuilderReturn {
   errors: string[];
   /** Non-fatal warnings from pipeline runs */
   warnings: string[];
+  /** Success message (e.g., "Copied to clipboard") - auto-clears after 3s */
+  successMessage: string | null;
 
   /**
    * Run the full Titan pipeline.
@@ -202,6 +204,9 @@ function convertVisualManifestToLayoutManifest(manifests: VisualManifest[]): Lay
 // HOOK
 // ============================================================================
 
+// Maximum number of undo snapshots to prevent memory leaks
+const MAX_HISTORY_SIZE = 20;
+
 export function useLayoutBuilder(): UseLayoutBuilderReturn {
   // --- Store Actions (persist layout data to Zustand for downstream pipeline) ---
   const setLayoutBuilderFiles = useAppStore((s) => s.setLayoutBuilderFiles);
@@ -214,6 +219,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [pipelineProgress, setPipelineProgress] = useState<PipelineProgress | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // --- History (undo/redo on AppFile[] snapshots) ---
   const [history, setHistory] = useState<AppFile[][]>([]);
@@ -222,11 +228,19 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   /**
    * Replace generatedFiles with a new set, pushing the current state to history.
    * Clears the redo (future) stack since we're branching off a new timeline.
+   * Limits history size to prevent memory leaks.
    */
   const updateFilesWithHistory = useCallback((newFiles: AppFile[]) => {
     setGeneratedFiles((prev) => {
       if (prev.length > 0) {
-        setHistory((h) => [...h, prev]);
+        setHistory((h) => {
+          const newHistory = [...h, prev];
+          // Trim history to prevent unbounded memory growth
+          if (newHistory.length > MAX_HISTORY_SIZE) {
+            return newHistory.slice(-MAX_HISTORY_SIZE);
+          }
+          return newHistory;
+        });
         setFuture([]);
       }
       return newFiles;
@@ -423,41 +437,35 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
 
   /** Undo: pop from history, push current to future. */
   const undo = useCallback(() => {
-    setHistory((prev) => {
-      if (prev.length === 0) return prev;
-      const newHistory = [...prev];
-      const previousState = newHistory.pop()!;
+    // Read current state synchronously to avoid race conditions
+    if (history.length === 0) return;
 
-      setGeneratedFiles((current) => {
-        setFuture((f) => [current, ...f]);
-        return previousState;
-      });
+    const newHistory = [...history];
+    const previousState = newHistory.pop()!;
+    const currentState = generatedFiles;
 
-      // Keep store in sync
-      setLayoutBuilderFiles(previousState);
-
-      return newHistory;
-    });
-  }, [setLayoutBuilderFiles]);
+    // Apply all state updates
+    setHistory(newHistory);
+    setFuture((f) => [currentState, ...f]);
+    setGeneratedFiles(previousState);
+    setLayoutBuilderFiles(previousState);
+  }, [history, generatedFiles, setLayoutBuilderFiles]);
 
   /** Redo: shift from future, push current to history. */
   const redo = useCallback(() => {
-    setFuture((prev) => {
-      if (prev.length === 0) return prev;
-      const newFuture = [...prev];
-      const nextState = newFuture.shift()!;
+    // Read current state synchronously to avoid race conditions
+    if (future.length === 0) return;
 
-      setGeneratedFiles((current) => {
-        setHistory((h) => [...h, current]);
-        return nextState;
-      });
+    const newFuture = [...future];
+    const nextState = newFuture.shift()!;
+    const currentState = generatedFiles;
 
-      // Keep store in sync
-      setLayoutBuilderFiles(nextState);
-
-      return newFuture;
-    });
-  }, [setLayoutBuilderFiles]);
+    // Apply all state updates
+    setFuture(newFuture);
+    setHistory((h) => [...h, currentState]);
+    setGeneratedFiles(nextState);
+    setLayoutBuilderFiles(nextState);
+  }, [future, generatedFiles, setLayoutBuilderFiles]);
 
   /** Copy all generated code files to clipboard with path headers. */
   const exportCode = useCallback(() => {
@@ -466,7 +474,12 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     const output = generatedFiles.map((f) => `// === ${f.path} ===\n${f.content}`).join('\n\n');
 
     navigator.clipboard.writeText(output).then(
-      () => console.log('[useLayoutBuilder] Code exported to clipboard'),
+      () => {
+        console.log('[useLayoutBuilder] Code exported to clipboard');
+        setSuccessMessage('Code copied to clipboard!');
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
+      },
       (err) => {
         console.error('[useLayoutBuilder] Clipboard write failed:', err);
         setErrors(['Failed to copy code to clipboard']);
@@ -482,6 +495,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     pipelineProgress,
     errors,
     warnings,
+    successMessage,
 
     runPipeline,
     refineComponent,
