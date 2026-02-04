@@ -8,6 +8,7 @@
  */
 
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
+import sharp from 'sharp';
 import type { VisualManifest, FileInput } from '@/types/titanPipeline';
 
 // ============================================================================
@@ -20,6 +21,62 @@ function getGeminiApiKey(): string {
   const key = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
   if (!key) throw new Error('Gemini API key missing');
   return key;
+}
+
+// ============================================================================
+// IMAGE ENHANCEMENT: Upscale and sharpen for crisp replications
+// ============================================================================
+
+const MIN_DIMENSION = 1920; // Minimum longest edge for quality analysis
+
+/**
+ * Enhance image quality before AI analysis.
+ * - Upscales small images to at least 1920px on the longest edge
+ * - Applies subtle sharpening to combat blur from compression
+ * - Converts to high-quality PNG for lossless processing
+ */
+export async function enhanceImageQuality(file: FileInput): Promise<FileInput> {
+  try {
+    const base64Data = file.base64.includes(',') ? file.base64.split(',')[1] : file.base64;
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    const metadata = await sharp(buffer).metadata();
+    const width = metadata.width || 0;
+    const height = metadata.height || 0;
+    const maxDim = Math.max(width, height);
+
+    // Skip if image is already high resolution
+    if (maxDim >= MIN_DIMENSION) {
+      console.log(`[TitanSurveyor] Image already ${maxDim}px, skipping enhancement`);
+      return file;
+    }
+
+    let processed = sharp(buffer);
+
+    // Upscale to minimum dimension using high-quality lanczos3 algorithm
+    const scale = MIN_DIMENSION / maxDim;
+    processed = processed.resize({
+      width: Math.round(width * scale),
+      height: Math.round(height * scale),
+      kernel: 'lanczos3',
+    });
+    console.log(`[TitanSurveyor] Upscaling image ${maxDim}px → ${MIN_DIMENSION}px`);
+
+    // Apply subtle sharpening to combat blur
+    processed = processed.sharpen({ sigma: 0.8 });
+
+    // Output as high-quality PNG
+    const enhancedBuffer = await processed.png({ compressionLevel: 6 }).toBuffer();
+
+    return {
+      ...file,
+      base64: `data:image/png;base64,${enhancedBuffer.toString('base64')}`,
+      mimeType: 'image/png',
+    };
+  } catch (error) {
+    console.warn('[TitanSurveyor] Image enhancement failed, using original:', error);
+    return file; // Fallback to original on error
+  }
 }
 
 // ============================================================================

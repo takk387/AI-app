@@ -297,12 +297,26 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
             `Current fidelity: ${stepResult.fidelityScore}%. Target: ${targetFidelity}%.`
           : `Fidelity: ${stepResult.fidelityScore}%. Overall visual accuracy needs improvement.`;
 
+      // CRITICAL FIX: Force CREATE mode during healing iterations.
+      // If we pass the original strategy (which may be MERGE or EDIT), the AI will
+      // try to ADD elements on top of existing code, causing double-layer bugs.
+      // By forcing CREATE mode and passing null for currentCode, we ensure the AI
+      // regenerates from the corrected manifest only.
+      const healingStrategy: MergeStrategy = {
+        ...strategy,
+        mode: 'CREATE',
+        execution_plan: {
+          ...strategy.execution_plan,
+          preserve_existing_code: false,
+        },
+      };
+
       files = await assembleCode(
         structure,
         manifests,
         physics,
-        strategy,
-        input.currentCode,
+        healingStrategy,
+        null, // Don't pass existing code - regenerate from manifest only
         input.instructions,
         finalAssets,
         primaryImageRef,

@@ -32,6 +32,7 @@ import { routeIntent as _routeIntent } from './TitanRouter';
 import {
   surveyLayout as _surveyLayout,
   uploadFileToGemini as _uploadFileToGemini,
+  enhanceImageQuality,
 } from './TitanSurveyor';
 import { assembleCode as _assembleCode } from './TitanBuilder';
 import {
@@ -352,7 +353,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
         );
 
       if (shouldSurvey && input.files.length > 0) {
-        manifests.push(await _surveyLayout(input.files[0], 0));
+        // Enhance image quality before analysis (upscale + sharpen for crisp replications)
+        const enhancedFile = await enhanceImageQuality(input.files[0]);
+        manifests.push(await _surveyLayout(enhancedFile, 0));
       }
     })(),
     // Physicist
