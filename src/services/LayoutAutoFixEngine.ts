@@ -201,7 +201,21 @@ export class LayoutAutoFixEngine {
       return { applied: false, skipped: true, results };
     }
 
+    // Check for duplicate elements before applying fix
+    if (this.wouldCreateDuplicate(components, discrepancy)) {
+      results.push({
+        componentId: discrepancy.componentId,
+        success: false,
+        property: 'duplicate_check',
+        oldValue: undefined,
+        newValue: undefined,
+        error: 'Skipped: Would create duplicate element',
+      });
+      return { applied: false, skipped: true, results };
+    }
+
     // Apply style corrections
+
     if (discrepancy.correctionJSON.style) {
       const styleUpdates = discrepancy.correctionJSON.style;
 
@@ -256,6 +270,65 @@ export class LayoutAutoFixEngine {
 
     const anySuccess = results.some((r) => r.success);
     return { applied: anySuccess, skipped: false, results };
+  }
+
+  /**
+   * Check if applying this fix would create a duplicate element
+   * Prevents the healing loop from adding elements that already exist
+   */
+  private wouldCreateDuplicate(
+    components: DetectedComponentEnhanced[],
+    discrepancy: LayoutDiscrepancy
+  ): boolean {
+    // Only check for missing_element issues
+    if (discrepancy.issue !== 'missing_element') {
+      return false;
+    }
+
+    // Check if correctionJSON exists
+    if (!discrepancy.correctionJSON) {
+      return false;
+    }
+
+    const proposedContent = discrepancy.correctionJSON.content;
+    const proposedType = discrepancy.correctionJSON.type;
+
+    if (!proposedContent && !proposedType) {
+      return false;
+    }
+
+    // Check for duplicate text content
+    if (proposedContent?.text) {
+      const existingWithSameText = components.find(
+        (c) =>
+          c.content?.text === proposedContent.text && (c.type === proposedType || !proposedType)
+      );
+
+      if (existingWithSameText) {
+        console.warn(
+          `[AutoFix] Duplicate detected: "${proposedContent.text}" already exists in component ${existingWithSameText.id}`
+        );
+        return true;
+      }
+    }
+
+    // Check for duplicate icons (by name)
+    if (proposedContent?.iconName) {
+      const existingWithSameIcon = components.find(
+        (c) =>
+          c.content?.iconName === proposedContent.iconName &&
+          (c.type === proposedType || !proposedType)
+      );
+
+      if (existingWithSameIcon) {
+        console.warn(
+          `[AutoFix] Duplicate icon detected: "${proposedContent.iconName}" already exists in component ${existingWithSameIcon.id}`
+        );
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

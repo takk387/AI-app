@@ -80,6 +80,8 @@ export function extractJSXMarkup(reactCode: string): string {
 /**
  * Render generated code and capture screenshot using Puppeteer
  * This captures the ACTUAL rendered output for comparison with original
+ *
+ * IMPROVED: Now renders real React with Lucide icons instead of placeholders
  */
 export async function captureRenderedScreenshot(code: string): Promise<string | null> {
   let browser = null;
@@ -97,10 +99,8 @@ export async function captureRenderedScreenshot(code: string): Promise<string | 
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 900 });
 
-    // Extract static HTML from React component
-    const staticHTML = extractJSXMarkup(code);
-
-    // Create full HTML document with Tailwind CDN and necessary fonts
+    // Instead of extracting static HTML, create a minimal React runtime
+    // that can actually render the component with proper icons
     const html = `
 <!DOCTYPE html>
 <html>
@@ -109,6 +109,9 @@ export async function captureRenderedScreenshot(code: string): Promise<string | 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -118,27 +121,90 @@ export async function captureRenderedScreenshot(code: string): Promise<string | 
       -moz-osx-font-smoothing: grayscale;
       width: 100%;
       height: 100%;
+      overflow: visible;
     }
-    .icon-placeholder {
-      display: inline-block;
-      padding: 4px 8px;
-      background: #e5e7eb;
-      border-radius: 4px;
-      font-size: 12px;
-      color: #6b7280;
+    #root {
+      width: 100%;
+      min-height: 100vh;
     }
   </style>
 </head>
 <body>
-  ${staticHTML}
+  <div id="root"></div>
+  <script>
+    try {
+      // Extract App component code (remove imports and export)
+      const appCode = ${JSON.stringify(code)};
+      
+      // Remove import statements
+      let cleanCode = appCode.replace(/^import.*from.*['"];?$/gm, '');
+      
+      // Remove export default
+      cleanCode = cleanCode.replace(/export default /g, '');
+      
+      // Replace Lucide icon imports with window.lucideReact references
+      // Icons are available as window.lucideReact.Home, window.lucideReact.User, etc.
+      const iconPattern = /<([A-Z][a-zA-Z]+)\\s*(\\/?>|[^>]*>)/g;
+      cleanCode = cleanCode.replace(iconPattern, (match, iconName, rest) => {
+        // Common Lucide icon names
+        const lucideIcons = [
+          'Home', 'User', 'Menu', 'Search', 'Settings', 'Star', 'Heart', 'Check',
+          'Plus', 'Minus', 'X', 'ChevronLeft', 'ChevronRight', 'ChevronDown', 'ChevronUp',
+          'ArrowRight', 'ArrowLeft', 'Mail', 'Phone', 'MapPin', 'Calendar', 'Clock',
+          'Bell', 'ShoppingCart', 'CreditCard', 'Download', 'Upload', 'Eye', 'EyeOff',
+          'Info', 'AlertCircle', 'Play', 'Pause', 'Share', 'Lock', 'Unlock'
+        ];
+        
+        if (lucideIcons.includes(iconName)) {
+          return '<LucideIcon name="' + iconName + '"' + rest;
+        }
+        return match;
+      });
+      
+      // Create a wrapper component that renders Lucide icons
+      const LucideIcon = ({ name, size = 20, color = 'currentColor', ...props }) => {
+        const IconComponent = window.lucideReact[name];
+        if (!IconComponent) {
+          return React.createElement('span', { style: { color: '#999' } }, '[' + name + ']');
+        }
+        return React.createElement(IconComponent, { size, color, ...props });
+      };
+      
+      // Evaluate the component code in a safe context
+      const AppFunction = new Function('React', 'LucideIcon', \`
+        const { useState, useEffect, useRef } = React;
+        \${cleanCode}
+        return App;
+      \`)(React, LucideIcon);
+      
+      // Render the app
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(AppFunction));
+      
+      console.log('[Healing Screenshot] React app rendered successfully');
+    } catch (error) {
+      console.error('[Healing Screenshot] Render error:', error);
+      document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error rendering component: ' + error.message + '</div>';
+    }
+  </script>
 </body>
 </html>
     `;
 
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 10000 });
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
 
-    // Wait for Tailwind to process classes and fonts to load
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+    // Wait for React to render and Tailwind to process
+    await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+
+    // Check for render errors
+    const hasError = await page.evaluate(() => {
+      const root = document.getElementById('root');
+      return root?.textContent?.includes('Error rendering');
+    });
+
+    if (hasError) {
+      console.warn('[TitanPipeline] Component rendered with errors, screenshot may be incomplete');
+    }
 
     // Capture screenshot as PNG with base64 encoding
     const screenshot = await page.screenshot({

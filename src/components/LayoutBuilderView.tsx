@@ -81,6 +81,7 @@ export const LayoutBuilderView: React.FC = () => {
     pipelineProgress,
     errors,
     warnings,
+    canvasSize,
     runPipeline,
     refineComponent,
     undo,
@@ -269,6 +270,7 @@ export const LayoutBuilderView: React.FC = () => {
           pipelineProgress={pipelineProgress}
           errors={errors}
           warnings={warnings}
+          canvasSize={canvasSize}
           onDropFiles={handleDropFiles}
           onRefineComponent={refineComponent}
           onUndo={undo}

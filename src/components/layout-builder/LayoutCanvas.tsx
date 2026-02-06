@@ -174,6 +174,8 @@ export interface LayoutCanvasProps {
   errors?: string[];
   /** Non-fatal warnings */
   warnings?: string[];
+  /** Original canvas dimensions from manifest (for viewport scaling) */
+  canvasSize?: { width: number; height: number } | null;
   /** Called when user drops files on the canvas */
   onDropFiles: (files: File[]) => void;
   /** Called when a component edit is submitted via FloatingEditBubble */
@@ -294,6 +296,7 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   pipelineProgress,
   errors = [],
   warnings = [],
+  canvasSize,
   onDropFiles,
   onRefineComponent,
   onUndo,
@@ -312,6 +315,18 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
   const currentViewport = VIEWPORT_PRESETS[viewport];
+
+  // Calculate scale factor for viewport fitting (prevent "zoomed in" appearance)
+  // Only scale down if the original canvas is larger than current viewport
+  const viewportScale = useMemo(() => {
+    if (!canvasSize || viewport === 'desktop') return 1;
+
+    const scaleX = currentViewport.width / canvasSize.width;
+    const scaleY = currentViewport.height / canvasSize.height;
+    const scale = Math.min(scaleX, scaleY, 1); // Never scale up, only down
+
+    return scale;
+  }, [canvasSize, currentViewport, viewport]);
 
   // Convert AppFile[] to Sandpack format (memoized to avoid re-renders)
   const sandpackFiles = useMemo(() => {
@@ -562,6 +577,9 @@ export const LayoutCanvas: React.FC<LayoutCanvasProps> = ({
               height: viewport === 'desktop' ? '100%' : currentViewport.height,
               maxWidth: '100%',
               maxHeight: '100%',
+              // Apply viewport scaling to fit large designs
+              transform: viewportScale < 1 ? `scale(${viewportScale})` : undefined,
+              transformOrigin: 'top left',
               // Device frame effect for mobile/tablet
               boxShadow:
                 viewport !== 'desktop'

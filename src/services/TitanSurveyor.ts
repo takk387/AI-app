@@ -115,20 +115,31 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
 1. **Structure:** Identify Flex Rows vs Columns. Group elements logically (e.g., "Card", "Navbar").
 2. **Styles:** Extract hex codes, border-radius, shadows, and font-weights.
 3. **Content:** You MUST extract the text inside buttons, headings, and paragraphs.
-4. **Icons — CRITICAL PRIORITY ORDER (do NOT skip to Lucide):**
-   - **Priority 1 (Custom/Artistic Icons):** If the icon has ANY artistic styling, unique design,
-     brand identity, or is NOT an obvious standard UI element:
-     - Set \`hasCustomVisual\`: true
-     - Set \`extractionAction\`: "crop"
-     - Provide \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
-     - This extracts exact pixels for pixel-perfect reproduction.
-   - **Priority 2 (SVG Path):** If you can clearly extract the SVG 'd' path from a vector icon,
-     provide \`iconSvgPath\` and \`iconViewBox\`. Only use this for clean vector shapes.
-   - **Priority 3 (Lucide — LAST RESORT ONLY):** ONLY use Lucide for OBVIOUS standard UI icons
-     like navigation arrows, chevrons, close buttons. If there's ANY doubt, use Priority 1.
-     Valid Lucide: ChevronLeft, ChevronRight, X, Menu, Check, Plus, Minus, Search.
-     DO NOT use Lucide for: stylized icons, brand icons, decorative icons, custom graphics.
-   - Measure icon color in all cases.
+4. **Icons — DEFAULT TO EXTRACTION (Critical for Custom Icons):**
+   
+   **DEFAULT BEHAVIOR FOR ALL ICONS:**
+   Extract the icon by setting:
+   - \`hasCustomVisual\`: true
+   - \`extractionAction\`: "crop"
+   - \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
+   - Measure and set \`iconColor\`: "#hexcode"
+   
+   **EXCEPTION - Use Lucide ONLY for these 12 standard UI icons:**
+   - Navigation: ChevronLeft, ChevronRight, ChevronUp, ChevronDown
+   - Actions: X (close), Menu (hamburger), Check, Plus, Minus
+   - Utility: Search, ArrowRight, ArrowLeft
+   
+   **NEVER use Lucide for:**
+   - Company logos or brand marks (e.g., social media icons, app icons)
+   - Stylized icons with artistic flourishes, shadows, gradients
+   - Decorative icons (stars with textures, hearts with patterns)
+   - Custom illustrations or drawings
+   - Icons with unique shapes not matching standard UI patterns
+   - Any icon where you're uncertain if it's standard UI
+   
+   **Rule of Thumb:** When in doubt, EXTRACT. Only use Lucide if you're 100% certain it's
+   a basic navigation or utility icon from the exception list above.
+
 5. **CRITICAL - CUSTOM VISUAL DETECTION:**
    For ANY non-standard visual element (textured buttons, custom icons, logos, unique gradients, images):
    - Set "hasCustomVisual": true

@@ -42,6 +42,8 @@ export interface UseLayoutBuilderReturn {
   warnings: string[];
   /** Success message (e.g., "Copied to clipboard") - auto-clears after 3s */
   successMessage: string | null;
+  /** Original canvas dimensions from the first manifest (for viewport scaling) */
+  canvasSize: { width: number; height: number } | null;
 
   /**
    * Run the full Titan pipeline.
@@ -220,6 +222,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number } | null>(null);
 
   // --- History (undo/redo on AppFile[] snapshots) ---
   const [history, setHistory] = useState<AppFile[][]>([]);
@@ -343,6 +346,12 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
             const layoutManifest = convertVisualManifestToLayoutManifest(result.manifests);
             setCurrentLayoutManifest(layoutManifest);
             updateAppConceptField('layoutManifest', layoutManifest);
+
+            // Extract canvas size from first manifest for viewport scaling
+            const firstCanvas = result.manifests[0]?.canvas;
+            if (firstCanvas?.width && firstCanvas?.height) {
+              setCanvasSize({ width: firstCanvas.width, height: firstCanvas.height });
+            }
           }
         } else {
           setErrors((prev) => [...prev, 'Pipeline completed but returned no files']);
@@ -496,6 +505,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     errors,
     warnings,
     successMessage,
+    canvasSize,
 
     runPipeline,
     refineComponent,
