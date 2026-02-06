@@ -1,0 +1,1019 @@
+Dual AI Planning Architecture - Design Document
+
+**Status**: Approved Design  
+**Last Updated**: February 2026  
+**Purpose**: Create optimal application architectures through consensus-based dual AI planning, feeding into existing DynamicPhaseGenerator
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Architecture Overview](#architecture-overview)
+3. [System Flow](#system-flow)
+4. [Service Architecture](#service-architecture)
+5. [Data Flow & State Management](#data-flow--state-management)
+6. [Integration Strategy](#integration-strategy)
+7. [Implementation Phases](#implementation-phases)
+8. [Success Metrics](#success-metrics)
+
+---
+
+## Executive Summary
+
+### The Problem
+
+Current single-AI planning suffers from:
+
+- **Overcomplicated architectures** - AI makes decisions without alternative perspectives
+- **Missed optimizations** - No second opinion on technical choices
+- **Outdated practices** - Knowledge cutoffs prevent using latest AI models and frameworks
+- **Inconsistent quality** - Plans vary based on AI mood/randomness
+
+### The Solution
+
+Dual AI architectural planning with consensus negotiation:
+
+- Two AIs independently create architectural plans, then negotiate until agreement
+- Live web search provides current AI model capabilities and best practices
+- Both AIs validate final architecture against user concept before approval
+- **Architectural plan feeds into existing DynamicPhaseGenerator** for optimal phase breakdown
+- User sees progress while working on layout (non-blocking)
+
+### Key Benefits
+
+1. **Optimized Architecture** - Best ideas from Claude Opus 4.5 and Gemini Pro 3
+   - **Gemini Pro 3 naturally focuses on agentic workflows/pipelines** when appropriate
+   - **Claude scrutinizes implementation** and questions coding approaches
+   - This tension produces better architectures (agentic ideas + implementation scrutiny)
+2. **Current Technology** - Uses latest AI models and frameworks from 2026
+3. **Zero Bias** - Neither AI arbitrates; they must reach consensus
+4. **Validated Quality** - Both AIs independently verify nothing is missed
+5. **Transparent Process** - User sees negotiation progress in real-time
+6. **Leverages Proven Systems** - Feeds into existing DynamicPhaseGenerator with sophisticated logic for:
+   - Token complexity analysis
+   - Dependency ordering
+   - Context accumulation
+   - Phase optimization
+
+### What Dual AIs Plan (Architecture)
+
+- Database schema and models
+- API routes and endpoints
+- Authentication strategy
+- **Agentic workflows/pipelines** (when concept requires them)
+- Real-time infrastructure
+- Tech stack decisions
+- Scaling strategy
+- Feature architecture
+
+### What Dual AIs DON'T Plan (Phases)
+
+- Phase breakdown and sequencing ← **DynamicPhaseGenerator handles this**
+- Token limits per phase ← **DynamicPhaseGenerator handles this**
+- Build order and dependencies ← **DynamicPhaseGenerator handles this**
+
+---
+
+## Architecture Overview
+
+### Core Principles
+
+1. **Architecture Planning, Not Phase Planning**: Dual AIs create the architectural blueprint; DynamicPhaseGenerator determines optimal build sequence
+2. **No Arbitration Bias**: Neither AI decides for the other - they negotiate until consensus
+3. **Live Intelligence Gathering**: Web search for latest AI models, frameworks, and best practices
+4. **Transparent Process**: Users see negotiation progress while working on layout
+5. **Non-Blocking Execution**: Runs in background during layout design
+6. **Consensus Required**: AIs negotiate (max 5 rounds) until agreement or escalation
+7. **Dual Validation**: Both AIs independently validate final architecture against concept
+8. **Agentic When Appropriate**: Gemini naturally suggests agentic solutions; Claude evaluates feasibility
+
+### Design Decisions
+
+**Separation of Concerns**
+
+- **Dual AIs**: Focus on WHAT to build (architecture, features, tech stack)
+- **DynamicPhaseGenerator**: Focus on HOW to sequence it (phases, dependencies, token limits)
+- **Why**: Avoids duplication; lets proven phase planning logic do its job
+
+**Layout Handling**
+
+- Layout is built first by user via Gemini 3 system
+- AIs receive LayoutManifest to extract backend requirements
+- Frontend design informs backend architecture
+
+**Agentic Workflows**
+
+- Not a separate stage - naturally part of architectural planning
+- Gemini Pro 3 identifies when agentic approaches make sense
+- Claude evaluates implementation complexity and questions coding
+- Negotiation refines agentic vs traditional approaches
+
+**Execution Model**
+
+- Runs automatically when user clicks "Build" button
+- Progress streamed via Server-Sent Events (SSE)
+- Session-based architecture for proper SSE data flow
+
+**Consensus Mechanism**
+
+- Maximum 5 negotiation rounds
+- AIs must have zero disagreements to reach consensus
+- If consensus fails, escalate to user with both architectures
+- Convergence check prevents infinite loops
+
+**Code Generation**
+
+- Remains Claude Opus 4.5 only (not dual AI)
+- Follows the unified architecture created by consensus
+- Uses AI model selections from the planning phase
+
+---
+
+## System Flow
+
+### Complete Build Pipeline
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ USER JOURNEY                                                 │
+├──────────────────────────────────────────────────────────────┤
+│ 1. User creates app concept (Claude Sonnet 4.5)             │
+│ 2. User designs layout (Gemini 3 system)                    │
+│ 3. User clicks "Build" button                               │
+│ 4. Dual AI Architecture Planning starts (background)         │
+│ 5. User sees progress while finalizing details              │
+│ 6. Architecture plan complete                                │
+│ 7. DynamicPhaseGenerator breaks into phases                  │
+│ 8. DynamicPhaseExecutor delivers one phase at a time        │
+│ 9. Self-healing system handles checks and repairs           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Five Architecture Planning Stages
+
+#### STAGE 1: LAYOUT ANALYSIS (0-5%)
+
+**Purpose**: Extract backend requirements from user's frontend design
+
+**Input**: LayoutManifest (from user's layout design)
+
+**Process**:
+
+- Analyze components to identify required data models
+- Detect API endpoints needed (GET, POST, PUT, DELETE)
+- Identify feature requirements (auth, real-time, file uploads, search)
+- Assess state management complexity
+- Estimate performance requirements
+
+**Output**: FrontendBackendNeeds object containing:
+
+- Data models with fields and relationships
+- API endpoints with methods, paths, and purposes
+- Feature flags (auth, real-time, uploads, search, pagination)
+- Performance estimates (data volume, query complexity, concurrent users)
+
+---
+
+#### STAGE 2: LIVE INTELLIGENCE GATHERING (5-20%)
+
+**Purpose**: Gather current information about AI models, frameworks, and best practices
+
+**Input**: AppConcept + app category (inferred from concept)
+
+**Process - Parallel Web Searches**:
+
+1. **AI Models Research**
+   - Latest AI language models February 2026
+   - Claude vs GPT-5 vs Gemini comparison
+   - Best models for code generation
+   - Context window sizes and pricing
+
+2. **Framework Versions**
+   - Next.js latest version
+   - React 19 new features
+   - TypeScript latest
+   - Tailwind CSS current version
+
+3. **Category-Specific Patterns**
+   - Modern architecture for app category (e-commerce, social, etc.)
+   - Recommended libraries for category
+   - **Agentic frameworks and tools** (LangChain, CrewAI, etc.)
+   - Scalable patterns
+
+4. **Security Best Practices**
+   - Current vulnerabilities (OWASP 2026)
+   - Secure coding practices
+   - Authentication best practices
+
+5. **Performance Optimization**
+   - React optimization techniques
+   - Next.js performance practices
+   - Web vitals optimization
+
+**AI Synthesis**:
+
+- Claude Sonnet 4.5 analyzes all gathered data
+- Recommends optimal AI models for each development phase
+- Identifies best frameworks, libraries, and patterns
+- Creates cost estimates for different AI model choices
+- **Identifies agentic tools if workflows detected in concept**
+
+**Output**: IntelligenceContext with AI models, frameworks, patterns, security, performance data, and agentic tools
+
+---
+
+#### STAGE 3: PARALLEL ARCHITECTURE GENERATION (20-40%)
+
+**Purpose**: Generate two independent architectural plans (NOT phases)
+
+**Input**: AppConcept + LayoutManifest + FrontendBackendNeeds + IntelligenceContext
+
+**Process**:
+
+Both AIs independently generate architectural plans with identical context:
+
+**Claude Opus 4.5 (with Extended Thinking)**:
+
+- Backend architecture design
+- Database schema (Prisma)
+- API routes and endpoints
+- Authentication strategy (NextAuth.js, Clerk, etc.)
+- Real-time infrastructure (SSE, WebSockets, etc.)
+- **Evaluates if agentic workflows are needed**
+- **Questions Gemini's agentic coding approaches**
+- AI model selections for code generation
+- Technology stack decisions
+- Scaling strategy (caching, indexing, optimization)
+- Feature architecture
+
+**Gemini Pro 3**:
+
+- Same scope as Claude
+- **Naturally focuses on agentic workflows/pipelines**
+- May suggest agent orchestration patterns
+- May propose multi-agent systems
+- Independent architectural decisions
+- May choose different technologies
+- Different scaling approaches
+
+**Critical Note**: Neither AI creates phases. They create the architectural blueprint only.
+
+**Output**: Two independent architectures (Architecture A from Claude, Architecture B from Gemini)
+
+---
+
+#### STAGE 4: ITERATIVE CONSENSUS NEGOTIATION (40-80%)
+
+**Purpose**: Merge the two architectures through structured negotiation
+
+**Input**: Architecture A + Architecture B + AppConcept + IntelligenceContext
+
+**Process** (Max 5 rounds):
+
+**Each Negotiation Round**:
+
+1. **Cross-Review Phase**
+   - Claude reviews Gemini's architecture:
+     - Agrees with agentic workflow suggestions (usually)
+     - **Questions implementation complexity**
+     - **Challenges coding approaches**
+     - Identifies potential over-engineering
+   - Gemini reviews Claude's architecture:
+     - Identifies where agentic workflows could simplify
+     - Questions traditional approaches
+     - Proposes agent-based alternatives
+   - Output: Agreements list + Disagreements list
+
+2. **Adjustment Phase**
+   - Both AIs modify architectures based on feedback
+   - Incorporate valid points from other AI
+   - Strengthen reasoning for disagreements
+   - Propose compromises
+   - Output: Updated Architecture A + Updated Architecture B
+
+3. **Convergence Check**
+   - If disagreements = 0 → CONSENSUS REACHED
+   - If round >= 5 → ESCALATE TO USER
+   - If not converging → ESCALATE TO USER
+   - Else → Next round
+
+**Typical Negotiation Pattern**:
+
+- **Round 1**: Gemini suggests agentic workflow; Claude agrees but questions implementation
+- **Round 2**: Gemini refines agent architecture; Claude proposes hybrid approach
+- **Round 3**: Both converge on optimal blend of agentic + traditional
+
+**Escalation Handling**:
+
+- Display both architectures side-by-side
+- Show divergent issues with reasoning from both AIs
+- User chooses: Claude's architecture, Gemini's architecture, or manual merge
+
+**Output**: UnifiedArchitecture (co-authored) OR Escalation request
+
+---
+
+#### STAGE 5: DUAL CONCEPT VALIDATION (80-100%)
+
+**Purpose**: Verify unified architecture covers everything from user's concept
+
+**Input**: UnifiedArchitecture + AppConcept
+
+**Process**:
+
+Both AIs independently validate:
+
+- Missing features?
+- Flow gaps?
+- Scaling bottlenecks?
+- Security vulnerabilities?
+- Performance issues?
+- **Are agentic workflows properly designed?**
+- **Is agent orchestration sound?**
+- Misalignment with requirements?
+
+**Merge Validation Results**:
+
+- Combine issues from both AIs
+- Deduplicate similar issues
+- Categorize by severity (critical, warning, suggestion)
+
+**Decision Logic**:
+
+- If critical issues → REPLAN (with feedback)
+- If coverage < 95% → REPLAN
+- If both approve → APPROVED
+- Max 3 replan attempts (prevent infinite loops)
+
+**Output**: FinalValidatedArchitecture
+
+---
+
+### Post-Planning: Phase Generation
+
+```
+FinalValidatedArchitecture
+        ↓
+DynamicPhaseGenerator (EXISTING SYSTEM)
+  - Analyzes token complexity
+  - Groups related features
+  - Orders by dependencies
+  - Respects token limits
+  - Applies sophisticated phase planning logic
+        ↓
+Phase Plan (optimized sequence)
+        ↓
+DynamicPhaseExecutor (EXISTING SYSTEM)
+  - Delivers one phase at a time
+  - Phase 1: Layout code (from LayoutManifest)
+  - Phases 2-N: Features (from architecture)
+        ↓
+Self-Healing System (EXISTING SYSTEM)
+  - Automatic checks
+  - Repairs issues
+  - Validates each phase
+```
+
+### Session-Based SSE Architecture
+
+**Why Session-Based?**
+
+- EventSource API only supports GET requests
+- Planning needs AppConcept + LayoutManifest data
+- Solution: POST to create session, GET to stream progress
+
+**Flow**:
+
+```
+1. User clicks "Build" button
+   ↓
+2. POST /api/planning/start
+   Send: { concept, layoutDesign }
+   Receive: { sessionId }
+   ↓
+3. EventSource('/api/planning/stream/{sessionId}')
+   ↓
+4. Server:
+   - Retrieves session data
+   - Starts BackgroundPlanningOrchestrator
+   - Streams progress via SSE
+   ↓
+5. Client receives progress updates
+   ↓
+6. Final event: complete/escalation/error
+   ↓
+7. Architecture sent to DynamicPhaseGenerator
+   ↓
+8. Phases returned to builder
+```
+
+**Session Management**:
+
+- Stored in-memory (or Redis for production)
+- Includes: concept, layoutDesign, timestamp
+- Automatic cleanup after 1 hour
+- Deleted after architecture completion
+
+---
+
+## Service Architecture
+
+### 1. LayoutBackendAnalyzer
+
+**Responsibility**: Extract backend requirements from frontend layout
+
+**Key Functions**:
+
+- Extract backend needs from LayoutManifest
+- Identify auth components
+- Detect data display components
+- Infer model names and fields
+- Assess state complexity
+- Estimate performance needs
+
+**Logic Patterns**:
+
+- Auth detection: keywords (login, signup, register)
+- Data display: types (table, list, grid, card, chart)
+- Model inference: component IDs ("product-table" → "Product")
+- Field extraction: table columns, form inputs, card content
+- Complexity: count interactive components
+
+---
+
+### 2. LiveIntelligenceGatherer
+
+**Responsibility**: Gather current information via web search
+
+**Key Functions**:
+
+- Gather intelligence from AppConcept
+- Search for AI models
+- Search for framework versions
+- Search for category patterns
+- **Search for agentic frameworks and tools**
+- Search for security practices
+- Search for performance optimizations
+- Synthesize recommendations
+
+**Agentic Detection**:
+
+- Analyzes concept for workflow keywords: automation, processing, moderation, routing, orchestration
+- If detected, includes agentic tools in intelligence: LangChain, CrewAI, AutoGen, etc.
+
+**Data Sources**:
+
+- Web search API
+- Claude Sonnet 4.5 for synthesis
+
+**Output Structure**:
+
+- AI models by provider with recommendations
+- Framework versions with new features
+- Category-specific patterns and libraries
+- **Agentic frameworks and tools** (if applicable)
+- Security vulnerabilities and best practices
+- Performance optimization techniques
+
+---
+
+### 3. ConsensusNegotiator
+
+**Responsibility**: Facilitate negotiation between AIs until consensus on architecture
+
+**Key Functions**:
+
+- Negotiate between architectures
+- Claude reviews Gemini (typically agrees with agentic ideas, questions coding)
+- Gemini reviews Claude (proposes agentic alternatives)
+- Find agreements
+- Find disagreements
+- Adjust architectures based on feedback
+- Check convergence
+- Merge into unified architecture
+
+**Architecture Structure** (NOT phases):
+
+```
+{
+  database: { schema, models, relationships },
+  api: { routes, endpoints, middleware },
+  auth: { provider, strategy, flows },
+  agentic: {
+    workflows: [{ name, trigger, agents, orchestration }],
+    agents: [{ name, responsibility, tools, prompts }]
+  },
+  realtime: { technology, channels, events },
+  techStack: { framework, libraries, tools },
+  scaling: { caching, indexing, optimization },
+  aiSelections: { codeGeneration, testing, review }
+}
+```
+
+**Convergence Logic**:
+
+- Converging: disagreements decreasing
+- Not converging: disagreements same/increasing
+- Consensus: zero disagreements
+
+---
+
+### 4. DualValidationOrchestrator
+
+**Responsibility**: Both AIs independently validate unified architecture
+
+**Key Functions**:
+
+- Validate architecture against concept
+- Claude validates (checks implementation feasibility)
+- Gemini validates (checks agentic design quality)
+- Merge validation results
+- Deduplicate issues
+
+**Validation Report Structure**:
+
+- Issues with severity and category
+- Coverage percentage (0-100)
+- Reasoning
+
+**Merge Logic**:
+
+- Combine issues
+- Deduplicate
+- Determine if critical issues exist
+- Calculate average coverage
+- Decide: approve, replan, or escalate
+
+---
+
+### 5. BackgroundPlanningOrchestrator
+
+**Responsibility**: Coordinate all stages and stream progress
+
+**Key Functions**:
+
+- Execute complete architecture planning pipeline
+- Emit progress updates
+- Replan with feedback if needed
+- Generate Claude architecture
+- Generate Gemini architecture
+
+**Progress Update Structure**:
+
+- Stage (intelligence, planning, negotiating, validating, complete)
+- Progress (0-100)
+- Message
+- Details (optional)
+
+**Orchestration Flow**:
+
+1. Layout analysis
+2. Intelligence gathering
+3. Parallel architecture generation
+4. Consensus negotiation
+5. Dual validation
+6. Replan if needed (max 3 attempts)
+7. Return final architecture (NOT phases)
+
+---
+
+## Data Flow & State Management
+
+### Key Data Structures
+
+**FrontendBackendNeeds**: Extracted from layout
+
+- Data models (name, fields, relationships, inferredFrom)
+- API endpoints (method, path, purpose, triggeredBy)
+- State management (global, local, complexity)
+- Features (auth, realtime, uploads, search, pagination, caching)
+- Performance (dataVolume, queryComplexity, concurrentUsers)
+
+**IntelligenceContext**: From web searches
+
+- AI models by provider with recommendations
+- Framework versions and info
+- Category patterns and libraries
+- **Agentic frameworks and tools** (if workflows detected)
+- Security vulnerabilities and practices
+- Performance optimizations
+
+**UnifiedArchitecture**: Final architecture from consensus (NO phases)
+
+```
+{
+  database: {
+    provider: 'postgresql',
+    schema: Prisma schema,
+    models: [{ name, fields, relations }]
+  },
+  api: {
+    style: 'REST' | 'GraphQL',
+    routes: [{ method, path, handler, middleware }]
+  },
+  auth: {
+    provider: 'NextAuth' | 'Clerk' | 'custom',
+    strategy: 'JWT' | 'session',
+    flows: ['login', 'signup', 'oauth']
+  },
+  agentic: {
+    enabled: boolean,
+    workflows: [{
+      name: string,
+      description: string,
+      trigger: 'user_action' | 'scheduled' | 'event',
+      agents: [{ name, role, tools }],
+      orchestration: 'sequential' | 'parallel' | 'conditional'
+    }],
+    framework: 'LangChain' | 'CrewAI' | 'custom'
+  },
+  realtime: {
+    enabled: boolean,
+    technology: 'SSE' | 'WebSocket',
+    channels: [{ name, events }]
+  },
+  techStack: {
+    framework: 'Next.js 15',
+    database: 'PostgreSQL',
+    orm: 'Prisma',
+    libraries: ['react-query', 'zustand', ...]
+  },
+  scaling: {
+    caching: { strategy, layers },
+    indexing: { database indexes },
+    optimization: { techniques }
+  },
+  aiSelections: {
+    codeGeneration: 'claude-opus-4-20250514',
+    testing: 'gemini-pro-3',
+    review: 'claude-sonnet-4-20250514'
+  },
+  consensusReport: {
+    rounds: number,
+    finalAgreements: string[],
+    compromises: string[]
+  }
+}
+```
+
+### State Storage
+
+**App Store (Zustand)**:
+
+- appConcept
+- layoutManifest
+- dualArchitectureResult (NOT phases)
+- dualArchitectureEscalation
+- Setter functions
+
+**Planning Sessions (Server)**:
+
+- Map of sessionId → { concept, layoutDesign, timestamp }
+- In-memory for development
+- Redis for production
+
+### Complete Data Flow
+
+```
+User creates AppConcept
+        ↓
+User designs LayoutManifest
+        ↓
+User clicks "Build" button
+        ↓
+POST /api/planning/start → sessionId
+        ↓
+Dual AI Architecture Planning:
+  ├─ LayoutBackendAnalyzer → FrontendBackendNeeds
+  ├─ LiveIntelligenceGatherer → IntelligenceContext
+  ├─ Generate Architectures → Architecture A + B
+  ├─ ConsensusNegotiator → UnifiedArchitecture
+  └─ DualValidationOrchestrator → FinalValidatedArchitecture
+        ↓
+Architecture stored in app state
+        ↓
+DynamicPhaseGenerator (EXISTING):
+  - Receives FinalValidatedArchitecture
+  - Analyzes token complexity
+  - Groups related features
+  - Orders by dependencies
+  - Creates optimal phase plan
+        ↓
+Phase Plan created
+        ↓
+DynamicPhaseExecutor (EXISTING):
+  - Phase 1: Layout code
+  - Phases 2-N: Features from architecture
+        ↓
+Self-Healing System (EXISTING):
+  - Validates each phase
+  - Repairs issues automatically
+```
+
+---
+
+## Integration Strategy
+
+### 1. Layout Builder Completion
+
+**Location**: `LayoutBuilderWizard.tsx`
+
+**New Flow**:
+
+1. User completes layout
+2. User clicks "Build" button
+3. Trigger handleBuildClick()
+4. POST to /api/planning/start with { concept, layoutDesign }
+5. Receive { sessionId }
+6. Set planningSessionId state
+7. Render DualPlanningProgress with sessionId
+8. Progress panel appears (floating bottom-right)
+9. User sees architecture being planned
+10. On complete: store architecture in app state
+11. Hide progress panel
+
+### 2. Phase Generation Route
+
+**Location**: `src/app/api/wizard/generate-phases/route.ts`
+
+**New Logic**:
+
+```
+IF dualArchitectureResult exists in request:
+  → Pass architecture to DynamicPhaseGenerator
+  → DynamicPhaseGenerator breaks into optimal phases
+  → Return phase plan
+
+ELSE:
+  → Fallback to existing single-AI planning
+```
+
+### 3. DynamicPhaseGenerator Integration
+
+**Location**: Existing DynamicPhaseGenerator service
+
+**New Input**: Receives FinalValidatedArchitecture instead of raw concept
+
+**Process**:
+
+- Architecture already has all technical decisions made
+- DynamicPhaseGenerator focuses purely on sequencing
+- Applies existing sophisticated logic:
+  - Token complexity analysis
+  - Dependency ordering
+  - Context accumulation
+  - Phase optimization
+
+**Output**: Optimized phase plan ready for execution
+
+### 4. UI Component: Progress Panel
+
+**Component**: `DualPlanningProgress.tsx`
+
+**Display**:
+
+- Floating bottom-right
+- Brain icon + "AI Planning Architecture"
+- Progress bar (0-100%)
+- Stage with color coding:
+  - Intelligence: blue
+  - Planning: purple
+  - Negotiating: orange (shows "Gemini proposing agentic workflows..." or "Claude evaluating implementation...")
+  - Validating: green
+  - Complete: green (or red if error)
+- Status message updates
+- Expandable details
+
+**Behavior**:
+
+- Appears when planning starts
+- Updates in real-time via SSE
+- Expandable/collapsible
+- Disappears on completion
+
+### 5. UI Component: Escalation Dialog
+
+**Component**: `ConsensusEscalationDialog.tsx`
+
+**Display**:
+
+- Full-screen modal
+- Divergent issues section (e.g., "Claude: traditional REST API" vs "Gemini: agentic workflow with LangChain")
+- Side-by-side architecture comparison
+- Action buttons (choose Claude/Gemini/merge)
+
+**Behavior**:
+
+- Appears on escalation event
+- User must choose to continue
+- Selected architecture stored
+- Dialog closes after selection
+
+---
+
+## Implementation Phases
+
+### Phase 1: Core Services (Week 1)
+
+**Deliverables**:
+
+- LayoutBackendAnalyzer - Extract backend needs
+- LiveIntelligenceGatherer - Web search with agentic tool detection
+- Unit tests
+
+**Success Criteria**:
+
+- Correct backend requirement extraction
+- Intelligence gathering includes agentic tools when concept has workflows
+- Tests pass with >80% coverage
+
+---
+
+### Phase 2: Negotiation Engine (Week 2)
+
+**Deliverables**:
+
+- ConsensusNegotiator - Architecture negotiation (not phases)
+- DualValidationOrchestrator - Validation including agentic design
+- Integration tests
+
+**Success Criteria**:
+
+- Negotiation reaches consensus on architecture within 5 rounds
+- Gemini proposes agentic solutions when appropriate
+- Claude questions implementation complexity
+- Validation catches missing features and design flaws
+
+---
+
+### Phase 3: Orchestration & SSE (Week 3)
+
+**Deliverables**:
+
+- BackgroundPlanningOrchestrator - Coordinate all stages
+- /api/planning/start route - Create sessions
+- /api/planning/stream/[sessionId] route - SSE streaming
+- Session management
+
+**Success Criteria**:
+
+- Full architecture planning pipeline completes end-to-end
+- Progress updates stream correctly
+- Sessions cleaned up properly
+- Replan logic prevents infinite loops
+- **Output is architecture, not phases**
+
+---
+
+### Phase 4: UI Components (Week 4)
+
+**Deliverables**:
+
+- DualPlanningProgress - Progress panel with agentic negotiation visibility
+- ConsensusEscalationDialog - Escalation UI showing architectural choices
+- Integration into LayoutBuilderWizard
+- App store updates
+
+**Success Criteria**:
+
+- Progress panel displays negotiation in real-time
+- Shows when Gemini proposes agentic approaches
+- Shows when Claude questions implementation
+- Escalation dialog clearly presents architectural differences
+- User can choose architecture and continue
+
+---
+
+### Phase 5: Integration & Testing (Week 5)
+
+**Deliverables**:
+
+- Update DynamicPhaseGenerator to accept FinalValidatedArchitecture
+- Update /api/wizard/generate-phases to use architecture
+- End-to-end testing with real app concepts
+- Performance optimization
+
+**Success Criteria**:
+
+- Architecture flows into DynamicPhaseGenerator correctly
+- Phase generation respects architectural decisions
+- Agentic workflows properly translated into phases
+- Planning completes within 10 minutes
+- All error cases handled gracefully
+
+---
+
+## Success Metrics
+
+### Quality Metrics
+
+- Consensus Rate: >85% (AIs agree on architecture)
+- Validation Pass Rate: >90% (architecture passes validation first try)
+- Feature Coverage: >95% (all concept features addressed)
+- Replan Rate: <15% (rarely need to replan)
+- Agentic Appropriateness: Manual review of when agentic workflows chosen
+
+### Performance Metrics
+
+- Architecture Planning Duration: <5 minutes average
+- Negotiation Rounds: <3 average (despite agentic discussions)
+- Intelligence Gathering: <30 seconds
+- Session Cleanup: 100%
+
+### User Experience Metrics
+
+- Non-Blocking Usage: >70% (users work while planning)
+- Escalation Resolution: <2 minutes
+- Architecture Acceptance: >80% (users accept proposed architecture)
+- Progress Detail Views: >30%
+
+### Technical Metrics
+
+- API Success Rate: >99%
+- SSE Connection Stability: >95%
+- Session Memory: <10MB per session
+- Error Recovery: >80%
+
+---
+
+## Risk Mitigation
+
+**Risk 1: AIs Never Reach Consensus on Architecture**
+
+- Mitigation: Max 5 rounds, convergence check, escalation to user with clear architectural differences
+
+**Risk 2: Planning Takes Too Long**
+
+- Mitigation: 10-min timeout, runs in background, progress updates, parallelized searches
+
+**Risk 3: Web Search Fails**
+
+- Mitigation: Retry logic, cached fallback, can proceed without, graceful degradation
+
+**Risk 4: Over-Engineering with Agentic Workflows**
+
+- Mitigation: Claude's scrutiny of implementation complexity, dual validation, user can reject in escalation
+
+**Risk 5: Under-Engineering (Missing Agentic Opportunities)**
+
+- Mitigation: Gemini's natural agentic focus, intelligence gathering includes agentic tools, negotiation explores alternatives
+
+**Risk 6: Session Storage Issues**
+
+- Mitigation: In-memory dev, Redis production, automatic cleanup, validation
+
+**Risk 7: Invalid Architectures Generated**
+
+- Mitigation: Dual validation catches issues, max 3 replans, best effort fallback, regeneration option
+
+---
+
+## File Structure
+
+### New Files Required
+
+**Services**:
+
+- src/services/LayoutBackendAnalyzer.ts
+- src/services/LiveIntelligenceGatherer.ts
+- src/services/ConsensusNegotiator.ts
+- src/services/DualValidationOrchestrator.ts
+- src/services/BackgroundPlanningOrchestrator.ts
+
+**API Routes**:
+
+- src/app/api/planning/start/route.ts
+- src/app/api/planning/stream/[sessionId]/route.ts
+- src/app/api/web-search/route.ts
+- src/app/api/ai/claude/route.ts
+- src/app/api/ai/gemini/route.ts
+
+**UI Components**:
+
+- src/components/DualPlanningProgress.tsx
+- src/components/ConsensusEscalationDialog.tsx
+
+**Types**:
+
+- src/types/dualPlanning.ts
+
+### Files to Modify
+
+- src/components/LayoutBuilderWizard.tsx - Add "Build" button trigger
+- src/store/useAppStore.ts - Add dualArchitectureResult state (not phases)
+- src/services/DynamicPhaseGenerator.ts - Accept FinalValidatedArchitecture input
+- src/app/api/wizard/generate-phases/route.ts - Use architecture if available
+- src/types/appConcept.ts - Add dualArchitectureResult field
+
+---
+
+## Conclusion
+
+This dual AI architecture planning system creates optimal application blueprints through consensus-based negotiation. Two independent AI perspectives eliminate single-AI biases, with Gemini naturally identifying agentic opportunities and Claude scrutinizing implementation feasibility.
+
+**Key Architectural Decision**: Dual AIs focus on WHAT to build (architecture), while existing DynamicPhaseGenerator determines HOW to sequence it (phases). This separation of concerns avoids duplication and leverages proven phase planning logic.
+
+Live intelligence gathering ensures architectures use latest technologies from 2026, including current agentic frameworks when appropriate. The non-blocking design allows users to continue working during planning, and transparent progress builds trust.
+
+The system integrates seamlessly with existing DynamicPhaseGenerator, DynamicPhaseExecutor, and self-healing systems, creating a complete build pipeline from concept to deployed application.

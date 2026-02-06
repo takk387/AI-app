@@ -12,9 +12,9 @@ paths:
 
 ### Main Store: useAppStore
 
-**Location:** `src/store/useAppStore.ts` (~500 lines)
+**Location:** `src/store/useAppStore.ts` (~804 lines)
 
-Central store with 8 slices using Immer middleware:
+Central store with 10 slices using Immer middleware and persist (v5 migrations):
 
 ```typescript
 // Store creation with middleware
@@ -112,6 +112,104 @@ const useAppStore = create<AppState>()(
 }
 ```
 
+9. **PlanningSlice** - Dual AI planning state
+
+```typescript
+{
+  dualArchitectureResult: DualArchitectureResult | null;
+  cachedIntelligence: IntelligenceContext | null;
+  setDualArchitectureResult(result): void;
+  setCachedIntelligence(intel): void;
+}
+```
+
+10. **LayoutBuilderSlice** - Layout builder persistence
+
+```typescript
+{
+  layoutBuilderFiles: AppFile[];
+  currentLayoutManifest: LayoutManifest | null;
+  setLayoutBuilderFiles(files): void;
+  setCurrentLayoutManifest(manifest): void;
+}
+```
+
+### Persist Migrations (v5)
+
+Store uses cascading `if (version < N)` migration pattern:
+
+```typescript
+migrate: (persisted, version) => {
+  if (version < 1) {
+    /* add initial fields */
+  }
+  if (version < 2) {
+    /* add layout fields */
+  }
+  if (version < 3) {
+    /* add phase fields */
+  }
+  if (version < 4) {
+    /* add planning fields */
+  }
+  if (version < 5) {
+    /* add cachedIntelligence, dualArchitectureResult */
+  }
+  return persisted;
+};
+```
+
+## Planning Hooks
+
+### useDualAIPlan
+
+**Location:** `src/hooks/useDualAIPlan.ts` (~300 lines)
+
+Manages the dual AI planning pipeline via SSE streaming.
+
+```typescript
+function useDualAIPlan() {
+  return {
+    stages: PipelineStage[];      // Current pipeline stage states
+    isRunning: boolean;
+    error: string | null;
+    consensusResult: ConsensusResult | null;
+    escalation: EscalationState | null;
+    startPipeline(config): void;
+    resolveEscalation(choice): void;
+  };
+}
+```
+
+**Key patterns:**
+
+- Reads `cachedIntelligence` from store, passes to pipeline to skip Stage 2
+- SSE events update stage progress in real-time
+- Escalation state triggers `ConsensusEscalationDialog`
+- Final result saved as `dualArchitectureResult` in store
+
+### useBackgroundIntelligence
+
+**Location:** `src/hooks/useBackgroundIntelligence.ts` (~150 lines)
+
+Pre-caches intelligence during Design step (Step 2) so AI Plan (Step 3) can skip Stage 2.
+
+```typescript
+function useBackgroundIntelligence(appConcept: AppConcept | null) {
+  return {
+    isGathering: boolean;
+    intelligence: IntelligenceContext | null;
+  };
+}
+```
+
+**Key patterns:**
+
+- Starts gathering when `appConcept` is available on Design page
+- Uses AbortController for cleanup on unmount
+- Saves result to `cachedIntelligence` in Zustand store
+- Pipeline checks for cached intelligence before running Stage 2
+
 ## Selector Patterns
 
 **IMPORTANT:** Always use shallow comparison for performance:
@@ -203,14 +301,16 @@ export function useFeature(options?: UseFeatureOptions): UseFeatureReturn {
 
 ### Common Hooks
 
-| Hook                     | Purpose                 |
-| ------------------------ | ----------------------- |
-| `useLayoutBuilder`       | Layout design state     |
-| `useChatSystem`          | Chat message management |
-| `useDatabaseSync`        | Supabase sync           |
-| `useVersionControl`      | Version history         |
-| `useStreamingGeneration` | SSE handling            |
-| `useSmartContext`        | Context compression     |
+| Hook                        | Purpose                             |
+| --------------------------- | ----------------------------------- |
+| `useLayoutBuilder`          | Layout design state + GENERATE mode |
+| `useDualAIPlan`             | Dual AI planning pipeline (SSE)     |
+| `useBackgroundIntelligence` | Background intelligence pre-caching |
+| `useChatSystem`             | Chat message management             |
+| `useDatabaseSync`           | Supabase sync                       |
+| `useVersionControl`         | Version history                     |
+| `useStreamingGeneration`    | SSE handling                        |
+| `useSmartContext`           | Context compression                 |
 
 ## Critical Dependencies
 

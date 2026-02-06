@@ -136,6 +136,7 @@ const VIEWPORT_PRESETS: Record<
 const SANDPACK_DEPENDENCIES: Record<string, string> = {
   'framer-motion': 'latest',
   'lucide-react': 'latest',
+  'react-router-dom': 'latest',
   clsx: 'latest',
   'tailwind-merge': 'latest',
 };

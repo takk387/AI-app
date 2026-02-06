@@ -51,6 +51,13 @@ import type { ProjectDocumentation } from '@/types/projectDocumentation';
 import type { PreviewMode, AppFile } from '@/types/railway';
 import type { DesignSpec } from '@/types/designSpec';
 import type { BuildSettings, LayoutThumbnail } from '@/types/reviewTypes';
+import type {
+  FinalValidatedArchitecture,
+  EscalationData,
+  UserAISelection,
+  DualPlanProgress,
+  IntelligenceContext,
+} from '@/types/dualPlanning';
 
 // ============================================================================
 // STORE STATE INTERFACE
@@ -311,6 +318,23 @@ interface FileStorageSlice {
 }
 
 /**
+ * Dual AI Planning slice state
+ */
+interface DualPlanningSlice {
+  dualArchitectureResult: FinalValidatedArchitecture | null;
+  dualArchitectureEscalation: EscalationData | null;
+  userAISelection: UserAISelection | null;
+  dualPlanProgress: DualPlanProgress | null;
+  cachedIntelligence: IntelligenceContext | null;
+  // Actions
+  setDualArchitectureResult: (result: FinalValidatedArchitecture | null) => void;
+  setDualArchitectureEscalation: (escalation: EscalationData | null) => void;
+  setUserAISelection: (selection: UserAISelection | null) => void;
+  setDualPlanProgress: (progress: DualPlanProgress | null) => void;
+  setCachedIntelligence: (ctx: IntelligenceContext | null) => void;
+}
+
+/**
  * Complete store state combining all slices
  */
 export interface AppState
@@ -322,7 +346,8 @@ export interface AppState
     UISlice,
     DataSlice,
     DocumentationSlice,
-    FileStorageSlice {}
+    FileStorageSlice,
+    DualPlanningSlice {}
 
 // ============================================================================
 // STORE IMPLEMENTATION
@@ -614,26 +639,58 @@ export const useAppStore = create<AppState>()(
             return { selectedFiles: newSelection };
           }),
         clearFileSelection: () => set({ selectedFiles: new Set<string>() }),
+
+        // ========================================================================
+        // DUAL AI PLANNING SLICE
+        // ========================================================================
+        dualArchitectureResult: null as FinalValidatedArchitecture | null,
+        dualArchitectureEscalation: null as EscalationData | null,
+        userAISelection: null as UserAISelection | null,
+        dualPlanProgress: null as DualPlanProgress | null,
+        cachedIntelligence: null as IntelligenceContext | null,
+
+        setDualArchitectureResult: (result) => set({ dualArchitectureResult: result }),
+        setDualArchitectureEscalation: (escalation) =>
+          set({ dualArchitectureEscalation: escalation }),
+        setUserAISelection: (selection) => set({ userAISelection: selection }),
+        setDualPlanProgress: (progress) => set({ dualPlanProgress: progress }),
+        setCachedIntelligence: (ctx) => set({ cachedIntelligence: ctx }),
       })),
       {
         name: 'ai-app-builder-storage',
-        version: 3, // Bumped: now persists layoutBuilderFiles
+        version: 5, // Bumped: now persists cachedIntelligence
         // Migration function to preserve data when version changes
         migrate: (persistedState: unknown, version: number) => {
-          const state = persistedState as Record<string, unknown>;
-          if (version === 1) {
-            // Migration from v1 to v2: add components and currentComponent
-            return {
+          // Migrations cascade: a user on v1 gets v1→v2→v3→v4→v5 applied sequentially
+          let state = persistedState as Record<string, unknown>;
+          if (version < 2) {
+            // Migration to v2: add components and currentComponent
+            state = {
               ...state,
               components: state.components ?? [],
               currentComponent: state.currentComponent ?? null,
             };
           }
-          if (version === 2) {
-            // Migration from v2 to v3: add layoutBuilderFiles
-            return {
+          if (version < 3) {
+            // Migration to v3: add layoutBuilderFiles
+            state = {
               ...state,
               layoutBuilderFiles: state.layoutBuilderFiles ?? null,
+            };
+          }
+          if (version < 4) {
+            // Migration to v4: add dual AI planning state
+            state = {
+              ...state,
+              dualArchitectureResult: state.dualArchitectureResult ?? null,
+              userAISelection: state.userAISelection ?? null,
+            };
+          }
+          if (version < 5) {
+            // Migration to v5: add cached intelligence
+            state = {
+              ...state,
+              cachedIntelligence: state.cachedIntelligence ?? null,
             };
           }
           return state;
@@ -654,6 +711,10 @@ export const useAppStore = create<AppState>()(
           layoutThumbnail: state.layoutThumbnail,
           phasePlanGeneratedAt: state.phasePlanGeneratedAt,
           layoutBuilderFiles: state.layoutBuilderFiles,
+          // Dual AI Planning (persists across navigation)
+          dualArchitectureResult: state.dualArchitectureResult,
+          userAISelection: state.userAISelection,
+          cachedIntelligence: state.cachedIntelligence,
         }),
       }
     ),
@@ -798,6 +859,19 @@ export const useConceptPanelState = () =>
       isConceptPanelCollapsed: state.isConceptPanelCollapsed,
       conceptPanelEditMode: state.conceptPanelEditMode,
       currentMode: state.currentMode,
+    }))
+  );
+
+/**
+ * Select dual AI planning state
+ */
+export const useDualPlanningState = () =>
+  useAppStore(
+    useShallow((state) => ({
+      dualArchitectureResult: state.dualArchitectureResult,
+      dualArchitectureEscalation: state.dualArchitectureEscalation,
+      userAISelection: state.userAISelection,
+      dualPlanProgress: state.dualPlanProgress,
     }))
   );
 

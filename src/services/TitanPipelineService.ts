@@ -339,6 +339,26 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     })
   );
 
+  // GENERATE MODE: skip all vision steps, go straight to Builder with concept data
+  if (strategy.mode === 'GENERATE') {
+    console.log('[TitanPipeline] GENERATE mode — building full layout from concept');
+    const buildStart = Date.now();
+    const files = await _assembleCode(
+      null, // no structure
+      [], // no manifests
+      null, // no physics
+      strategy,
+      null, // no existing code
+      input.instructions,
+      {}, // no assets
+      undefined,
+      undefined,
+      input.appContext
+    );
+    stepTimings.builder = Date.now() - buildStart;
+    return { files, strategy, manifests: [], physics: null, warnings, stepTimings };
+  }
+
   const manifests: VisualManifest[] = [];
   let physics: MotionPhysics | null = null;
   const generatedAssets: Record<string, string> = {};
@@ -447,7 +467,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     input.currentCode,
     input.instructions,
     finalAssets,
-    primaryImageRef
+    primaryImageRef,
+    undefined, // healingContext — only used by healing loop
+    input.appContext
   );
   stepTimings.builder = Date.now() - buildStart;
 

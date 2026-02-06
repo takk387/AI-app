@@ -296,6 +296,10 @@ export interface DynamicPhasePlan {
 
   // Pre-built layout files from Layout Builder (for layout injection phase)
   layoutBuilderFiles?: AppFile[];
+
+  // Flag to indicate phases were regenerated with full architecture context
+  // Prevents double-regeneration on the review page
+  hasArchitectureContext?: boolean;
 }
 
 /**

@@ -16,7 +16,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
 import {
   LayoutBuilderChatPanel,
   LayoutChatMessage,
@@ -39,197 +39,115 @@ function generateMessageId(): string {
 // MAIN COMPONENT
 // ============================================================================
 
-export const LayoutBuilderView: React.FC = () => {
-  // --- App context for personalized generation ---
-  const appConcept = useAppStore((state) => state.appConcept);
+/** Handle exposed to parent for triggering generate from outside */
+export interface LayoutBuilderViewHandle {
+  generateFullLayout: () => void;
+}
 
-  const appContext: AppContext | undefined = useMemo(() => {
-    if (!appConcept) return undefined;
-    return {
-      name: appConcept.name,
-      colorScheme: appConcept.uiPreferences?.colorScheme,
-      primaryColor: appConcept.uiPreferences?.primaryColor,
-      style: appConcept.uiPreferences?.style,
-    };
-  }, [appConcept]);
+export const LayoutBuilderView = forwardRef<LayoutBuilderViewHandle>(
+  function LayoutBuilderView(_props, ref) {
+    // --- App context for personalized generation ---
+    const appConcept = useAppStore((state) => state.appConcept);
 
-  // --- Welcome message ---
-  const welcomeMessage = useMemo(() => {
-    if (appConcept?.name) {
-      const themeInfo = appConcept.uiPreferences?.colorScheme
-        ? ` I'll use your ${appConcept.uiPreferences.colorScheme} theme preferences as guidance.`
-        : '';
-      return `Welcome to the Layout Builder for **${appConcept.name}**! Upload an image or video of a design you'd like to replicate, or describe what you want to build.${themeInfo}`;
-    }
-    return "Welcome to the Layout Builder! Upload an image or video of a design you'd like to replicate, or describe what you want to build. You can also type instructions to customize the result.";
-  }, [appConcept?.name, appConcept?.uiPreferences?.colorScheme]);
-
-  // --- Chat messages ---
-  const [messages, setMessages] = useState<LayoutChatMessage[]>([
-    {
-      id: generateMessageId(),
-      role: 'assistant',
-      content: welcomeMessage,
-      timestamp: new Date(),
-    },
-  ]);
-
-  // --- Layout builder hook (single source of truth) ---
-  const {
-    generatedFiles,
-    isProcessing,
-    pipelineProgress,
-    errors,
-    warnings,
-    canvasSize,
-    runPipeline,
-    refineComponent,
-    undo,
-    redo,
-    exportCode,
-    clearErrors,
-    canUndo,
-    canRedo,
-  } = useLayoutBuilder();
-
-  // --- Handle media analysis (image/video uploads) ---
-  // Defined before handleSendMessage so it can be called from there
-  const handleAnalyzeMedia = useCallback(
-    async (media: UploadedMedia[], instructions?: string) => {
-      if (media.length === 0) return;
-
-      // Add user message with media previews
-      const userMessage: LayoutChatMessage = {
-        id: generateMessageId(),
-        role: 'user',
-        content: instructions || 'Analyze this design and create a layout',
-        timestamp: new Date(),
-        mediaUrls: media.map((m) => m.previewUrl),
+    const appContext: AppContext | undefined = useMemo(() => {
+      if (!appConcept) return undefined;
+      return {
+        name: appConcept.name,
+        description: appConcept.description,
+        purpose: appConcept.purpose,
+        targetUsers: appConcept.targetUsers,
+        colorScheme: appConcept.uiPreferences?.colorScheme,
+        primaryColor: appConcept.uiPreferences?.primaryColor,
+        secondaryColor: appConcept.uiPreferences?.secondaryColor,
+        accentColor: appConcept.uiPreferences?.accentColor,
+        style: appConcept.uiPreferences?.style,
+        layout: appConcept.uiPreferences?.layout,
+        borderRadius: appConcept.uiPreferences?.borderRadius,
+        shadowIntensity: appConcept.uiPreferences?.shadowIntensity,
+        fontFamily: appConcept.uiPreferences?.fontFamily,
+        spacing: appConcept.uiPreferences?.spacing,
+        coreFeatures: appConcept.coreFeatures?.map((f) => ({
+          id: f.id,
+          name: f.name,
+          description: f.description,
+          priority: f.priority,
+        })),
+        needsAuth: appConcept.technical?.needsAuth,
+        needsDatabase: appConcept.technical?.needsDatabase,
+        needsRealtime: appConcept.technical?.needsRealtime,
+        needsFileUpload: appConcept.technical?.needsFileUpload,
+        roles: appConcept.roles?.map((r) => ({ name: r.name, capabilities: r.capabilities })),
+        workflows: appConcept.workflows?.map((w) => ({
+          name: w.name,
+          steps: w.steps,
+          involvedRoles: w.involvedRoles,
+        })),
       };
-      setMessages((prev) => [...prev, userMessage]);
+    }, [appConcept]);
 
-      try {
-        // Extract raw File objects from UploadedMedia
-        const files = media.map((m) => m.file);
-
-        // Run the Titan pipeline (Router determines CREATE/MERGE/EDIT)
-        await runPipeline(files, instructions || '', appContext);
-
-        // Success message
-        const modeHint =
-          media.length > 1
-            ? `I've analyzed ${media.length} files and created a merged layout.`
-            : `I've analyzed the ${media[0].type} and created a layout.`;
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: `${modeHint} Click on any component in the preview to edit it, or send more instructions to refine the design.`,
-            timestamp: new Date(),
-          },
-        ]);
-      } catch (error) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: generateMessageId(),
-            role: 'system',
-            content: `Failed to analyze media: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            timestamp: new Date(),
-          },
-        ]);
+    // --- Welcome message ---
+    const welcomeMessage = useMemo(() => {
+      if (appConcept?.name) {
+        const themeInfo = appConcept.uiPreferences?.colorScheme
+          ? ` I'll use your ${appConcept.uiPreferences.colorScheme} theme preferences as guidance.`
+          : '';
+        return `Welcome to the Layout Builder for **${appConcept.name}**! Upload an image or video of a design you'd like to replicate, or describe what you want to build.${themeInfo}`;
       }
-    },
-    [runPipeline, appContext]
-  );
+      return "Welcome to the Layout Builder! Upload an image or video of a design you'd like to replicate, or describe what you want to build. You can also type instructions to customize the result.";
+    }, [appConcept?.name, appConcept?.uiPreferences?.colorScheme]);
 
-  // --- Handle text-only messages (or text + media) ---
-  const handleSendMessage = useCallback(
-    (message: string, media: UploadedMedia[]) => {
-      if (!message.trim() && media.length === 0) return;
+    // --- Chat messages ---
+    const [messages, setMessages] = useState<LayoutChatMessage[]>([
+      {
+        id: generateMessageId(),
+        role: 'assistant',
+        content: welcomeMessage,
+        timestamp: new Date(),
+      },
+    ]);
 
-      // If there are media files, delegate to handleAnalyzeMedia with the user's text.
-      // This ensures instructions like "Copy this layout but make it blue" are
-      // passed to the pipeline as the instructions argument alongside the media.
-      if (media.length > 0) {
-        handleAnalyzeMedia(media, message);
-        return;
-      }
+    // --- Layout builder hook (single source of truth) ---
+    const {
+      generatedFiles,
+      isProcessing,
+      pipelineProgress,
+      errors,
+      warnings,
+      canvasSize,
+      runPipeline,
+      refineComponent,
+      undo,
+      redo,
+      exportCode,
+      clearErrors,
+      canUndo,
+      canRedo,
+    } = useLayoutBuilder();
 
-      // Add user message to chat (text-only path)
+    // --- Generate full layout from concept (GENERATE mode) ---
+    const handleGenerateFullLayout = useCallback(() => {
+      if (!appContext?.coreFeatures?.length) return;
+
       const userMessage: LayoutChatMessage = {
         id: generateMessageId(),
         role: 'user',
-        content: message,
+        content: 'Generate the complete app layout with all pages based on the concept',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      // Text-only: run pipeline with no files
-      // The Router will determine CREATE (no existing code) or EDIT (has currentCode)
-      if (message.trim()) {
-        const hasExistingCode = generatedFiles.length > 0;
-
-        runPipeline([], message.trim(), appContext)
-          .then(() => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: generateMessageId(),
-                role: 'assistant',
-                content: hasExistingCode
-                  ? "I've updated the layout based on your instructions. Click on any component in the preview to make further edits."
-                  : "I've generated a layout based on your description. Click on any component in the preview to refine it.",
-                timestamp: new Date(),
-              },
-            ]);
-          })
-          .catch((error) => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: generateMessageId(),
-                role: 'system',
-                content: `Failed to process: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                timestamp: new Date(),
-              },
-            ]);
-          });
-      }
-    },
-    [handleAnalyzeMedia, runPipeline, appContext, generatedFiles.length]
-  );
-
-  // --- Handle file drops on the canvas ---
-  const handleDropFiles = useCallback(
-    (files: File[]) => {
-      const mediaFiles = files.filter(
-        (f) => f.type.startsWith('image/') || f.type.startsWith('video/')
-      );
-      if (mediaFiles.length === 0) return;
-
-      // Add a chat message about the drop
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: generateMessageId(),
-          role: 'user',
-          content: `Dropped ${mediaFiles.length} file${mediaFiles.length > 1 ? 's' : ''} for analysis`,
-          timestamp: new Date(),
-        },
-      ]);
-
-      // Run pipeline
-      runPipeline(mediaFiles, '', appContext)
+      runPipeline(
+        [],
+        'Generate the complete app layout with all pages based on the concept',
+        appContext
+      )
         .then(() => {
           setMessages((prev) => [
             ...prev,
             {
               id: generateMessageId(),
               role: 'assistant',
-              content: 'Layout generated from dropped files. Click on any component to edit it.',
+              content: `I've generated the full layout for **${appContext.name ?? 'your app'}** with all pages and navigation. Click on any component in the preview to refine it, or send more instructions.`,
               timestamp: new Date(),
             },
           ]);
@@ -240,49 +158,217 @@ export const LayoutBuilderView: React.FC = () => {
             {
               id: generateMessageId(),
               role: 'system',
-              content: `Failed to process dropped files: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              content: `Failed to generate layout: ${error instanceof Error ? error.message : 'Unknown error'}`,
               timestamp: new Date(),
             },
           ]);
         });
-    },
-    [runPipeline, appContext]
-  );
+    }, [runPipeline, appContext]);
 
-  return (
-    <div className="flex h-full w-full">
-      {/* Left Panel: Chat */}
-      <div className="w-[400px] min-w-[320px] max-w-[500px] flex-shrink-0 h-full">
-        <LayoutBuilderChatPanel
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isAnalyzing={isProcessing}
-          onAnalyzeMedia={handleAnalyzeMedia}
-          pipelineProgress={pipelineProgress}
-        />
-      </div>
+    // Expose generate function to parent via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        generateFullLayout: handleGenerateFullLayout,
+      }),
+      [handleGenerateFullLayout]
+    );
 
-      {/* Right Panel: Preview Canvas */}
-      <div className="flex-1 h-full overflow-hidden">
-        <LayoutCanvas
-          generatedFiles={generatedFiles}
-          isProcessing={isProcessing}
-          pipelineProgress={pipelineProgress}
-          errors={errors}
-          warnings={warnings}
-          canvasSize={canvasSize}
-          onDropFiles={handleDropFiles}
-          onRefineComponent={refineComponent}
-          onUndo={undo}
-          onRedo={redo}
-          onExportCode={exportCode}
-          onClearErrors={clearErrors}
-          canUndo={canUndo}
-          canRedo={canRedo}
-        />
+    // --- Handle media analysis (image/video uploads) ---
+    // Defined before handleSendMessage so it can be called from there
+    const handleAnalyzeMedia = useCallback(
+      async (media: UploadedMedia[], instructions?: string) => {
+        if (media.length === 0) return;
+
+        // Add user message with media previews
+        const userMessage: LayoutChatMessage = {
+          id: generateMessageId(),
+          role: 'user',
+          content: instructions || 'Analyze this design and create a layout',
+          timestamp: new Date(),
+          mediaUrls: media.map((m) => m.previewUrl),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+
+        try {
+          // Extract raw File objects from UploadedMedia
+          const files = media.map((m) => m.file);
+
+          // Run the Titan pipeline (Router determines CREATE/MERGE/EDIT)
+          await runPipeline(files, instructions || '', appContext);
+
+          // Success message
+          const modeHint =
+            media.length > 1
+              ? `I've analyzed ${media.length} files and created a merged layout.`
+              : `I've analyzed the ${media[0].type} and created a layout.`;
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: `${modeHint} Click on any component in the preview to edit it, or send more instructions to refine the design.`,
+              timestamp: new Date(),
+            },
+          ]);
+        } catch (error) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateMessageId(),
+              role: 'system',
+              content: `Failed to analyze media: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      },
+      [runPipeline, appContext]
+    );
+
+    // --- Handle text-only messages (or text + media) ---
+    const handleSendMessage = useCallback(
+      (message: string, media: UploadedMedia[]) => {
+        if (!message.trim() && media.length === 0) return;
+
+        // If there are media files, delegate to handleAnalyzeMedia with the user's text.
+        // This ensures instructions like "Copy this layout but make it blue" are
+        // passed to the pipeline as the instructions argument alongside the media.
+        if (media.length > 0) {
+          handleAnalyzeMedia(media, message);
+          return;
+        }
+
+        // Add user message to chat (text-only path)
+        const userMessage: LayoutChatMessage = {
+          id: generateMessageId(),
+          role: 'user',
+          content: message,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+
+        // Text-only: run pipeline with no files
+        // The Router will determine CREATE (no existing code) or EDIT (has currentCode)
+        if (message.trim()) {
+          const hasExistingCode = generatedFiles.length > 0;
+
+          runPipeline([], message.trim(), appContext)
+            .then(() => {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: generateMessageId(),
+                  role: 'assistant',
+                  content: hasExistingCode
+                    ? "I've updated the layout based on your instructions. Click on any component in the preview to make further edits."
+                    : "I've generated a layout based on your description. Click on any component in the preview to refine it.",
+                  timestamp: new Date(),
+                },
+              ]);
+            })
+            .catch((error) => {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: generateMessageId(),
+                  role: 'system',
+                  content: `Failed to process: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  timestamp: new Date(),
+                },
+              ]);
+            });
+        }
+      },
+      [handleAnalyzeMedia, runPipeline, appContext, generatedFiles.length]
+    );
+
+    // --- Handle file drops on the canvas ---
+    const handleDropFiles = useCallback(
+      (files: File[]) => {
+        const mediaFiles = files.filter(
+          (f) => f.type.startsWith('image/') || f.type.startsWith('video/')
+        );
+        if (mediaFiles.length === 0) return;
+
+        // Add a chat message about the drop
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateMessageId(),
+            role: 'user',
+            content: `Dropped ${mediaFiles.length} file${mediaFiles.length > 1 ? 's' : ''} for analysis`,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Run pipeline
+        runPipeline(mediaFiles, '', appContext)
+          .then(() => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: 'Layout generated from dropped files. Click on any component to edit it.',
+                timestamp: new Date(),
+              },
+            ]);
+          })
+          .catch((error) => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: generateMessageId(),
+                role: 'system',
+                content: `Failed to process dropped files: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                timestamp: new Date(),
+              },
+            ]);
+          });
+      },
+      [runPipeline, appContext]
+    );
+
+    return (
+      <div className="flex h-full w-full">
+        {/* Left Panel: Chat */}
+        <div className="w-[400px] min-w-[320px] max-w-[500px] flex-shrink-0 h-full">
+          <LayoutBuilderChatPanel
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isAnalyzing={isProcessing}
+            onAnalyzeMedia={handleAnalyzeMedia}
+            pipelineProgress={pipelineProgress}
+            onGenerateFullLayout={
+              appContext?.coreFeatures?.length ? handleGenerateFullLayout : undefined
+            }
+          />
+        </div>
+
+        {/* Right Panel: Preview Canvas */}
+        <div className="flex-1 h-full overflow-hidden">
+          <LayoutCanvas
+            generatedFiles={generatedFiles}
+            isProcessing={isProcessing}
+            pipelineProgress={pipelineProgress}
+            errors={errors}
+            warnings={warnings}
+            canvasSize={canvasSize}
+            onDropFiles={handleDropFiles}
+            onRefineComponent={refineComponent}
+            onUndo={undo}
+            onRedo={redo}
+            onExportCode={exportCode}
+            onClearErrors={clearErrors}
+            canUndo={canUndo}
+            canRedo={canRedo}
+          />
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
 
 export default LayoutBuilderView;

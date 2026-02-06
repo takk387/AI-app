@@ -29,12 +29,34 @@ All routes in `src/app/api/` follow Next.js 15 App Router patterns.
 | `/api/layout/chat`          | POST   | Layout builder AI (with vision) |
 | `/api/layout/video-analyze` | POST   | Video analysis                  |
 
+### Dual AI Planning Routes
+
+| Route                        | Method | Purpose                               |
+| ---------------------------- | ------ | ------------------------------------- |
+| `/api/planning/start`        | POST   | Initiates dual AI planning session    |
+| `/api/planning/stream`       | GET    | SSE stream for pipeline stage updates |
+| `/api/planning/intelligence` | POST   | Intelligence gathering endpoint       |
+
+### AI Proxy Routes
+
+| Route             | Method | Purpose                          |
+| ----------------- | ------ | -------------------------------- |
+| `/api/ai/claude`  | POST   | Claude AI proxy route            |
+| `/api/ai/gemini`  | POST   | Gemini AI proxy route            |
+| `/api/web-search` | POST   | Live web search for intelligence |
+
+### Wizard Routes
+
+| Route                         | Method | Purpose                              |
+| ----------------------------- | ------ | ------------------------------------ |
+| `/api/wizard/generate-phases` | POST   | Generate dynamic phases from concept |
+
 ### Utility Routes
 
 | Route                  | Method | Purpose            |
 | ---------------------- | ------ | ------------------ |
 | `/api/generate`        | POST   | Generic generation |
-| `/api/images/generate` | POST   | DALL-E image gen   |
+| `/api/images/generate` | POST   | Image generation   |
 | `/api/screenshot`      | POST   | Screenshot capture |
 | `/api/health`          | GET    | Health check       |
 
@@ -142,5 +164,7 @@ Image generation routes have built-in rate limiting:
 
 - `middleware.ts` ← All protected routes depend on this
 - Supabase client ← Auth session management
-- Anthropic SDK ← Claude API calls
-- OpenAI SDK ← DALL-E calls
+- Anthropic SDK ← Claude API calls (code generation + architecture planning)
+- Google GenAI SDK ← Gemini API calls (vision, layout, architecture planning)
+- OpenAI SDK ← Embeddings/proxy only
+- `planningSessionStore.ts` ← In-memory session store for planning pipeline (TTL-based)

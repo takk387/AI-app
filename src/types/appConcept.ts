@@ -5,6 +5,7 @@
 import type { LayoutDesign } from './layoutDesign';
 import type { ArchitectureSpec } from './architectureSpec';
 import { LayoutManifest } from '@/types/schema';
+import type { FinalValidatedArchitecture } from '@/types/dualPlanning';
 
 export interface AppConcept {
   // Basic Information
@@ -37,6 +38,9 @@ export interface AppConcept {
 
   // Layout Manifest (from Gemini 3 Layout Builder)
   layoutManifest?: LayoutManifest;
+
+  // Dual AI Architecture Planning result
+  dualArchitectureResult?: FinalValidatedArchitecture;
 
   // Metadata
   createdAt: string;

@@ -7,12 +7,18 @@ paths:
   - src/services/AssetExtractionService.ts
   - src/services/VisionLoopEngine.ts
   - src/services/LayoutAutoFixEngine.ts
+  - src/services/BackgroundPlanningOrchestrator.ts
+  - src/services/ConsensusNegotiator.ts
+  - src/services/DualValidationOrchestrator.ts
+  - src/services/LiveIntelligenceGatherer.ts
+  - src/services/LayoutBackendAnalyzer.ts
   - src/services/CodeContextService.ts
   - src/services/ContextCache.ts
   - src/services/CodeParser.ts
   - src/utils/contextCompression.ts
   - src/utils/layoutValidation.ts
   - src/utils/semanticMemory.ts
+  - src/utils/architectureToPhaseContext.ts
   - src/hooks/useSmartContext.ts
 ---
 
@@ -20,10 +26,11 @@ paths:
 
 ## Overview
 
-This layer contains two major service groups:
+This layer contains three major service groups:
 
 1. **Titan Pipeline Services** - Gemini-powered vision, image generation, and code synthesis
-2. **Context & Parsing Services** - Context extraction, compression, and caching for AI code generation
+2. **Dual AI Planning Services** - Claude + Gemini consensus architecture pipeline
+3. **Context & Parsing Services** - Context extraction, compression, and caching for AI code generation
 
 ---
 
@@ -208,6 +215,67 @@ Zod schema validation for AI-generated layout data.
 - Open-ended component types and roles (not restricted to enums)
 - Recovery path for partial/malformed data
 - Transforms and sanitizes AI output before pipeline consumption
+
+---
+
+## Dual AI Planning Services
+
+### BackgroundPlanningOrchestrator
+
+**Location:** `src/services/BackgroundPlanningOrchestrator.ts` (~500 lines)
+
+5-stage pipeline orchestrator that runs Claude and Gemini in parallel to generate consensus architecture.
+
+**Pipeline stages:**
+
+1. Layout Analysis (`LayoutBackendAnalyzer`) - Analyzes layout manifest for backend requirements
+2. Intelligence Gathering (`LiveIntelligenceGatherer`) - Web search + AI analysis, skips if `cachedIntelligence` provided
+3. Parallel Architecture Generation - Claude + Gemini generate proposals concurrently
+4. Consensus Negotiation (`ConsensusNegotiator`) - Finds agreement/disagreements between proposals
+5. Dual Validation (`DualValidationOrchestrator`) - Cross-validates final architecture
+
+**Key patterns:**
+
+- Accepts `cachedIntelligence` to skip redundant Stage 2 work (pre-cached by `useBackgroundIntelligence`)
+- Reports progress via SSE events through `/api/planning/stream`
+- Sessions stored in `planningSessionStore` (in-memory Map with TTL)
+- Result saved as `dualArchitectureResult` in Zustand store
+
+### ConsensusNegotiator
+
+**Location:** `src/services/ConsensusNegotiator.ts` (~300 lines)
+
+Compares Claude and Gemini architecture proposals to find consensus.
+
+**Key patterns:**
+
+- Identifies areas of agreement and disagreement
+- Produces a merged architecture when consensus is reached
+- Escalation path via `ConsensusEscalationDialog` for user to resolve disagreements
+
+### DualValidationOrchestrator
+
+**Location:** `src/services/DualValidationOrchestrator.ts` (~250 lines)
+
+Cross-validates the final consensus architecture.
+
+### LiveIntelligenceGatherer
+
+**Location:** `src/services/LiveIntelligenceGatherer.ts` (~400 lines)
+
+Gathers real-time intelligence via web search and AI analysis for best practices, library recommendations.
+
+**Key patterns:**
+
+- Called via `/api/planning/intelligence` and `/api/web-search`
+- Results cached in Zustand as `cachedIntelligence`
+- Pre-cached during Design step by `useBackgroundIntelligence` hook
+
+### LayoutBackendAnalyzer
+
+**Location:** `src/services/LayoutBackendAnalyzer.ts` (~200 lines)
+
+Analyzes layout manifest to determine backend requirements (API routes, database schema, auth needs).
 
 ---
 

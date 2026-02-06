@@ -43,6 +43,8 @@ export interface LayoutBuilderChatPanelProps {
   onAnalyzeMedia?: (media: UploadedMedia[], instructions?: string) => Promise<void>;
   /** Pipeline step progress (shown in loading indicator) */
   pipelineProgress?: PipelineProgress | null;
+  /** Callback to generate full layout from concept (shown as quick action) */
+  onGenerateFullLayout?: () => void;
 }
 
 // ============================================================================
@@ -120,6 +122,7 @@ export const LayoutBuilderChatPanel: React.FC<LayoutBuilderChatPanelProps> = ({
   isAnalyzing,
   onAnalyzeMedia,
   pipelineProgress,
+  onGenerateFullLayout,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
@@ -242,6 +245,26 @@ export const LayoutBuilderChatPanel: React.FC<LayoutBuilderChatPanelProps> = ({
               Upload images or videos and I&apos;ll analyze them to create a replica layout. You can
               also type instructions to customize the result.
             </p>
+          </div>
+        )}
+
+        {/* Generate Full Layout quick action */}
+        {onGenerateFullLayout && messages.length <= 1 && !isAnalyzing && (
+          <div className="flex justify-center py-2">
+            <button
+              onClick={onGenerateFullLayout}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              Generate Full Layout from Concept
+            </button>
           </div>
         )}
 

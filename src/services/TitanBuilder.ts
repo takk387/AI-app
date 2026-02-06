@@ -14,6 +14,7 @@ import type {
   ComponentStructure,
   MotionPhysics,
   MergeStrategy,
+  AppContext,
 } from '@/types/titanPipeline';
 
 // ============================================================================
@@ -152,7 +153,8 @@ export async function assembleCode(
     previousFidelityScore: number;
     modifiedComponentIds: string[];
     issuesSummary: string;
-  }
+  },
+  appContext?: AppContext
 ): Promise<AppFile[]> {
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -210,11 +212,69 @@ RULES:
   \`\`\``
       : '';
 
-  const prompt = `${BUILDER_PROMPT}
+  // Build app context section so the Builder knows the app's concept, features, and preferences
+  const appContextSection = appContext
+    ? `\n  ### APP CONTEXT (Use this to inform your design decisions)
+  App: ${appContext.name ?? 'Untitled'}${appContext.description ? ` — ${appContext.description}` : ''}
+  ${appContext.purpose ? `Purpose: ${appContext.purpose}` : ''}
+  ${appContext.targetUsers ? `Target Users: ${appContext.targetUsers}` : ''}
+  ${appContext.layout ? `Layout Type: ${appContext.layout}` : ''}
+  ${appContext.coreFeatures?.length ? `Features:\n${appContext.coreFeatures.map((f) => `  - ${f.name}: ${f.description} (${f.priority} priority)`).join('\n')}` : ''}
+  ${appContext.needsAuth ? 'Auth: Yes — include login/signup pages' : ''}
+  ${appContext.roles?.length ? `User Roles: ${appContext.roles.map((r) => `${r.name} (${r.capabilities.join(', ')})`).join('; ')}` : ''}
+  ${appContext.workflows?.length ? `Workflows:\n${appContext.workflows.map((w) => `  - ${w.name}: ${w.steps.join(' → ')}`).join('\n')}` : ''}
+  Color Scheme: ${appContext.colorScheme ?? 'auto'}${appContext.primaryColor ? `, Primary: ${appContext.primaryColor}` : ''}${appContext.secondaryColor ? `, Secondary: ${appContext.secondaryColor}` : ''}${appContext.accentColor ? `, Accent: ${appContext.accentColor}` : ''}
+  ${appContext.style ? `Style: ${appContext.style}` : ''}
+  ${appContext.fontFamily ? `Font: ${appContext.fontFamily}` : ''}
+  ${appContext.borderRadius ? `Border Radius: ${appContext.borderRadius}` : ''}
+  ${appContext.spacing ? `Spacing: ${appContext.spacing}` : ''}`
+    : '';
+
+  // GENERATE mode: concept-driven full app generation (no manifests/images needed)
+  const isGenerateMode = strategy.mode === 'GENERATE' && appContext;
+
+  const generateModePrompt = isGenerateMode
+    ? `### Role
+You are the **Full App Layout Generator**. Build a complete, production-quality React application from a concept specification.
+
+### Instructions
+1. Create a COMPLETE multi-page React app with client-side routing (use React Router via \`react-router-dom\`).
+2. Generate ALL pages implied by the features, auth requirements, and user roles.
+3. Include a shared navigation component (sidebar for dashboard layout, top navbar for others).
+4. Every page must have realistic placeholder content that matches the feature description.
+5. Apply the specified color scheme, style, fonts, and spacing throughout.
+6. Add a unique data-id attribute to EVERY HTML element for the visual inspector.
+7. Make it responsive (mobile + desktop).
+8. Include proper hover/focus states on all interactive elements.
+
+### Output Format
+Return TWO files separated by markers:
+
+--- FILE: App.tsx ---
+[Full App.tsx with React Router, all page components, navigation, and import './styles.css']
+
+--- FILE: styles.css ---
+[CSS custom properties for theme, hover/focus styles, responsive breakpoints, animations]
+
+Rules:
+- App.tsx MUST include: import './styles.css';
+- Define CSS custom properties in :root for all theme colors.
+- Use inline styles for component-specific properties, CSS classes for shared styles.
+- No markdown fences. Just the raw code.
+${appContextSection}
+
+### INSTRUCTIONS
+${instructions}`
+    : '';
+
+  const prompt = isGenerateMode
+    ? generateModePrompt
+    : `${BUILDER_PROMPT}
 
   ### ASSETS (Use these URLs!)
   ${JSON.stringify(assets, null, 2)}
   ${assetContext}
+  ${appContextSection}
 
   ### INSTRUCTIONS
   ${instructions}

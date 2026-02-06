@@ -202,6 +202,53 @@ function convertVisualManifestToLayoutManifest(manifests: VisualManifest[]): Lay
   };
 }
 
+/**
+ * Create a synthetic LayoutManifest for GENERATE mode.
+ * When the pipeline produces files without a Surveyor step (no images analyzed),
+ * we still need a LayoutManifest so downstream systems (DynamicPhaseGenerator,
+ * MainBuilderView) recognize the layout was built and create a Layout Injection phase.
+ */
+function createSyntheticLayoutManifest(files: AppFile[], appContext?: AppContext): LayoutManifest {
+  // Detect features from file names/paths
+  const detectedFeatures: string[] = [];
+  for (const file of files) {
+    const lower = file.path.toLowerCase();
+    if (lower.includes('login') || lower.includes('auth')) detectedFeatures.push('Authentication');
+    if (lower.includes('dashboard')) detectedFeatures.push('Dashboard');
+    if (lower.includes('nav') || lower.includes('sidebar')) detectedFeatures.push('Navigation');
+    if (lower.includes('settings')) detectedFeatures.push('Settings');
+    if (lower.includes('profile')) detectedFeatures.push('User Profile');
+  }
+
+  // Pull colors from appContext if available
+  const colors: Record<string, string> = {};
+  if (appContext?.primaryColor) colors.primary = appContext.primaryColor;
+  if (appContext?.secondaryColor) colors.secondary = appContext.secondaryColor;
+  if (appContext?.accentColor) colors.accent = appContext.accentColor;
+
+  return {
+    id: `layout-gen-${Date.now()}`,
+    version: '1.0',
+    root: {
+      id: 'root',
+      type: 'container',
+      semanticTag: 'main',
+      styles: { tailwindClasses: 'min-h-screen' },
+      attributes: {},
+      children: [],
+    },
+    definitions: {},
+    detectedFeatures: [...new Set(detectedFeatures)],
+    designSystem: {
+      colors,
+      fonts: {
+        heading: appContext?.fontFamily ?? 'Inter',
+        body: appContext?.fontFamily ?? 'Inter',
+      },
+    },
+  };
+}
+
 // ============================================================================
 // HOOK
 // ============================================================================
@@ -352,6 +399,13 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
             if (firstCanvas?.width && firstCanvas?.height) {
               setCanvasSize({ width: firstCanvas.width, height: firstCanvas.height });
             }
+          } else {
+            // GENERATE mode: pipeline returned files but no manifests (no Surveyor step).
+            // Create a synthetic LayoutManifest so downstream systems (DynamicPhaseGenerator,
+            // MainBuilderView layout injection) recognize the layout was built.
+            const syntheticManifest = createSyntheticLayoutManifest(result.files, appContext);
+            setCurrentLayoutManifest(syntheticManifest);
+            updateAppConceptField('layoutManifest', syntheticManifest);
           }
         } else {
           setErrors((prev) => [...prev, 'Pipeline completed but returned no files']);

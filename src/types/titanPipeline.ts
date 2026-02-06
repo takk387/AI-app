@@ -89,10 +89,32 @@ export interface InspectorBridgeState {
 
 /** App context passed from the global store for personalized generation */
 export interface AppContext {
+  // Core identity
   name?: string;
+  description?: string;
+  purpose?: string;
+  targetUsers?: string;
+
+  // UI preferences
   colorScheme?: string;
   primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
   style?: string;
+  layout?: 'single-page' | 'multi-page' | 'dashboard' | 'custom';
+  borderRadius?: string;
+  shadowIntensity?: string;
+  fontFamily?: string;
+  spacing?: string;
+
+  // Features & structure
+  coreFeatures?: Array<{ id: string; name: string; description: string; priority: string }>;
+  needsAuth?: boolean;
+  needsDatabase?: boolean;
+  needsRealtime?: boolean;
+  needsFileUpload?: boolean;
+  roles?: Array<{ name: string; capabilities: string[] }>;
+  workflows?: Array<{ name: string; steps: string[]; involvedRoles: string[] }>;
 }
 
 export interface FileInput {
@@ -180,7 +202,7 @@ export interface ComponentStructure {
 }
 
 export interface MergeStrategy {
-  mode: 'CREATE' | 'MERGE' | 'EDIT';
+  mode: 'CREATE' | 'MERGE' | 'EDIT' | 'GENERATE';
   base_source: 'codebase' | 'file_0' | null;
   file_roles: string[];
   execution_plan: {

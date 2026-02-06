@@ -23,8 +23,10 @@ Personal AI App Builder - Build React components and apps using Claude AI with n
 **Core Features:**
 
 - Dual-mode AI system (PLAN mode for planning, ACT mode for building)
+- **Dual AI Architecture Planning** (Claude + Gemini consensus pipeline with escalation)
 - AI-powered dynamic phase generation (2-25+ phases based on complexity)
-- Visual layout builder with Claude vision capabilities
+- Visual layout builder with Gemini vision + GENERATE mode (full layout from concept)
+- Background intelligence gathering (pre-caches during Design step)
 - AST-based surgical code modifications
 - Version control and rollback system
 - Cloud storage with Supabase integration
@@ -47,36 +49,50 @@ src/
 │   ├── (protected)/app/    # Protected route group (auth required)
 │   │   ├── wizard/         # Step 1: Conversation planning
 │   │   ├── design/         # Step 2: Visual layout design
-│   │   ├── review/         # Step 3: Review before building
-│   │   ├── page.tsx        # Step 4: Main builder view
+│   │   ├── ai-plan/        # Step 3: Dual AI architecture planning
+│   │   ├── review/         # Step 4: Review before building
+│   │   ├── page.tsx        # Step 5: Main builder view
 │   │   ├── dashboard/      # App dashboard
 │   │   └── settings/       # User settings
 │   ├── api/                # API routes (SSE streaming)
+│   │   ├── ai/             # AI proxy routes (Claude, Gemini)
+│   │   ├── planning/       # Dual AI planning (start, stream, intelligence)
+│   │   ├── web-search/     # Live web search for intelligence
+│   │   └── wizard/         # Wizard phase generation
 │   ├── login/, signup/     # Auth pages (public)
 │   └── layout.tsx, page.tsx
 │
 ├── components/             # React components (60+ files)
 │   ├── MainBuilderView.tsx # Main orchestrator (~1622 lines)
 │   ├── NaturalConversationWizard.tsx  # Step 1: PLAN mode wizard
-│   ├── LayoutBuilderView.tsx          # Step 2: Visual design mode
+│   ├── LayoutBuilderView.tsx          # Step 2: Visual design + GENERATE mode
 │   ├── layout-builder/     # Layout sub-components
-│   ├── review/             # Review step components (13 files)
+│   ├── ai-plan/            # AI Plan step components (PipelineStagesView, ConsensusResultView, AISelectionPanel)
+│   ├── ConsensusEscalationDialog.tsx  # Dual AI escalation modal
+│   ├── review/             # Review step components (14 files, includes AIPlanCard)
 │   ├── conversation-wizard/ # Planning sub-components
 │   ├── modals/             # Modal dialogs
 │   ├── build/              # Build UI components
 │   └── ui/                 # Base UI components
 │
 ├── hooks/                  # Custom hooks (30+ files)
-│   ├── useLayoutBuilder.ts # Layout design state
+│   ├── useLayoutBuilder.ts # Layout design state + GENERATE mode
+│   ├── useDualAIPlan.ts    # Dual AI planning pipeline (SSE, escalation)
+│   ├── useBackgroundIntelligence.ts # Background intelligence pre-caching
 │   ├── useAppStore.ts      # App store integration
 │   ├── useDynamicBuildPhases.ts # Phase execution
 │   └── __tests__/          # Hook tests
 │
-├── services/               # Business logic (25+ files)
+├── services/               # Business logic (30+ files)
 │   ├── TitanPipelineService.ts   # Titan Pipeline orchestrator (~1074 lines)
 │   ├── GeminiLayoutService.ts    # Gemini Vision layout analysis (~1364 lines)
 │   ├── GeminiImageService.ts     # Multimodal image generation
 │   ├── VisionLoopEngine.ts       # Self-healing vision loop
+│   ├── BackgroundPlanningOrchestrator.ts # Dual AI 5-stage pipeline
+│   ├── ConsensusNegotiator.ts    # Claude-Gemini consensus engine
+│   ├── DualValidationOrchestrator.ts    # Cross-validation of architectures
+│   ├── LiveIntelligenceGatherer.ts      # Web search + AI intelligence
+│   ├── LayoutBackendAnalyzer.ts  # Layout-to-backend analysis
 │   ├── AppImageGenerator.ts      # Image generation coordinator
 │   ├── AssetExtractionService.ts # Image cropping + Supabase upload
 │   ├── LayoutAutoFixEngine.ts    # Auto-fix from AI critique
@@ -86,27 +102,32 @@ src/
 │   └── analyzers/                # Specialized analyzers
 │
 ├── store/                  # Zustand state
-│   └── useAppStore.ts      # Central store (500+ lines, 8 slices)
+│   └── useAppStore.ts      # Central store (500+ lines, 10 slices, v5 migrations)
 │
-├── types/                  # TypeScript types (16 files)
+├── types/                  # TypeScript types (18 files)
 │   ├── layoutDesign.ts     # Design system (41KB)
-│   ├── titanPipeline.ts    # Titan Pipeline types
+│   ├── titanPipeline.ts    # Titan Pipeline types (incl. expanded AppContext)
 │   ├── layoutAnalysis.ts   # Layout analysis/critique types
 │   ├── appConcept.ts       # Planning types
-│   └── dynamicPhases.ts    # Phase types
+│   ├── dynamicPhases.ts    # Phase types
+│   └── dualPlanning.ts     # Dual AI planning types (stages, SSE events, escalation)
 │
 ├── utils/                  # Utilities (40+ files)
 │   ├── astModifier.ts      # AST code editing (61KB)
 │   ├── layoutValidation.ts # Zod schema validation for layouts
+│   ├── architectureToPhaseContext.ts # Architecture → phase context converter
 │   ├── codeValidator.ts    # Syntax validation
 │   └── designPatterns.ts   # Design patterns
+│
+├── lib/                    # Server-side utilities
+│   └── planningSessionStore.ts # In-memory planning session store (TTL)
 │
 ├── prompts/                # AI system prompts
 ├── data/                   # Presets and templates
 └── contexts/               # React Context providers
 ```
 
-## Core Data Flow (4-Step Page Navigation)
+## Core Data Flow (5-Step Page Navigation)
 
 ```
 Step 1: /app/wizard (NaturalConversationWizard)
@@ -117,17 +138,31 @@ Step 1: /app/wizard (NaturalConversationWizard)
 Step 2: /app/design (LayoutBuilderView)
     → User uploads reference images / sketches
     → AI analyzes layout via Gemini Vision (GeminiLayoutService)
+    → GENERATE mode: creates full layout from AppConcept alone (no images)
     → Self-healing vision loop refines components
     → Layout saved to Zustand store (layoutBuilderFiles, currentLayoutManifest)
+    → Background intelligence gathering starts (useBackgroundIntelligence)
+    → Navigates to /app/ai-plan
+    ↓
+Step 3: /app/ai-plan (AIPlanPage)
+    → Dual AI Planning Pipeline (BackgroundPlanningOrchestrator)
+    → Stage 1: Layout Analysis (LayoutBackendAnalyzer)
+    → Stage 2: Intelligence Gathering (LiveIntelligenceGatherer, uses cached if available)
+    → Stage 3: Parallel Architecture Generation (Claude + Gemini)
+    → Stage 4: Consensus Negotiation (ConsensusNegotiator)
+    → Stage 5: Dual Validation (DualValidationOrchestrator)
+    → User can escalate disagreements (ConsensusEscalationDialog)
+    → Architecture result saved to store (dualArchitectureResult)
     → Navigates to /app/review
     ↓
-Step 3: /app/review (ReviewPage)
-    → User reviews concept, features, phases, layout, settings
-    → 13 review components display all gathered data
+Step 4: /app/review (ReviewPage)
+    → User reviews concept, features, phases, layout, AI plan, settings
+    → 14 review components display all gathered data (includes AIPlanCard)
+    → Phase plan regenerated with architecture context if available
     → "Build App" triggers Titan Pipeline
     → Navigates to /app
     ↓
-Step 4: /app (MainBuilderView)
+Step 5: /app (MainBuilderView)
     → Titan Pipeline: Router → Surveyor → Photographer → Asset Extraction → Builder
     → Phase 1 auto-completes by injecting layout code directly
     → Subsequent phases use Claude AI for code generation
@@ -138,15 +173,19 @@ Step 4: /app (MainBuilderView)
 
 ## Key Entry Points
 
-| File                            | Purpose                                                      |
-| ------------------------------- | ------------------------------------------------------------ |
-| `MainBuilderView.tsx`           | Main orchestrator, Titan Pipeline integration, phase control |
-| `useAppStore.ts`                | Central state - all data flows through here                  |
-| `NaturalConversationWizard.tsx` | Step 1 - builds AppConcept via conversation                  |
-| `LayoutBuilderView.tsx`         | Step 2 - visual design with Gemini vision                    |
-| `review/page.tsx`               | Step 3 - review all gathered data before building            |
-| `TitanPipelineService.ts`       | Titan Pipeline: Router → Surveyor → Photographer → Builder   |
-| `GeminiLayoutService.ts`        | Layout analysis + critique via Gemini Vision                 |
+| File                                | Purpose                                                      |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `MainBuilderView.tsx`               | Main orchestrator, Titan Pipeline integration, phase control |
+| `useAppStore.ts`                    | Central state - all data flows through here                  |
+| `NaturalConversationWizard.tsx`     | Step 1 - builds AppConcept via conversation                  |
+| `LayoutBuilderView.tsx`             | Step 2 - visual design with Gemini vision                    |
+| `ai-plan/page.tsx`                  | Step 3 - dual AI architecture planning                       |
+| `review/page.tsx`                   | Step 4 - review all gathered data before building            |
+| `TitanPipelineService.ts`           | Titan Pipeline: Router → Surveyor → Photographer → Builder   |
+| `GeminiLayoutService.ts`            | Layout analysis + critique via Gemini Vision                 |
+| `BackgroundPlanningOrchestrator.ts` | Dual AI 5-stage pipeline orchestrator                        |
+| `useDualAIPlan.ts`                  | Dual AI planning hook (SSE streaming, escalation)            |
+| `useBackgroundIntelligence.ts`      | Background intelligence pre-caching during Design step       |
 
 ## Essential Commands
 
@@ -180,12 +219,13 @@ npm run test:services # Service tests (Node)
 - Tree-sitter is used for AST parsing - test changes carefully
 - Component state lives in useAppStore, not local state
 
-### File Relationships (4-Step Flow)
+### File Relationships (5-Step Flow)
 
 - `NaturalConversationWizard` → creates `AppConcept` → navigates to `/app/design`
-- `LayoutBuilderView` → uses `useLayoutBuilder` hook → saves layout to store → navigates to `/app/review`
-- Review page → user approves → triggers `TitanPipelineService.execute()` → navigates to `/app`
-- `MainBuilderView` → uses `TitanPipelineService` → runs full pipeline → `Sandpack` preview
+- `LayoutBuilderView` → uses `useLayoutBuilder` hook → saves layout to store → starts background intelligence → navigates to `/app/ai-plan`
+- `AIPlanPage` → uses `useDualAIPlan` hook → runs 5-stage dual AI pipeline → saves `dualArchitectureResult` → navigates to `/app/review`
+- Review page → regenerates phases with architecture context → user approves → navigates to `/app`
+- `MainBuilderView` → `tryStartPhase1` injects layout → subsequent phases use Claude AI → `Sandpack` preview
 
 ## Environment Variables
 
@@ -364,7 +404,7 @@ If asked to review or analyze something, go deep by default. Surface-level summa
 1. **Consult Master Context** - Check [`MASTER_CONTEXT_VERIFIED.md`](MASTER_CONTEXT_VERIFIED.md) for dependency counts and critical file warnings before touching any file.
 2. **Read before editing** - Always read the full file before modifying. Understand existing patterns.
 3. **Check dependencies** - Use grep to find all usages of functions/types before changing signatures. Cross-reference with Master Context dependency hierarchy.
-4. **Understand the data flow** - Trace the 4-step flow: Wizard → Layout Design → Review → MainBuilderView (Titan Pipeline)
+4. **Understand the data flow** - Trace the 5-step flow: Wizard → Layout Design → AI Plan → Review → MainBuilderView (Titan Pipeline)
 5. **Respect existing patterns** - Match the style of surrounding code. Don't introduce new patterns without reason.
 
 ### When Modifying Code
@@ -455,6 +495,11 @@ const result = modifyFunction(code, 'old', { rename: 'new' });
 - `src/services/GeminiLayoutService.ts` - Gemini Vision layout analysis + critique
 - `src/services/GeminiImageService.ts` - Multimodal image generation
 - `src/services/VisionLoopEngine.ts` - Self-healing vision loop
+- `src/services/BackgroundPlanningOrchestrator.ts` - Dual AI 5-stage pipeline
+- `src/services/ConsensusNegotiator.ts` - Claude-Gemini consensus engine
+- `src/services/DualValidationOrchestrator.ts` - Cross-validation of architectures
+- `src/services/LiveIntelligenceGatherer.ts` - Web search + AI intelligence
+- `src/services/LayoutBackendAnalyzer.ts` - Layout-to-backend analysis
 - `src/services/AppImageGenerator.ts` - Image generation + Supabase upload
 - `src/services/AssetExtractionService.ts` - Image cropping from screenshots
 - `src/services/LayoutAutoFixEngine.ts` - Auto-fix from AI critique
@@ -462,10 +507,14 @@ const result = modifyFunction(code, 'old', { rename: 'new' });
 - `src/services/ContextCache.ts` - Cache management
 - `src/utils/contextCompression.ts` - Token compression
 - `src/utils/layoutValidation.ts` - Zod schema validation for AI outputs
+- `src/utils/architectureToPhaseContext.ts` - Architecture → phase context converter
 
 **Current Goals:**
 
+- Dual AI Planning: refine consensus negotiation and escalation UX
+- Background intelligence: improve web search relevance and caching
 - Titan Pipeline: improve Router intent detection and reference image support
+- GENERATE mode: improve synthetic layout manifest quality
 - Self-healing vision loop: improve fidelity scoring and auto-fix accuracy
 - Improve context compression for large apps
 - Reduce token usage during phase execution
@@ -475,6 +524,8 @@ const result = modifyFunction(code, 'old', { rename: 'new' });
 1. Check existing cache invalidation logic before adding new caches
 2. Verify token count accuracy after compression changes
 3. Run memory/performance tests after modifications
+4. Test dual AI pipeline end-to-end after consensus/validation changes
+5. Verify background intelligence pre-caching doesn't duplicate Stage 2 work
 
 ## Success Criteria
 

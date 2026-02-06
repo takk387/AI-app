@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Feb 3, 2026)
+> **Status**: VERIFIED (Feb 6, 2026)
 
 ---
 
@@ -20,7 +20,7 @@
 
 ---
 
-## System Architecture Flow (4-Step Page Navigation)
+## System Architecture Flow (5-Step Page Navigation)
 
 ```
 Step 1: /app/wizard (NaturalConversationWizard)
@@ -31,18 +31,30 @@ Step 1: /app/wizard (NaturalConversationWizard)
 Step 2: /app/design (LayoutBuilderView)
     → User uploads reference images / sketches
     → Gemini Vision analyzes layout (GeminiLayoutService)
+    → GENERATE mode: creates full layout from AppConcept alone (no images)
     → Self-healing vision loop refines components
     → Layout saved to Zustand store
+    → Background intelligence gathering starts (useBackgroundIntelligence)
+    → Navigates to /app/ai-plan
+    ↓
+Step 3: /app/ai-plan (AIPlanPage)
+    → Dual AI Planning Pipeline (BackgroundPlanningOrchestrator)
+    → Stage 1: Layout Analysis → Stage 2: Intelligence Gathering
+    → Stage 3: Parallel Architecture (Claude + Gemini)
+    → Stage 4: Consensus Negotiation → Stage 5: Dual Validation
+    → User can escalate disagreements (ConsensusEscalationDialog)
+    → Architecture result saved to store (dualArchitectureResult)
     → Navigates to /app/review
     ↓
-Step 3: /app/review (ReviewPage - 13 components)
-    → User reviews concept, features, phases, layout, settings
+Step 4: /app/review (ReviewPage - 14 components)
+    → User reviews concept, features, phases, layout, AI plan, settings
+    → Phase plan regenerated with architecture context if available
     → "Build App" triggers Titan Pipeline
     → Navigates to /app
     ↓
-Step 4: /app (MainBuilderView)
+Step 5: /app (MainBuilderView)
     → Titan Pipeline: Router → Surveyor → Photographer → Builder
-    → Phase 1 auto-completes by injecting layout code
+    → Phase 1 auto-completes by injecting layout code (tryStartPhase1)
     → Subsequent phases use Claude AI via PhaseExecutionManager
     → Sandpack preview + self-healing vision loop
     → Version history and rollback
@@ -51,10 +63,12 @@ Step 4: /app (MainBuilderView)
 **Key Data Persistence Points (Zustand + localStorage):**
 
 - `appConcept` - Created in Wizard (Step 1), used throughout
-- `dynamicPhasePlan` - Created in Wizard (Step 1), used in Builder (Step 4)
-- `layoutBuilderFiles` - Created in Design (Step 2), injected in Phase 1 (Step 4)
-- `currentLayoutManifest` - Created in Design (Step 2), used in Builder (Step 4)
+- `dynamicPhasePlan` - Created in Wizard (Step 1), regenerated in Review (Step 4) with architecture context
+- `layoutBuilderFiles` - Created in Design (Step 2), injected in Phase 1 (Step 5)
+- `currentLayoutManifest` - Created in Design (Step 2), synthetic manifest for GENERATE mode
 - `currentDesignSpec` - Extracted from images in Design (Step 2)
+- `cachedIntelligence` - Pre-cached in Design (Step 2), consumed by AI Plan (Step 3)
+- `dualArchitectureResult` - Created in AI Plan (Step 3), used for phase regeneration (Step 4)
 - `components` / `currentComponent` - Generated code, persists across navigation
 
 ---
@@ -173,14 +187,19 @@ New animation and visual effects infrastructure.
 | `GeminiLayoutService.ts`    | ~5 files     | Layout AI service (1,364 lines)     |
 | Deployment services cluster | 10+ files    |                                     |
 
-### TIER 3: NEW PIPELINE SERVICES (1-3 dependents each)
+### TIER 3: PIPELINE & PLANNING SERVICES (1-3 dependents each)
 
-| File                       | Lines | Notes                       |
-| -------------------------- | ----- | --------------------------- |
-| `TitanPipelineService.ts`  | 1,074 | Titan Pipeline orchestrator |
-| `MotionMapper.ts`          | 350   | Animation mapping           |
-| `SourceMergeEngine.ts`     | 322   | Multi-source merging        |
-| `EnhancedVideoAnalyzer.ts` | 166   | Video motion extraction     |
+| File                                | Lines | Notes                             |
+| ----------------------------------- | ----- | --------------------------------- |
+| `TitanPipelineService.ts`           | 1,074 | Titan Pipeline orchestrator       |
+| `BackgroundPlanningOrchestrator.ts` | ~500  | Dual AI 5-stage pipeline          |
+| `ConsensusNegotiator.ts`            | ~300  | Claude-Gemini consensus           |
+| `DualValidationOrchestrator.ts`     | ~250  | Cross-validation of architectures |
+| `LiveIntelligenceGatherer.ts`       | ~400  | Web search + AI intelligence      |
+| `LayoutBackendAnalyzer.ts`          | ~200  | Layout-to-backend analysis        |
+| `MotionMapper.ts`                   | 350   | Animation mapping                 |
+| `SourceMergeEngine.ts`              | 322   | Multi-source merging              |
+| `EnhancedVideoAnalyzer.ts`          | 166   | Video motion extraction           |
 
 ### TIER 4: HOOKS & COMPONENTS (1-3 dependents each)
 
@@ -196,17 +215,17 @@ Lower risk, but still follow patterns.
 
 ## Critical Files — DO NOT BREAK
 
-| File                            | Lines     | Purpose                              | Risk                                          |
-| ------------------------------- | --------- | ------------------------------------ | --------------------------------------------- |
-| `useAppStore.ts`                | **804**   | Centralized Zustand state (8 slices) | 24+ files break                               |
-| `types/layoutDesign.ts`         | **2,999** | Comprehensive design type system     | 14 files — **RECOMMEND SPLITTING**            |
-| `middleware.ts`                 | **87**    | Auth flow for all routes             | Auth breaks                                   |
-| `DynamicPhaseGenerator.ts`      | **2,718** | Phase planning engine                | Build system breaks — **RECOMMEND SPLITTING** |
-| `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator         | Build system breaks                           |
-| `GeminiLayoutService.ts`        | **1,364** | Layout AI with Gemini Vision         | Layout builder breaks                         |
-| `MainBuilderView.tsx`           | **1,622** | Main orchestrator + Titan Pipeline   | UI breaks                                     |
-| `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                  | Planning breaks                               |
-| `TitanPipelineService.ts`       | **1,075** | Titan Pipeline orchestrator          | Pipeline breaks                               |
+| File                            | Lines     | Purpose                                   | Risk                                          |
+| ------------------------------- | --------- | ----------------------------------------- | --------------------------------------------- |
+| `useAppStore.ts`                | **804**   | Centralized Zustand state (10 slices, v5) | 24+ files break                               |
+| `types/layoutDesign.ts`         | **2,999** | Comprehensive design type system          | 14 files — **RECOMMEND SPLITTING**            |
+| `middleware.ts`                 | **87**    | Auth flow for all routes                  | Auth breaks                                   |
+| `DynamicPhaseGenerator.ts`      | **2,718** | Phase planning engine                     | Build system breaks — **RECOMMEND SPLITTING** |
+| `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator              | Build system breaks                           |
+| `GeminiLayoutService.ts`        | **1,364** | Layout AI with Gemini Vision              | Layout builder breaks                         |
+| `MainBuilderView.tsx`           | **1,622** | Main orchestrator + Titan Pipeline        | UI breaks                                     |
+| `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                       | Planning breaks                               |
+| `TitanPipelineService.ts`       | **1,075** | Titan Pipeline orchestrator               | Pipeline breaks                               |
 
 ---
 
@@ -250,17 +269,19 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 
 ## Key Patterns
 
-| Pattern           | Implementation                                                                     |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| State Management  | Zustand + Immer middleware, 8 slices                                               |
-| Context Selection | `CodeContextService` — smart file selection to reduce tokens                       |
-| Live Preview      | Sandpack                                                                           |
-| Code Parsing      | Tree-sitter for AST analysis                                                       |
-| Background Jobs   | Inngest                                                                            |
-| AI Providers      | Claude (logic/code), Gemini (vision/layout/images), OpenAI (embeddings/proxy only) |
-| Motion Mapping    | `MotionMapper` — extracts animations from video/design (NEW)                       |
-| Visual Effects    | `effects/` components — CSS particles, keyframe injection (NEW)                    |
-| Agentic Pipelines | `TitanPipelineService` — multi-agent orchestration (NEW)                           |
+| Pattern           | Implementation                                                                                               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| State Management  | Zustand + Immer middleware, 10 slices, v5 migrations                                                         |
+| Context Selection | `CodeContextService` — smart file selection to reduce tokens                                                 |
+| Live Preview      | Sandpack                                                                                                     |
+| Code Parsing      | Tree-sitter for AST analysis                                                                                 |
+| Background Jobs   | Inngest                                                                                                      |
+| AI Providers      | Claude (logic/code/architecture), Gemini (vision/layout/images/architecture), OpenAI (embeddings/proxy only) |
+| Dual AI Planning  | `BackgroundPlanningOrchestrator` — Claude + Gemini consensus pipeline                                        |
+| Background Intel  | `useBackgroundIntelligence` — pre-caches intelligence during Design step                                     |
+| Motion Mapping    | `MotionMapper` — extracts animations from video/design                                                       |
+| Visual Effects    | `effects/` components — CSS particles, keyframe injection                                                    |
+| Agentic Pipelines | `TitanPipelineService` — multi-agent orchestration                                                           |
 
 ---
 
@@ -268,28 +289,51 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 
 ```
 src/
-├── agents/           # Agentic architecture (1,320 lines) [NEW]
+├── agents/           # Agentic architecture (1,320 lines)
 │   ├── CodeTransformAgent.ts   # Code transformations
 │   ├── DeploymentAgent.ts      # Deployment workflows
 │   └── types.ts                # Agent types
-├── app/              # Next.js App Router + API routes (60 handlers)
-│   └── (protected)/app/review/ # Review page [NEW]
+├── app/              # Next.js App Router + API routes (60+ handlers)
+│   ├── (protected)/app/
+│   │   ├── wizard/             # Step 1: Conversation planning
+│   │   ├── design/             # Step 2: Visual layout design
+│   │   ├── ai-plan/            # Step 3: Dual AI architecture planning
+│   │   ├── review/             # Step 4: Review before building
+│   │   └── page.tsx            # Step 5: Main builder view
+│   └── api/
+│       ├── ai/                 # AI proxy routes (Claude, Gemini)
+│       ├── planning/           # Dual AI planning (start, stream, intelligence)
+│       ├── web-search/         # Live web search for intelligence
+│       └── wizard/             # Wizard phase generation
 ├── components/       # 29 top-level + modals + sub-components
+│   ├── ai-plan/      # AI Plan step (PipelineStagesView, ConsensusResultView, AISelectionPanel)
 │   ├── effects/      # Visual effects (CSS particles, renderers)
 │   ├── layout-builder/  # Layout builder components
+│   ├── review/       # Review step (14 files, includes AIPlanCard)
+│   ├── ConsensusEscalationDialog.tsx  # Dual AI escalation modal
 │   └── ...
-├── hooks/            # 35 custom hooks
-├── services/         # 73 business logic services
-│   ├── TitanPipelineService.ts  # Agentic pipeline
-│   ├── MotionMapper.ts          # Animation mapping
-│   ├── SourceMergeEngine.ts     # Source merging
+├── hooks/            # 35+ custom hooks
+│   ├── useDualAIPlan.ts           # Dual AI planning pipeline
+│   ├── useBackgroundIntelligence.ts # Background intelligence pre-caching
 │   └── ...
-├── store/            # Zustand centralized state
-├── types/            # 12,987 lines of TypeScript types
-│   ├── titanPipeline.ts   # Pipeline types
+├── services/         # 73+ business logic services
+│   ├── TitanPipelineService.ts           # Agentic pipeline
+│   ├── BackgroundPlanningOrchestrator.ts # Dual AI 5-stage pipeline
+│   ├── ConsensusNegotiator.ts            # Claude-Gemini consensus
+│   ├── DualValidationOrchestrator.ts     # Cross-validation
+│   ├── LiveIntelligenceGatherer.ts       # Web search + AI intelligence
+│   ├── LayoutBackendAnalyzer.ts          # Layout-to-backend analysis
+│   └── ...
+├── store/            # Zustand centralized state (10 slices, v5 migrations)
+├── types/            # ~13,200 lines of TypeScript types
+│   ├── titanPipeline.ts   # Pipeline types (incl. expanded AppContext)
+│   ├── dualPlanning.ts    # Dual AI planning types (stages, SSE, escalation)
 │   ├── motionConfig.ts    # Motion types
 │   └── ...
-├── utils/            # 24,728 lines of utilities
+├── lib/              # Server-side utilities
+│   └── planningSessionStore.ts  # In-memory planning session store (TTL)
+├── utils/            # ~24,800 lines of utilities
+│   ├── architectureToPhaseContext.ts # Architecture → phase context converter
 │   ├── snapEngine.ts           # Alignment engine
 │   ├── inspectorBridge.ts      # Inspector bridge
 │   ├── responsiveTypography.ts # Typography utils
@@ -328,15 +372,73 @@ Phase-by-phase code generation → quality checks → live preview
 
 ## Key Entry Points
 
-| File                            | Lines | Purpose                                                       |
-| ------------------------------- | ----- | ------------------------------------------------------------- |
-| `MainBuilderView.tsx`           | 1,622 | Main orchestrator — Titan Pipeline integration, phase control |
-| `NaturalConversationWizard.tsx` | 806   | PLAN mode wizard UI                                           |
-| `useAppStore.ts`                | 804   | Centralized state                                             |
-| `DynamicPhaseGenerator.ts`      | 2,718 | Phase planning                                                |
-| `PhaseExecutionManager.ts`      | 2,095 | Phase execution                                               |
-| `GeminiLayoutService.ts`        | 1,364 | Layout AI + Vision critique                                   |
-| `TitanPipelineService.ts`       | 1,075 | Titan Pipeline orchestrator                                   |
+| File                                | Lines | Purpose                                                       |
+| ----------------------------------- | ----- | ------------------------------------------------------------- |
+| `MainBuilderView.tsx`               | 1,622 | Main orchestrator — Titan Pipeline integration, phase control |
+| `NaturalConversationWizard.tsx`     | 806   | PLAN mode wizard UI                                           |
+| `useAppStore.ts`                    | 804   | Centralized state (10 slices, v5 migrations)                  |
+| `DynamicPhaseGenerator.ts`          | 2,718 | Phase planning                                                |
+| `PhaseExecutionManager.ts`          | 2,095 | Phase execution                                               |
+| `GeminiLayoutService.ts`            | 1,364 | Layout AI + Vision critique                                   |
+| `TitanPipelineService.ts`           | 1,075 | Titan Pipeline orchestrator                                   |
+| `BackgroundPlanningOrchestrator.ts` | ~500  | Dual AI 5-stage pipeline orchestrator                         |
+| `useDualAIPlan.ts`                  | ~300  | Dual AI planning hook (SSE, escalation)                       |
+| `useBackgroundIntelligence.ts`      | ~150  | Background intelligence pre-caching                           |
+| `ai-plan/page.tsx`                  | ~200  | Step 3 - Dual AI architecture planning page                   |
+
+---
+
+## Dual AI Planning Pipeline (Added Feb 2026)
+
+5-stage pipeline where Claude and Gemini independently generate architecture proposals, negotiate consensus, and cross-validate.
+
+```
+Stage 1: Layout Analysis (LayoutBackendAnalyzer)
+    → Analyzes layout manifest for backend requirements
+    ↓
+Stage 2: Intelligence Gathering (LiveIntelligenceGatherer)
+    → Web search + AI analysis for best practices
+    → Pre-cached during Design step (useBackgroundIntelligence)
+    ↓
+Stage 3: Parallel Architecture Generation
+    → Claude generates architecture proposal
+    → Gemini generates architecture proposal (concurrent)
+    ↓
+Stage 4: Consensus Negotiation (ConsensusNegotiator)
+    → Compares proposals, finds agreement/disagreements
+    → User can escalate via ConsensusEscalationDialog
+    ↓
+Stage 5: Dual Validation (DualValidationOrchestrator)
+    → Cross-validates final architecture
+    → Result saved as dualArchitectureResult in Zustand
+```
+
+**Key Files:**
+
+| File                                | Lines | Purpose                                         |
+| ----------------------------------- | ----- | ----------------------------------------------- |
+| `BackgroundPlanningOrchestrator.ts` | ~500  | 5-stage pipeline orchestrator                   |
+| `ConsensusNegotiator.ts`            | ~300  | Claude-Gemini consensus engine                  |
+| `DualValidationOrchestrator.ts`     | ~250  | Cross-validation of architectures               |
+| `LiveIntelligenceGatherer.ts`       | ~400  | Web search + AI intelligence                    |
+| `LayoutBackendAnalyzer.ts`          | ~200  | Layout-to-backend requirements analysis         |
+| `useDualAIPlan.ts`                  | ~300  | SSE streaming hook for planning pipeline        |
+| `useBackgroundIntelligence.ts`      | ~150  | Background pre-caching during Design step       |
+| `ConsensusEscalationDialog.tsx`     | ~200  | User escalation modal for disagreements         |
+| `types/dualPlanning.ts`             | ~200  | Planning types (stages, SSE events, escalation) |
+| `lib/planningSessionStore.ts`       | ~100  | In-memory session store with TTL                |
+| `architectureToPhaseContext.ts`     | ~100  | Architecture → phase context converter          |
+
+**API Routes:**
+
+| Route                        | Purpose                                    |
+| ---------------------------- | ------------------------------------------ |
+| `/api/planning/start`        | Initiates dual AI planning session         |
+| `/api/planning/stream`       | SSE stream for pipeline stage updates      |
+| `/api/planning/intelligence` | Intelligence gathering endpoint            |
+| `/api/ai/claude`             | Claude AI proxy route                      |
+| `/api/ai/gemini`             | Gemini AI proxy route                      |
+| `/api/web-search`            | Live web search for intelligence gathering |
 
 ---
 
@@ -362,6 +464,36 @@ Phase-by-phase code generation → quality checks → live preview
 ---
 
 ## Recent Changes Log
+
+### Feb 5-6, 2026 - Dual AI Planning Pipeline & GENERATE Mode
+
+- **Added**: 5-step workflow (Wizard → Design → AI Plan → Review → Builder), replacing 4-step
+- **Added**: Dual AI Planning Pipeline (Claude + Gemini consensus architecture)
+  - `BackgroundPlanningOrchestrator.ts` - 5-stage pipeline orchestrator
+  - `ConsensusNegotiator.ts` - Claude-Gemini consensus engine
+  - `DualValidationOrchestrator.ts` - Cross-validation of architectures
+  - `LiveIntelligenceGatherer.ts` - Web search + AI intelligence
+  - `LayoutBackendAnalyzer.ts` - Layout-to-backend analysis
+  - `ConsensusEscalationDialog.tsx` - User escalation modal
+  - `useDualAIPlan.ts` - SSE streaming hook for pipeline
+  - `useBackgroundIntelligence.ts` - Background pre-caching during Design
+  - `types/dualPlanning.ts` - Planning types (stages, SSE events, escalation)
+  - `lib/planningSessionStore.ts` - In-memory session store with TTL
+  - `utils/architectureToPhaseContext.ts` - Architecture → phase context converter
+- **Added**: AI Plan page at `src/app/(protected)/app/ai-plan/page.tsx`
+- **Added**: AI Plan components (`ai-plan/PipelineStagesView`, `ConsensusResultView`, `AISelectionPanel`)
+- **Added**: `AIPlanCard` review component
+- **Added**: API routes: `planning/start`, `planning/stream`, `planning/intelligence`, `ai/claude`, `ai/gemini`, `web-search`
+- **Added**: GENERATE mode in Titan Pipeline (full layout from AppConcept, no images)
+- **Added**: Synthetic LayoutManifest creation for GENERATE mode (`createSyntheticLayoutManifest`)
+- **Added**: `constants/aiModels.ts` - AI model configuration constants
+- **Fixed**: Layout injection never firing (guard changed from `!currentComponent` to `!hasInjectedCode`)
+- **Refactored**: Extracted `tryStartPhase1` useCallback in MainBuilderView (deduplicated ~70 lines)
+- **Updated**: `useAppStore.ts` - 10 slices (added planning slices), v5 migration chain
+- **Updated**: `titanPipeline.ts` - Expanded AppContext with planning fields
+- **Updated**: `dynamicPhases.ts` - Added `hasArchitectureContext` flag
+- **Updated**: `appConcept.ts` - Added dual planning types
+- **Updated**: Review page - Phase regeneration with architecture context
 
 ### Feb 1, 2026 (PM) - Visual Fidelity Overhaul
 

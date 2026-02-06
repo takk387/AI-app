@@ -1,15 +1,18 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowRight, Palette, Loader2 } from 'lucide-react';
+import { ArrowRight, Palette, Loader2, Zap, Brain, CheckCircle2 } from 'lucide-react';
 import { LayoutBuilderView } from '@/components/LayoutBuilderView';
+import type { LayoutBuilderViewHandle } from '@/components/LayoutBuilderView';
 import { useAppStore } from '@/store/useAppStore';
+import { useBackgroundIntelligence } from '@/hooks/useBackgroundIntelligence';
 import { captureLayoutPreview } from '@/utils/screenshotCapture';
 
 export default function DesignPage() {
   const router = useRouter();
+  const layoutBuilderRef = useRef<LayoutBuilderViewHandle>(null);
   const appConcept = useAppStore((state) => state.appConcept);
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
   const setLayoutThumbnail = useAppStore((state) => state.setLayoutThumbnail);
@@ -20,7 +23,14 @@ export default function DesignPage() {
 
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const handleContinueToReview = useCallback(async () => {
+  // Start intelligence gathering in background while user designs layout
+  const { isGathering, hasCache } = useBackgroundIntelligence();
+
+  const handleGenerateFullLayout = useCallback(() => {
+    layoutBuilderRef.current?.generateFullLayout();
+  }, []);
+
+  const handleContinueToAIPlan = useCallback(async () => {
     setIsTransitioning(true);
 
     // Capture layout thumbnail for review page
@@ -37,9 +47,10 @@ export default function DesignPage() {
     }
 
     // Regenerate phase plan with layout context if layout was built
+    // (kept as fallback for non-dual-AI path)
     const hasLayoutInjectionPhase = dynamicPhasePlan?.phases.some((p) => p.isLayoutInjection);
 
-    if (appConcept?.layoutManifest && !hasLayoutInjectionPhase) {
+    if ((appConcept?.layoutManifest || layoutBuilderFiles?.length) && !hasLayoutInjectionPhase) {
       try {
         const response = await fetch('/api/wizard/generate-phases', {
           method: 'POST',
@@ -71,8 +82,8 @@ export default function DesignPage() {
 
     setIsTransitioning(false);
 
-    // Navigate to review step
-    router.push('/app/review');
+    // Navigate to AI Plan step (dual AI architecture planning)
+    router.push('/app/ai-plan');
   }, [
     router,
     setLayoutThumbnail,
@@ -82,6 +93,8 @@ export default function DesignPage() {
     setDynamicPhasePlan,
     setPhasePlanGeneratedAt,
   ]);
+
+  const hasFeatures = (appConcept?.coreFeatures?.length ?? 0) > 0;
 
   return (
     <motion.div
@@ -104,31 +117,57 @@ export default function DesignPage() {
             {appConcept?.description && (
               <p className="text-sm text-gray-500 truncate max-w-md">{appConcept.description}</p>
             )}
+            {/* Background intelligence status */}
+            {isGathering && (
+              <p className="text-xs text-blue-500 flex items-center gap-1 mt-0.5">
+                <Brain className="w-3 h-3 animate-pulse" />
+                Gathering AI intelligence...
+              </p>
+            )}
+            {!isGathering && hasCache && (
+              <p className="text-xs text-emerald-500 flex items-center gap-1 mt-0.5">
+                <CheckCircle2 className="w-3 h-3" />
+                Intelligence ready
+              </p>
+            )}
           </div>
         </div>
 
-        <button
-          onClick={handleContinueToReview}
-          disabled={isTransitioning}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isTransitioning ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Preparing Review...
-            </>
-          ) : (
-            <>
-              Continue to Review
-              <ArrowRight className="w-4 h-4" />
-            </>
+        <div className="flex items-center gap-2">
+          {/* Generate Full Layout button — shown when concept has features and no layout yet */}
+          {hasFeatures && !currentLayoutManifest && (
+            <button
+              onClick={handleGenerateFullLayout}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-sm font-medium rounded-lg transition-all shadow-sm hover:shadow-md"
+            >
+              <Zap className="w-4 h-4" />
+              Generate Full Layout
+            </button>
           )}
-        </button>
+
+          <button
+            onClick={handleContinueToAIPlan}
+            disabled={isTransitioning}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isTransitioning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Preparing AI Plan...
+              </>
+            ) : (
+              <>
+                Continue to AI Plan
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Layout Builder */}
       <div className="flex-1 overflow-hidden">
-        <LayoutBuilderView />
+        <LayoutBuilderView ref={layoutBuilderRef} />
       </div>
 
       {/* Optional: Show layout status */}

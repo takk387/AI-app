@@ -19,8 +19,10 @@ import type {
   SerializedPhaseContext,
 } from '@/types/dynamicPhases';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
+import type { FinalValidatedArchitecture } from '@/types/dualPlanning';
 import type { AppFile } from '@/types/railway';
 import { extractContextForAllPhases, type PhaseContext } from '@/utils/phaseContextExtractor';
+import { convertToArchitectureSpec } from '@/utils/architectureToPhaseContext';
 
 // Vercel serverless function config
 export const maxDuration = 120;
@@ -31,6 +33,7 @@ interface GeneratePhasesRequest {
   config?: Partial<PhaseGeneratorConfig>;
   conversationMessages?: ChatMessage[]; // Optional: for phase-specific context extraction
   architectureSpec?: ArchitectureSpec; // Optional: pre-generated architecture from wizard
+  dualArchitectureResult?: FinalValidatedArchitecture; // Optional: from Dual AI Planning pipeline
   layoutBuilderFiles?: AppFile[]; // Optional: pre-built layout files from Layout Builder
 }
 
@@ -58,6 +61,7 @@ export async function POST(request: Request) {
       config,
       conversationMessages,
       architectureSpec: preGeneratedSpec,
+      dualArchitectureResult,
       layoutBuilderFiles,
     } = body;
 
@@ -145,8 +149,41 @@ export async function POST(request: Request) {
       }
     }
 
-    // Use pre-generated architecture if provided, otherwise generate if backend is needed
+    // Use dual AI architecture result if available (highest priority),
+    // then pre-generated spec, otherwise generate if backend is needed
     let architectureSpec: ArchitectureSpec | undefined = preGeneratedSpec;
+
+    // Convert dual AI architecture to ArchitectureSpec format if provided
+    if (!architectureSpec && dualArchitectureResult) {
+      try {
+        architectureSpec = convertToArchitectureSpec(
+          dualArchitectureResult,
+          normalizedConcept.name
+        );
+        console.log(
+          '[generate-phases] Using dual AI architecture result (converted to ArchitectureSpec)'
+        );
+      } catch (convertError) {
+        console.warn('[generate-phases] Failed to convert dual architecture:', convertError);
+        // Fall through to single-AI generation
+      }
+    }
+
+    // Also check if concept has embedded dual architecture result
+    if (!architectureSpec && normalizedConcept.dualArchitectureResult) {
+      try {
+        architectureSpec = convertToArchitectureSpec(
+          normalizedConcept.dualArchitectureResult,
+          normalizedConcept.name
+        );
+        console.log('[generate-phases] Using embedded dual AI architecture from concept');
+      } catch (convertError) {
+        console.warn(
+          '[generate-phases] Failed to convert embedded dual architecture:',
+          convertError
+        );
+      }
+    }
 
     const needsBackend =
       normalizedConcept.technical.needsAuth ||

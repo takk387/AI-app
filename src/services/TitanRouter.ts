@@ -30,6 +30,8 @@ const ROUTER_PROMPT = `### Role
 You are the **Pipeline Traffic Controller**.
 
 ### Rules
+- If NO files, NO current_code, AND App Context has features -> mode: "GENERATE"
+  (The user wants to auto-generate the full app layout from their concept.)
 - If current_code exists and no new files -> mode: "EDIT"
 - If new files uploaded -> mode: "CREATE" or "MERGE"
 - **PHOTOREALISM & TEXTURE DETECTION (CRITICAL):**
@@ -60,7 +62,7 @@ You are the **Pipeline Traffic Controller**.
 
 ### Output Schema (JSON)
 {
-  "mode": "CREATE" | "MERGE" | "EDIT",
+  "mode": "CREATE" | "MERGE" | "EDIT" | "GENERATE",
   "base_source": "codebase" | "file_0" | null,
   "file_roles": [],
   "execution_plan": {
@@ -82,11 +84,22 @@ export async function routeIntent(input: PipelineInput): Promise<MergeStrategy> 
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
+  // Build app context summary for the Router
+  const appContextSummary = input.appContext
+    ? `\n  App Context: ${JSON.stringify({
+        name: input.appContext.name,
+        layout: input.appContext.layout,
+        features: input.appContext.coreFeatures?.map((f) => f.name) ?? [],
+        needsAuth: input.appContext.needsAuth,
+        roles: input.appContext.roles?.map((r) => r.name) ?? [],
+      })}`
+    : '';
+
   const prompt = `${ROUTER_PROMPT}
 
   User Request: "${input.instructions}"
   Files: ${input.files.length}
-  Code Exists: ${!!input.currentCode}
+  Code Exists: ${!!input.currentCode}${appContextSummary}
   `;
 
   const result = await ai.models.generateContent({
@@ -100,9 +113,12 @@ export async function routeIntent(input: PipelineInput): Promise<MergeStrategy> 
     return JSON.parse(text);
   } catch {
     const hasFiles = input.files.length > 0;
+    const isGenerate =
+      !input.currentCode && !hasFiles && (input.appContext?.coreFeatures?.length ?? 0) > 0;
+
     console.warn('[TitanPipeline] Router returned invalid JSON, using fallback strategy');
     return {
-      mode: input.currentCode ? 'EDIT' : 'CREATE',
+      mode: isGenerate ? 'GENERATE' : input.currentCode ? 'EDIT' : 'CREATE',
       base_source: input.currentCode ? 'codebase' : null,
       file_roles: [],
       execution_plan: {

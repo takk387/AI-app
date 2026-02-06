@@ -34,3 +34,4 @@ export { default as FeaturesCard } from './FeaturesCard';
 export { default as PhasesCard } from './PhasesCard';
 export { default as SettingsCard } from './SettingsCard';
 export { default as ReviewEmptyState } from './ReviewEmptyState';
+export { default as AIPlanCard } from './AIPlanCard';

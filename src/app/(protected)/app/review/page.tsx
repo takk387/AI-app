@@ -14,7 +14,7 @@
  */
 
 import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -26,6 +26,7 @@ import {
   PhasesCard,
   SettingsCard,
   ReviewEmptyState,
+  AIPlanCard,
 } from '@/components/review';
 
 export default function ReviewPage() {
@@ -38,12 +39,58 @@ export default function ReviewPage() {
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
   const layoutBuilderFiles = useAppStore((state) => state.layoutBuilderFiles);
   const buildSettings = useAppStore((state) => state.buildSettings);
+  const dualArchitectureResult = useAppStore((state) => state.dualArchitectureResult);
+  const userAISelection = useAppStore((state) => state.userAISelection);
   const currentAppId = useAppStore((state) => state.currentAppId);
   const setIsReviewed = useAppStore((state) => state.setIsReviewed);
   const setBuildSettings = useAppStore((state) => state.setBuildSettings);
   const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
   const setCurrentAppId = useAppStore((state) => state.setCurrentAppId);
   const setCurrentMode = useAppStore((state) => state.setCurrentMode);
+  const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
+
+  const [isRegeneratingPhases, setIsRegeneratingPhases] = useState(false);
+  const hasTriggeredRegen = useRef(false);
+
+  // Regenerate phases with architecture context when dualArchitectureResult arrives
+  useEffect(() => {
+    if (!dualArchitectureResult || !appConcept) return;
+    if (dynamicPhasePlan?.hasArchitectureContext) return;
+    if (hasTriggeredRegen.current) return;
+
+    hasTriggeredRegen.current = true;
+    setIsRegeneratingPhases(true);
+
+    fetch('/api/wizard/generate-phases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        concept: appConcept,
+        dualArchitectureResult,
+        layoutBuilderFiles: layoutBuilderFiles ?? undefined,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.plan) {
+          data.plan.layoutBuilderFiles = layoutBuilderFiles ?? undefined;
+          data.plan.hasArchitectureContext = true;
+          setDynamicPhasePlan(data.plan);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to regenerate phases with architecture context:', err);
+        // Allow retry on error
+        hasTriggeredRegen.current = false;
+      })
+      .finally(() => setIsRegeneratingPhases(false));
+  }, [
+    dualArchitectureResult,
+    appConcept,
+    dynamicPhasePlan?.hasArchitectureContext,
+    layoutBuilderFiles,
+    setDynamicPhasePlan,
+  ]);
 
   const handleProceedToBuilder = useCallback(() => {
     // Generate or use existing app ID
@@ -100,6 +147,10 @@ export default function ReviewPage() {
 
   const handleGoToDesign = useCallback(() => {
     router.push('/app/design');
+  }, [router]);
+
+  const handleGoToAIPlan = useCallback(() => {
+    router.push('/app/ai-plan');
   }, [router]);
 
   // If no concept exists, show empty state
@@ -172,6 +223,17 @@ export default function ReviewPage() {
             />
           </div>
 
+          {/* AI Architecture Plan */}
+          {dualArchitectureResult && (
+            <div className="mb-6">
+              <AIPlanCard
+                architecture={dualArchitectureResult}
+                aiSelection={userAISelection}
+                onEdit={handleGoToAIPlan}
+              />
+            </div>
+          )}
+
           {/* Features */}
           <div className="mb-6">
             <FeaturesCard features={appConcept.coreFeatures} />
@@ -183,6 +245,7 @@ export default function ReviewPage() {
               <PhasesCard
                 phases={dynamicPhasePlan.phases}
                 estimatedTotalTime={dynamicPhasePlan.estimatedTotalTime}
+                isLoading={isRegeneratingPhases}
               />
             ) : (
               <div
