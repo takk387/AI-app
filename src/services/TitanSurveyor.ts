@@ -10,6 +10,7 @@
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import sharp from 'sharp';
 import type { VisualManifest, FileInput } from '@/types/titanPipeline';
+import { isUIChromeIcon } from './iconConstants';
 
 // ============================================================================
 // CONFIGURATION
@@ -223,6 +224,89 @@ If an element contains text, use the "text" field.
 }`;
 
 // ============================================================================
+// VISUAL AUTO-FIX (earliest enforcement point — immediately after AI response)
+// ============================================================================
+
+/**
+ * Walk the parsed dom_tree and force hasCustomVisual=true on nodes that need
+ * extraction from the reference image. Catches the AI's tendency to skip
+ * flagging custom visuals.
+ *
+ * Enforces extraction for:
+ * 1. Non-UI-chrome icons (iconName that isn't chevron/X/menu/etc.)
+ * 2. Image nodes (type: "img") — photos, illustrations, logos
+ * 3. Nodes the AI identified as having images (hasImage: true)
+ */
+function autoFixIconDecisions(node: Record<string, unknown>): void {
+  const alreadyCustomVisual = node.hasCustomVisual === true;
+  const bounds = node.bounds as
+    | { top: number; left: number; width: number; height: number }
+    | undefined;
+
+  // --- Fix 1: Non-chrome icon names → force extraction ---
+  const iconName = node.iconName as string | undefined;
+  const hasIconSvgPath = !!node.iconSvgPath;
+
+  if (iconName && !hasIconSvgPath && !alreadyCustomVisual && !isUIChromeIcon(iconName)) {
+    if (bounds) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+      };
+      delete node.iconName;
+
+      console.log(`[Surveyor:VisualFix] Icon "${iconName}" → hasCustomVisual (node: ${node.id})`);
+    }
+  }
+
+  // --- Fix 2: Image nodes (type: "img") → force extraction ---
+  if (node.type === 'img' && !alreadyCustomVisual && !node.hasCustomVisual) {
+    if (bounds) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+      };
+
+      console.log(`[Surveyor:VisualFix] Image node → hasCustomVisual (node: ${node.id})`);
+    }
+  }
+
+  // --- Fix 3: Nodes with hasImage flag → force extraction ---
+  if (node.hasImage === true && !alreadyCustomVisual && !node.hasCustomVisual) {
+    if (bounds) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+      };
+
+      console.log(`[Surveyor:VisualFix] hasImage node → hasCustomVisual (node: ${node.id})`);
+    }
+  }
+
+  // Recurse through children
+  const children = node.children as Record<string, unknown>[] | undefined;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (child && typeof child === 'object') {
+        autoFixIconDecisions(child);
+      }
+    }
+  }
+}
+
+// ============================================================================
 // SURVEYOR IMPLEMENTATION
 // ============================================================================
 
@@ -248,6 +332,11 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
     if (!jsonMatch) throw new Error('No JSON found');
 
     const data = JSON.parse(jsonMatch[0]);
+
+    // Auto-fix: convert non-UI-chrome iconName → hasCustomVisual at the source
+    if (data.dom_tree) {
+      autoFixIconDecisions(data.dom_tree);
+    }
 
     return {
       file_index: fileIndex,

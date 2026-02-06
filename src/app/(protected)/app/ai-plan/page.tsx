@@ -66,10 +66,11 @@ export default function AIPlanPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <p className="text-zinc-400">No app concept found.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>No app concept found.</p>
           <button
             onClick={() => router.push('/app/wizard')}
-            className="px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors text-sm"
+            className="px-4 py-2 rounded-lg transition-colors text-sm"
+            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
           >
             Start with Wizard
           </button>
@@ -83,10 +84,11 @@ export default function AIPlanPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <p className="text-zinc-400">No layout design found.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>No layout design found.</p>
           <button
             onClick={() => router.push('/app/design')}
-            className="px-4 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors text-sm"
+            className="px-4 py-2 rounded-lg transition-colors text-sm"
+            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
           >
             Design Layout First
           </button>
@@ -98,17 +100,28 @@ export default function AIPlanPage() {
   const canContinue = isComplete && (userAISelection !== null || result !== null);
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800">
+      <div
+        className="sticky top-0 z-20 backdrop-blur-md border-b"
+        style={{
+          background: 'var(--bg-secondary)',
+          borderColor: 'var(--border-color)',
+        }}
+      >
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Brain className="w-5 h-5 text-purple-400" />
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ background: 'var(--accent-muted)' }}
+            >
+              <Brain className="w-5 h-5" style={{ color: 'var(--accent-primary)' }} />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-zinc-100">{appConcept.name}</h1>
-              <p className="text-xs text-zinc-500">
+              <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {appConcept.name}
+              </h1>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {isPlanning
                   ? stageLabel
                   : isComplete
@@ -122,7 +135,8 @@ export default function AIPlanPage() {
             {error && !isPlanning && (
               <button
                 onClick={retryPlanning}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors text-sm"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm"
+                style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry
@@ -132,11 +146,16 @@ export default function AIPlanPage() {
             <button
               onClick={handleContinueToReview}
               disabled={!canContinue}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              style={
                 canContinue
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-500'
-                  : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-              }`}
+                  ? { background: 'var(--accent-primary)', color: 'white' }
+                  : {
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--text-muted)',
+                      cursor: 'not-allowed',
+                    }
+              }
             >
               Continue to Review
               <ArrowRight className="w-4 h-4" />
@@ -160,9 +179,22 @@ export default function AIPlanPage() {
 
           {/* Error State */}
           {error && !isPlanning && (
-            <div className="p-6 rounded-xl bg-red-500/10 border border-red-500/20">
-              <h3 className="text-sm font-medium text-red-400 mb-2">Planning Error</h3>
-              <p className="text-sm text-red-300/80">{error}</p>
+            <div
+              className="p-6 rounded-xl"
+              style={{
+                background: 'var(--error-muted, rgba(239, 68, 68, 0.1))',
+                border: '1px solid var(--error-muted, rgba(239, 68, 68, 0.2))',
+              }}
+            >
+              <h3
+                className="text-sm font-medium mb-2"
+                style={{ color: 'var(--error-primary, #ef4444)' }}
+              >
+                Planning Error
+              </h3>
+              <p className="text-sm" style={{ color: 'var(--error-primary, #ef4444)' }}>
+                {error}
+              </p>
             </div>
           )}
 
@@ -171,7 +203,7 @@ export default function AIPlanPage() {
             <>
               <ConsensusResultView architecture={result} />
 
-              <div className="border-t border-zinc-800 pt-8">
+              <div className="border-t pt-8" style={{ borderColor: 'var(--border-color)' }}>
                 <AISelectionPanel
                   concept={appConcept}
                   architecture={result}

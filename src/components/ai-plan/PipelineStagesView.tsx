@@ -113,15 +113,25 @@ export function PipelineStagesView({ progress }: PipelineStagesViewProps) {
     <div className="space-y-6">
       {/* Header with elapsed time */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-zinc-100">Architecture Planning Pipeline</h3>
-        <span className="text-sm text-zinc-400 tabular-nums">{formatTime(elapsed)} elapsed</span>
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Architecture Planning Pipeline
+        </h3>
+        <span className="text-sm tabular-nums" style={{ color: 'var(--text-muted)' }}>
+          {formatTime(elapsed)} elapsed
+        </span>
       </div>
 
       {/* Overall progress bar */}
-      <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+      <div
+        className="w-full rounded-full h-2 overflow-hidden"
+        style={{ background: 'var(--bg-tertiary)' }}
+      >
         <div
-          className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${progress?.percent ?? 0}%` }}
+          className="h-full rounded-full transition-all duration-500 ease-out"
+          style={{
+            width: `${progress?.percent ?? 0}%`,
+            background: 'var(--accent-primary)',
+          }}
         />
       </div>
 
@@ -136,22 +146,40 @@ export function PipelineStagesView({ progress }: PipelineStagesViewProps) {
             <div
               key={stage.key}
               className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
-                status === 'active'
-                  ? 'bg-zinc-800/80 border border-zinc-700'
-                  : status === 'complete'
-                    ? 'bg-zinc-800/40'
-                    : 'opacity-50'
+                status === 'pending' ? 'opacity-50' : ''
               }`}
+              style={
+                status === 'active'
+                  ? {
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                    }
+                  : status === 'complete'
+                    ? { background: 'var(--bg-tertiary)', opacity: 0.7 }
+                    : undefined
+              }
             >
               {/* Stage number / status icon */}
               <div
                 className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  status === 'complete'
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : status === 'active'
-                      ? 'bg-blue-500/20 text-blue-400 animate-pulse'
-                      : 'bg-zinc-700 text-zinc-500'
+                  status === 'active' ? 'animate-pulse' : ''
                 }`}
+                style={
+                  status === 'complete'
+                    ? {
+                        background: 'var(--success-muted, rgba(34, 197, 94, 0.1))',
+                        color: 'var(--success-primary, #22c55e)',
+                      }
+                    : status === 'active'
+                      ? {
+                          background: 'var(--accent-muted)',
+                          color: 'var(--accent-primary)',
+                        }
+                      : {
+                          background: 'var(--bg-tertiary)',
+                          color: 'var(--text-muted)',
+                        }
+                }
               >
                 {status === 'complete' ? '✓' : idx + 1}
               </div>
@@ -160,37 +188,54 @@ export function PipelineStagesView({ progress }: PipelineStagesViewProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`font-medium ${
-                      status === 'active'
-                        ? 'text-zinc-100'
-                        : status === 'complete'
-                          ? 'text-zinc-300'
-                          : 'text-zinc-500'
-                    }`}
+                    className="font-medium"
+                    style={{
+                      color:
+                        status === 'active'
+                          ? 'var(--text-primary)'
+                          : status === 'complete'
+                            ? 'var(--text-secondary)'
+                            : 'var(--text-muted)',
+                    }}
                   >
                     {stage.label}
                   </span>
                   {status === 'active' && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full"
+                      style={{
+                        background: 'var(--accent-muted)',
+                        color: 'var(--accent-primary)',
+                      }}
+                    >
                       In Progress
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-zinc-500 mt-0.5">{stage.description}</p>
+                <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                  {stage.description}
+                </p>
 
                 {/* Negotiation round indicator */}
                 {isNegotiating && (
-                  <div className="mt-2 text-sm text-orange-400">
+                  <div
+                    className="mt-2 text-sm"
+                    style={{ color: 'var(--warning-primary, #f59e0b)' }}
+                  >
                     Round {progress.negotiationRound}/{progress.maxRounds ?? 5}
                     {progress.details && (
-                      <span className="text-zinc-500 ml-2">— {progress.details}</span>
+                      <span className="ml-2" style={{ color: 'var(--text-muted)' }}>
+                        — {progress.details}
+                      </span>
                     )}
                   </div>
                 )}
 
                 {/* Active stage message */}
                 {status === 'active' && progress?.message && !isNegotiating && (
-                  <p className="text-sm text-zinc-400 mt-1">{progress.message}</p>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    {progress.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -200,8 +245,16 @@ export function PipelineStagesView({ progress }: PipelineStagesViewProps) {
 
       {/* Error display */}
       {progress?.stage === 'error' && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-          <p className="text-sm text-red-400">{progress.message}</p>
+        <div
+          className="p-4 rounded-lg"
+          style={{
+            background: 'var(--error-muted, rgba(239, 68, 68, 0.1))',
+            border: '1px solid var(--error-muted, rgba(239, 68, 68, 0.2))',
+          }}
+        >
+          <p className="text-sm" style={{ color: 'var(--error-primary, #ef4444)' }}>
+            {progress.message}
+          </p>
         </div>
       )}
     </div>

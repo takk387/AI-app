@@ -17,6 +17,7 @@ import {
 } from '@/utils/layoutValidation';
 import type { DesignSpec } from '@/types/designSpec';
 import { validateFontSizeForContainer } from '@/utils/responsiveTypography';
+import { isUIChromeIcon } from './iconConstants';
 
 // ============================================================================
 // CONFIGURATION
@@ -488,6 +489,54 @@ const COMPONENT_BUILDER_PROMPT = `
     `;
 
 // ============================================================================
+// ICON ENFORCEMENT (layout preview path)
+// ============================================================================
+
+/**
+ * Strip non-UI-chrome iconName values from components to prevent the
+ * GenericComponentRenderer from showing wrong generic Lucide icons.
+ *
+ * If a component has iconName but no iconSvgPath, and the iconName isn't
+ * basic UI chrome (chevrons, X, Menu, etc.), we remove it. The renderer
+ * will then skip the icon rather than showing a misleading generic one.
+ */
+function stripNonChromeIconNames(
+  components: DetectedComponentEnhanced[]
+): DetectedComponentEnhanced[] {
+  let stripped = 0;
+
+  const result = components.map((component) => {
+    if (!component.content?.hasIcon || !component.content.iconName) return component;
+
+    // If SVG path exists, the icon will render correctly — leave it alone
+    if (component.content.iconSvgPath) return component;
+
+    // If it's a UI chrome icon, keep the iconName for Lucide rendering
+    if (isUIChromeIcon(component.content.iconName)) return component;
+
+    // Non-chrome icon with no SVG path — strip iconName to prevent generic rendering
+    console.log(
+      `[ComponentBuilder:IconFix] Stripping "${component.content.iconName}" from ${component.id}`
+    );
+    stripped++;
+
+    return {
+      ...component,
+      content: {
+        ...component.content,
+        iconName: undefined,
+      },
+    };
+  });
+
+  if (stripped > 0) {
+    console.log(`[ComponentBuilder:IconFix] Stripped ${stripped} non-chrome iconName values`);
+  }
+
+  return result;
+}
+
+// ============================================================================
 // STAGE 2 IMPLEMENTATION
 // ============================================================================
 
@@ -546,9 +595,15 @@ export async function buildComponentsFromSpec(
     // Post-process: Validate typography scaling to prevent font overflow
     const withValidatedTypography = validateTypographyScaling(withInferredLayouts);
 
+    // Post-process: Strip non-UI-chrome iconName values to prevent generic Lucide icons
+    // in the layout preview. If no iconSvgPath exists and the iconName isn't basic chrome
+    // (chevrons, X, Menu, etc.), remove iconName so GenericComponentRenderer skips it
+    // rather than rendering a wrong generic icon.
+    const withValidatedIcons = stripNonChromeIconNames(withValidatedTypography);
+
     // CRITICAL FIX: Resolve root overlaps
     // Stack root sections vertically to prevent them from piling on top of each other
-    const components = resolveRootOverlaps(withValidatedTypography);
+    const components = resolveRootOverlaps(withValidatedIcons);
 
     console.log('[GeminiLayoutService] After inferContainerLayouts & resolveRootOverlaps:', {
       before: sanitizedComponents.filter((c) => c.role === 'container' && !c.layout?.type).length,

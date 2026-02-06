@@ -35,12 +35,26 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
     <div className="space-y-4">
       {/* Consensus header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-zinc-100">Architecture Plan</h3>
+        <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Architecture Plan
+        </h3>
         <div className="flex items-center gap-3 text-sm">
-          <span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400">
+          <span
+            className="px-2 py-1 rounded"
+            style={{
+              background: 'var(--success-muted, rgba(34, 197, 94, 0.1))',
+              color: 'var(--success-primary, #22c55e)',
+            }}
+          >
             {consensusReport.rounds} round{consensusReport.rounds !== 1 ? 's' : ''}
           </span>
-          <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400">
+          <span
+            className="px-2 py-1 rounded"
+            style={{
+              background: 'var(--accent-muted)',
+              color: 'var(--accent-primary)',
+            }}
+          >
             {validation.coverage}% coverage
           </span>
         </div>
@@ -82,20 +96,41 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
         >
           <div className="space-y-2">
             {architecture.agentic.workflows.map((workflow, idx) => (
-              <div key={idx} className="p-3 rounded bg-zinc-800/60 border border-zinc-700/50">
+              <div
+                key={idx}
+                className="p-3 rounded"
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-zinc-200">{workflow.name}</span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {workflow.name}
+                  </span>
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded"
+                    style={{
+                      background: 'var(--blossom-bg, rgba(192, 108, 132, 0.1))',
+                      color: 'var(--blossom-text, #C06C84)',
+                    }}
+                  >
                     {workflow.orchestration}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">{workflow.description}</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                  {workflow.description}
+                </p>
                 {workflow.agents.length > 0 && (
                   <div className="flex gap-1.5 mt-2 flex-wrap">
                     {workflow.agents.map((agent, i) => (
                       <span
                         key={i}
-                        className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-400"
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{
+                          background: 'var(--bg-tertiary)',
+                          color: 'var(--text-secondary)',
+                        }}
                       >
                         {agent.name}
                       </span>
@@ -104,7 +139,9 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
                 )}
               </div>
             ))}
-            <p className="text-xs text-zinc-500">Framework: {architecture.agentic.framework}</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Framework: {architecture.agentic.framework}
+            </p>
           </div>
         </CollapsibleSection>
       )}
@@ -119,8 +156,17 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
         >
           <ul className="space-y-1">
             {consensusReport.finalAgreements.map((agreement, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-zinc-400">
-                <span className="text-emerald-400 mt-0.5 flex-shrink-0">•</span>
+              <li
+                key={idx}
+                className="flex items-start gap-2 text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span
+                  className="mt-0.5 flex-shrink-0"
+                  style={{ color: 'var(--success-primary, #22c55e)' }}
+                >
+                  •
+                </span>
                 {agreement}
               </li>
             ))}
@@ -138,8 +184,17 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
         >
           <ul className="space-y-1">
             {consensusReport.compromises.map((compromise, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-zinc-400">
-                <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
+              <li
+                key={idx}
+                className="flex items-start gap-2 text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span
+                  className="mt-0.5 flex-shrink-0"
+                  style={{ color: 'var(--warning-primary, #f59e0b)' }}
+                >
+                  •
+                </span>
                 {compromise}
               </li>
             ))}
@@ -158,7 +213,12 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
           {architecture.techStack.libraries.map((lib, idx) => (
             <span
               key={idx}
-              className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50"
+              className="text-xs px-2 py-1 rounded"
+              style={{
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color)',
+              }}
             >
               {lib}
             </span>
@@ -173,11 +233,12 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
         expanded={expandedSections.has('scaling')}
         onToggle={toggleSection}
       >
-        <div className="space-y-2 text-sm text-zinc-400">
+        <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
           <div>
-            <span className="text-zinc-500">Caching:</span> {architecture.scaling.caching.strategy}
+            <span style={{ color: 'var(--text-muted)' }}>Caching:</span>{' '}
+            {architecture.scaling.caching.strategy}
             {architecture.scaling.caching.layers.length > 0 && (
-              <span className="text-zinc-600">
+              <span style={{ color: 'var(--text-muted)' }}>
                 {' '}
                 ({architecture.scaling.caching.layers.join(', ')})
               </span>
@@ -185,7 +246,7 @@ export function ConsensusResultView({ architecture }: ConsensusResultViewProps) 
           </div>
           {architecture.scaling.optimization.techniques.length > 0 && (
             <div>
-              <span className="text-zinc-500">Optimizations:</span>{' '}
+              <span style={{ color: 'var(--text-muted)' }}>Optimizations:</span>{' '}
               {architecture.scaling.optimization.techniques.join(', ')}
             </div>
           )}
@@ -213,13 +274,16 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-800 overflow-hidden">
+    <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
       <button
         onClick={() => onToggle(sectionKey)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+        style={{ color: 'var(--text-primary)' }}
       >
-        <span className="text-sm font-medium text-zinc-300">{title}</span>
-        <span className="text-zinc-500 text-sm">{expanded ? '▾' : '▸'}</span>
+        <span className="text-sm font-medium">{title}</span>
+        <span style={{ color: 'var(--text-muted)' }} className="text-sm">
+          {expanded ? '▾' : '▸'}
+        </span>
       </button>
       {expanded && <div className="px-4 pb-3">{children}</div>}
     </div>
@@ -228,9 +292,13 @@ function CollapsibleSection({
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="p-2 rounded bg-zinc-800/60">
-      <div className="text-xs text-zinc-500">{label}</div>
-      <div className="text-sm text-zinc-300 font-medium">{value}</div>
+    <div className="p-2 rounded" style={{ background: 'var(--bg-tertiary)' }}>
+      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        {label}
+      </div>
+      <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        {value}
+      </div>
     </div>
   );
 }

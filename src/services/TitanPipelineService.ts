@@ -26,6 +26,7 @@ import type {
 } from '@/types/titanPipeline';
 import { geminiImageService } from '@/services/GeminiImageService';
 import { getAssetExtractionService } from './AssetExtractionService';
+import { isUIChromeIcon } from './iconConstants';
 
 // Import from split modules
 import { routeIntent as _routeIntent } from './TitanRouter';
@@ -219,6 +220,109 @@ data-id="${selectedDataId}"
       success: false,
       error: error instanceof Error ? error.message : 'Live edit failed',
     };
+  }
+}
+
+// ============================================================================
+// STEP 0.4: VISUAL ENFORCEMENT (Force extraction of custom visuals)
+// ============================================================================
+
+/**
+ * Walk manifest dom_tree and force hasCustomVisual=true on nodes that need
+ * extraction from the reference image. This ensures extractCustomVisualAssets()
+ * crops the actual visual from the original image instead of relying on the AI
+ * to flag them correctly.
+ *
+ * Enforces extraction for:
+ * 1. Non-UI-chrome icons (iconName that isn't chevron/X/menu/etc.)
+ * 2. Image nodes (type: "img") — photos, illustrations, logos
+ * 3. Nodes the AI identified as having images (hasImage: true)
+ */
+function enforceVisualExtraction(manifests: VisualManifest[]): void {
+  let iconConverted = 0;
+  let imageConverted = 0;
+  let kept = 0;
+
+  function walkAndEnforce(node: Record<string, unknown>) {
+    const alreadyCustomVisual = node.hasCustomVisual === true;
+    const bounds = node.bounds as
+      | { top: number; left: number; width: number; height: number }
+      | undefined;
+
+    // --- Enforce 1: Non-chrome icon names → force extraction ---
+    const iconName = node.iconName as string | undefined;
+    const hasIconSvgPath = !!node.iconSvgPath;
+
+    if (iconName && !hasIconSvgPath && !alreadyCustomVisual) {
+      if (isUIChromeIcon(iconName)) {
+        kept++;
+      } else if (bounds) {
+        node.hasCustomVisual = true;
+        node.extractionAction = 'crop';
+        node.extractionBounds = {
+          top: bounds.top,
+          left: bounds.left,
+          width: bounds.width,
+          height: bounds.height,
+        };
+        delete node.iconName;
+        iconConverted++;
+
+        console.log(`[VisualEnforcement] Icon "${iconName}" → extraction (node: ${node.id})`);
+      }
+    }
+
+    // --- Enforce 2: Image nodes (type: "img") → force extraction ---
+    if (node.type === 'img' && !alreadyCustomVisual && !node.hasCustomVisual && bounds) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+      };
+      imageConverted++;
+
+      console.log(`[VisualEnforcement] Image node → extraction (node: ${node.id})`);
+    }
+
+    // --- Enforce 3: Nodes with hasImage flag → force extraction ---
+    if (node.hasImage === true && !alreadyCustomVisual && !node.hasCustomVisual && bounds) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+      };
+      imageConverted++;
+
+      console.log(`[VisualEnforcement] hasImage node → extraction (node: ${node.id})`);
+    }
+
+    // Recurse through children
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) {
+        if (child && typeof child === 'object') {
+          walkAndEnforce(child);
+        }
+      }
+    }
+  }
+
+  for (const manifest of manifests) {
+    if (manifest.global_theme?.dom_tree) {
+      walkAndEnforce(manifest.global_theme.dom_tree as unknown as Record<string, unknown>);
+    }
+  }
+
+  if (iconConverted > 0 || imageConverted > 0 || kept > 0) {
+    console.log(
+      `[VisualEnforcement] Summary: ${iconConverted} icons + ${imageConverted} images → extraction, ${kept} UI chrome kept`
+    );
   }
 }
 
@@ -433,6 +537,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   // buildStructure() and ARCHITECT_PROMPT are preserved for future integration.
   const structure = null;
   stepTimings.architect = 0;
+
+  // Visual Enforcement: auto-convert unflagged visuals → hasCustomVisual before extraction
+  if (manifests.length > 0) {
+    enforceVisualExtraction(manifests);
+  }
 
   // Asset Extraction: crop custom visuals from original image
   const extractStart = Date.now();

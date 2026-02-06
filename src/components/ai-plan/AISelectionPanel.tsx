@@ -139,7 +139,9 @@ export function AISelectionPanel({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-zinc-100">AI Setup</h3>
+      <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+        AI Setup
+      </h3>
 
       {/* Tier Selection */}
       <div className="grid grid-cols-3 gap-3">
@@ -149,32 +151,53 @@ export function AISelectionPanel({
             <button
               key={tier.key}
               onClick={() => handleTierSelect(tier.key)}
-              className={`p-4 rounded-lg border text-left transition-all ${
+              className="p-4 rounded-lg text-left transition-all"
+              style={
                 isSelected
-                  ? 'border-blue-500 bg-blue-500/10'
-                  : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600'
-              }`}
+                  ? {
+                      border: '1px solid var(--accent-primary)',
+                      background: 'var(--accent-muted)',
+                    }
+                  : {
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-tertiary)',
+                    }
+              }
             >
               <div className="flex items-center justify-between mb-2">
                 <span
-                  className={`text-sm font-semibold ${isSelected ? 'text-blue-400' : 'text-zinc-300'}`}
+                  className="text-sm font-semibold"
+                  style={{
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  }}
                 >
                   {tier.label}
                 </span>
                 {tier.key === 'hybrid' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded"
+                    style={{
+                      background: 'var(--accent-muted)',
+                      color: 'var(--accent-primary)',
+                    }}
+                  >
                     Recommended
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-500 leading-relaxed">{tier.description}</p>
-              <div className="mt-3 text-xs text-zinc-600">
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {tier.description}
+              </p>
+              <div className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
                 Est. cost: {Math.round(tier.estimatedCostMultiplier * 100)}% of max
               </div>
 
               {/* Model assignments for this tier */}
               {isSelected && (
-                <div className="mt-3 pt-3 border-t border-zinc-700/50 space-y-1">
+                <div
+                  className="mt-3 pt-3 space-y-1"
+                  style={{ borderTop: '1px solid var(--border-color)' }}
+                >
                   <TierModelRow label="Architecture" modelId={tier.models.architecturePlanning} />
                   <TierModelRow label="Code Gen" modelId={tier.models.codeGeneration} />
                   <TierModelRow label="Review" modelId={tier.models.codeReview} />
@@ -190,8 +213,10 @@ export function AISelectionPanel({
       {aiFeaturesNeeded.length > 0 && (
         <div className="space-y-3">
           <div>
-            <h4 className="text-sm font-medium text-zinc-300">Per-Feature AI Models</h4>
-            <p className="text-xs text-zinc-500 mt-1">
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              Per-Feature AI Models
+            </h4>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
               Your app has {aiFeaturesNeeded.length} feature
               {aiFeaturesNeeded.length !== 1 ? 's' : ''} that use AI. Select which models each
               feature should support.
@@ -204,15 +229,23 @@ export function AISelectionPanel({
               return (
                 <div
                   key={feature.featureId}
-                  className="p-3 rounded-lg border border-zinc-800 bg-zinc-800/30"
+                  className="p-3 rounded-lg"
+                  style={{
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-secondary)',
+                  }}
                 >
                   <div className="mb-2">
-                    <span className="text-sm font-medium text-zinc-200">{feature.featureName}</span>
-                    <p className="text-xs text-zinc-500">{feature.reason}</p>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {feature.featureName}
+                    </span>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {feature.reason}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {MODEL_CATALOG.map((model) => {
-                      const isSelected = selection?.selectedModels.includes(model.id) ?? false;
+                      const isModelSelected = selection?.selectedModels.includes(model.id) ?? false;
                       return (
                         <button
                           key={model.id}
@@ -223,12 +256,22 @@ export function AISelectionPanel({
                               model.id
                             )
                           }
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs transition-colors ${
-                            isSelected
-                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                              : 'bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-zinc-600'
-                          }`}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs transition-colors"
+                          style={
+                            isModelSelected
+                              ? {
+                                  background: 'var(--accent-muted)',
+                                  color: 'var(--accent-primary)',
+                                  border: '1px solid var(--accent-primary)',
+                                }
+                              : {
+                                  background: 'var(--bg-tertiary)',
+                                  color: 'var(--text-muted)',
+                                  border: '1px solid var(--border-color)',
+                                }
+                          }
                         >
+                          {/* Cost tier dots — semantic indicators, kept as-is */}
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
                               model.costTier === 'high'
@@ -261,8 +304,8 @@ function TierModelRow({ label, modelId }: { label: string; modelId: ModelId }) {
   const model = getModelById(modelId);
   return (
     <div className="flex items-center justify-between text-xs">
-      <span className="text-zinc-500">{label}</span>
-      <span className="text-zinc-400">{model?.name ?? modelId}</span>
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ color: 'var(--text-secondary)' }}>{model?.name ?? modelId}</span>
     </div>
   );
 }
