@@ -10,7 +10,7 @@
  * Handles: #fff, #ffffff, white, rgb(255,255,255), rgba(255,255,255,1)
  */
 export function normalizeColor(color: string | undefined): string {
-  if (!color) return 'transparent';
+  if (!color) return '#000000';
 
   const normalized = color.toLowerCase().trim();
 

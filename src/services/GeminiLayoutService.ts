@@ -194,24 +194,23 @@ class GeminiLayoutService {
    */
   private getDefaultDesignSpec(): DesignSpec {
     console.warn(
-      '[GeminiLayoutService] Stage 1 design spec extraction failed — using neutral defaults. ' +
-        'Colors and fonts will inherit from the reference image analysis.'
+      '[GeminiLayoutService] Stage 1 design spec extraction failed — using visible neutral defaults.'
     );
     return {
       colorPalette: {
-        primary: 'inherit',
-        secondary: 'inherit',
-        accent: 'inherit',
-        background: 'transparent',
-        surface: 'transparent',
-        text: 'inherit',
-        textMuted: 'inherit',
-        border: 'inherit',
+        primary: '#3b82f6',
+        secondary: '#6b7280',
+        accent: '#8b5cf6',
+        background: '#ffffff',
+        surface: '#f9fafb',
+        text: '#111827',
+        textMuted: '#6b7280',
+        border: '#e5e7eb',
         additional: [],
       },
       typography: {
-        headingFont: 'inherit',
-        bodyFont: 'inherit',
+        headingFont: 'Inter',
+        bodyFont: 'Inter',
         fontSizes: { h1: '48px', h2: '36px', h3: '24px', body: '16px', small: '14px' },
         fontWeights: { heading: 700, body: 400, bold: 600 },
       },
