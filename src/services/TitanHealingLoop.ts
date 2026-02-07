@@ -85,11 +85,19 @@ export function extractJSXMarkup(reactCode: string): string {
  */
 export async function captureRenderedScreenshot(
   code: string,
-  assets?: Record<string, string>
+  assets?: Record<string, string>,
+  canvasConfig?: CanvasConfig
 ): Promise<string | null> {
   let browser = null;
   try {
-    console.log('[TitanPipeline] Launching headless browser for screenshot...');
+    // Use measured canvas dimensions for viewport, fallback if not provided
+    const viewport = canvasConfig
+      ? { width: canvasConfig.width, height: canvasConfig.height }
+      : { width: FALLBACK_CANVAS.width, height: FALLBACK_CANVAS.height };
+
+    console.log(
+      `[TitanPipeline] Launching headless browser for screenshot (${viewport.width}x${viewport.height}, source: ${canvasConfig?.source ?? 'fallback'})...`
+    );
     browser = await puppeteer.launch({
       headless: true,
       args: [
@@ -100,7 +108,7 @@ export async function captureRenderedScreenshot(
       ],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1440, height: 900 });
+    await page.setViewport(viewport);
 
     // Instead of extracting static HTML, create a minimal React runtime
     // that can actually render the component with proper icons
@@ -248,7 +256,9 @@ import type {
   ComponentStructure,
   MotionPhysics,
   MergeStrategy,
+  CanvasConfig,
 } from '@/types/titanPipeline';
+import { FALLBACK_CANVAS } from '@/types/titanPipeline';
 import { createVisionLoopEngine } from './VisionLoopEngine';
 import { assembleCode } from './TitanBuilder';
 
@@ -265,6 +275,7 @@ export interface HealingLoopParams {
   };
   finalAssets: Record<string, string>;
   primaryImageRef?: { fileUri: string; mimeType: string };
+  canvasConfig?: CanvasConfig;
   maxIterations?: number;
   targetFidelity?: number;
 }
@@ -292,6 +303,7 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
     input,
     finalAssets,
     primaryImageRef,
+    canvasConfig,
     maxIterations = 2,
     targetFidelity = 95,
   } = params;
@@ -318,7 +330,11 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       }
 
       // 2. Render and capture screenshot (pass assets so <img> tags resolve correctly)
-      const screenshot = await captureRenderedScreenshot(appFile.content, finalAssets);
+      const screenshot = await captureRenderedScreenshot(
+        appFile.content,
+        finalAssets,
+        canvasConfig
+      );
       if (!screenshot) {
         warnings.push(`Screenshot capture failed on iteration ${iteration}, stopping healing`);
         break;

@@ -105,11 +105,23 @@ class AssetExtractionService {
         format: metadata.format,
       });
 
-      // 3. Convert normalized bounds (0-100) to pixel coordinates
-      const cropX = Math.round((request.bounds.left / 100) * metadata.width);
-      const cropY = Math.round((request.bounds.top / 100) * metadata.height);
-      const cropWidth = Math.round((request.bounds.width / 100) * metadata.width);
-      const cropHeight = Math.round((request.bounds.height / 100) * metadata.height);
+      // 3. Convert normalized bounds to pixel coordinates
+      // Detect scale: if any bound value exceeds 100, treat as 0-1000 scale
+      const maxBound = Math.max(
+        request.bounds.left,
+        request.bounds.top,
+        request.bounds.left + request.bounds.width,
+        request.bounds.top + request.bounds.height
+      );
+      const divisor = maxBound > 100 ? 1000 : 100;
+      if (divisor === 1000) {
+        console.log('[AssetExtractionService] Detected 0-1000 scale bounds, converting');
+      }
+
+      const cropX = Math.round((request.bounds.left / divisor) * metadata.width);
+      const cropY = Math.round((request.bounds.top / divisor) * metadata.height);
+      const cropWidth = Math.round((request.bounds.width / divisor) * metadata.width);
+      const cropHeight = Math.round((request.bounds.height / divisor) * metadata.height);
 
       // 4. Validate crop bounds
       if (cropX < 0 || cropY < 0 || cropWidth <= 0 || cropHeight <= 0) {

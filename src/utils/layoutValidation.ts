@@ -19,13 +19,14 @@ import type { DetectedComponentEnhanced } from '@/types/layoutDesign';
 
 /**
  * Default bounds for components missing bounds data.
- * Uses smaller defaults to prevent full-width stacking.
+ * Full-width block signals "unknown size" — better than an arbitrary 20% chip
+ * that misrepresents the actual layout.
  */
 export const DEFAULT_BOUNDS = {
   top: 0,
   left: 0,
-  width: 20,
-  height: 10,
+  width: 100,
+  height: 5,
 } as const;
 
 // ============================================================================
@@ -47,8 +48,9 @@ function toPercentage(val: number | string, defaultVal: number): number {
 /**
  * Helper for width/height - ensures minimum value for visibility.
  * Clamps to min-100 range. Scale normalization handled upstream.
+ * Min lowered to 0.1 to preserve thin dividers and sub-1% elements.
  */
-function toPercentageWithMin(val: number | string, defaultVal: number, min: number = 1): number {
+function toPercentageWithMin(val: number | string, defaultVal: number, min: number = 0.1): number {
   const num = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(num) || num <= 0) return defaultVal;
   return Math.max(min, Math.min(100, num));
@@ -573,8 +575,9 @@ export function validateComponentsForRender(components: DetectedComponentEnhance
 
 /**
  * Safely convert a value to a number with bounds checking.
- * Handles both 0-100 (percentage) and 0-1000 (normalized) scales.
- * Values > 100 are assumed to be 0-1000 scale and converted to percentage.
+ * Scale normalization (0-1000 → 0-100) is handled UPSTREAM by
+ * normalizeCoordinates() in GeminiComponentBuilder.ts — this function
+ * must NOT duplicate that logic to avoid triple-normalization bugs.
  */
 function safeNumber(
   value: unknown,
@@ -588,10 +591,7 @@ function safeNumber(
 
   if (isNaN(num)) return defaultValue;
 
-  // Convert 0-1000 scale to percentage if value > 100
-  const converted = num > 100 ? num / 10 : num;
-
-  return Math.max(minValue, Math.min(maxValue, converted));
+  return Math.max(minValue, Math.min(maxValue, num));
 }
 
 // ============================================================================
@@ -929,40 +929,42 @@ export function inferContainerLayouts(
         return `${avgGap}px`;
       };
 
+      // Preserve existing gap if the AI already measured it
+      const existingGap = component.layout?.gap;
+
       // Assign layout
       if (isVertical) {
-        const calculatedGap = calculateGap(byTop, 'column');
+        const calculatedGap = existingGap || calculateGap(byTop, 'column');
         component.layout = {
           type: 'flex',
           direction: 'column',
-          gap: calculatedGap, // Calculated from actual child positions
+          gap: calculatedGap,
           align: 'stretch',
           justify: 'start',
         };
         console.log(
-          `[inferContainerLayouts] ${component.id}: column layout with gap ${calculatedGap}`
+          `[inferContainerLayouts] ${component.id}: column layout with gap ${calculatedGap}${existingGap ? ' (preserved)' : ' (calculated)'}`
         );
       } else if (isHorizontal) {
-        const calculatedGap = calculateGap(byLeft, 'row');
+        const calculatedGap = existingGap || calculateGap(byLeft, 'row');
         component.layout = {
           type: 'flex',
           direction: 'row',
-          gap: calculatedGap, // Calculated from actual child positions
+          gap: calculatedGap,
           align: 'center',
           justify: 'start',
           wrap: true,
         };
         console.log(
-          `[inferContainerLayouts] ${component.id}: row layout with gap ${calculatedGap}`
+          `[inferContainerLayouts] ${component.id}: row layout with gap ${calculatedGap}${existingGap ? ' (preserved)' : ' (calculated)'}`
         );
       } else {
-        // Grid or unknown - default to vertical flow to prevent collapse, but grid is safer for mixed
-        // For now, let's fallback to relative flow (defaults to block/vertical in CSS)
-        // by setting a generic column layout unless explicitly grid
+        // Grid or unknown - default to vertical flow to prevent collapse
+        // Use existing gap if available, otherwise '0' (not hardcoded 16px)
         component.layout = {
           type: 'flex',
           direction: 'column',
-          gap: '16px',
+          gap: existingGap || '0',
         };
       }
     }
@@ -1088,22 +1090,30 @@ export function resolveRootOverlaps(
     // Calculate where the current component ends
     const currentBottom = current.bounds.top + current.bounds.height;
 
-    // Only fix actual overlaps — don't inject artificial gaps that distort measured positions
+    // Only fix overlaps where >50% of the next section is buried (clearly broken AI output).
+    // Preserve intentional overlaps like sticky headers, floating CTAs, or hero sections
+    // that partially overlap the next section.
     if (next.bounds.top < currentBottom) {
-      // Push next component down to just below the current one
-      const newTop = currentBottom;
+      const overlapAmount = currentBottom - next.bounds.top;
+      const overlapPercent = next.bounds.height > 0 ? overlapAmount / next.bounds.height : 1;
 
-      // Log for debugging
-      if (process.env.NODE_ENV === 'development') {
+      if (overlapPercent > 0.5) {
+        // Push next component down to just below the current one
+        const newTop = currentBottom;
+
+        // Log for debugging
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[resolveRootOverlaps] Fixing ${Math.round(overlapPercent * 100)}% overlap: pushing ${next.id} down from ${next.bounds.top} to ${newTop} (overlaps ${current.id})`
+          );
+        }
+
+        next.bounds.top = newTop;
+      } else if (process.env.NODE_ENV === 'development') {
         console.log(
-          `[resolveRootOverlaps] Pushing ${next.id} down from ${next.bounds.top} to ${newTop} (overlaps ${current.id})`
+          `[resolveRootOverlaps] Preserving intentional ${Math.round(overlapPercent * 100)}% overlap between ${current.id} and ${next.id}`
         );
       }
-
-      next.bounds.top = newTop;
-
-      // Important: Since we modified 'next', subsequent iterations will use its NEW top
-      // to calculate the position of the one after it.
     }
   }
 

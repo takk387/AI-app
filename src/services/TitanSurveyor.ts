@@ -9,7 +9,8 @@
 
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import sharp from 'sharp';
-import type { VisualManifest, FileInput } from '@/types/titanPipeline';
+import type { VisualManifest, FileInput, CanvasConfig, ImageMetadata } from '@/types/titanPipeline';
+import { FALLBACK_CANVAS } from '@/types/titanPipeline';
 import { isUIChromeIcon } from './iconConstants';
 
 // ============================================================================
@@ -25,10 +26,59 @@ function getGeminiApiKey(): string {
 }
 
 // ============================================================================
+// IMAGE METADATA EXTRACTION (measures actual dimensions before any processing)
+// ============================================================================
+
+/**
+ * Extract actual image dimensions using Sharp BEFORE any enhancement.
+ * This is the single source of truth for canvas sizing throughout the pipeline.
+ */
+export async function extractImageMetadata(file: FileInput): Promise<ImageMetadata> {
+  try {
+    const base64Data = file.base64.includes(',') ? file.base64.split(',')[1] : file.base64;
+    const buffer = Buffer.from(base64Data, 'base64');
+    const metadata = await sharp(buffer).metadata();
+
+    const result: ImageMetadata = {
+      width: metadata.width || 0,
+      height: metadata.height || 0,
+      format: metadata.format || 'unknown',
+    };
+
+    console.log(
+      `[TitanSurveyor] Image metadata: ${result.width}x${result.height} (${result.format})`
+    );
+    return result;
+  } catch (error) {
+    console.warn('[TitanSurveyor] Metadata extraction failed:', error);
+    return { width: 0, height: 0, format: 'unknown' };
+  }
+}
+
+/**
+ * Build a CanvasConfig from measured image metadata.
+ * Falls back to FALLBACK_CANVAS only if metadata extraction returned zeroes.
+ */
+export function buildCanvasConfig(metadata: ImageMetadata): CanvasConfig {
+  if (metadata.width > 0 && metadata.height > 0) {
+    return {
+      width: metadata.width,
+      height: metadata.height,
+      source: 'measured',
+      aspectRatio: metadata.width / metadata.height,
+    };
+  }
+
+  console.warn('[TitanSurveyor] Invalid metadata dimensions, using fallback canvas');
+  return { ...FALLBACK_CANVAS };
+}
+
+// ============================================================================
 // IMAGE ENHANCEMENT: Upscale and sharpen for crisp replications
 // ============================================================================
 
-const MIN_DIMENSION = 1920; // Minimum longest edge for quality analysis
+// Configurable via env var: set MIN_IMAGE_DIMENSION=0 to disable upscaling entirely
+const MIN_DIMENSION = parseInt(process.env.MIN_IMAGE_DIMENSION || '1920', 10);
 
 /**
  * Enhance image quality before AI analysis.
@@ -282,6 +332,8 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
         width: extractionSource.width,
         height: extractionSource.height,
       };
+      // Preserve iconName as fallback in case extraction fails
+      node._originalIconName = node.iconName;
       delete node.iconName;
 
       console.log(`[Surveyor:VisualFix] Icon "${iconName}" → hasCustomVisual (node: ${node.id})`);
@@ -347,21 +399,38 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
 // SURVEYOR IMPLEMENTATION
 // ============================================================================
 
-export async function surveyLayout(file: FileInput, fileIndex: number): Promise<VisualManifest> {
+export async function surveyLayout(
+  file: FileInput,
+  fileIndex: number,
+  canvasConfig?: CanvasConfig
+): Promise<VisualManifest> {
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const fileState = await uploadFileToGemini(apiKey, file);
+
+  // Prepend measured canvas dimensions to the prompt so the AI knows the actual image size
+  const canvasPreamble = canvasConfig
+    ? `\n### Image Dimensions (MEASURED — use these, do not guess)\nThe uploaded image is ${canvasConfig.width}px × ${canvasConfig.height}px (aspect ratio ${canvasConfig.aspectRatio.toFixed(3)}). Use these exact dimensions as the canvas size in your output.\n\n`
+    : '';
 
   // Enable Agentic Vision: code execution activates Think→Act→Observe loop
   // for precise CSS extraction (zoom, crop, annotate capabilities)
   const result = await ai.models.generateContent({
     model: GEMINI_FLASH_MODEL,
-    contents: [createPartFromUri(fileState.uri!, fileState.mimeType!), { text: SURVEYOR_PROMPT }],
+    contents: [
+      createPartFromUri(fileState.uri!, fileState.mimeType!),
+      { text: canvasPreamble + SURVEYOR_PROMPT },
+    ],
     config: {
       tools: [{ codeExecution: {} }],
       maxOutputTokens: 65536,
     },
   });
+
+  // Use measured canvas for fallback, not hardcoded values
+  const fallbackCanvas = canvasConfig
+    ? { width: canvasConfig.width, height: canvasConfig.height }
+    : { width: FALLBACK_CANVAS.width, height: FALLBACK_CANVAS.height };
 
   try {
     const text = result.text ?? '';
@@ -378,7 +447,7 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
     return {
       file_index: fileIndex,
       originalImageRef: { fileUri: fileState.uri!, mimeType: fileState.mimeType! },
-      canvas: data.canvas,
+      canvas: data.canvas || fallbackCanvas,
       global_theme: { dom_tree: data.dom_tree, assets: data.assets_needed },
       measured_components: [],
     };
@@ -390,7 +459,7 @@ export async function surveyLayout(file: FileInput, fileIndex: number): Promise<
         ? { fileUri: fileState.uri, mimeType: fileState.mimeType! }
         : undefined,
       measured_components: [],
-      canvas: { width: 1440, height: 900 },
+      canvas: fallbackCanvas,
       global_theme: {},
     };
   }

@@ -10,7 +10,7 @@
  * Handles: #fff, #ffffff, white, rgb(255,255,255), rgba(255,255,255,1)
  */
 export function normalizeColor(color: string | undefined): string {
-  if (!color) return '#000000';
+  if (!color) return 'transparent';
 
   const normalized = color.toLowerCase().trim();
 
@@ -145,15 +145,4 @@ export function getVisibleFallback(color: string | undefined, context?: ColorCon
   // For undefined colors, return transparent instead of gray
   // This lets content show through and avoids "gray box" artifacts
   return 'transparent';
-}
-
-/**
- * LEGACY: Get visible fallback without context (backward compatibility)
- * @deprecated Use getVisibleFallback with context for better results
- */
-export function getVisibleFallbackLegacy(color: string | undefined): string {
-  // Handle transparent colors first
-  if (isTransparent(color)) return '#f3f4f6';
-  // Handle white/light colors
-  return isWhiteOrLight(color) ? '#e5e7eb' : color || '#f3f4f6';
 }

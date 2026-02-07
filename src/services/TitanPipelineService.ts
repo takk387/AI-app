@@ -23,6 +23,7 @@ import type {
   PipelineResult,
   LiveEditResult,
   FileInput,
+  CanvasConfig,
 } from '@/types/titanPipeline';
 import { geminiImageService } from '@/services/GeminiImageService';
 import { getAssetExtractionService } from './AssetExtractionService';
@@ -34,6 +35,8 @@ import {
   surveyLayout as _surveyLayout,
   uploadFileToGemini as _uploadFileToGemini,
   enhanceImageQuality,
+  extractImageMetadata,
+  buildCanvasConfig,
 } from './TitanSurveyor';
 import { assembleCode as _assembleCode } from './TitanBuilder';
 import {
@@ -265,6 +268,8 @@ function enforceVisualExtraction(manifests: VisualManifest[]): void {
           width: bounds.width,
           height: bounds.height,
         };
+        // Preserve iconName as fallback in case extraction fails
+        node._originalIconName = node.iconName;
         delete node.iconName;
         iconConverted++;
 
@@ -467,6 +472,17 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   let physics: MotionPhysics | null = null;
   const generatedAssets: Record<string, string> = {};
 
+  // Extract ACTUAL image dimensions BEFORE any processing (upscaling, etc.)
+  // This is the single source of truth for canvas sizing throughout the pipeline
+  let canvasConfig: CanvasConfig | undefined;
+  if (input.files.length > 0) {
+    const metadata = await extractImageMetadata(input.files[0]);
+    canvasConfig = buildCanvasConfig(metadata);
+    console.log(
+      `[TitanPipeline] Canvas config: ${canvasConfig.width}x${canvasConfig.height} (${canvasConfig.source})`
+    );
+  }
+
   await Promise.all([
     // Surveyor — also runs for reference images so Builder has structural context
     (async () => {
@@ -479,7 +495,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       if (shouldSurvey && input.files.length > 0) {
         // Enhance image quality before analysis (upscale + sharpen for crisp replications)
         const enhancedFile = await enhanceImageQuality(input.files[0]);
-        manifests.push(await _surveyLayout(enhancedFile, 0));
+        manifests.push(await _surveyLayout(enhancedFile, 0, canvasConfig));
       }
     })(),
     // Physicist
@@ -595,6 +611,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       input,
       finalAssets,
       primaryImageRef,
+      canvasConfig,
       maxIterations: 2,
       targetFidelity: 95,
     });

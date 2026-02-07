@@ -131,6 +131,33 @@ export interface PipelineInput {
 }
 
 // ============================================================================
+// CANVAS & IMAGE METADATA (measured from source images)
+// ============================================================================
+
+/** Measured canvas dimensions from the source image, used throughout pipeline */
+export interface CanvasConfig {
+  width: number;
+  height: number;
+  source: 'measured' | 'fallback';
+  aspectRatio: number;
+}
+
+/** Raw image metadata extracted via Sharp before any processing */
+export interface ImageMetadata {
+  width: number;
+  height: number;
+  format: string;
+}
+
+/** Default canvas used only when image metadata extraction fails */
+export const FALLBACK_CANVAS: CanvasConfig = {
+  width: 1440,
+  height: 900,
+  source: 'fallback',
+  aspectRatio: 1440 / 900,
+};
+
+// ============================================================================
 // PIPELINE LOGIC TYPES
 // ============================================================================
 

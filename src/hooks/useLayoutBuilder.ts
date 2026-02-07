@@ -195,8 +195,8 @@ function convertVisualManifestToLayoutManifest(manifests: VisualManifest[]): Lay
     designSystem: {
       colors: Object.fromEntries(colorSet),
       fonts: {
-        heading: fontsArray[0] ?? 'Inter',
-        body: fontsArray[1] ?? fontsArray[0] ?? 'Inter',
+        heading: fontsArray[0] ?? 'inherit',
+        body: fontsArray[1] ?? fontsArray[0] ?? 'inherit',
       },
     },
   };

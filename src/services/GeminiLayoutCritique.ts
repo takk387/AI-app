@@ -197,10 +197,18 @@ export async function critiqueLayoutEnhanced(
       - Only suggest icon changes if the rendered icon is clearly the WRONG shape or meaning compared to the original.
       - NEVER replace a custom SVG path with a generic iconName.
 
-      **Severity Guidelines**:
-      - critical: Major visual difference that breaks the design (wrong colors, missing elements, broken layout)
-      - moderate: Noticeable difference that affects quality (spacing off by >10px, wrong font weight)
-      - minor: Small difference that most users wouldn't notice (spacing off by <5px, slight color variation)
+      **ACCEPTABLE RENDERING DIFFERENCES (do NOT flag these):**
+      - Anti-aliasing differences between browser rendering and original image
+      - Sub-pixel positioning shifts (±1px)
+      - Font rendering differences (hinting, smoothing, kerning micro-differences)
+      - Image compression artifacts vs original quality
+      - Minor opacity variations due to different rendering engines
+      Only flag differences that are visible to a human at normal viewing distance.
+
+      **Severity Guidelines** (use RELATIVE thresholds, not absolute pixels):
+      - critical: Difference > 5% of the component's own size, or completely wrong colors/missing elements
+      - moderate: Difference 2-5% of the component's size (e.g., noticeable spacing or font weight error)
+      - minor: Difference < 2% of the component's size (slight color variation, tiny spacing shift)
 
       **Issue Types** (use descriptive snake_case - these are examples, use ANY type that fits):
       color_drift, spacing_error, typography_mismatch, position_offset, size_mismatch,

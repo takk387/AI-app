@@ -104,40 +104,13 @@ export function normalizeCoordinates(components: any[]): any[] {
     return normalized;
   }
 
-  // 2. Fallback: Max-value heuristic (for legacy data without coordinateScale)
-  let maxCoord = 0;
-  normalized.forEach((c: any) => {
-    if (c?.bounds) {
-      const top = typeof c.bounds.top === 'string' ? parseFloat(c.bounds.top) : c.bounds.top;
-      const left = typeof c.bounds.left === 'string' ? parseFloat(c.bounds.left) : c.bounds.left;
-      const width =
-        typeof c.bounds.width === 'string' ? parseFloat(c.bounds.width) : c.bounds.width;
-      const height =
-        typeof c.bounds.height === 'string' ? parseFloat(c.bounds.height) : c.bounds.height;
-
-      maxCoord = Math.max(maxCoord, top || 0, left || 0, width || 0, height || 0);
-    }
-  });
-
-  // If max coordinate exceeds 105, assume 0-1000 scale and divide everything by 10
-  const isThousandsScale = maxCoord > 105;
-
-  if (isThousandsScale) {
-    console.log(
-      '[GeminiLayoutService] Heuristic detected 0-1000 scale (max=' +
-        maxCoord +
-        '). Normalizing to percentages.'
-    );
-    normalized.forEach((c: any) => {
-      divideBoundsBy10(c);
-    });
-  } else {
-    console.log(
-      '[GeminiLayoutService] Heuristic detected 0-100 scale (max=' +
-        maxCoord +
-        '). Keeping as percentages.'
-    );
-  }
+  // 2. No explicit scale metadata — assume 0-100 (safest default).
+  // The fragile maxCoord > 105 heuristic was removed because it caused
+  // false positives (e.g., a width of 103 being misdetected as 0-1000 scale).
+  // The upstream prompt now instructs AI to always include coordinateScale metadata.
+  console.log(
+    '[GeminiLayoutService] No coordinateScale metadata found — assuming 0-100 (percentage).'
+  );
 
   return normalized;
 }
@@ -599,7 +572,11 @@ export async function buildComponentsFromSpec(
     const withInferredLayouts = inferContainerLayouts(sanitizedComponents);
 
     // Post-process: Validate typography scaling to prevent font overflow
-    const withValidatedTypography = validateTypographyScaling(withInferredLayouts);
+    // Can be disabled via env var for exact replication (trusts AI measurements)
+    const withValidatedTypography =
+      process.env.TRUST_AI_TYPOGRAPHY === 'true'
+        ? withInferredLayouts
+        : validateTypographyScaling(withInferredLayouts);
 
     // Post-process: Strip non-UI-chrome iconName values to prevent generic Lucide icons
     // in the layout preview. If no iconSvgPath exists and the iconName isn't basic chrome
