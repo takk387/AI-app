@@ -242,8 +242,8 @@ function createSyntheticLayoutManifest(files: AppFile[], appContext?: AppContext
     designSystem: {
       colors,
       fonts: {
-        heading: appContext?.fontFamily ?? 'Inter',
-        body: appContext?.fontFamily ?? 'Inter',
+        heading: appContext?.fontFamily ?? 'inherit',
+        body: appContext?.fontFamily ?? 'inherit',
       },
     },
   };

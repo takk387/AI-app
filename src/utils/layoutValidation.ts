@@ -19,14 +19,15 @@ import type { DetectedComponentEnhanced } from '@/types/layoutDesign';
 
 /**
  * Default bounds for components missing bounds data.
- * Full-width block signals "unknown size" — better than an arbitrary 20% chip
- * that misrepresents the actual layout.
+ * Small defaults (5%×3%) ensure that fallback chips don't dominate the canvas.
+ * Most missing-bounds components are small elements (icons, labels, badges);
+ * 20% width causes massive oversizing in the preview.
  */
 export const DEFAULT_BOUNDS = {
   top: 0,
   left: 0,
-  width: 100,
-  height: 5,
+  width: 5,
+  height: 3,
 } as const;
 
 // ============================================================================
@@ -48,7 +49,8 @@ function toPercentage(val: number | string, defaultVal: number): number {
 /**
  * Helper for width/height - ensures minimum value for visibility.
  * Clamps to min-100 range. Scale normalization handled upstream.
- * Min lowered to 0.1 to preserve thin dividers and sub-1% elements.
+ * 0.1% minimum allows small extracted icons (e.g. 0.5% of viewport)
+ * to retain their real size instead of being inflated to 1%.
  */
 function toPercentageWithMin(val: number | string, defaultVal: number, min: number = 0.1): number {
   const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -575,9 +577,12 @@ export function validateComponentsForRender(components: DetectedComponentEnhance
 
 /**
  * Safely convert a value to a number with bounds checking.
- * Scale normalization (0-1000 → 0-100) is handled UPSTREAM by
- * normalizeCoordinates() in GeminiComponentBuilder.ts — this function
- * must NOT duplicate that logic to avoid triple-normalization bugs.
+ * Primary normalization (0-1000 → 0-100) is handled upstream by
+ * normalizeCoordinates() in GeminiComponentBuilder.ts.
+ *
+ * IMPORTANT: This function does NOT re-normalize 0-1000 values.
+ * Re-normalizing here caused double-normalization drift (values divided
+ * by 10 twice). Values > 100 are clamped to 100 instead.
  */
 function safeNumber(
   value: unknown,
@@ -591,6 +596,7 @@ function safeNumber(
 
   if (isNaN(num)) return defaultValue;
 
+  // Clamp only — no re-normalization. Upstream normalizeCoordinates() handles scale.
   return Math.max(minValue, Math.min(maxValue, num));
 }
 

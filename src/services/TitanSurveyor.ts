@@ -247,8 +247,8 @@ If an element contains text, use the "text" field.
     "styles": {
       "display": "flex",
       "flexDirection": "column",
-      "width": "1440px",
-      "height": "86px",
+      "width": "100%",
+      "height": "auto",
       "padding": "16px 24px",
       "margin": "0",
       "gap": "16px",
