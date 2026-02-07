@@ -34,29 +34,23 @@ export const DEFAULT_BOUNDS = {
 
 /**
  * Helper to convert bounds value to percentage.
- * Handles both 0-100 (percentage) and 0-1000 (normalized) scales.
- * Values > 100 are assumed to be 0-1000 scale and converted to percentage.
+ * Clamps to 0-100 range. Normalization from 0-1000 scale is handled
+ * upstream by normalizeCoordinates() in GeminiComponentBuilder.ts —
+ * this function should NOT duplicate that logic per-value.
  */
 function toPercentage(val: number | string, defaultVal: number): number {
   const num = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(num)) return defaultVal;
-  // If value > 100, assume 0-1000 scale and convert to percentage
-  if (num > 100) {
-    return Math.max(0, Math.min(100, num / 10));
-  }
   return Math.max(0, Math.min(100, num));
 }
 
 /**
  * Helper for width/height - ensures minimum value for visibility.
+ * Clamps to min-100 range. Scale normalization handled upstream.
  */
 function toPercentageWithMin(val: number | string, defaultVal: number, min: number = 1): number {
   const num = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(num) || num <= 0) return defaultVal;
-  // If value > 100, assume 0-1000 scale and convert to percentage
-  if (num > 100) {
-    return Math.max(min, Math.min(100, num / 10));
-  }
   return Math.max(min, Math.min(100, num));
 }
 
@@ -1091,17 +1085,13 @@ export function resolveRootOverlaps(
       continue;
     }
 
-    // Default gap to leave between sections (2%)
-    const GAP = 2;
-
     // Calculate where the current component ends
     const currentBottom = current.bounds.top + current.bounds.height;
 
-    // Check if next component overlaps (starts before current ends)
-    // or is too close
-    if (next.bounds.top < currentBottom + GAP) {
-      // Push next component down
-      const newTop = currentBottom + GAP;
+    // Only fix actual overlaps — don't inject artificial gaps that distort measured positions
+    if (next.bounds.top < currentBottom) {
+      // Push next component down to just below the current one
+      const newTop = currentBottom;
 
       // Log for debugging
       if (process.env.NODE_ENV === 'development') {

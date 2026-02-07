@@ -135,10 +135,11 @@ export async function critiqueLayoutEnhanced(
       hasIcon: c.content?.hasIcon,
       hasImage: c.content?.hasImage,
       iconName: c.content?.iconName,
-      // Include actual path (truncated) so AI can preserve it in corrections
+      // For long SVG paths, send a sentinel instead of truncating — truncation
+      // causes the critique AI to think the path is corrupt and suggest replacements
       iconSvgPath: c.content?.iconSvgPath
-        ? c.content.iconSvgPath.length > 200
-          ? c.content.iconSvgPath.substring(0, 200) + '...[truncated]'
+        ? c.content.iconSvgPath.length > 500
+          ? '<CUSTOM_SVG_DO_NOT_MODIFY>'
           : c.content.iconSvgPath
         : undefined,
     },
@@ -190,6 +191,11 @@ export async function critiqueLayoutEnhanced(
       - "content": Use for text, icons, images, SVG paths (text, iconName, iconSvgPath, src, etc.)
       - "bounds": Use for position/size (width, height, top, left)
       - Include only the sections that need corrections (omit empty sections)
+
+      **ICON PRESERVATION (CRITICAL)**:
+      - If a component has iconSvgPath = "<CUSTOM_SVG_DO_NOT_MODIFY>", do NOT suggest icon corrections for that component. The icon was custom-extracted and must be preserved exactly.
+      - Only suggest icon changes if the rendered icon is clearly the WRONG shape or meaning compared to the original.
+      - NEVER replace a custom SVG path with a generic iconName.
 
       **Severity Guidelines**:
       - critical: Major visual difference that breaks the design (wrong colors, missing elements, broken layout)

@@ -64,7 +64,7 @@ export function validateTypographyScaling(
 /**
  * Normalize component coordinates.
  * Handles 0-1000 scale (from new prompts) and converts to 0-100 scale (percentage).
- * Uses Max Value Heuristic to auto-detect scale.
+ * Checks for explicit coordinateScale metadata first, falls back to max-value heuristic.
  */
 export function normalizeCoordinates(components: any[]): any[] {
   if (!Array.isArray(components) || components.length === 0) return components;
@@ -72,10 +72,40 @@ export function normalizeCoordinates(components: any[]): any[] {
   // Deep clone to avoid mutating input
   const normalized = JSON.parse(JSON.stringify(components));
 
-  // Heuristic: Check for values > 100 to detect 0-1000 scale
-  let maxCoord = 0;
+  // Helper to divide bounds by 10
+  const divideBoundsBy10 = (c: any) => {
+    if (c?.bounds) {
+      const normalize = (val: any) => {
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        return isNaN(num) ? 0 : num / 10;
+      };
+      c.bounds.top = normalize(c.bounds.top);
+      c.bounds.left = normalize(c.bounds.left);
+      c.bounds.width = normalize(c.bounds.width);
+      c.bounds.height = normalize(c.bounds.height);
+    }
+  };
 
-  // Scan all components to find the maximum coordinate value
+  // 1. Check for explicit coordinateScale metadata (reliable — no guessing)
+  const firstScale = normalized[0]?.coordinateScale;
+  if (firstScale === '0-1000') {
+    console.log('[GeminiLayoutService] Explicit scale: 0-1000. Converting to percentages.');
+    normalized.forEach((c: any) => {
+      divideBoundsBy10(c);
+      delete c.coordinateScale;
+    });
+    return normalized;
+  }
+  if (firstScale === '0-100') {
+    console.log('[GeminiLayoutService] Explicit scale: 0-100. Keeping as percentages.');
+    normalized.forEach((c: any) => {
+      delete c.coordinateScale;
+    });
+    return normalized;
+  }
+
+  // 2. Fallback: Max-value heuristic (for legacy data without coordinateScale)
+  let maxCoord = 0;
   normalized.forEach((c: any) => {
     if (c?.bounds) {
       const top = typeof c.bounds.top === 'string' ? parseFloat(c.bounds.top) : c.bounds.top;
@@ -89,32 +119,23 @@ export function normalizeCoordinates(components: any[]): any[] {
     }
   });
 
-  // If max coordinate exceeds 100, assume 0-1000 scale and divide everything by 10
-  // We use a threshold slightly above 100 to account for potential small floating point errors or 101%
+  // If max coordinate exceeds 105, assume 0-1000 scale and divide everything by 10
   const isThousandsScale = maxCoord > 105;
 
   if (isThousandsScale) {
     console.log(
-      '[GeminiLayoutService] Detected 0-1000 scale (max=' +
+      '[GeminiLayoutService] Heuristic detected 0-1000 scale (max=' +
         maxCoord +
         '). Normalizing to percentages.'
     );
     normalized.forEach((c: any) => {
-      if (c?.bounds) {
-        const normalize = (val: any) => {
-          const num = typeof val === 'string' ? parseFloat(val) : val;
-          return isNaN(num) ? 0 : num / 10;
-        };
-
-        c.bounds.top = normalize(c.bounds.top);
-        c.bounds.left = normalize(c.bounds.left);
-        c.bounds.width = normalize(c.bounds.width);
-        c.bounds.height = normalize(c.bounds.height);
-      }
+      divideBoundsBy10(c);
     });
   } else {
     console.log(
-      '[GeminiLayoutService] Detected 0-100 scale (max=' + maxCoord + '). Keeping as percentages.'
+      '[GeminiLayoutService] Heuristic detected 0-100 scale (max=' +
+        maxCoord +
+        '). Keeping as percentages.'
     );
   }
 
@@ -143,6 +164,7 @@ const COMPONENT_BUILDER_PROMPT = `
       For EACH element, return:
       {
         "id": "descriptive-unique-id",
+        "coordinateScale": "0-1000",
         "type": "header|sidebar|hero|section|container|cards|navigation|footer|form|logo|button|text|image|input|link|icon|badge|avatar|divider|list|menu|card|unknown",
         "role": "container|leaf|overlay",
         "parentId": "<parent-id or null for root sections>",
@@ -366,19 +388,17 @@ const COMPONENT_BUILDER_PROMPT = `
          WARNING: If you omit layout, the system will guess incorrectly and the design will break.
 
       4. **ROOT COMPONENTS** (parentId: null):
-         These are major page sections positioned with absolute bounds on the viewport:
-         - header (top: 0, height: ~60-80)
-         - hero (below header)
-         - features/content sections
-         - footer (bottom)
+         These are major page sections positioned with absolute bounds on the viewport.
 
-          Typically 3-7 root sections for a landing page.
+         MEASURE EVERY SECTION FROM THE IMAGE. Do NOT use template heights.
+         - Look at the image and measure where each section starts (top) and how tall it is (height)
+         - Express as 0-1000 coordinates relative to the full page height
+         - If the header is tiny (3% of page), set height: 30. If huge, set accordingly.
+         - NEVER round to "convenient" numbers. Use the EXACT proportions from the image.
 
-          ROOT COMPONENTS MUST NOT OVERLAP. Stack them vertically:
-          - Each root section's top MUST be >= the previous section's (top + height)
-          - Leave a small gap (20-40 in 0-1000 scale) between sections
-          - Full-width sections: left=0, width=1000
-          - Assign heights based on content: header ~60-80, hero ~300-500, sections ~200-400, footer ~150-250
+         ROOT COMPONENTS MUST NOT OVERLAP. Stack them vertically:
+         - Each root section's top MUST be >= the previous section's (top + height)
+         - Full-width sections: left=0, width=1000
 
       5. **CHILD BOUNDS ARE RELATIVE**:
          - Root components: bounds relative to viewport (0-1000)
@@ -408,17 +428,21 @@ const COMPONENT_BUILDER_PROMPT = `
            * For single-line text (nav items, buttons, labels): add "whiteSpace": "nowrap" in customCSS
            * Multi-line text: ensure container height fits all lines at fontSize x lineHeight
 
-      8. **ICON DETECTION - EXACT SVG REPLICATION**:
+      8. **ICON DETECTION - EXACT REPLICATION**:
          - When you see an icon, set hasIcon: true
-         - FOR EXACT REPLICAS: Extract the actual SVG path data and provide it in iconSvgPath
-           Example: "iconSvgPath": "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5"
-         - If you cannot extract the SVG path:
-           * For standard UI icons (arrows, checkmarks, menus, etc.) -> use iconName with Lucide name:
+         - FOR ARTISTIC or CUSTOM icons (logos, illustrations, brand graphics, social media icons, decorative icons):
+           * Set hasCustomVisual: true AND extractionAction: "crop"
+           * Provide extractionBounds: { top, left, width, height } in 0-1000 scale relative to parent
+           * DO NOT guess a Lucide icon name for these — they will be cropped from the original image
+         - FOR STANDARD UI icons (arrows, checkmarks, hamburger, search, close, plus/minus):
+           * Use iconName with the Lucide name:
              "Home", "User", "Menu", "Search", "ArrowRight", "ArrowLeft", "Settings", "Check", "Plus", "Minus", "Heart", "Star", "Close", "ChevronDown", "ChevronRight", "Mail", "Phone", "MapPin", "Calendar", "Clock", "Bell", "ShoppingCart", "CreditCard"
-           * For custom logos, brand icons, or complex graphics -> set hasCustomVisual: true and
-             extractionAction: "crop" with extractionBounds. Do NOT guess a Lucide name.
+         - OPTIONALLY: If you can extract the SVG path data, provide it in iconSvgPath
+           Example: "iconSvgPath": "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5"
          - Specify iconPosition relative to text content: "left" (before), "right" (after), "top" (above), "bottom" (below), or "center" (standalone)
          - ALWAYS measure iconColor from the image - don't guess
+         - **Rule of Thumb:** When in doubt about an icon, use hasCustomVisual + extractionAction: "crop".
+           Only use iconName for icons you are 100% certain match a standard Lucide icon.
 
       9. **FOOTER HIERARCHY - DETECT MULTI-COLUMN FOOTERS**:
          - Footers typically have 2-4 columns arranged horizontally
@@ -493,47 +517,29 @@ const COMPONENT_BUILDER_PROMPT = `
 // ============================================================================
 
 /**
- * Strip non-UI-chrome iconName values from components to prevent the
- * GenericComponentRenderer from showing wrong generic Lucide icons.
- *
- * If a component has iconName but no iconSvgPath, and the iconName isn't
- * basic UI chrome (chevrons, X, Menu, etc.), we remove it. The renderer
- * will then skip the icon rather than showing a misleading generic one.
+ * Log non-chrome icon names for debugging, but DO NOT remove them.
+ * The downstream renderers (TitanBuilder, GenericComponentRenderer) handle
+ * fallback priority: SVG path → extracted asset → Lucide → skip.
+ * Stripping iconName upstream destroys data that the builder needs for
+ * icon rendering decisions.
  */
 function stripNonChromeIconNames(
   components: DetectedComponentEnhanced[]
 ): DetectedComponentEnhanced[] {
-  let stripped = 0;
-
-  const result = components.map((component) => {
-    if (!component.content?.hasIcon || !component.content.iconName) return component;
-
-    // If SVG path exists, the icon will render correctly — leave it alone
-    if (component.content.iconSvgPath) return component;
-
-    // If it's a UI chrome icon, keep the iconName for Lucide rendering
-    if (isUIChromeIcon(component.content.iconName)) return component;
-
-    // Non-chrome icon with no SVG path — strip iconName to prevent generic rendering
-    console.log(
-      `[ComponentBuilder:IconFix] Stripping "${component.content.iconName}" from ${component.id}`
-    );
-    stripped++;
-
-    return {
-      ...component,
-      content: {
-        ...component.content,
-        iconName: undefined,
-      },
-    };
-  });
-
-  if (stripped > 0) {
-    console.log(`[ComponentBuilder:IconFix] Stripped ${stripped} non-chrome iconName values`);
+  for (const component of components) {
+    if (
+      component.content?.hasIcon &&
+      component.content.iconName &&
+      !component.content.iconSvgPath
+    ) {
+      if (!isUIChromeIcon(component.content.iconName)) {
+        console.log(
+          `[ComponentBuilder:IconInfo] "${component.content.iconName}" on ${component.id} is non-chrome (will use Lucide fallback or asset extraction)`
+        );
+      }
+    }
   }
-
-  return result;
+  return components;
 }
 
 // ============================================================================

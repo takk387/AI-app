@@ -83,7 +83,10 @@ export function extractJSXMarkup(reactCode: string): string {
  *
  * IMPROVED: Now renders real React with Lucide icons instead of placeholders
  */
-export async function captureRenderedScreenshot(code: string): Promise<string | null> {
+export async function captureRenderedScreenshot(
+  code: string,
+  assets?: Record<string, string>
+): Promise<string | null> {
   let browser = null;
   try {
     console.log('[TitanPipeline] Launching headless browser for screenshot...');
@@ -133,12 +136,15 @@ export async function captureRenderedScreenshot(code: string): Promise<string | 
   <div id="root"></div>
   <script>
     try {
+      // Inject extracted asset URLs so <img> tags can resolve correctly
+      const assets = ${JSON.stringify(assets || {})};
+
       // Extract App component code (remove imports and export)
       const appCode = ${JSON.stringify(code)};
-      
+
       // Remove import statements
       let cleanCode = appCode.replace(/^import.*from.*['"];?$/gm, '');
-      
+
       // Remove export default
       cleanCode = cleanCode.replace(/export default /g, '');
       
@@ -171,11 +177,12 @@ export async function captureRenderedScreenshot(code: string): Promise<string | 
       };
       
       // Evaluate the component code in a safe context
-      const AppFunction = new Function('React', 'LucideIcon', \`
+      // Pass 'assets' so the generated code can reference extracted asset URLs
+      const AppFunction = new Function('React', 'LucideIcon', 'assets', \`
         const { useState, useEffect, useRef } = React;
         \${cleanCode}
         return App;
-      \`)(React, LucideIcon);
+      \`)(React, LucideIcon, assets);
       
       // Render the app
       const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -310,8 +317,8 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
         break;
       }
 
-      // 2. Render and capture screenshot
-      const screenshot = await captureRenderedScreenshot(appFile.content);
+      // 2. Render and capture screenshot (pass assets so <img> tags resolve correctly)
+      const screenshot = await captureRenderedScreenshot(appFile.content, finalAssets);
       if (!screenshot) {
         warnings.push(`Screenshot capture failed on iteration ${iteration}, stopping healing`);
         break;
