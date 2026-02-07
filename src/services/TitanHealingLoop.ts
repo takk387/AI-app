@@ -9,6 +9,7 @@
  */
 
 import puppeteer from 'puppeteer';
+import { UI_CHROME_ICONS } from './iconConstants';
 
 // ============================================================================
 // JSX MARKUP EXTRACTION
@@ -158,18 +159,15 @@ export async function captureRenderedScreenshot(
       
       // Replace Lucide icon imports with window.lucideReact references
       // Icons are available as window.lucideReact.Home, window.lucideReact.User, etc.
+      // NOTE: UI_CHROME_ICONS is serialized into this template because this code
+      // runs in Puppeteer (browser context), not Node.js where the import lives.
+      const uiChromeIcons = new Set(${JSON.stringify([...UI_CHROME_ICONS])});
       const iconPattern = /<([A-Z][a-zA-Z]+)\\s*(\\/?>|[^>]*>)/g;
       cleanCode = cleanCode.replace(iconPattern, (match, iconName, rest) => {
-        // Common Lucide icon names
-        const lucideIcons = [
-          'Home', 'User', 'Menu', 'Search', 'Settings', 'Star', 'Heart', 'Check',
-          'Plus', 'Minus', 'X', 'ChevronLeft', 'ChevronRight', 'ChevronDown', 'ChevronUp',
-          'ArrowRight', 'ArrowLeft', 'Mail', 'Phone', 'MapPin', 'Calendar', 'Clock',
-          'Bell', 'ShoppingCart', 'CreditCard', 'Download', 'Upload', 'Eye', 'EyeOff',
-          'Info', 'AlertCircle', 'Play', 'Pause', 'Share', 'Lock', 'Unlock'
-        ];
-        
-        if (lucideIcons.includes(iconName)) {
+        // Only replace UI chrome icons with Lucide renderings.
+        // Non-chrome icons should have been rendered as <img> tags
+        // by the Builder using extracted assets — don't substitute them.
+        if (uiChromeIcons.has(iconName)) {
           return '<LucideIcon name="' + iconName + '"' + rest;
         }
         return match;
@@ -386,26 +384,26 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
             `Current fidelity: ${stepResult.fidelityScore}%. Target: ${targetFidelity}%.`
           : `Fidelity: ${stepResult.fidelityScore}%. Overall visual accuracy needs improvement.`;
 
-      // CRITICAL FIX: Force CREATE mode during healing iterations.
-      // If we pass the original strategy (which may be MERGE or EDIT), the AI will
-      // try to ADD elements on top of existing code, causing double-layer bugs.
-      // By forcing CREATE mode and passing null for currentCode, we ensure the AI
-      // regenerates from the corrected manifest only.
+      // SURGICAL HEALING: Pass current code in EDIT mode so the Builder
+      // only patches what the critique identified. Full regeneration (CREATE mode)
+      // destroys details the Builder got right in the first pass.
       const healingStrategy: MergeStrategy = {
         ...strategy,
-        mode: 'CREATE',
+        mode: 'EDIT',
         execution_plan: {
           ...strategy.execution_plan,
-          preserve_existing_code: false,
+          preserve_existing_code: true,
         },
       };
+
+      const currentAppCode = files.find((f) => f.path === '/src/App.tsx')?.content ?? null;
 
       files = await assembleCode(
         structure,
         manifests,
         physics,
         healingStrategy,
-        null, // Don't pass existing code - regenerate from manifest only
+        currentAppCode, // Pass existing code for surgical editing
         input.instructions,
         finalAssets,
         primaryImageRef,

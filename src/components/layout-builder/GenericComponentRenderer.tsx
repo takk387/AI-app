@@ -594,6 +594,44 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   // Supports both raw SVG paths (for exact replicas) and named icons (fallback)
   const renderIcon = () => {
     if (!content?.hasIcon) return null;
+
+    // Custom visual detected — show image-style placeholder instead of Lucide icon.
+    // These are logos, brand graphics, illustrations that need asset extraction.
+    if (content?.hasCustomVisual) {
+      const description = content.imageDescription || content.text || 'Custom Visual';
+      return (
+        <div
+          className="w-full h-full flex flex-col items-center justify-center gap-1"
+          style={{
+            backgroundColor: style.backgroundColor || 'rgba(229, 231, 235, 0.3)',
+            borderRadius: style.borderRadius || '4px',
+            minHeight: '32px',
+            minWidth: '32px',
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            className="text-gray-400"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          <span
+            className="text-gray-500 text-xs text-center px-1 leading-tight truncate"
+            style={{ maxWidth: '90%' }}
+          >
+            {description}
+          </span>
+        </div>
+      );
+    }
+
     // Need either SVG path or icon name
     if (!content?.iconSvgPath && !content?.iconName) return null;
 
@@ -684,8 +722,9 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
       return null;
     }
 
-    // Check for icon content - support both named icons and SVG path icons
-    const hasIconContent = content?.hasIcon && (content?.iconSvgPath || content?.iconName);
+    // Check for icon content - support named icons, SVG paths, and custom visuals
+    const hasIconContent =
+      content?.hasIcon && (content?.iconSvgPath || content?.iconName || content?.hasCustomVisual);
     const hasTextContent = content?.text;
     const hasImageContent = content?.hasImage;
 

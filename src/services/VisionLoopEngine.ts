@@ -24,7 +24,7 @@ import type {
 // Re-export types for convenience (consumers can import from this file)
 export type { SelfHealingResult, SelfHealingConfig } from '@/types/layoutAnalysis';
 import { LayoutAutoFixEngine, createLayoutAutoFixEngine } from './LayoutAutoFixEngine';
-import { getGeminiLayoutService } from './GeminiLayoutService';
+import { critiqueLayoutEnhanced } from './GeminiLayoutCritique';
 
 /**
  * Progress callback for UI updates
@@ -67,7 +67,7 @@ const DEFAULT_CONFIG: SelfHealingConfig = {
 export class VisionLoopEngine {
   private config: SelfHealingConfig;
   private autoFixEngine: LayoutAutoFixEngine;
-  private geminiService: ReturnType<typeof getGeminiLayoutService>;
+  private apiKey: string;
   private onProgress?: VisionLoopProgressCallback;
   private aborted: boolean = false;
 
@@ -77,7 +77,9 @@ export class VisionLoopEngine {
       skipCritical: false,
       validateBounds: true,
     });
-    this.geminiService = getGeminiLayoutService();
+    const key = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('[VisionLoopEngine] GOOGLE_API_KEY or GEMINI_API_KEY required');
+    this.apiKey = key;
     this.onProgress = onProgress;
   }
 
@@ -174,7 +176,8 @@ export class VisionLoopEngine {
           message: `Iteration ${iteration}: AI analyzing layout...`,
         });
 
-        const critique = await this.geminiService.critiqueLayoutEnhanced(
+        const critique = await critiqueLayoutEnhanced(
+          this.apiKey,
           originalImage,
           screenshot,
           currentComponents,
@@ -349,7 +352,8 @@ export class VisionLoopEngine {
         message: `Iteration ${iteration}: AI analyzing layout...`,
       });
 
-      const critique = await this.geminiService.critiqueLayoutEnhanced(
+      const critique = await critiqueLayoutEnhanced(
+        this.apiKey,
         originalImage,
         screenshot,
         currentComponents,
@@ -469,7 +473,8 @@ export class VisionLoopEngine {
       );
     }
 
-    return this.geminiService.critiqueLayoutEnhanced(
+    return critiqueLayoutEnhanced(
+      this.apiKey,
       originalImage,
       screenshot,
       components,

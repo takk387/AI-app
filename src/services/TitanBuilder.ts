@@ -144,6 +144,13 @@ You are the **Universal Builder**. Write the final React code.
    - Do NOT add decorative elements not present in the manifest.
    - Translate the manifest to code with pixel-perfect accuracy — do not interpret.
 
+10. **SPECIAL MODE: EXACT REPLICA**
+    When the user intent is "exact replica" or "clone":
+    1. Suppress Creativity: Do not "modernize", "clean up", or "fix" the design. If the button is ugly, make it ugly.
+    2. Hardcoded Metrics: Do not use generic Tailwind spacing (e.g., p-4). Use arbitrary values (e.g., p-[13px]) to match the image pixels exactly.
+    3. Typography: If you can't identify the font, use the closest generic sans/serif, but match the weight and letter-spacing perfectly.
+    4. Physics Extraction: Buttons with hard shadow → "Clicky" physics, glow → "Neon" physics. Return physics object.
+
 ### Output Format
 Return TWO files separated by markers:
 
@@ -183,7 +190,37 @@ export async function assembleCode(
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
+  // Pre-inject asset URLs into dom_tree nodes so the AI doesn't need to cross-reference
+  function injectAssetsIntoDomTree(
+    node: Record<string, unknown>,
+    assetMap: Record<string, string>
+  ): void {
+    if (typeof node.id === 'string' && assetMap[node.id]) {
+      node.extractedAssetUrl = assetMap[node.id];
+    }
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) {
+        if (child && typeof child === 'object') {
+          injectAssetsIntoDomTree(child, assetMap);
+        }
+      }
+    }
+  }
+
   const hasAssets = Object.keys(assets).length > 0;
+
+  if (hasAssets) {
+    for (const manifest of manifests) {
+      if (manifest.global_theme?.dom_tree) {
+        injectAssetsIntoDomTree(
+          manifest.global_theme.dom_tree as unknown as Record<string, unknown>,
+          assets
+        );
+      }
+    }
+  }
+
   const assetContext = hasAssets
     ? `\n\n### ASSET CONTEXT (CRITICAL — Use these for custom visuals!)
 These assets were EXTRACTED from the original design (icons, logos, textures):

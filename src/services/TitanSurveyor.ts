@@ -384,6 +384,21 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
     }
   }
 
+  // --- Fix 4: backgroundImage with url(...) → force extraction ---
+  const styles = node.styles as Record<string, string> | undefined;
+  const bgImage = styles?.backgroundImage as string | undefined;
+  if (bgImage && bgImage.includes('url(') && !node.hasCustomVisual && extractionSource) {
+    node.hasCustomVisual = true;
+    node.extractionAction = 'crop';
+    node.extractionBounds = {
+      top: extractionSource.top,
+      left: extractionSource.left,
+      width: extractionSource.width,
+      height: extractionSource.height,
+    };
+    console.log(`[Surveyor:VisualFix] backgroundImage URL → hasCustomVisual (node: ${node.id})`);
+  }
+
   // Recurse through children
   const children = node.children as Record<string, unknown>[] | undefined;
   if (Array.isArray(children)) {

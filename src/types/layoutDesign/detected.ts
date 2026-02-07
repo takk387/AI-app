@@ -243,6 +243,17 @@ export interface DetectedComponentEnhanced {
       size?: 'sm' | 'md' | 'lg';
       padding?: string;
     };
+    /** Custom visual flag — logos, brand icons, illustrations that need asset extraction */
+    hasCustomVisual?: boolean;
+    /** Extraction action for custom visuals */
+    extractionAction?: 'crop' | 'none';
+    /** Extraction bounds in 0-1000 scale for cropping from reference image */
+    extractionBounds?: {
+      top: number;
+      left: number;
+      width: number;
+      height: number;
+    };
   };
   /** Parent component ID for hierarchy */
   parentId?: string;

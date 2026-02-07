@@ -1,16 +1,15 @@
 /**
  * Gemini Layout Critique - Vision Loop Critiquer
  *
- * Extracted from GeminiLayoutService.ts
  * Compares original design reference vs generated output screenshots
  * for self-healing layout refinement.
  *
  * Contains both legacy (critiqueLayout) and enhanced (critiqueLayoutEnhanced) methods.
  *
- * SDK: @google/generative-ai (older SDK)
+ * SDK: @google/genai (new SDK with code execution support)
  */
 
-import type { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, createPartFromBase64 } from '@google/genai';
 import type { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import type { LayoutCritiqueEnhanced } from '@/types/layoutAnalysis';
 
@@ -19,6 +18,20 @@ import type { LayoutCritiqueEnhanced } from '@/types/layoutAnalysis';
 // ============================================================================
 
 const MODEL_FLASH = 'gemini-3-flash-preview';
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Strip data URI prefix from base64 string and return data + mimeType
+ */
+function parseBase64Image(base64: string): { data: string; mimeType: string } {
+  const mimeMatch = base64.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const data = base64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+  return { data, mimeType };
+}
 
 // ============================================================================
 // TYPES
@@ -42,21 +55,16 @@ export interface LayoutCritique {
  * The "Vision Loop" Critiquer (Legacy)
  * Compares the original reference vs. the generated output (screenshot)
  *
- * @param client - Initialized GoogleGenerativeAI client
- * @param fileToPart - Helper to convert base64 image to Gemini inline data part
+ * @param apiKey - Gemini API key
  * @param originalImage - Base64-encoded original design reference
  * @param generatedImage - Base64-encoded screenshot of generated output
  */
 export async function critiqueLayout(
-  client: GoogleGenerativeAI,
-  fileToPart: (base64: string) => { inlineData: { data: string; mimeType: string } },
+  apiKey: string,
   originalImage: string,
   generatedImage: string
 ): Promise<LayoutCritique> {
-  const model = client.getGenerativeModel({
-    model: MODEL_FLASH,
-    generationConfig: { responseMimeType: 'application/json' },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
       You are a QA Design Engineer.
@@ -70,16 +78,31 @@ export async function critiqueLayout(
       - Font Weights
 
       Return a 'LayoutCritique' JSON with specific, executable corrections.
+      Return ONLY valid JSON. No markdown, no explanation.
     `;
 
-  const originalPart = fileToPart(originalImage);
-  const generatedPart = fileToPart(generatedImage);
+  const originalParsed = parseBase64Image(originalImage);
+  const generatedParsed = parseBase64Image(generatedImage);
 
-  const result = await model.generateContent([prompt, originalPart, generatedPart]);
-  const response = result.response;
+  const result = await ai.models.generateContent({
+    model: MODEL_FLASH,
+    contents: [
+      { text: prompt },
+      createPartFromBase64(originalParsed.data, originalParsed.mimeType),
+      createPartFromBase64(generatedParsed.data, generatedParsed.mimeType),
+    ],
+    config: {
+      tools: [{ codeExecution: {} }],
+      maxOutputTokens: 65536,
+    },
+  });
+
+  const text = result.text ?? '';
 
   try {
-    return JSON.parse(response.text()) as LayoutCritique;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    return JSON.parse(jsonMatch[0]) as LayoutCritique;
   } catch (e) {
     console.error('Failed to parse Critique response', e);
     return { score: 0, discrepancies: [] };
@@ -96,25 +119,20 @@ export async function critiqueLayout(
  * Compares original design vs generated layout and returns structured
  * corrections that can be automatically applied by the AutoFixEngine.
  *
- * @param client - Initialized GoogleGenerativeAI client
- * @param fileToPart - Helper to convert base64 image to Gemini inline data part
+ * @param apiKey - Gemini API key
  * @param originalImage - Base64 encoded original design reference
  * @param generatedImage - Base64 encoded screenshot of current layout
  * @param components - Current component array for context
  * @param targetFidelity - Target fidelity score (default: 95)
  */
 export async function critiqueLayoutEnhanced(
-  client: GoogleGenerativeAI,
-  fileToPart: (base64: string) => { inlineData: { data: string; mimeType: string } },
+  apiKey: string,
   originalImage: string,
   generatedImage: string,
   components: DetectedComponentEnhanced[],
   targetFidelity: number = 95
 ): Promise<LayoutCritiqueEnhanced> {
-  const model = client.getGenerativeModel({
-    model: MODEL_FLASH,
-    generationConfig: { responseMimeType: 'application/json' },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Build rich component context for the AI (enables content + style corrections)
   const componentContext = components.map((c) => ({
@@ -224,13 +242,27 @@ export async function critiqueLayoutEnhanced(
       Return ONLY valid JSON. No markdown, no explanation.
     `;
 
-  const originalPart = fileToPart(originalImage);
-  const generatedPart = fileToPart(generatedImage);
+  const originalParsed = parseBase64Image(originalImage);
+  const generatedParsed = parseBase64Image(generatedImage);
 
   try {
-    const result = await model.generateContent([prompt, originalPart, generatedPart]);
-    const response = result.response;
-    const critique = JSON.parse(response.text()) as LayoutCritiqueEnhanced;
+    const result = await ai.models.generateContent({
+      model: MODEL_FLASH,
+      contents: [
+        { text: prompt },
+        createPartFromBase64(originalParsed.data, originalParsed.mimeType),
+        createPartFromBase64(generatedParsed.data, generatedParsed.mimeType),
+      ],
+      config: {
+        tools: [{ codeExecution: {} }],
+        maxOutputTokens: 65536,
+      },
+    });
+
+    const text = result.text ?? '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in critique response');
+    const critique = JSON.parse(jsonMatch[0]) as LayoutCritiqueEnhanced;
 
     // Validate and sanitize the response
     return {
@@ -242,7 +274,7 @@ export async function critiqueLayoutEnhanced(
         critique.recommendation || (critique.fidelityScore >= targetFidelity ? 'accept' : 'refine'),
     };
   } catch (e) {
-    console.error('[GeminiLayoutService] Failed to parse enhanced critique response', e);
+    console.error('[GeminiLayoutCritique] Failed to parse enhanced critique response', e);
     return {
       fidelityScore: 0,
       overallAssessment: 'Failed to analyze layout comparison',

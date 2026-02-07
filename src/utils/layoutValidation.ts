@@ -152,6 +152,17 @@ const ContentSchema = z
     iconColor: z.string().optional(),
     iconPosition: z.string().optional(),
     iconSize: z.string().optional(),
+    // Custom visual extraction (logos, brand icons, illustrations)
+    hasCustomVisual: z.boolean().optional(),
+    extractionAction: z.enum(['crop', 'none']).optional(),
+    extractionBounds: z
+      .object({
+        top: z.number(),
+        left: z.number(),
+        width: z.number(),
+        height: z.number(),
+      })
+      .optional(),
   })
   .passthrough()
   .optional();

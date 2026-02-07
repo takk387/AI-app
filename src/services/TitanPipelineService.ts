@@ -307,6 +307,28 @@ function enforceVisualExtraction(manifests: VisualManifest[]): void {
       console.log(`[VisualEnforcement] hasImage node → extraction (node: ${node.id})`);
     }
 
+    // --- Enforce 4: backgroundImage with url(...) → force extraction ---
+    const styles = node.styles as Record<string, string> | undefined;
+    const bgImage = styles?.backgroundImage as string | undefined;
+    if (
+      bgImage &&
+      bgImage.includes('url(') &&
+      !alreadyCustomVisual &&
+      !node.hasCustomVisual &&
+      bounds
+    ) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: bounds.top,
+        left: bounds.left,
+        width: bounds.width,
+        height: bounds.height,
+      };
+      imageConverted++;
+      console.log(`[VisualEnforcement] backgroundImage URL node → extraction (node: ${node.id})`);
+    }
+
     // Recurse through children
     const children = node.children as Record<string, unknown>[] | undefined;
     if (Array.isArray(children)) {
@@ -424,6 +446,38 @@ async function extractCustomVisualAssets(
   });
 
   await Promise.all(tasks);
+
+  // Restore fallback iconName on nodes where extraction failed
+  function restoreFallbacks(node: Record<string, unknown>) {
+    const nodeId = node.id as string | undefined;
+    if (
+      node.hasCustomVisual === true &&
+      nodeId &&
+      !extractedAssets[nodeId] &&
+      node._originalIconName
+    ) {
+      node.iconName = node._originalIconName;
+      delete node._originalIconName;
+      console.warn(
+        `[AssetExtraction] Restoring fallback iconName "${node.iconName}" for ${nodeId}`
+      );
+    }
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) {
+        if (child && typeof child === 'object') {
+          restoreFallbacks(child);
+        }
+      }
+    }
+  }
+
+  for (const manifest of manifests) {
+    if (manifest.global_theme?.dom_tree) {
+      restoreFallbacks(manifest.global_theme.dom_tree as unknown as Record<string, unknown>);
+    }
+  }
+
   return extractedAssets;
 }
 

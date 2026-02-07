@@ -106,30 +106,43 @@ class AssetExtractionService {
       });
 
       // 3. Convert normalized bounds to pixel coordinates
-      // Detect scale: if any bound value exceeds 100, treat as 0-1000 scale
+      // Detect scale: values > 200 are clearly 0-1000 scale.
+      // Values 101-200 are ambiguous but more likely 0-100 with slight overflow.
       const maxBound = Math.max(
         request.bounds.left,
         request.bounds.top,
         request.bounds.left + request.bounds.width,
         request.bounds.top + request.bounds.height
       );
-      const divisor = maxBound > 100 ? 1000 : 100;
+      const divisor = maxBound > 200 ? 1000 : 100;
       if (divisor === 1000) {
         console.log('[AssetExtractionService] Detected 0-1000 scale bounds, converting');
       }
 
-      const cropX = Math.round((request.bounds.left / divisor) * metadata.width);
-      const cropY = Math.round((request.bounds.top / divisor) * metadata.height);
-      const cropWidth = Math.round((request.bounds.width / divisor) * metadata.width);
-      const cropHeight = Math.round((request.bounds.height / divisor) * metadata.height);
+      const safeWidth = metadata.width!;
+      const safeHeight = metadata.height!;
+
+      // Clamp to image dimensions instead of throwing on overflow
+      const cropX = Math.max(
+        0,
+        Math.min(Math.round((request.bounds.left / divisor) * safeWidth), safeWidth - 1)
+      );
+      const cropY = Math.max(
+        0,
+        Math.min(Math.round((request.bounds.top / divisor) * safeHeight), safeHeight - 1)
+      );
+      const cropWidth = Math.min(
+        Math.round((request.bounds.width / divisor) * safeWidth),
+        safeWidth - cropX
+      );
+      const cropHeight = Math.min(
+        Math.round((request.bounds.height / divisor) * safeHeight),
+        safeHeight - cropY
+      );
 
       // 4. Validate crop bounds
-      if (cropX < 0 || cropY < 0 || cropWidth <= 0 || cropHeight <= 0) {
-        throw new Error('Invalid crop bounds - coordinates must be positive');
-      }
-
-      if (cropX + cropWidth > metadata.width || cropY + cropHeight > metadata.height) {
-        throw new Error('Crop bounds exceed image dimensions');
+      if (cropWidth <= 0 || cropHeight <= 0) {
+        throw new Error('Invalid crop bounds after clamping - zero or negative dimensions');
       }
 
       console.log('[AssetExtractionService] Crop region (pixels):', {

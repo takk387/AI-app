@@ -1,9 +1,11 @@
 /**
  * Gemini Image Service (The Photographer)
  * Macro Lens prompt, Safety Fallback, Singleton accessor
+ *
+ * SDK: @google/genai (new SDK)
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, createPartFromBase64 } from '@google/genai';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export interface BackgroundGenerationRequest {
@@ -14,12 +16,12 @@ export interface BackgroundGenerationRequest {
 }
 
 class GeminiImageService {
-  private client: GoogleGenerativeAI | null = null;
+  private ai: GoogleGenAI | null = null;
   private supabase: SupabaseClient | null = null;
 
   constructor() {
     const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-    if (apiKey) this.client = new GoogleGenerativeAI(apiKey);
+    if (apiKey) this.ai = new GoogleGenAI({ apiKey });
 
     const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,22 +30,27 @@ class GeminiImageService {
 
   // Required by API routes
   checkAvailability(): boolean {
-    return !!this.client;
+    return !!this.ai;
   }
 
   // Required for analysis flows
   async describeBackground(imageUrl: string): Promise<string> {
-    if (!this.client) return 'Neutral background';
-    const model = this.client.getGenerativeModel({ model: 'gemini-3-flash-preview' });
-    const result = await model.generateContent([
-      'Describe the visual texture and material of this background in 3 keywords.',
-      { inlineData: { data: imageUrl.split(',')[1], mimeType: 'image/jpeg' } },
-    ]);
-    return result.response.text();
+    if (!this.ai) return 'Neutral background';
+
+    const base64Data = imageUrl.includes(',') ? imageUrl.split(',')[1] : imageUrl;
+
+    const result = await this.ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [
+        { text: 'Describe the visual texture and material of this background in 3 keywords.' },
+        createPartFromBase64(base64Data, 'image/jpeg'),
+      ],
+    });
+    return result.text ?? 'Neutral background';
   }
 
   async generateBackgroundFromReference(request: BackgroundGenerationRequest) {
-    if (!this.client) throw new Error('Gemini API not configured');
+    if (!this.ai) throw new Error('Gemini API not configured');
 
     const isShapedElement =
       request.targetElement && !['background', 'hero section'].includes(request.targetElement);
@@ -60,30 +67,29 @@ class GeminiImageService {
         If for a button: include subtle depth, lighting, and edge highlights.`;
 
     try {
-      const model = this.client.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
-
       // Build multimodal content: reference image (if available) + text prompt
-      const contentParts: any[] = [];
+      const contentParts: Array<{ text: string } | ReturnType<typeof createPartFromBase64>> = [];
       if (request.referenceImage) {
         const base64Data = request.referenceImage.includes(',')
           ? request.referenceImage.split(',')[1]
           : request.referenceImage;
-        contentParts.push({
-          inlineData: { data: base64Data, mimeType: 'image/png' },
-        });
+        contentParts.push(createPartFromBase64(base64Data, 'image/png'));
         const referenceInstruction = isShapedElement
           ? `Reference photo provided. Incorporate this photo's visual content into a photorealistic ${request.targetElement || 'element'}. The result should feature the photo as the visual content, adapted to work as a UI ${request.targetElement || 'element'}.`
           : `Reference image provided. Generate a texture that incorporates or matches this image's visual style and content.`;
 
-        contentParts.push({
-          text: `${referenceInstruction}\n\n${prompt}`,
-        });
+        contentParts.push({ text: `${referenceInstruction}\n\n${prompt}` });
       } else {
         contentParts.push({ text: prompt });
       }
 
-      const result = await model.generateContent(contentParts);
-      const base64 = result.response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const result = await this.ai.models.generateContent({
+        model: 'gemini-3-pro-image-preview',
+        contents: contentParts,
+      });
+
+      // New SDK: result.data returns inline data (base64) from first candidate
+      const base64 = result.data;
 
       if (!base64) throw new Error('Generation failed');
       const imageUrl = await this.uploadToSupabase(base64);
