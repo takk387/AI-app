@@ -4,7 +4,7 @@ paths:
   - src/hooks/useLayoutBuilder.ts
   - src/components/layout-builder/**
   - src/app/(protected)/app/design/page.tsx
-  - src/services/GeminiLayoutService.ts
+  - src/services/GeminiLayoutCritique.ts
   - src/services/VisionLoopEngine.ts
   - src/services/LayoutAutoFixEngine.ts
   - src/types/layoutDesign.ts
@@ -16,10 +16,10 @@ paths:
 
 ## Overview
 
-The Layout Builder is Step 2 in the 4-step page flow (`/app/design`). Users upload reference images or sketches, and Gemini Vision analyzes them to produce structured layout components that feed into the Builder.
+The Layout Builder is Step 2 in the 5-step page flow (`/app/design`). Users upload reference images or sketches, and Gemini Vision analyzes them to produce structured layout components that feed into the Builder.
 
 ```
-/app/wizard → ***/app/design*** → /app/review → /app
+/app/wizard → ***/app/design*** → /app/ai-plan → /app/review → /app
 ```
 
 ## Component Architecture
@@ -52,16 +52,15 @@ Main view for the design step. Manages:
 ```
 User uploads image(s)
     ↓
-GeminiLayoutService.analyzeLayoutImage()
-    → Stage 1: Extract DesignSpec (colors, typography, spacing)
-    → Stage 2: Build DetectedComponentEnhanced[] (components with bounds, styles, content)
+Titan Pipeline (TitanSurveyor) analyzes layout via Gemini Vision
+    → Produces VisualManifest with dom_tree
     ↓
 layoutValidation.ts (Zod) → Validate and sanitize AI output
     ↓
 LayoutCanvas renders components as overlays
     ↓
 (Optional) Self-Healing Vision Loop:
-    VisionLoopEngine → Puppeteer screenshot → GeminiLayoutService.critiqueLayout()
+    VisionLoopEngine → Puppeteer screenshot → critiqueLayoutEnhanced() (GeminiLayoutCritique.ts)
     → LayoutAutoFixEngine.applyCritique() → Iterate
     ↓
 Save to Zustand store:
@@ -130,7 +129,7 @@ Layout data is persisted in Zustand store (`useAppStore`):
 
 - `layoutBuilderFiles` - Generated code files from layout analysis
 - `currentLayoutManifest` - VisualManifest data for the Builder
-- These are read by MainBuilderView (Step 4) for Phase 1 auto-injection
+- These are read by MainBuilderView (Step 5) for Phase 1 auto-injection
 
 ## Hook: useLayoutBuilder
 
@@ -184,7 +183,7 @@ The layout builder can optionally run a self-healing loop to improve fidelity:
 - `layoutDesign.ts` types ← Used by all layout components and services
 - `layoutAnalysis.ts` types ← Critique and self-healing types
 - `layoutValidation.ts` ← Zod schemas for AI output validation
-- `GeminiLayoutService` ← Vision analysis and critique
-- `VisionLoopEngine` ← Self-healing orchestration
+- `GeminiLayoutCritique` ← Vision critique for healing loop (new SDK + code execution)
+- `VisionLoopEngine` ← Self-healing orchestration (calls critique directly)
 - `LayoutAutoFixEngine` ← Correction application
 - `useLayoutBuilder` hook ← React state management

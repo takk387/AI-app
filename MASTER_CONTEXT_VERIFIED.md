@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Feb 6, 2026)
+> **Status**: VERIFIED (Feb 6, 2026 — post SDK migration + dead code removal)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Metric               | Previous | Verified (Actual) |
 | -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 547      | **547**           |
-| API Route Handlers   | 60       | **60**            |
-| Custom Hooks         | 35       | **35**            |
-| Service Classes      | 73       | **73**            |
-| Type Definitions     | ~12,953  | **~12,987 lines** |
+| TypeScript/TSX Files | 547      | **582**           |
+| API Route Handlers   | 60       | **65**            |
+| Custom Hooks         | 35       | **38**            |
+| Service Classes      | 73       | **82**            |
+| Type Definitions     | ~12,987  | **~13,940 lines** |
 | Utilities            | ~24,728  | **~24,728 lines** |
 
 **Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
@@ -30,7 +30,7 @@ Step 1: /app/wizard (NaturalConversationWizard)
     ↓
 Step 2: /app/design (LayoutBuilderView)
     → User uploads reference images / sketches
-    → Gemini Vision analyzes layout (GeminiLayoutService)
+    → Gemini Vision analyzes layout (GeminiLayoutCritique for healing)
     → GENERATE mode: creates full layout from AppConcept alone (no images)
     → Self-healing vision loop refines components
     → Layout saved to Zustand store
@@ -96,11 +96,11 @@ Self-Healing Vision Loop (Screenshot → Critique → Fix → Repeat)
 **Key Files:**
 
 - `src/services/TitanPipelineService.ts` (~1,074 lines) - Main pipeline orchestrator
-- `src/services/GeminiLayoutService.ts` (~1,364 lines) - Vision analysis + critique
-- `src/services/GeminiImageService.ts` (~116 lines) - Multimodal image generation
+- `src/services/GeminiLayoutCritique.ts` (~286 lines) - Vision critique for healing loop (new SDK + code execution)
+- `src/services/GeminiImageService.ts` (~122 lines) - Multimodal image generation (new SDK)
 - `src/services/AppImageGenerator.ts` (~277 lines) - Image generation + Supabase upload
-- `src/services/AssetExtractionService.ts` (~251 lines) - Sharp-based image cropping
-- `src/services/VisionLoopEngine.ts` (~499 lines) - Self-healing vision loop
+- `src/services/AssetExtractionService.ts` (~276 lines) - Sharp-based image cropping
+- `src/services/VisionLoopEngine.ts` (~504 lines) - Self-healing vision loop
 - `src/services/LayoutAutoFixEngine.ts` (~465 lines) - Auto-fix from AI critique
 - `src/types/titanPipeline.ts` (~219 lines) - Pipeline types
 - `src/types/layoutAnalysis.ts` (~192 lines) - Critique/healing types
@@ -142,7 +142,6 @@ New animation and visual effects infrastructure.
 **Services:**
 
 - `src/services/MotionMapper.ts` (350 lines) - Maps motion configurations to CSS/animations
-- `src/services/EnhancedVideoAnalyzer.ts` (166 lines) - Video analysis for motion extraction
 - `src/services/SourceMergeEngine.ts` (322 lines) - Merges multiple visual sources
 
 **Components:**
@@ -184,7 +183,7 @@ New animation and visual effects infrastructure.
 | `types/codeReview.ts`       | **15 files** | Validation layer types              |
 | `DynamicPhaseGenerator.ts`  | ~8 files     | Core planning engine (2,646 lines)  |
 | `PhaseExecutionManager.ts`  | ~4 files     | Core execution engine (2,095 lines) |
-| `GeminiLayoutService.ts`    | ~5 files     | Layout AI service (1,364 lines)     |
+| `GeminiLayoutCritique.ts`   | ~2 files     | Vision critique service (286 lines) |
 | Deployment services cluster | 10+ files    |                                     |
 
 ### TIER 3: PIPELINE & PLANNING SERVICES (1-3 dependents each)
@@ -199,7 +198,7 @@ New animation and visual effects infrastructure.
 | `LayoutBackendAnalyzer.ts`          | ~200  | Layout-to-backend analysis        |
 | `MotionMapper.ts`                   | 350   | Animation mapping                 |
 | `SourceMergeEngine.ts`              | 322   | Multi-source merging              |
-| `EnhancedVideoAnalyzer.ts`          | 166   | Video motion extraction           |
+| `GeminiLayoutCritique.ts`           | 286   | Vision critique (new SDK)         |
 
 ### TIER 4: HOOKS & COMPONENTS (1-3 dependents each)
 
@@ -209,7 +208,7 @@ Lower risk, but still follow patterns.
 - `types/titanPipeline.ts` (Pipeline Types - NEW)
 - `types/motionConfig.ts` (Motion Types - NEW)
 - `utils/colorUtils.ts` (Color Utilities)
-- `services/GeminiLayoutService.ts` (Verified)
+- `services/GeminiLayoutCritique.ts` (Vision critique - new SDK)
 
 ---
 
@@ -222,7 +221,6 @@ Lower risk, but still follow patterns.
 | `middleware.ts`                 | **87**    | Auth flow for all routes                  | Auth breaks                                   |
 | `DynamicPhaseGenerator.ts`      | **2,718** | Phase planning engine                     | Build system breaks — **RECOMMEND SPLITTING** |
 | `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator              | Build system breaks                           |
-| `GeminiLayoutService.ts`        | **1,364** | Layout AI with Gemini Vision              | Layout builder breaks                         |
 | `MainBuilderView.tsx`           | **1,622** | Main orchestrator + Titan Pipeline        | UI breaks                                     |
 | `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                       | Planning breaks                               |
 | `TitanPipelineService.ts`       | **1,075** | Titan Pipeline orchestrator               | Pipeline breaks                               |
@@ -350,7 +348,6 @@ src/
 | `DynamicPhaseGenerator.ts` is 2.6k lines | **CRITICAL** | ✅ Service-to-Service rule relaxed (Jan 29, 2026) — NOW: Split into Domain Services |
 | `layoutDesign.ts` is 3k lines            | HIGH         | Split into `layout/typography`, `layout/grids`, etc.                                |
 | `PhaseExecutionManager.ts` is 2.1k lines | HIGH         | Consider splitting by phase type                                                    |
-| `GeminiLayoutService.ts` is 1.4k lines   | MEDIUM       | Growing; monitor for split opportunities                                            |
 | `appConcept` dependency explosion        | HIGH         | 51 dependencies; any change is expensive. Freeze this interface.                    |
 | Browser memory with large file histories | MEDIUM       | Move historical versions to IndexedDB                                               |
 | AI rate limits at scale                  | HIGH         | Enterprise quotas, multiple keys, Inngest queueing                                  |
@@ -379,7 +376,7 @@ Phase-by-phase code generation → quality checks → live preview
 | `useAppStore.ts`                    | 804   | Centralized state (10 slices, v5 migrations)                  |
 | `DynamicPhaseGenerator.ts`          | 2,718 | Phase planning                                                |
 | `PhaseExecutionManager.ts`          | 2,095 | Phase execution                                               |
-| `GeminiLayoutService.ts`            | 1,364 | Layout AI + Vision critique                                   |
+| `GeminiLayoutCritique.ts`           | 286   | Vision critique for healing loop (new SDK + code execution)   |
 | `TitanPipelineService.ts`           | 1,075 | Titan Pipeline orchestrator                                   |
 | `BackgroundPlanningOrchestrator.ts` | ~500  | Dual AI 5-stage pipeline orchestrator                         |
 | `useDualAIPlan.ts`                  | ~300  | Dual AI planning hook (SSE, escalation)                       |
@@ -464,6 +461,31 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 ---
 
 ## Recent Changes Log
+
+### Feb 6, 2026 - SDK Migration + Dead Code Removal
+
+- **Migrated**: `GeminiLayoutCritique.ts` from `@google/generative-ai` → `@google/genai` SDK with code execution
+- **Migrated**: `GeminiImageService.ts` from `@google/generative-ai` → `@google/genai` SDK
+- **Rewired**: `VisionLoopEngine.ts` — calls `critiqueLayoutEnhanced()` directly instead of via GeminiLayoutService
+- **Deleted**: `GeminiLayoutService.ts` (~1,364 lines) — old orchestrator, replaced by Titan Pipeline
+- **Deleted**: `GeminiDesignSpecExtractor.ts` (~237 lines) — only used by GeminiLayoutService
+- **Deleted**: `GeminiComponentBuilder.ts` (~629 lines) — only used by GeminiLayoutService
+- **Deleted**: `EnhancedVideoAnalyzer.ts` (~166 lines) — never imported anywhere
+- **Deleted**: `src/app/api/layout/analyze/route.ts` (~50 lines) — old API route
+- **Deleted**: `src/app/api/layout/screenshot/route.ts` (~192 lines) — dead API route
+- **All Gemini services now use `@google/genai` SDK** — old `@google/generative-ai` fully removed
+- **Code execution enabled** for vision critique via `tools: [{ codeExecution: {} }]`
+
+### Feb 6, 2026 - Asset Pipeline + Xerox Mode + Surgical Healing (8 fixes)
+
+- **Added**: Xerox Mode prompt in TitanBuilder.ts and GeminiComponentBuilder.ts (now deleted)
+- **Fixed**: Healing loop icon whitelist using `UI_CHROME_ICONS` from `iconConstants.ts`
+- **Fixed**: Healing loop mode changed from destructive CREATE to surgical EDIT
+- **Added**: `backgroundImage` enforcement in TitanPipelineService + TitanSurveyor
+- **Added**: `injectAssetsIntoDomTree()` helper in TitanBuilder
+- **Added**: Fallback iconName restoration on extraction failure (TitanPipelineService)
+- **Fixed**: AssetExtractionService scale threshold 100→200 + clamp instead of throw
+- **Added**: `iconConstants.ts` — single source of truth for UI chrome icon whitelist
 
 ### Feb 5-6, 2026 - Dual AI Planning Pipeline & GENERATE Mode
 

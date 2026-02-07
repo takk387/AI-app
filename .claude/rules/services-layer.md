@@ -1,7 +1,7 @@
 ---
 paths:
   - src/services/TitanPipelineService.ts
-  - src/services/GeminiLayoutService.ts
+  - src/services/GeminiLayoutCritique.ts
   - src/services/GeminiImageService.ts
   - src/services/AppImageGenerator.ts
   - src/services/AssetExtractionService.ts
@@ -63,35 +63,37 @@ class TitanPipelineService {
 - Builder synthesizes final code with multimodal input (image + manifest + assets)
 - Progress reported via callback for UI updates
 
-### GeminiLayoutService
+### GeminiLayoutCritique
 
-**Location:** `src/services/GeminiLayoutService.ts` (~1364 lines)
+**Location:** `src/services/GeminiLayoutCritique.ts` (~286 lines)
 
-Gemini Vision-based layout analysis, component building, and critique. Used by both the Layout Builder (Step 2) and the self-healing vision loop.
+Vision critique service for the self-healing loop. Compares original design vs generated layout screenshots. Uses new `@google/genai` SDK with code execution enabled.
 
 ```typescript
-class GeminiLayoutService {
-  // Two-stage layout analysis from image
-  static async analyzeLayoutImage(
-    imageBase64: string,
-    mimeType: string
-  ): Promise<LayoutAnalysisResult>;
+// Enhanced critique for self-healing loop
+async function critiqueLayoutEnhanced(
+  apiKey: string,
+  originalImage: string,
+  generatedImage: string,
+  components: DetectedComponentEnhanced[],
+  targetFidelity: number
+): Promise<LayoutCritiqueEnhanced>;
 
-  // Critique rendered output against original
-  static async critiqueLayout(
-    originalImage: string,
-    renderedScreenshot: string,
-    components: DetectedComponentEnhanced[]
-  ): Promise<LayoutCritiqueEnhanced>;
-}
+// Legacy critique (simpler output)
+async function critiqueLayout(
+  apiKey: string,
+  originalImage: string,
+  generatedImage: string
+): Promise<LayoutCritique>;
 ```
 
 **Key patterns:**
 
-- Two-stage analysis: Stage 1 extracts `DesignSpec`, Stage 2 builds `DetectedComponentEnhanced[]`
-- Zod validation with `.passthrough()` for open-ended AI outputs
+- Uses `@google/genai` SDK with `tools: [{ codeExecution: {} }]` for precise pixel measurements
 - Critique produces `fidelityScore` (0-100) and `correctionJSON` patches
 - Open-ended issue types (string, not enum) for flexible AI critique
+- Parses JSON from `result.text` via regex (code execution incompatible with `responseMimeType: 'application/json'`)
+- Called directly by `VisionLoopEngine` (no intermediary service)
 
 ### GeminiImageService
 
@@ -175,7 +177,7 @@ class VisionLoopEngine {
 **Key patterns:**
 
 - Captures Puppeteer screenshots of rendered HTML
-- Sends to `GeminiLayoutService.critiqueLayout()` for fidelity scoring
+- Calls `critiqueLayoutEnhanced()` directly from `GeminiLayoutCritique.ts` for fidelity scoring
 - Applies corrections via `LayoutAutoFixEngine.applyCritique()`
 - Iterates up to `maxIterations` (default 2)
 - Stops on: target fidelity reached, max iterations, or diminishing returns

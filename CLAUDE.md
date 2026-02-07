@@ -85,8 +85,8 @@ src/
 │
 ├── services/               # Business logic (30+ files)
 │   ├── TitanPipelineService.ts   # Titan Pipeline orchestrator (~1074 lines)
-│   ├── GeminiLayoutService.ts    # Gemini Vision layout analysis (~1364 lines)
-│   ├── GeminiImageService.ts     # Multimodal image generation
+│   ├── GeminiLayoutCritique.ts   # Vision critique for healing loop (~286 lines, new SDK)
+│   ├── GeminiImageService.ts     # Multimodal image generation (new SDK)
 │   ├── VisionLoopEngine.ts       # Self-healing vision loop
 │   ├── BackgroundPlanningOrchestrator.ts # Dual AI 5-stage pipeline
 │   ├── ConsensusNegotiator.ts    # Claude-Gemini consensus engine
@@ -137,7 +137,7 @@ Step 1: /app/wizard (NaturalConversationWizard)
     ↓
 Step 2: /app/design (LayoutBuilderView)
     → User uploads reference images / sketches
-    → AI analyzes layout via Gemini Vision (GeminiLayoutService)
+    → AI analyzes layout via Gemini Vision (GeminiLayoutCritique for healing)
     → GENERATE mode: creates full layout from AppConcept alone (no images)
     → Self-healing vision loop refines components
     → Layout saved to Zustand store (layoutBuilderFiles, currentLayoutManifest)
@@ -182,7 +182,7 @@ Step 5: /app (MainBuilderView)
 | `ai-plan/page.tsx`                  | Step 3 - dual AI architecture planning                       |
 | `review/page.tsx`                   | Step 4 - review all gathered data before building            |
 | `TitanPipelineService.ts`           | Titan Pipeline: Router → Surveyor → Photographer → Builder   |
-| `GeminiLayoutService.ts`            | Layout analysis + critique via Gemini Vision                 |
+| `GeminiLayoutCritique.ts`           | Vision critique for healing loop (new SDK + code execution)  |
 | `BackgroundPlanningOrchestrator.ts` | Dual AI 5-stage pipeline orchestrator                        |
 | `useDualAIPlan.ts`                  | Dual AI planning hook (SSE streaming, escalation)            |
 | `useBackgroundIntelligence.ts`      | Background intelligence pre-caching during Design step       |
@@ -209,7 +209,8 @@ npm run test:services # Service tests (Node)
 - `types/layoutDesign.ts` ← Layout builder types used everywhere
 - `MainBuilderView.tsx` ← Orchestrates Titan Pipeline and phase execution
 - `TitanPipelineService.ts` ← Core pipeline: Router → Surveyor → Photographer → Builder
-- `GeminiLayoutService.ts` ← Layout analysis, component building, critique
+- `GeminiLayoutCritique.ts` ← Vision critique for healing loop
+- `VisionLoopEngine.ts` ← Self-healing vision loop orchestrator
 - `middleware.ts` ← Auth flow, all API routes depend on this
 
 ### Important Patterns
@@ -233,7 +234,8 @@ npm run test:services # Service tests (Node)
 NEXT_PUBLIC_SUPABASE_URL=     # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY= # Supabase anon key
 ANTHROPIC_API_KEY=            # Claude API key
-GOOGLE_GENERATIVE_AI_API_KEY= # Gemini API key (vision, image generation)
+GOOGLE_API_KEY=               # Gemini API key (vision, image generation, critique)
+GEMINI_API_KEY=               # Gemini API key (alternative to GOOGLE_API_KEY)
 OPENAI_API_KEY=               # OpenAI API key (embeddings/proxy only)
 ```
 
@@ -492,8 +494,8 @@ const result = modifyFunction(code, 'old', { rename: 'new' });
 **Active Work Areas (check git status for latest):**
 
 - `src/services/TitanPipelineService.ts` - Titan Pipeline orchestrator (Router → Builder)
-- `src/services/GeminiLayoutService.ts` - Gemini Vision layout analysis + critique
-- `src/services/GeminiImageService.ts` - Multimodal image generation
+- `src/services/GeminiLayoutCritique.ts` - Vision critique for healing loop (new SDK + code execution)
+- `src/services/GeminiImageService.ts` - Multimodal image generation (new SDK)
 - `src/services/VisionLoopEngine.ts` - Self-healing vision loop
 - `src/services/BackgroundPlanningOrchestrator.ts` - Dual AI 5-stage pipeline
 - `src/services/ConsensusNegotiator.ts` - Claude-Gemini consensus engine
