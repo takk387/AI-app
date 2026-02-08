@@ -27,7 +27,6 @@ import type {
 } from '@/types/titanPipeline';
 import { geminiImageService } from '@/services/GeminiImageService';
 import { getAssetExtractionService } from './AssetExtractionService';
-import { isUIChromeIcon } from './iconConstants';
 
 // Import from split modules
 import { routeIntent as _routeIntent } from './TitanRouter';
@@ -227,134 +226,8 @@ data-id="${selectedDataId}"
 }
 
 // ============================================================================
-// STEP 0.4: VISUAL ENFORCEMENT (Force extraction of custom visuals)
-// ============================================================================
-
-/**
- * Walk manifest dom_tree and force hasCustomVisual=true on nodes that need
- * extraction from the reference image. This ensures extractCustomVisualAssets()
- * crops the actual visual from the original image instead of relying on the AI
- * to flag them correctly.
- *
- * Enforces extraction for:
- * 1. Non-UI-chrome icons (iconName that isn't chevron/X/menu/etc.)
- * 2. Image nodes (type: "img") — photos, illustrations, logos
- * 3. Nodes the AI identified as having images (hasImage: true)
- */
-function enforceVisualExtraction(manifests: VisualManifest[]): void {
-  let iconConverted = 0;
-  let imageConverted = 0;
-  let kept = 0;
-
-  function walkAndEnforce(node: Record<string, unknown>) {
-    const alreadyCustomVisual = node.hasCustomVisual === true;
-    const bounds = node.bounds as
-      | { top: number; left: number; width: number; height: number }
-      | undefined;
-
-    // --- Enforce 1: Non-chrome icon names → force extraction ---
-    const iconName = node.iconName as string | undefined;
-    const hasIconSvgPath = !!node.iconSvgPath;
-
-    if (iconName && !hasIconSvgPath && !alreadyCustomVisual) {
-      if (isUIChromeIcon(iconName)) {
-        kept++;
-      } else if (bounds) {
-        node.hasCustomVisual = true;
-        node.extractionAction = 'crop';
-        node.extractionBounds = {
-          top: bounds.top,
-          left: bounds.left,
-          width: bounds.width,
-          height: bounds.height,
-        };
-        // Preserve iconName as fallback in case extraction fails
-        node._originalIconName = node.iconName;
-        delete node.iconName;
-        iconConverted++;
-
-        console.log(`[VisualEnforcement] Icon "${iconName}" → extraction (node: ${node.id})`);
-      }
-    }
-
-    // --- Enforce 2: Image nodes (type: "img") → force extraction ---
-    if (node.type === 'img' && !alreadyCustomVisual && !node.hasCustomVisual && bounds) {
-      node.hasCustomVisual = true;
-      node.extractionAction = 'crop';
-      node.extractionBounds = {
-        top: bounds.top,
-        left: bounds.left,
-        width: bounds.width,
-        height: bounds.height,
-      };
-      imageConverted++;
-
-      console.log(`[VisualEnforcement] Image node → extraction (node: ${node.id})`);
-    }
-
-    // --- Enforce 3: Nodes with hasImage flag → force extraction ---
-    if (node.hasImage === true && !alreadyCustomVisual && !node.hasCustomVisual && bounds) {
-      node.hasCustomVisual = true;
-      node.extractionAction = 'crop';
-      node.extractionBounds = {
-        top: bounds.top,
-        left: bounds.left,
-        width: bounds.width,
-        height: bounds.height,
-      };
-      imageConverted++;
-
-      console.log(`[VisualEnforcement] hasImage node → extraction (node: ${node.id})`);
-    }
-
-    // --- Enforce 4: backgroundImage with url(...) → force extraction ---
-    const styles = node.styles as Record<string, string> | undefined;
-    const bgImage = styles?.backgroundImage as string | undefined;
-    if (
-      bgImage &&
-      bgImage.includes('url(') &&
-      !alreadyCustomVisual &&
-      !node.hasCustomVisual &&
-      bounds
-    ) {
-      node.hasCustomVisual = true;
-      node.extractionAction = 'crop';
-      node.extractionBounds = {
-        top: bounds.top,
-        left: bounds.left,
-        width: bounds.width,
-        height: bounds.height,
-      };
-      imageConverted++;
-      console.log(`[VisualEnforcement] backgroundImage URL node → extraction (node: ${node.id})`);
-    }
-
-    // Recurse through children
-    const children = node.children as Record<string, unknown>[] | undefined;
-    if (Array.isArray(children)) {
-      for (const child of children) {
-        if (child && typeof child === 'object') {
-          walkAndEnforce(child);
-        }
-      }
-    }
-  }
-
-  for (const manifest of manifests) {
-    if (manifest.global_theme?.dom_tree) {
-      walkAndEnforce(manifest.global_theme.dom_tree as unknown as Record<string, unknown>);
-    }
-  }
-
-  if (iconConverted > 0 || imageConverted > 0 || kept > 0) {
-    console.log(
-      `[VisualEnforcement] Summary: ${iconConverted} icons + ${imageConverted} images → extraction, ${kept} UI chrome kept`
-    );
-  }
-}
-
-// ============================================================================
 // STEP 0.5: ASSET EXTRACTOR (Crop custom visuals from original image)
+// Only used for EDIT/MERGE modes — CREATE mode skips extraction entirely.
 // ============================================================================
 
 /**
@@ -549,7 +422,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       if (shouldSurvey && input.files.length > 0) {
         // Enhance image quality before analysis (upscale + sharpen for crisp replications)
         const enhancedFile = await enhanceImageQuality(input.files[0]);
-        manifests.push(await _surveyLayout(enhancedFile, 0, canvasConfig));
+        // CREATE mode: skip autoFixIconDecisions — no extraction will run, so
+        // mutating the manifest (deleting iconName, setting crop flags) would break nodes.
+        const skipAutoFix = strategy.mode === 'CREATE';
+        manifests.push(await _surveyLayout(enhancedFile, 0, canvasConfig, skipAutoFix));
       }
     })(),
     // Physicist
@@ -559,9 +435,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
         physics = await extractPhysics(videoFiles, strategy);
       }
     })(),
-    // Photographer
+    // Photographer — only for non-CREATE modes (CREATE replicates the image, not generates new assets)
     (async () => {
-      if (strategy.execution_plan.generate_assets) {
+      if (strategy.mode !== 'CREATE' && strategy.execution_plan.generate_assets) {
         for (const asset of strategy.execution_plan.generate_assets) {
           try {
             const result = await geminiImageService.generateBackgroundFromReference({
@@ -608,15 +484,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const structure = null;
   stepTimings.architect = 0;
 
-  // Visual Enforcement: auto-convert unflagged visuals → hasCustomVisual before extraction
-  if (manifests.length > 0) {
-    enforceVisualExtraction(manifests);
-  }
-
   // Asset Extraction: crop custom visuals from original image
+  // Skipped for CREATE mode — Builder handles everything from manifest + original image.
   const extractStart = Date.now();
   let extractedAssets: Record<string, string> = {};
-  if (input.files.length > 0 && manifests.length > 0) {
+  if (strategy.mode !== 'CREATE' && input.files.length > 0 && manifests.length > 0) {
     try {
       extractedAssets = await extractCustomVisualAssets(manifests, input.files[0].base64);
       if (Object.keys(extractedAssets).length > 0) {
@@ -633,8 +505,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   }
   stepTimings.extraction = Date.now() - extractStart;
 
-  // Merge: extracted assets override generated ones (fidelity > hallucination)
-  const finalAssets = { ...generatedAssets, ...extractedAssets };
+  // Merge assets — CREATE mode has none (Builder works from manifest + image directly)
+  const finalAssets = strategy.mode === 'CREATE' ? {} : { ...generatedAssets, ...extractedAssets };
 
   const buildStart = Date.now();
   const primaryImageRef = manifests[0]?.originalImageRef;

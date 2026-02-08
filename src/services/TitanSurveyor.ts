@@ -417,7 +417,8 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
 export async function surveyLayout(
   file: FileInput,
   fileIndex: number,
-  canvasConfig?: CanvasConfig
+  canvasConfig?: CanvasConfig,
+  skipAutoFix?: boolean
 ): Promise<VisualManifest> {
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -455,7 +456,9 @@ export async function surveyLayout(
     const data = JSON.parse(jsonMatch[0]);
 
     // Auto-fix: convert non-UI-chrome iconName → hasCustomVisual at the source
-    if (data.dom_tree) {
+    // Skipped for CREATE mode — no asset extraction will run, so mutating the
+    // manifest (deleting iconName, setting extractionAction) would leave broken nodes.
+    if (data.dom_tree && !skipAutoFix) {
       autoFixIconDecisions(data.dom_tree);
     }
 

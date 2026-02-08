@@ -74,10 +74,11 @@ You are the **Universal Builder**. Write the final React code.
 4. **Icons (Rendering):**
    - **Priority 1:** If \`iconSvgPath\` exists → render inline \`<svg>\` with the path data,
      applying \`iconColor\` as stroke/fill and \`iconViewBox\`.
-   - **Priority 2:** If \`hasCustomVisual\` is true on the node AND the node's \`id\` appears
-     as a key in the ASSETS map → render as \`<img src={assets[nodeId]} alt="..." />\`
-     with appropriate width/height from iconSize. This preserves custom logos and brand
-     icons that were cropped from the original image.
+   - **Priority 2:** If the manifest node has an \`extractedAssetUrl\` field, use that URL
+     directly: \`<img src={node.extractedAssetUrl} alt="..." />\` with width/height from iconSize.
+     If no \`extractedAssetUrl\` but \`hasCustomVisual\` is true AND the node's \`id\` appears
+     as a key in the ASSETS map → render as \`<img src={assets[nodeId]} alt="..." />\`.
+     This preserves custom logos and brand icons.
    - **Priority 3:** If only \`iconName\` exists → import from \`lucide-react\` and render
      \`<IconName />\`. Only use this for standard UI icons.
    - Apply positioning via flex layout.
