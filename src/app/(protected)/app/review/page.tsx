@@ -19,6 +19,8 @@ import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { LoaderIcon } from '@/components/ui/Icons';
 import { useAppStore } from '@/store/useAppStore';
+import { useDatabaseSync } from '@/hooks/useDatabaseSync';
+import { useAuth } from '@/contexts/AuthContext';
 import type { GeneratedComponent } from '@/types/aiBuilderTypes';
 import {
   ConceptCard,
@@ -32,6 +34,13 @@ import {
 
 export default function ReviewPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Database sync for saving component before navigation
+  const { saveComponent } = useDatabaseSync({
+    userId: user?.id || null,
+    onError: (error) => console.error('Failed to save app:', error),
+  });
 
   // Get state from store
   const appConcept = useAppStore((state) => state.appConcept);
@@ -51,6 +60,7 @@ export default function ReviewPage() {
   const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
 
   const [isRegeneratingPhases, setIsRegeneratingPhases] = useState(false);
+  const [isSavingApp, setIsSavingApp] = useState(false);
   const hasTriggeredRegen = useRef(false);
 
   // Regenerate phases with architecture context when dualArchitectureResult arrives
@@ -131,7 +141,7 @@ export default function ReviewPage() {
     setDynamicPhasePlan,
   ]);
 
-  const handleProceedToBuilder = useCallback(() => {
+  const handleProceedToBuilder = useCallback(async () => {
     // Generate or use existing app ID
     const componentId = currentAppId || crypto.randomUUID();
 
@@ -153,10 +163,26 @@ export default function ReviewPage() {
       buildStatus: 'building',
     };
 
-    // Set in store
+    // Set in store first
     setCurrentComponent(newComponent);
     if (!currentAppId) {
       setCurrentAppId(componentId);
+    }
+
+    // CRITICAL: Save to database BEFORE navigating
+    // This ensures data is persisted even if Builder fails to load
+    setIsSavingApp(true);
+    try {
+      await saveComponent(newComponent);
+      // Also save app ID to localStorage for refresh persistence
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('current_app_id', componentId);
+      }
+    } catch (error) {
+      console.error('Failed to save app before navigation:', error);
+      // Continue anyway - data is in memory, will auto-save in Builder
+    } finally {
+      setIsSavingApp(false);
     }
 
     // Set mode to ACT for builder
@@ -173,6 +199,7 @@ export default function ReviewPage() {
     setCurrentComponent,
     setCurrentAppId,
     setCurrentMode,
+    saveComponent,
     currentAppId,
     appConcept,
     dynamicPhasePlan,
@@ -241,17 +268,18 @@ export default function ReviewPage() {
 
         <button
           onClick={handleProceedToBuilder}
-          disabled={!dynamicPhasePlan || isRegeneratingPhases}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-            !dynamicPhasePlan || isRegeneratingPhases
-              ? 'bg-purple-600/40 text-white/50 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 text-white'
-          }`}
+          disabled={!dynamicPhasePlan || isRegeneratingPhases || isSavingApp}
+          className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRegeneratingPhases ? (
             <>
-              <LoaderIcon size={16} className="text-white/50" />
+              <LoaderIcon size={16} className="opacity-70" />
               Generating Plan...
+            </>
+          ) : isSavingApp ? (
+            <>
+              <LoaderIcon size={16} className="opacity-70" />
+              Saving App...
             </>
           ) : (
             <>
@@ -309,7 +337,7 @@ export default function ReviewPage() {
                 }}
               >
                 <div className="flex items-center gap-3 py-8 justify-center">
-                  <LoaderIcon size={18} className="text-purple-400" />
+                  <LoaderIcon size={18} style={{ color: 'var(--accent-primary)' }} />
                   <span style={{ color: 'var(--text-secondary)' }}>Generating build plan...</span>
                 </div>
               </div>
@@ -339,17 +367,18 @@ export default function ReviewPage() {
       >
         <button
           onClick={handleProceedToBuilder}
-          disabled={!dynamicPhasePlan || isRegeneratingPhases}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-            !dynamicPhasePlan || isRegeneratingPhases
-              ? 'bg-purple-600/40 text-white/50 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 text-white'
-          }`}
+          disabled={!dynamicPhasePlan || isRegeneratingPhases || isSavingApp}
+          className="btn-primary w-full flex items-center justify-center gap-2 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRegeneratingPhases ? (
             <>
-              <LoaderIcon size={16} className="text-white/50" />
+              <LoaderIcon size={16} className="opacity-70" />
               Generating Plan...
+            </>
+          ) : isSavingApp ? (
+            <>
+              <LoaderIcon size={16} className="opacity-70" />
+              Saving App...
             </>
           ) : (
             <>

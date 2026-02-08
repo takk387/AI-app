@@ -214,8 +214,8 @@ export function useDynamicBuildPhases(
     (phaseNumber: number) => {
       if (!mountedRef.current || !plan || !manager) return;
 
-      const phase = plan.phases.find((p) => p.number === phaseNumber);
-      if (!phase) {
+      const phaseIndex = plan.phases.findIndex((p) => p.number === phaseNumber);
+      if (phaseIndex === -1) {
         onError?.(new Error(`Phase ${phaseNumber} not found`));
         return;
       }
@@ -223,12 +223,15 @@ export function useDynamicBuildPhases(
       // P3: Capture snapshot before starting phase (for rollback capability)
       manager.capturePhaseSnapshot(phaseNumber);
 
-      // Update phase status
-      phase.status = 'in-progress';
-      setPlan({ ...plan, currentPhaseNumber: phaseNumber });
+      // Update phase status immutably (avoid mutating frozen objects)
+      const updatedPhases = plan.phases.map((p, idx) =>
+        idx === phaseIndex ? { ...p, status: 'in-progress' as const } : p
+      );
+      const updatedPlan = { ...plan, phases: updatedPhases, currentPhaseNumber: phaseNumber };
+      setPlan(updatedPlan);
       setIsBuilding(true);
 
-      onPhaseStart?.(phase);
+      onPhaseStart?.(updatedPhases[phaseIndex]);
     },
     [plan, manager, onPhaseStart, onError]
   );

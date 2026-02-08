@@ -996,7 +996,8 @@ export function MainBuilderView() {
     }
   }, [pendingDeployAfterSave, currentAppId, router]);
 
-  // Show naming modal if no app is loaded (after initial load completes)
+  // Redirect to wizard if no app is loaded (after initial load completes)
+  // This matches the live server behavior where users go through the guided flow
   useEffect(() => {
     // Skip if URL restoration is in progress
     const urlAppId = searchParams.get('appId');
@@ -1009,18 +1010,11 @@ export function MainBuilderView() {
       return;
 
     // Wait for session to be ready and initial app load to complete
-    if (sessionReady && !loadingApps && !currentComponent && !showNameAppModal) {
-      setShowNameAppModal(true);
+    // Redirect to wizard for guided flow instead of showing name modal
+    if (sessionReady && !loadingApps && !currentComponent) {
+      router.push('/app/wizard');
     }
-  }, [
-    sessionReady,
-    loadingApps,
-    currentComponent,
-    showNameAppModal,
-    setShowNameAppModal,
-    searchParams,
-    components,
-  ]);
+  }, [sessionReady, loadingApps, currentComponent, searchParams, components, router]);
 
   // Get layout manifest from store for auto-save sync
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
@@ -1037,6 +1031,9 @@ export function MainBuilderView() {
     appConceptUpdatedAt: string | null;
     layoutManifestId: string | null;
   } | null>(null);
+
+  // Track if there are unsaved changes for beforeunload protection
+  const hasUnsavedChangesRef = useRef(false);
 
   useEffect(() => {
     // Don't auto-save if no component is loaded or if still loading
