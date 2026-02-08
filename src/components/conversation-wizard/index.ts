@@ -9,4 +9,3 @@ export { ChatInputArea } from './ChatInputArea';
 export type { ChatInputAreaRef } from './ChatInputArea';
 export { WizardHeader } from './WizardHeader';
 export { ConceptSummaryPanel } from './ConceptSummaryPanel';
-export { ArchitectureReviewPanel } from './ArchitectureReviewPanel';

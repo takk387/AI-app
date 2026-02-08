@@ -79,6 +79,8 @@ export interface ArchitectureDecision {
   area: 'database' | 'api' | 'auth' | 'realtime' | 'storage' | 'caching';
   decision: string;
   reasoning: string;
+  /** The specific feature or requirement from the concept that led to this decision */
+  conceptReference?: string;
   alternatives: string[];
 }
 

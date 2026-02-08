@@ -200,19 +200,38 @@ function formatArchitectureMessage(
   spec: ArchitectureSpec,
   reasoning?: {
     summary: string;
-    decisions: Array<{ area: string; decision: string; reasoning: string }>;
+    decisions: Array<{
+      area: string;
+      decision: string;
+      reasoning: string;
+      conceptReference?: string;
+    }>;
   }
 ): string {
-  const parts: string[] = ['✅ **Backend Architecture Designed!**\n'];
+  const parts: string[] = ['**Backend Architecture Designed!**\n'];
 
   // Summary
   if (reasoning?.summary) {
     parts.push(`${reasoning.summary}\n`);
   }
 
+  // Architecture decisions with reasoning and concept references
+  if (reasoning?.decisions && reasoning.decisions.length > 0) {
+    parts.push(`### Architecture Decisions\n`);
+    reasoning.decisions.forEach((d) => {
+      const areaLabel = d.area.charAt(0).toUpperCase() + d.area.slice(1);
+      parts.push(`**${areaLabel}: ${d.decision}**`);
+      parts.push(`Why: ${d.reasoning}`);
+      if (d.conceptReference) {
+        parts.push(`> _From your concept: "${d.conceptReference}"_`);
+      }
+      parts.push('');
+    });
+  }
+
   // Database schema summary
   if (spec.database?.tables && spec.database.tables.length > 0) {
-    parts.push(`### 📊 Database Schema`);
+    parts.push(`### Database Schema`);
     parts.push(`**${spec.database.tables.length} tables** designed:\n`);
     spec.database.tables.slice(0, 5).forEach((table) => {
       parts.push(`- **${table.name}**: ${table.fields?.length || 0} fields`);
@@ -225,7 +244,7 @@ function formatArchitectureMessage(
 
   // API routes summary
   if (spec.api?.routes && spec.api.routes.length > 0) {
-    parts.push(`### 🔌 API Routes`);
+    parts.push(`### API Routes`);
     parts.push(`**${spec.api.routes.length} endpoints** planned:\n`);
     spec.api.routes.slice(0, 5).forEach((route) => {
       parts.push(`- \`${route.method} ${route.path}\`: ${route.description || 'No description'}`);
@@ -238,7 +257,7 @@ function formatArchitectureMessage(
 
   // Auth summary
   if (spec.auth) {
-    parts.push(`### 🔐 Authentication`);
+    parts.push(`### Authentication`);
     parts.push(`- **Strategy**: ${spec.auth.strategy || 'NextAuth.js'}`);
     if (spec.auth.providers && spec.auth.providers.length > 0) {
       const providerNames = spec.auth.providers.map((p) => p.provider || p.type);
@@ -250,19 +269,8 @@ function formatArchitectureMessage(
     parts.push('');
   }
 
-  // Key decisions
-  if (reasoning?.decisions && reasoning.decisions.length > 0) {
-    parts.push(`### 💡 Key Decisions`);
-    reasoning.decisions.slice(0, 3).forEach((d) => {
-      parts.push(`- **${d.area}**: ${d.decision}`);
-    });
-    parts.push('');
-  }
-
   parts.push('---');
-  parts.push(
-    'Review the architecture in the side panel, then click **"Proceed to Phases"** to continue.'
-  );
+  parts.push('You can continue refining your concept, or move on to design when ready.');
 
   return parts.join('\n');
 }

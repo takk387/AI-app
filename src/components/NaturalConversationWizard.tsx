@@ -9,14 +9,12 @@
  * - No rigid state machine
  * - Natural conversation flow
  * - Progressive concept building
- * - Dynamic phase generation
  */
 
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { AppConcept, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
-import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { LayoutManifest } from '@/types/schema';
 import type { WizardState } from '@/types/wizardState';
 import { wizardFeaturesToFeatures } from '@/types/wizardState';
@@ -30,9 +28,7 @@ import {
   needsCompression,
 } from '@/utils/contextCompression';
 import { useDraftPersistence } from '@/hooks/useDraftPersistence';
-import { usePhaseGeneration } from '@/hooks/usePhaseGeneration';
 import { useArchitectureGeneration } from '@/hooks/useArchitectureGeneration';
-import { usePlanRegeneration } from '@/hooks/usePlanRegeneration';
 import {
   RecoveryPromptDialog,
   MessageBubble,
@@ -41,7 +37,6 @@ import {
   ChatInputArea,
   WizardHeader,
   ConceptSummaryPanel,
-  ArchitectureReviewPanel,
 } from './conversation-wizard';
 import type { ChatInputAreaRef } from './conversation-wizard';
 
@@ -63,7 +58,7 @@ interface SuggestedAction {
 }
 
 interface NaturalConversationWizardProps {
-  onComplete: (concept: AppConcept, phasePlan?: DynamicPhasePlan) => void;
+  onComplete: (concept: AppConcept) => void;
   onCancel: () => void;
   initialConcept?: Partial<AppConcept>;
   isFullPage?: boolean;
@@ -121,15 +116,13 @@ What would you like to build?`,
     setMessages,
     wizardState,
     setWizardState,
-    phasePlan,
-    setPhasePlan,
     isInitialized,
     showRecoveryPrompt,
     draftAge,
     startFresh,
     recover,
     clearDrafts,
-  } = useDraftPersistence<WizardState, DynamicPhasePlan>({
+  } = useDraftPersistence<WizardState, never>({
     draftKeys: {
       messages: WIZARD_DRAFT_KEYS.CONVERSATION_MESSAGES,
       state: WIZARD_DRAFT_KEYS.CONVERSATION_STATE,
@@ -179,73 +172,14 @@ What would you like to build?`,
     setMessages((prev) => [...prev, message]);
   }, []);
 
-  // Architecture generation hook - defined first so we can reference isGeneratingArchitecture
-  // Note: onArchitectureComplete callback is set up after generatePhases is defined
-  const { architectureSpec, isGeneratingArchitecture, generateArchitecture, clearArchitecture } =
+  // Architecture generation hook
+  const { architectureSpec, isGeneratingArchitecture, generateArchitecture } =
     useArchitectureGeneration({
       wizardState,
       importedLayoutManifest,
       onShowToast: showToast,
       onAddMessage: handleAddMessage,
     });
-
-  // Phase generation hook with architecture state guards
-  const {
-    isGeneratingPhases,
-    generatePhases,
-    buildConversationContext,
-    convertRolesToUserRoles,
-    extractWorkflowsFromConversation,
-  } = usePhaseGeneration({
-    wizardState,
-    messages,
-    importedLayoutManifest,
-    phasePlan,
-    setPhasePlan,
-    onShowToast: showToast,
-    onAddMessage: handleAddMessage,
-    isGeneratingArchitecture,
-    architectureSpec,
-    needsBackend,
-  });
-
-  // Plan regeneration hook - auto-regenerates when concept changes
-  // Also waits for architecture generation to complete
-  const { isRegenerating, pendingRegeneration, regenerationReason } = usePlanRegeneration({
-    wizardState,
-    phasePlan,
-    generatePhases,
-    architectureSpec,
-    isGeneratingPhases,
-    isGeneratingArchitecture,
-    debounceMs: 500,
-  });
-
-  // Auto-trigger phase generation when architecture completes
-  // This creates the sequential flow: architecture → plan
-  const prevArchitectureRef = useRef<typeof architectureSpec>(null);
-  useEffect(() => {
-    // Detect if architecture changed (including from one spec to another after regeneration)
-    const architectureJustCompleted =
-      architectureSpec !== null && architectureSpec !== prevArchitectureRef.current;
-
-    // Auto-trigger phase generation when architecture completes AND we need a plan
-    if (architectureJustCompleted && !phasePlan && !isGeneratingPhases) {
-      generatePhases(architectureSpec);
-    }
-
-    prevArchitectureRef.current = architectureSpec;
-  }, [architectureSpec, phasePlan, isGeneratingPhases, generatePhases]);
-
-  // Update suggested actions when phase plan is generated
-  useEffect(() => {
-    if (phasePlan && !suggestedActions.find((a) => a.action === 'start_building')) {
-      setSuggestedActions([
-        { label: 'Start Building', action: 'start_building' },
-        { label: 'Adjust Plan', action: 'adjust_plan' },
-      ]);
-    }
-  }, [phasePlan, suggestedActions]);
 
   // Focus input after initialization
   useEffect(() => {
@@ -343,7 +277,6 @@ What would you like to build?`,
             currentState: wizardState,
             referenceImages: images,
             contextSummary, // Include compressed summary if conversation was large
-            hasPhasePlan: phasePlan !== null, // For plan locking detection
           }),
         });
 
@@ -374,28 +307,6 @@ What would you like to build?`,
         } else {
           setSuggestedActions([]);
         }
-
-        // SPECIAL TRIGGER: Detect "I'm finished" or similar user intent (Client-side override)
-        // This ensures we always show the build button when the user explicitly asks
-        const lowerInput = messageText.toLowerCase();
-        if (
-          lowerInput.includes("i'm finished") ||
-          lowerInput.includes('im finished') ||
-          lowerInput.includes('i am finished') ||
-          lowerInput.includes('done with design') ||
-          lowerInput.includes('ready to build')
-        ) {
-          setSuggestedActions((prev) => {
-            const hasBuild = prev.some((a) => a.action === 'start_building');
-            if (hasBuild) return prev;
-            return [{ label: 'Build App', action: 'start_building' }, ...prev];
-          });
-
-          // Auto-trigger phase generation if we don't have a plan yet
-          if (!phasePlan && !isGeneratingPhases) {
-            generatePhases(architectureSpec || undefined);
-          }
-        }
       } catch (err) {
         console.error('Chat error:', err);
         setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -413,10 +324,6 @@ What would you like to build?`,
       showToast,
       setMessages,
       setWizardState,
-      phasePlan,
-      isGeneratingPhases,
-      generatePhases,
-      architectureSpec,
       setUserInput,
       setPendingImages,
       setError,
@@ -435,13 +342,8 @@ What would you like to build?`,
           generateArchitecture();
           break;
 
-        case 'generate_phases':
-          // Pass pre-generated architecture if available
-          generatePhases(architectureSpec || undefined);
-          break;
-
-        case 'start_building':
-          if (phasePlan && wizardState.name) {
+        case 'continue_to_design':
+          if (wizardState.name && wizardState.features.length > 0) {
             const concept: AppConcept = {
               name: wizardState.name,
               description: wizardState.description || '',
@@ -450,41 +352,28 @@ What would you like to build?`,
               coreFeatures: wizardFeaturesToFeatures(wizardState.features),
               uiPreferences: wizardState.uiPreferences as UIPreferences,
               technical: wizardState.technical as TechnicalRequirements,
-              // Preserve roles from wizard conversation
-              roles: convertRolesToUserRoles(),
-              // Preserve workflows extracted from conversation
-              workflows: extractWorkflowsFromConversation(),
-              // Preserve full conversation context for detail retention
-              conversationContext: buildConversationContext(),
-              // Include imported layout manifest OR current global manifest if not imported
+              roles: wizardState.roles?.map((r) => ({
+                name: r.name,
+                capabilities: r.capabilities,
+              })),
+              workflows: wizardState.workflows?.map((w) => ({
+                name: w.name,
+                description: w.description,
+                steps: w.steps,
+                involvedRoles: w.involvedRoles,
+              })),
+              conversationContext: messages
+                .slice(-10)
+                .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+                .join('\n\n'),
               layoutManifest: importedLayoutManifest || currentLayoutManifest || undefined,
-              // Include generated backend architecture for build phase
               architectureSpec: architectureSpec || undefined,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            // Clear drafts since we're completing the wizard
             clearDrafts();
-            onComplete(concept, phasePlan);
-          } else if (!phasePlan) {
-            // If phases aren't ready, generate them first
-            showToast({ type: 'info', message: 'Generating implementation plan first...' });
-            generatePhases(architectureSpec || undefined).then(() => {
-              // We'll need to user to click again, or we can use an effect.
-              // For now, simple feedback is better.
-              setSuggestedActions([{ label: 'Build App Now', action: 'start_building' }]);
-            });
+            onComplete(concept);
           }
-          break;
-
-        case 'adjust_plan':
-          // Clear plan confirmation to allow regeneration
-          setWizardState((prev) => ({ ...prev, planConfirmed: false }));
-          sendMessage("I'd like to adjust the implementation plan");
-          break;
-
-        case 'browse_templates':
-          sendMessage('Show me some app templates to get inspired');
           break;
 
         case 'upload_reference':
@@ -498,21 +387,13 @@ What would you like to build?`,
     },
     [
       generateArchitecture,
-      architectureSpec,
-      generatePhases,
-      phasePlan,
       wizardState,
+      messages,
       onComplete,
-      sendMessage,
       clearDrafts,
-      convertRolesToUserRoles,
-      extractWorkflowsFromConversation,
-      buildConversationContext,
       importedLayoutManifest,
       currentLayoutManifest,
-      showToast,
-      setWizardState,
-      setSuggestedActions,
+      architectureSpec,
     ]
   );
 
@@ -660,52 +541,6 @@ What would you like to build?`,
             </div>
           )}
 
-          {/* Phase generation indicator */}
-          {isGeneratingPhases && !isRegenerating && (
-            <div className="flex justify-start">
-              <div className="bg-gold-500/10 rounded-lg px-4 py-3 border-l-2 border-gold-500">
-                <div className="flex items-center gap-3">
-                  <LoaderIcon size={18} className="text-gold-400" />
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    Generating implementation plan...
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Plan regeneration indicator */}
-          {isRegenerating && (
-            <div className="flex justify-start">
-              <div className="bg-amber-600/10 rounded-lg px-4 py-3 border-l-2 border-amber-500">
-                <div className="flex items-center gap-3">
-                  <LoaderIcon size={18} className="text-amber-400" />
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    Updating implementation plan
-                    {regenerationReason ? ` (${regenerationReason} changed)` : ''}...
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Pending regeneration indicator */}
-          {pendingRegeneration && !isRegenerating && (
-            <div className="flex justify-start">
-              <div
-                className="backdrop-blur-sm rounded-lg px-4 py-2 border-l-2"
-                style={{
-                  background: 'var(--bg-secondary)',
-                  borderLeftColor: 'var(--border-color)',
-                }}
-              >
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Changes detected - plan will update shortly...
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* Error message */}
           {error && (
             <div className="flex justify-center">
@@ -718,13 +553,13 @@ What would you like to build?`,
           <div ref={chatEndRef} />
         </div>
 
-        {/* Fix 3: Architecture Gate - Prominent Call to Action */}
+        {/* Architecture Gate - Prominent Call to Action */}
         {isPlanningComplete && needsBackend && !architectureSpec && (
           <div className="px-6 pb-4">
             <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between shadow-lg backdrop-blur-sm">
               <div>
                 <h3 className="text-lg font-semibold text-blue-100 flex items-center gap-2">
-                  <span className="text-xl">✨</span> App Concept Ready!
+                  App Concept Ready!
                 </h3>
                 <p className="text-blue-200/80 text-sm mt-1">
                   We have enough details to analyze your backend architecture.
@@ -743,9 +578,32 @@ What would you like to build?`,
                 ) : (
                   <>
                     Analyze Architecture
-                    <span className="text-lg">→</span>
+                    <span className="text-lg">&rarr;</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Continue to Design - when concept is ready and architecture is done or not needed */}
+        {isPlanningComplete && (!needsBackend || architectureSpec) && (
+          <div className="px-6 pb-4">
+            <div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-xl p-4 flex items-center justify-between shadow-lg backdrop-blur-sm">
+              <div>
+                <h3 className="text-lg font-semibold text-green-100 flex items-center gap-2">
+                  Ready for Design!
+                </h3>
+                <p className="text-green-200/80 text-sm mt-1">
+                  Your concept is defined. Continue to the visual design step.
+                </p>
+              </div>
+              <button
+                onClick={() => handleAction('continue_to_design')}
+                className="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg shadow-lg flex items-center gap-2 transition-all transform hover:scale-105 active:scale-95"
+              >
+                Continue to Design
+                <span className="text-lg">&rarr;</span>
               </button>
             </div>
           </div>
@@ -755,7 +613,7 @@ What would you like to build?`,
         <SuggestedActionsBar
           actions={suggestedActions}
           onAction={handleAction}
-          disabled={isLoading || isRegenerating || pendingRegeneration}
+          disabled={isLoading}
         />
 
         {/* Pending Images Preview */}
@@ -775,24 +633,11 @@ What would you like to build?`,
         />
       </div>
 
-      {/* Side Panel - Architecture Review or Concept Summary */}
-      {architectureSpec && !phasePlan ? (
-        <ArchitectureReviewPanel
-          architectureSpec={architectureSpec}
-          isGenerating={isGeneratingArchitecture}
-          onProceed={() => handleAction('generate_phases')}
-          onRegenerate={() => {
-            clearArchitecture();
-            generateArchitecture();
-          }}
-        />
-      ) : (
-        <ConceptSummaryPanel
-          wizardState={wizardState}
-          phasePlan={phasePlan}
-          onStartBuilding={() => handleAction('start_building')}
-        />
-      )}
+      {/* Side Panel - Concept Summary */}
+      <ConceptSummaryPanel
+        wizardState={wizardState}
+        onContinueToDesign={() => handleAction('continue_to_design')}
+      />
     </div>
   );
 

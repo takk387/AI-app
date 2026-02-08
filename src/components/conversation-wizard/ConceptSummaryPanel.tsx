@@ -1,22 +1,18 @@
 'use client';
 
-import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { WizardState } from '@/types/wizardState';
 
 interface ConceptSummaryPanelProps {
   wizardState: WizardState;
-  phasePlan: DynamicPhasePlan | null;
-  onStartBuilding: () => void;
+  onContinueToDesign: () => void;
 }
 
 /**
- * Side panel showing the concept summary and phase plan
+ * Side panel showing the concept summary
  */
-export function ConceptSummaryPanel({
-  wizardState,
-  phasePlan,
-  onStartBuilding,
-}: ConceptSummaryPanelProps) {
+export function ConceptSummaryPanel({ wizardState, onContinueToDesign }: ConceptSummaryPanelProps) {
+  const isConceptReady = !!(wizardState.name && wizardState.features.length > 0);
+
   return (
     <div
       className="w-80 border-l flex flex-col"
@@ -27,7 +23,7 @@ export function ConceptSummaryPanel({
           Concept Summary
         </h2>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          {wizardState.isComplete ? 'Ready to build' : 'In progress...'}
+          {wizardState.isComplete ? 'Concept complete' : 'In progress...'}
         </p>
       </div>
 
@@ -168,47 +164,13 @@ export function ConceptSummaryPanel({
             </div>
           </div>
         )}
-
-        {/* Phase Plan */}
-        {phasePlan && (
-          <div>
-            <label
-              className="text-xs uppercase tracking-wide"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              Implementation Plan ({phasePlan.totalPhases} phases)
-            </label>
-            <div className="mt-2 space-y-1">
-              {phasePlan.phases.slice(0, 5).map((phase) => (
-                <div
-                  key={phase.number}
-                  className="flex items-center gap-2 text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                    style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}
-                  >
-                    {phase.number}
-                  </span>
-                  <span className="truncate">{phase.name}</span>
-                </div>
-              ))}
-              {phasePlan.phases.length > 5 && (
-                <p className="text-sm pl-7" style={{ color: 'var(--text-muted)' }}>
-                  +{phasePlan.phases.length - 5} more phases
-                </p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Action Buttons */}
-      {phasePlan && (
+      {/* Action Button */}
+      {isConceptReady && (
         <div className="p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
-          <button onClick={onStartBuilding} className="btn-primary w-full py-2.5">
-            Start Building
+          <button onClick={onContinueToDesign} className="btn-primary w-full py-2.5">
+            Continue to Design
           </button>
         </div>
       )}

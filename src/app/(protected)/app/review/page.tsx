@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle } from 'lucide-react';
+import { LoaderIcon } from '@/components/ui/Icons';
 import { useAppStore } from '@/store/useAppStore';
 import type { GeneratedComponent } from '@/types/aiBuilderTypes';
 import {
@@ -88,6 +89,44 @@ export default function ReviewPage() {
     dualArchitectureResult,
     appConcept,
     dynamicPhasePlan?.hasArchitectureContext,
+    layoutBuilderFiles,
+    setDynamicPhasePlan,
+  ]);
+
+  // Fallback: Generate phases from concept alone when AI Plan step was skipped
+  useEffect(() => {
+    if (dualArchitectureResult) return; // Let the architecture-aware effect handle it
+    if (!appConcept) return;
+    if (dynamicPhasePlan) return; // Already have a plan
+    if (hasTriggeredRegen.current) return;
+
+    hasTriggeredRegen.current = true;
+    setIsRegeneratingPhases(true);
+
+    fetch('/api/wizard/generate-phases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        concept: appConcept,
+        layoutBuilderFiles: layoutBuilderFiles ?? undefined,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.plan) {
+          data.plan.layoutBuilderFiles = layoutBuilderFiles ?? undefined;
+          setDynamicPhasePlan(data.plan);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to generate phases:', err);
+        hasTriggeredRegen.current = false;
+      })
+      .finally(() => setIsRegeneratingPhases(false));
+  }, [
+    appConcept,
+    dualArchitectureResult,
+    dynamicPhasePlan,
     layoutBuilderFiles,
     setDynamicPhasePlan,
   ]);
@@ -202,10 +241,24 @@ export default function ReviewPage() {
 
         <button
           onClick={handleProceedToBuilder}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+          disabled={!dynamicPhasePlan || isRegeneratingPhases}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            !dynamicPhasePlan || isRegeneratingPhases
+              ? 'bg-purple-600/40 text-white/50 cursor-not-allowed'
+              : 'bg-purple-600 hover:bg-purple-700 text-white'
+          }`}
         >
-          Proceed to Builder
-          <ArrowRight className="w-4 h-4" />
+          {isRegeneratingPhases ? (
+            <>
+              <LoaderIcon size={16} className="text-white/50" />
+              Generating Plan...
+            </>
+          ) : (
+            <>
+              Proceed to Builder
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
 
@@ -247,6 +300,19 @@ export default function ReviewPage() {
                 estimatedTotalTime={dynamicPhasePlan.estimatedTotalTime}
                 isLoading={isRegeneratingPhases}
               />
+            ) : isRegeneratingPhases ? (
+              <div
+                className="p-6 rounded-xl"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <div className="flex items-center gap-3 py-8 justify-center">
+                  <LoaderIcon size={18} className="text-purple-400" />
+                  <span style={{ color: 'var(--text-secondary)' }}>Generating build plan...</span>
+                </div>
+              </div>
             ) : (
               <div
                 className="p-6 rounded-xl"
@@ -273,10 +339,24 @@ export default function ReviewPage() {
       >
         <button
           onClick={handleProceedToBuilder}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+          disabled={!dynamicPhasePlan || isRegeneratingPhases}
+          className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+            !dynamicPhasePlan || isRegeneratingPhases
+              ? 'bg-purple-600/40 text-white/50 cursor-not-allowed'
+              : 'bg-purple-600 hover:bg-purple-700 text-white'
+          }`}
         >
-          Proceed to Builder
-          <ArrowRight className="w-4 h-4" />
+          {isRegeneratingPhases ? (
+            <>
+              <LoaderIcon size={16} className="text-white/50" />
+              Generating Plan...
+            </>
+          ) : (
+            <>
+              Proceed to Builder
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
     </motion.div>

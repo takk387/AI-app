@@ -240,7 +240,8 @@ Generate a JSON object with this EXACT structure:
       {
         "area": "database|api|auth|realtime|storage|caching",
         "decision": "What was decided",
-        "reasoning": "Why this decision",
+        "reasoning": "Why this was the best choice for this app",
+        "conceptReference": "The specific feature, requirement, or user statement from the concept that led to this decision (e.g. 'Users need to save projects' or 'Real-time collaboration between team members')",
         "alternatives": ["Alternative 1", "Alternative 2"]
       }
     ],

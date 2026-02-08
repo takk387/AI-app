@@ -34,7 +34,6 @@ interface WizardRequest {
   currentState: WizardState;
   referenceImages?: string[]; // Base64 encoded images
   contextSummary?: string; // Compressed summary of older conversation messages
-  hasPhasePlan?: boolean; // Whether a phase plan already exists (for plan locking)
 }
 
 interface WizardResponse {
@@ -64,7 +63,10 @@ function stripCodeBlocks(text: string): string {
   let cleaned = text;
 
   // Remove fenced code blocks (```...```)
-  cleaned = cleaned.replace(/```[\s\S]*?```/g, '[Code removed - use ACT mode for code generation]');
+  cleaned = cleaned.replace(
+    /```[\s\S]*?```/g,
+    '[Code removed - code generation happens after planning]'
+  );
 
   // Remove <create_files> XML blocks
   cleaned = cleaned.replace(/<create_files>[\s\S]*?<\/create_files>/g, '[Code removed]');
@@ -192,24 +194,6 @@ function isConfirmingCompletion(message: string): boolean {
   return confirmPatterns.some((pattern) => pattern.test(message));
 }
 
-/**
- * Check if the user is asking to generate phases
- */
-function isRequestingPhases(message: string): boolean {
-  const phasePatterns = [
-    /generate.*phases?/i,
-    /create.*phases?/i,
-    /show.*phases?/i,
-    /implementation.*plan/i,
-    /build.*plan/i,
-    /step.*by.*step/i,
-    /break.*down/i,
-    /how.*build/i,
-  ];
-
-  return phasePatterns.some((pattern) => pattern.test(message));
-}
-
 // ============================================================================
 // MAIN HANDLER
 // ============================================================================
@@ -217,14 +201,7 @@ function isRequestingPhases(message: string): boolean {
 export async function POST(request: Request) {
   try {
     const body: WizardRequest = await request.json();
-    const {
-      message,
-      conversationHistory,
-      currentState,
-      referenceImages,
-      contextSummary,
-      hasPhasePlan,
-    } = body;
+    const { message, conversationHistory, currentState, referenceImages, contextSummary } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -313,17 +290,6 @@ Continue the conversation naturally.`;
 
     // Check for completion signals
     const isComplete = currentState.isComplete || isConfirmingCompletion(message);
-    const wantsPhases = isRequestingPhases(message);
-
-    if (wantsPhases && isComplete) {
-      systemPrompt += `
-
-## USER READY FOR PHASES
-
-The user has confirmed their concept and wants to generate phases. Acknowledge this and explain that you'll now analyze the features to create an implementation plan with an appropriate number of phases based on complexity.
-
-Ask any final technical questions if needed (platform, technology preferences) before generating phases.`;
-    }
 
     // Call Claude API with extended thinking for deeper reasoning
     const response = await anthropic.messages.create({
@@ -366,8 +332,8 @@ Ask any final technical questions if needed (platform, technology preferences) b
 
     const updatedState = await extractStateFromConversation(updatedHistory, currentState);
 
-    // Check if we should show phase generation option
-    const showPhaseOption =
+    // Check if concept is sufficiently defined to move forward
+    const isConceptSufficient =
       updatedState.isComplete ||
       (updatedState.features.length >= 3 &&
         updatedState.name &&
@@ -383,8 +349,8 @@ Ask any final technical questions if needed (platform, technology preferences) b
       updatedState.technical.needsRealtime ||
       updatedState.technical.needsFileUpload;
 
-    if (showPhaseOption && !wantsPhases) {
-      // If backend is needed, suggest architecture generation first
+    if (isConceptSufficient) {
+      // If backend is needed, suggest architecture generation
       if (needsBackend) {
         suggestedActions.push({
           label: 'Analyze Backend Architecture',
@@ -392,15 +358,8 @@ Ask any final technical questions if needed (platform, technology preferences) b
         });
       }
       suggestedActions.push({
-        label: 'Generate Implementation Plan',
-        action: 'generate_phases',
-      });
-    }
-
-    if (!updatedState.name && conversationHistory.length < 2) {
-      suggestedActions.push({
-        label: 'Browse Templates',
-        action: 'browse_templates',
+        label: 'Continue to Design',
+        action: 'continue_to_design',
       });
     }
 
@@ -411,17 +370,9 @@ Ask any final technical questions if needed (platform, technology preferences) b
       });
     }
 
-    // Check if user is confirming an existing plan (should lock it from auto-regeneration)
-    const isConfirmingPlan = hasPhasePlan && isConfirmingCompletion(message);
-
     const result: WizardResponse = {
       message: assistantMessage,
-      updatedState: {
-        ...updatedState,
-        readyForPhases: wantsPhases && isComplete,
-        // Lock the plan when user confirms it (prevents auto-regeneration)
-        planConfirmed: updatedState.planConfirmed || isConfirmingPlan,
-      },
+      updatedState,
       suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
       isConceptComplete: isComplete,
       hadCodeStripped: hadCodeStripped || undefined,
@@ -458,11 +409,11 @@ export async function GET() {
       'Natural conversation flow',
       'Progressive concept building',
       'Image reference support',
-      'Dynamic phase generation',
+      'Architecture generation',
     ],
     endpoints: {
       chat: 'POST /api/wizard/chat',
-      generatePhases: 'POST /api/wizard/generate-phases',
+      generateArchitecture: 'POST /api/wizard/generate-architecture',
     },
   });
 }
