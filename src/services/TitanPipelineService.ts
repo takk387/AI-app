@@ -58,7 +58,7 @@ export const extractJSXMarkup = _extractJSXMarkup;
 
 const GEMINI_PRO_MODEL = 'gemini-3-pro-preview';
 const GEMINI_DEEP_THINK_MODEL = 'gemini-3-pro-preview';
-const CLAUDE_OPUS_MODEL = 'claude-opus-4-5-20251101';
+const CLAUDE_OPUS_MODEL = 'claude-opus-4-6';
 
 function getGeminiApiKey(): string {
   const key = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;

@@ -357,7 +357,7 @@ CRITICAL:
     options: Required<ArchitectureGenerationOptions>
   ): Promise<string> {
     const response = await this.anthropic.messages.create({
-      model: 'claude-opus-4-5-20251101',
+      model: 'claude-opus-4-6',
       max_tokens: options.maxTokenBudget,
       temperature: 1,
       thinking: options.enableThinking
