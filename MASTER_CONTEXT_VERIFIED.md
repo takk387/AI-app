@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Feb 6, 2026 — post SDK migration + dead code removal)
+> **Status**: VERIFIED (Feb 8, 2026 — post wizard cleanup + CREATE mode streamlining)
 
 ---
 
@@ -25,7 +25,7 @@
 ```
 Step 1: /app/wizard (NaturalConversationWizard)
     → User builds AppConcept via natural conversation
-    → Architecture + Phase Plan generated
+    → Architecture generation enriches concept context
     → Navigates to /app/design
     ↓
 Step 2: /app/design (LayoutBuilderView)
@@ -53,7 +53,8 @@ Step 4: /app/review (ReviewPage - 14 components)
     → Navigates to /app
     ↓
 Step 5: /app (MainBuilderView)
-    → Titan Pipeline: Router → Surveyor → Photographer → Builder
+    → Titan Pipeline: Router → Surveyor → [Photographer] → Builder
+      (CREATE mode skips Photographer — goes Router → Surveyor → Builder directly)
     → Phase 1 auto-completes by injecting layout code (tryStartPhase1)
     → Subsequent phases use Claude AI via PhaseExecutionManager
     → Sandpack preview + self-healing vision loop
@@ -63,7 +64,7 @@ Step 5: /app (MainBuilderView)
 **Key Data Persistence Points (Zustand + localStorage):**
 
 - `appConcept` - Created in Wizard (Step 1), used throughout
-- `dynamicPhasePlan` - Created in Wizard (Step 1), regenerated in Review (Step 4) with architecture context
+- `dynamicPhasePlan` - Generated in Review (Step 4) with architecture context (fallback generation if AI Plan skipped)
 - `layoutBuilderFiles` - Created in Design (Step 2), injected in Phase 1 (Step 5)
 - `currentLayoutManifest` - Created in Design (Step 2), synthetic manifest for GENERATE mode
 - `currentDesignSpec` - Extracted from images in Design (Step 2)
@@ -73,12 +74,12 @@ Step 5: /app (MainBuilderView)
 
 ---
 
-## Titan Pipeline (Updated Feb 3, 2026)
+## Titan Pipeline (Updated Feb 8, 2026)
 
 Core agentic pipeline for transforming visual sources (images/sketches) + instructions into generated React/Tailwind code.
 
 ```
-Input (Images + Instructions) → Router (Intent Analysis)
+Input (Images + Instructions) → Router (Intent Analysis + MergeStrategy)
     ↓
 Surveyor (Gemini Vision → VisualManifest[])
     ↓
@@ -86,16 +87,20 @@ Architect → Currently bypassed (returns null)
     ↓
 Physicist → Currently bypassed (returns null)
     ↓
-Photographer (Gemini Image Generation → Asset URLs)
+[MERGE/EDIT only] Photographer (Gemini Image Generation → Asset URLs)
     ↓
 Builder (Gemini → React/Tailwind Code)
     ↓
 Self-Healing Vision Loop (Screenshot → Critique → Fix → Repeat)
+
+CREATE mode shortcut: Router → Surveyor → Builder → Healing Loop
+  (Skips Photographer/extraction/merge — Gemini handles pixel-perfect
+   replication from manifest + original image directly)
 ```
 
 **Key Files:**
 
-- `src/services/TitanPipelineService.ts` (~1,074 lines) - Main pipeline orchestrator
+- `src/services/TitanPipelineService.ts` (~578 lines) - Main pipeline orchestrator
 - `src/services/GeminiLayoutCritique.ts` (~286 lines) - Vision critique for healing loop (new SDK + code execution)
 - `src/services/GeminiImageService.ts` (~122 lines) - Multimodal image generation (new SDK)
 - `src/services/AppImageGenerator.ts` (~277 lines) - Image generation + Supabase upload
@@ -190,7 +195,7 @@ New animation and visual effects infrastructure.
 
 | File                                | Lines | Notes                             |
 | ----------------------------------- | ----- | --------------------------------- |
-| `TitanPipelineService.ts`           | 1,074 | Titan Pipeline orchestrator       |
+| `TitanPipelineService.ts`           | 578   | Titan Pipeline orchestrator       |
 | `BackgroundPlanningOrchestrator.ts` | ~500  | Dual AI 5-stage pipeline          |
 | `ConsensusNegotiator.ts`            | ~300  | Claude-Gemini consensus           |
 | `DualValidationOrchestrator.ts`     | ~250  | Cross-validation of architectures |
@@ -222,8 +227,8 @@ Lower risk, but still follow patterns.
 | `DynamicPhaseGenerator.ts`      | **2,718** | Phase planning engine                     | Build system breaks — **RECOMMEND SPLITTING** |
 | `PhaseExecutionManager.ts`      | **2,095** | Phase execution orchestrator              | Build system breaks                           |
 | `MainBuilderView.tsx`           | **1,622** | Main orchestrator + Titan Pipeline        | UI breaks                                     |
-| `NaturalConversationWizard.tsx` | **806**   | PLAN mode wizard UI                       | Planning breaks                               |
-| `TitanPipelineService.ts`       | **1,075** | Titan Pipeline orchestrator               | Pipeline breaks                               |
+| `NaturalConversationWizard.tsx` | **657**   | Conversation wizard UI                    | Planning breaks                               |
+| `TitanPipelineService.ts`       | **578**   | Titan Pipeline orchestrator               | Pipeline breaks                               |
 
 ---
 
@@ -355,15 +360,15 @@ src/
 
 ---
 
-## Dual-Mode System
+## System Modes
 
-### PLAN Mode
+### Wizard (Step 1)
 
-Natural conversation → builds `AppConcept` with features, tech requirements, UI preferences
+Natural conversation → builds `AppConcept` with features, tech requirements, UI preferences. Architecture generation enriches concept context. No phase generation at this stage.
 
-### ACT Mode
+### Builder (Step 5)
 
-Phase-by-phase code generation → quality checks → live preview
+Phase-by-phase code generation → quality checks → live preview. Phase plan generated in Review (Step 4) with architecture context.
 
 ---
 
@@ -372,12 +377,12 @@ Phase-by-phase code generation → quality checks → live preview
 | File                                | Lines | Purpose                                                       |
 | ----------------------------------- | ----- | ------------------------------------------------------------- |
 | `MainBuilderView.tsx`               | 1,622 | Main orchestrator — Titan Pipeline integration, phase control |
-| `NaturalConversationWizard.tsx`     | 806   | PLAN mode wizard UI                                           |
+| `NaturalConversationWizard.tsx`     | 657   | Conversation wizard UI (AppConcept building)                  |
 | `useAppStore.ts`                    | 804   | Centralized state (10 slices, v5 migrations)                  |
 | `DynamicPhaseGenerator.ts`          | 2,718 | Phase planning                                                |
 | `PhaseExecutionManager.ts`          | 2,095 | Phase execution                                               |
 | `GeminiLayoutCritique.ts`           | 286   | Vision critique for healing loop (new SDK + code execution)   |
-| `TitanPipelineService.ts`           | 1,075 | Titan Pipeline orchestrator                                   |
+| `TitanPipelineService.ts`           | 578   | Titan Pipeline orchestrator                                   |
 | `BackgroundPlanningOrchestrator.ts` | ~500  | Dual AI 5-stage pipeline orchestrator                         |
 | `useDualAIPlan.ts`                  | ~300  | Dual AI planning hook (SSE, escalation)                       |
 | `useBackgroundIntelligence.ts`      | ~150  | Background intelligence pre-caching                           |
@@ -461,6 +466,16 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 ---
 
 ## Recent Changes Log
+
+### Feb 8, 2026 - Wizard Cleanup + CREATE Mode Streamlining
+
+- **Simplified**: `NaturalConversationWizard.tsx` 806 → 657 lines — removed phase generation, templates, ACT/PLAN mode references; wizard now focuses solely on building AppConcept through conversation
+- **Simplified**: `TitanPipelineService.ts` 1,075 → 578 lines — CREATE mode now goes Router → Surveyor → Builder → Healing Loop directly, skipping Photographer/extraction/merge (redundant for pixel-perfect replication)
+- **Fixed**: Review page crash when phase plan missing — disabled Proceed button during generation, added fallback phase generation when AI Plan step skipped
+- **Updated**: Architecture generation enriches concept with `conceptReference` fields on decisions
+- **Renamed**: "Start Building" → "Continue to Design" throughout wizard and side panel
+- **Simplified**: Wizard `onComplete` signature to single `AppConcept` argument
+- **Fixed**: Builder prompt gap for `extractedAssetUrl` field in CREATE mode
 
 ### Feb 6, 2026 - SDK Migration + Dead Code Removal
 
