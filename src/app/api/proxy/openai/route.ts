@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createSSEResponse } from '@/lib/createSSEResponse';
 import { getAPIGatewayService } from '@/services/api-gateway';
 import type { OpenAIChatRequest } from '@/types/api-gateway';
 
@@ -51,13 +52,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Return streaming response
-      return new NextResponse(result.stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
+      return createSSEResponse(result.stream);
     }
 
     // Non-streaming request

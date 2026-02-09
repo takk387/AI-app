@@ -267,6 +267,7 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 6. **Serverless API routes** — thin proxies to AI providers and Supabase
 7. **Lazy loading** for heavy services (CodeReviewService)
 8. **Agentic pipelines** — TitanPipeline for multi-step AI orchestration (NEW)
+9. **Railway deployment** — app deploys to Railway; use `getBaseUrl()` from `@/lib/getBaseUrl` for internal API URLs, `createSSEResponse()` from `@/lib/createSSEResponse` for all SSE routes. Vercel integration routes (`/api/integrations/vercel/`, `/api/deploy/vercel/`) are a user feature, not hosting infrastructure.
 
 ---
 
@@ -285,6 +286,8 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 | Motion Mapping    | `MotionMapper` — extracts animations from video/design                                                       |
 | Visual Effects    | `effects/` components — CSS particles, keyframe injection                                                    |
 | Agentic Pipelines | `TitanPipelineService` — multi-agent orchestration                                                           |
+| SSE Responses     | `createSSEResponse()` — centralized headers incl. `X-Accel-Buffering: no` for Railway/Nginx                  |
+| Base URL          | `getBaseUrl()` — single source of truth for app URL, no Vercel hosting references                            |
 
 ---
 
@@ -334,7 +337,9 @@ src/
 │   ├── motionConfig.ts    # Motion types
 │   └── ...
 ├── lib/              # Server-side utilities
-│   └── planningSessionStore.ts  # In-memory planning session store (TTL)
+│   ├── planningSessionStore.ts  # In-memory planning session store (TTL)
+│   ├── getBaseUrl.ts            # Centralized app URL resolution (Railway/dev)
+│   └── createSSEResponse.ts     # SSE response helper with required proxy headers
 ├── utils/            # ~24,800 lines of utilities
 │   ├── architectureToPhaseContext.ts # Architecture → phase context converter
 │   ├── snapEngine.ts           # Alignment engine

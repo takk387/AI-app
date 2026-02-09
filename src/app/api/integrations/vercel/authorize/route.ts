@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { nanoid } from 'nanoid';
+import { getBaseUrl } from '@/lib/getBaseUrl';
 import { createClient } from '@/utils/supabase/server';
 
 export async function GET() {
@@ -20,7 +21,7 @@ export async function GET() {
   }
 
   // Get base URL for redirects
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
 
   // Verify user is authenticated
   const supabase = await createClient();

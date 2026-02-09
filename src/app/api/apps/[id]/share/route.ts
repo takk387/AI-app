@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
+import { getBaseUrl } from '@/lib/getBaseUrl';
 import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -61,7 +62,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const previewUrl = `${baseUrl}/preview/${previewSlug}`;
 
     return NextResponse.json({

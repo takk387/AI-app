@@ -11,6 +11,8 @@
  */
 
 import { getSession, deleteSession, updateSessionStatus } from '@/lib/planningSessionStore';
+import { getBaseUrl } from '@/lib/getBaseUrl';
+import { createSSEResponse } from '@/lib/createSSEResponse';
 import { BackgroundPlanningOrchestratorService } from '@/services/BackgroundPlanningOrchestrator';
 import type { DualPlanProgress, DualPlanSSEEvent } from '@/types/dualPlanning';
 
@@ -31,48 +33,48 @@ export async function GET(
   const session = getSession(sessionId);
 
   if (!session) {
-    return new Response(
-      formatSSE({
-        type: 'error',
-        data: {
-          stage: 'error',
-          progress: 0,
-          message: 'Planning session not found or expired',
-          error: 'Session not found',
-        },
-      }),
-      {
-        status: 404,
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      }
-    );
+    const errorStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            formatSSE({
+              type: 'error',
+              data: {
+                stage: 'error',
+                progress: 0,
+                message: 'Planning session not found or expired',
+                error: 'Session not found',
+              },
+            })
+          )
+        );
+        controller.close();
+      },
+    });
+    return createSSEResponse(errorStream, 404);
   }
 
   // Prevent double execution
   if (session.status === 'running') {
-    return new Response(
-      formatSSE({
-        type: 'error',
-        data: {
-          stage: 'error',
-          progress: 0,
-          message: 'Planning session is already running',
-          error: 'Session already active',
-        },
-      }),
-      {
-        status: 409,
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      }
-    );
+    const activeStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            formatSSE({
+              type: 'error',
+              data: {
+                stage: 'error',
+                progress: 0,
+                message: 'Planning session is already running',
+                error: 'Session already active',
+              },
+            })
+          )
+        );
+        controller.close();
+      },
+    });
+    return createSSEResponse(activeStream, 409);
   }
 
   // Mark session as running
@@ -106,12 +108,7 @@ export async function GET(
   // Run pipeline in background
   (async () => {
     try {
-      // Determine base URL for internal API calls
-      // In server-side context, we need the full URL
-      const baseUrl =
-        (process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL)
-          ? `https://${process.env.VERCEL_URL}`
-          : 'http://localhost:3000';
+      const baseUrl = getBaseUrl();
 
       const orchestrator = new BackgroundPlanningOrchestratorService(baseUrl);
 
@@ -199,11 +196,5 @@ export async function GET(
   })();
 
   // Return SSE response immediately
-  return new Response(stream.readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
-  });
+  return createSSEResponse(stream.readable);
 }

@@ -6,6 +6,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { createSSEResponse } from '@/lib/createSSEResponse';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildFullAppPrompt } from '@/prompts/builder';
 import {
@@ -1215,11 +1216,5 @@ MODIFICATION MODE for "${currentAppName}":
   })();
 
   // Return the readable stream as SSE response
-  return new Response(stream.readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
-  });
+  return createSSEResponse(stream.readable);
 }

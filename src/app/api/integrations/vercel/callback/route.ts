@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getBaseUrl } from '@/lib/getBaseUrl';
 import { createClient } from '@/utils/supabase/server';
 import { encrypt } from '@/services/TokenEncryption';
 import { OAuthCallbackSchema } from '@/types/deployment';
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   cookieStore.delete('vercel_oauth_state');
 
   // Get base URL for redirects
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
 
   // Handle OAuth errors
   if (error) {

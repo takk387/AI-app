@@ -9,6 +9,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { getBaseUrl } from '@/lib/getBaseUrl';
 import { LiveIntelligenceGathererService } from '@/services/LiveIntelligenceGatherer';
 
 export const maxDuration = 60; // Intelligence gathering can take up to 60s
@@ -26,10 +27,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Determine base URL for internal API calls
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ??
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const baseUrl = getBaseUrl();
 
     const gatherer = new LiveIntelligenceGathererService(baseUrl);
     const intelligence = await gatherer.gather(concept);

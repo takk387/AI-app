@@ -220,6 +220,13 @@ npm run test:services # Service tests (Node)
 - Tree-sitter is used for AST parsing - test changes carefully
 - Component state lives in useAppStore, not local state
 
+### Deployment & Infrastructure
+
+- **This app deploys to Railway (NOT Vercel).** The `/api/integrations/vercel/` and `/api/deploy/vercel/` routes are a USER FEATURE for deploying user-generated apps to Vercel — they are NOT infrastructure for this app's own deployment.
+- **Never use `VERCEL_URL`** for constructing this app's own URLs. Always use `getBaseUrl()` from `@/lib/getBaseUrl`.
+- **All SSE routes must use `createSSEResponse()`** from `@/lib/createSSEResponse` — never construct SSE headers manually.
+- **`NEXT_PUBLIC_APP_URL`** is the single source of truth for this app's public URL in production.
+
 ### File Relationships (5-Step Flow)
 
 - `NaturalConversationWizard` → creates `AppConcept` → navigates to `/app/design`
@@ -231,12 +238,13 @@ npm run test:services # Service tests (Node)
 ## Environment Variables
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=     # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY= # Supabase anon key
-ANTHROPIC_API_KEY=            # Claude API key
-GOOGLE_API_KEY=               # Gemini API key (vision, image generation, critique)
-GEMINI_API_KEY=               # Gemini API key (alternative to GOOGLE_API_KEY)
-OPENAI_API_KEY=               # OpenAI API key (embeddings/proxy only)
+NEXT_PUBLIC_APP_URL=             # Required in production — your app's public URL (e.g., https://your-app.railway.app)
+NEXT_PUBLIC_SUPABASE_URL=        # Supabase project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Supabase anon key
+ANTHROPIC_API_KEY=               # Claude API key
+GOOGLE_API_KEY=                  # Gemini API key (vision, image generation, critique)
+GEMINI_API_KEY=                  # Gemini API key (alternative to GOOGLE_API_KEY)
+OPENAI_API_KEY=                  # OpenAI API key (embeddings/proxy only)
 ```
 
 ## See Also
