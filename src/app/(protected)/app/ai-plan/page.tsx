@@ -4,8 +4,8 @@
  * Dual AI Architecture Planning page:
  * - Pipeline starts automatically on mount
  * - Shows PipelineStagesView during execution
- * - Shows ConsensusResultView + AISelectionPanel on completion
- * - Shows ConsensusEscalationDialog on escalation
+ * - Shows ArchitectureReviewDialog ALWAYS after pipeline completes (user must confirm)
+ * - After user confirms, shows ConsensusResultView + AISelectionPanel
  * - "Continue to Review" navigates to /app/review
  */
 
@@ -18,7 +18,7 @@ import { ArrowRight, Brain, RefreshCw } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useDualAIPlan } from '@/hooks/useDualAIPlan';
 import { PipelineStagesView, ConsensusResultView, AISelectionPanel } from '@/components/ai-plan';
-import { ConsensusEscalationDialog } from '@/components/ConsensusEscalationDialog';
+import { ArchitectureReviewDialog } from '@/components/ConsensusEscalationDialog';
 
 export default function AIPlanPage() {
   const router = useRouter();
@@ -39,10 +39,15 @@ export default function AIPlanPage() {
     escalation,
     stageLabel,
     isComplete,
+    architectureReviewed,
+    needsArchitectureReview,
+    claudeArchitecture,
+    geminiArchitecture,
+    negotiationRounds,
     startPlanning,
     cancelPlanning: _cancelPlanning,
     retryPlanning,
-    resolveEscalation,
+    confirmArchitectureChoice,
     setUserAISelection,
   } = useDualAIPlan();
 
@@ -97,7 +102,9 @@ export default function AIPlanPage() {
     );
   }
 
-  const canContinue = isComplete && (userAISelection !== null || result !== null);
+  // Can only continue after user has reviewed architecture AND selected AI tier
+  const canContinue =
+    isComplete && architectureReviewed && (userAISelection !== null || result !== null);
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
@@ -124,9 +131,11 @@ export default function AIPlanPage() {
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {isPlanning
                   ? stageLabel
-                  : isComplete
-                    ? 'Architecture ready'
-                    : 'AI Architecture Planning'}
+                  : needsArchitectureReview
+                    ? 'Review architecture before continuing'
+                    : isComplete && architectureReviewed
+                      ? 'Architecture confirmed'
+                      : 'AI Architecture Planning'}
               </p>
             </div>
           </div>
@@ -172,7 +181,7 @@ export default function AIPlanPage() {
           transition={{ duration: 0.3 }}
           className="space-y-8"
         >
-          {/* Pipeline Progress (shown during planning or if not complete) */}
+          {/* Pipeline Progress (shown during planning or if not complete and not escalated) */}
           {(isPlanning || (!isComplete && !isEscalated)) && (
             <PipelineStagesView progress={progress} />
           )}
@@ -198,8 +207,8 @@ export default function AIPlanPage() {
             </div>
           )}
 
-          {/* Completion: Architecture Result + AI Selection */}
-          {isComplete && result && (
+          {/* After review: Architecture Result + AI Selection */}
+          {isComplete && architectureReviewed && result && (
             <>
               <ConsensusResultView architecture={result} />
 
@@ -213,12 +222,37 @@ export default function AIPlanPage() {
               </div>
             </>
           )}
+
+          {/* Waiting for review message (when pipeline is done but user hasn't reviewed yet) */}
+          {(isComplete || isEscalated) &&
+            !architectureReviewed &&
+            claudeArchitecture &&
+            geminiArchitecture && (
+              <div
+                className="p-6 rounded-xl text-center"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Review the architecture proposals in the dialog above to continue.
+                </p>
+              </div>
+            )}
         </motion.div>
       </div>
 
-      {/* Escalation Dialog (modal overlay) */}
-      {isEscalated && escalation && (
-        <ConsensusEscalationDialog escalation={escalation} onResolve={resolveEscalation} />
+      {/* Architecture Review Dialog — ALWAYS shown after pipeline completes, until user confirms */}
+      {needsArchitectureReview && claudeArchitecture && geminiArchitecture && (
+        <ArchitectureReviewDialog
+          claudeArchitecture={claudeArchitecture}
+          geminiArchitecture={geminiArchitecture}
+          negotiationRounds={negotiationRounds}
+          consensusReached={isComplete && !isEscalated}
+          escalation={escalation}
+          onResolve={confirmArchitectureChoice}
+        />
       )}
     </div>
   );

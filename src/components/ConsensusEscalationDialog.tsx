@@ -1,27 +1,64 @@
 /**
- * ConsensusEscalationDialog
+ * ArchitectureReviewDialog (formerly ConsensusEscalationDialog)
  *
- * Full-screen modal shown when Claude and Gemini cannot reach consensus.
- * Displays divergent issues side-by-side and lets the user choose
- * Claude's architecture, Gemini's, or a merge of both.
+ * Full-screen modal shown ALWAYS after the planning pipeline completes.
+ * Displays both AI architectures side-by-side and lets the user choose:
+ *
+ * When consensus WAS reached:
+ * - "Accept Consensus" (recommended), "Use Claude's", "Use Gemini's", or "Merge Both"
+ *
+ * When consensus was NOT reached (escalation):
+ * - "Use Claude's", "Use Gemini's", or "Merge Both"
+ *
+ * This ensures the user always reviews and confirms the architecture
+ * before moving on to the builder.
  */
 
 'use client';
 
 import React from 'react';
-import type { EscalationData } from '@/types/dualPlanning';
+import type { ArchitecturePosition, EscalationData, Disagreement } from '@/types/dualPlanning';
 
-interface ConsensusEscalationDialogProps {
-  escalation: EscalationData;
-  onResolve: (choice: 'claude' | 'gemini' | 'merge') => void;
+interface ArchitectureReviewDialogProps {
+  claudeArchitecture: ArchitecturePosition;
+  geminiArchitecture: ArchitecturePosition;
+  negotiationRounds: number;
+  /** If consensus was reached, this is true. Shows "Accept Consensus" as recommended. */
+  consensusReached: boolean;
+  /** Escalation data (only present if consensus was NOT reached) */
+  escalation?: EscalationData | null;
+  onResolve: (choice: 'claude' | 'gemini' | 'merge' | 'consensus') => void;
 }
 
-export function ConsensusEscalationDialog({
+// Keep old export name for backward compatibility
+export function ConsensusEscalationDialog(props: {
+  escalation: EscalationData;
+  onResolve: (choice: 'claude' | 'gemini' | 'merge') => void;
+}) {
+  return (
+    <ArchitectureReviewDialog
+      claudeArchitecture={props.escalation.claudeArchitecture}
+      geminiArchitecture={props.escalation.geminiArchitecture}
+      negotiationRounds={props.escalation.negotiationRounds}
+      consensusReached={false}
+      escalation={props.escalation}
+      onResolve={(choice) => {
+        if (choice === 'consensus') return; // shouldn't happen for escalation-only
+        props.onResolve(choice);
+      }}
+    />
+  );
+}
+
+export function ArchitectureReviewDialog({
+  claudeArchitecture,
+  geminiArchitecture,
+  negotiationRounds,
+  consensusReached,
   escalation,
   onResolve,
-}: ConsensusEscalationDialogProps) {
-  const { reason, divergentIssues, claudeArchitecture, geminiArchitecture, negotiationRounds } =
-    escalation;
+}: ArchitectureReviewDialogProps) {
+  const divergentIssues: Disagreement[] = escalation?.divergentIssues ?? [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -43,25 +80,54 @@ export function ConsensusEscalationDialog({
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ background: 'var(--warning-muted, rgba(245, 158, 11, 0.1))' }}
+              style={{
+                background: consensusReached
+                  ? 'var(--success-muted, rgba(34, 197, 94, 0.1))'
+                  : 'var(--warning-muted, rgba(245, 158, 11, 0.1))',
+              }}
             >
-              <span style={{ color: 'var(--warning-primary, #f59e0b)' }} className="text-lg">
-                ⚡
+              <span
+                style={{
+                  color: consensusReached
+                    ? 'var(--success-primary, #22c55e)'
+                    : 'var(--warning-primary, #f59e0b)',
+                }}
+                className="text-lg"
+              >
+                {consensusReached ? '✓' : '⚡'}
               </span>
             </div>
             <div>
               <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                Consensus Not Reached
+                {consensusReached ? 'Review Architecture Plan' : 'Consensus Not Reached'}
               </h2>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                After {negotiationRounds} round{negotiationRounds !== 1 ? 's' : ''}: {reason}
+                {consensusReached
+                  ? `Both AIs agreed after ${negotiationRounds} round${negotiationRounds !== 1 ? 's' : ''}. Review their proposals and confirm.`
+                  : `After ${negotiationRounds} round${negotiationRounds !== 1 ? 's' : ''}: ${escalation?.reason ?? 'AIs could not reach consensus'}`}
               </p>
             </div>
           </div>
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Divergent Issues */}
+          {/* Consensus info banner */}
+          {consensusReached && (
+            <div
+              className="p-4 rounded-lg"
+              style={{
+                background: 'var(--success-muted, rgba(34, 197, 94, 0.1))',
+                border: '1px solid var(--success-muted, rgba(34, 197, 94, 0.2))',
+              }}
+            >
+              <p className="text-sm" style={{ color: 'var(--success-primary, #22c55e)' }}>
+                ✓ Both AIs reached consensus. You can accept the agreed architecture or choose one
+                AI&apos;s individual proposal instead.
+              </p>
+            </div>
+          )}
+
+          {/* Divergent Issues (only when escalation) */}
           {divergentIssues.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -79,11 +145,19 @@ export function ConsensusEscalationDialog({
                     </span>
                   </div>
                   <div className="grid grid-cols-2">
-                    {/* Claude's stance — brand blue kept */}
+                    {/* Claude's stance */}
                     <div className="p-4" style={{ borderRight: '1px solid var(--border-color)' }}>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-400" />
-                        <span className="text-xs font-medium text-blue-400">Claude Opus 4.6</span>
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: 'var(--claude-primary)' }}
+                        />
+                        <span
+                          className="text-xs font-medium"
+                          style={{ color: 'var(--claude-primary)' }}
+                        >
+                          Claude Opus 4.6
+                        </span>
                       </div>
                       <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                         {issue.claudeStance}
@@ -94,11 +168,19 @@ export function ConsensusEscalationDialog({
                         </p>
                       )}
                     </div>
-                    {/* Gemini's stance — brand purple kept */}
+                    {/* Gemini's stance */}
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="w-2 h-2 rounded-full bg-purple-400" />
-                        <span className="text-xs font-medium text-purple-400">Gemini 3 Pro</span>
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: 'var(--gemini-primary)' }}
+                        />
+                        <span
+                          className="text-xs font-medium"
+                          style={{ color: 'var(--gemini-primary)' }}
+                        >
+                          Gemini 3 Pro
+                        </span>
                       </div>
                       <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                         {issue.geminiStance}
@@ -140,20 +222,43 @@ export function ConsensusEscalationDialog({
         >
           <div className="flex items-center justify-between">
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Choose which architecture to proceed with
+              {consensusReached
+                ? 'Accept the consensus or choose a specific architecture'
+                : 'Choose which architecture to proceed with'}
             </p>
             <div className="flex gap-3">
-              {/* Claude button — brand blue kept */}
+              {/* Accept Consensus — only when consensus was reached */}
+              {consensusReached && (
+                <button
+                  onClick={() => onResolve('consensus')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                  }}
+                >
+                  ✓ Accept Consensus
+                </button>
+              )}
+              {/* Claude button */}
               <button
                 onClick={() => onResolve('claude')}
-                className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-sm font-medium transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  background: 'var(--claude-bg)',
+                  color: 'var(--claude-primary)',
+                }}
               >
                 Use Claude&apos;s
               </button>
-              {/* Gemini button — brand purple kept */}
+              {/* Gemini button */}
               <button
                 onClick={() => onResolve('gemini')}
-                className="px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 text-sm font-medium transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  background: 'var(--gemini-bg)',
+                  color: 'var(--gemini-primary)',
+                }}
               >
                 Use Gemini&apos;s
               </button>
@@ -195,17 +300,19 @@ function ArchitectureSummary({
     realtime: { enabled: boolean; technology: string };
   };
 }) {
-  // Brand colors kept for Claude (blue) and Gemini (purple)
-  const dotColor = color === 'blue' ? 'bg-blue-400' : 'bg-purple-400';
-  const borderColor = color === 'blue' ? 'border-blue-500/30' : 'border-purple-500/30';
+  const primaryVar = color === 'blue' ? '--claude-primary' : '--gemini-primary';
+  const borderVar = color === 'blue' ? '--claude-border' : '--gemini-border';
 
   return (
     <div
-      className={`p-4 rounded-lg border ${borderColor}`}
-      style={{ background: 'var(--bg-tertiary)' }}
+      className="p-4 rounded-lg"
+      style={{
+        background: 'var(--bg-tertiary)',
+        border: `1px solid var(${borderVar})`,
+      }}
     >
       <div className="flex items-center gap-2 mb-3">
-        <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+        <span className="w-2 h-2 rounded-full" style={{ background: `var(${primaryVar})` }} />
         <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
           {title}
         </span>

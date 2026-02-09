@@ -52,6 +52,10 @@ type ProgressCallback = (progress: DualPlanProgress) => void;
 export interface PipelineResult {
   type: 'complete' | 'escalation' | 'error';
   architecture?: FinalValidatedArchitecture;
+  /** Individual architectures from each AI (always included on complete and escalation) */
+  claudeArchitecture?: ArchitecturePosition;
+  geminiArchitecture?: ArchitecturePosition;
+  negotiationRounds?: number;
   escalation?: EscalationData;
   error?: string;
 }
@@ -283,7 +287,13 @@ class BackgroundPlanningOrchestratorService {
           `Coverage: ${validationResult.finalReport.overallCoverage}%, ${consensusResult.rounds.length} negotiation round(s)`
         );
 
-        return { type: 'complete', architecture: finalArchitecture };
+        return {
+          type: 'complete',
+          architecture: finalArchitecture,
+          claudeArchitecture: claudeArch,
+          geminiArchitecture: geminiArch,
+          negotiationRounds: consensusResult.rounds.length,
+        };
       }
 
       // Needs replan
@@ -306,7 +316,13 @@ class BackgroundPlanningOrchestratorService {
           `Coverage: ${validationResult.finalReport.overallCoverage}%, ${validationResult.finalReport.combinedIssues.length} remaining issues`
         );
 
-        return { type: 'complete', architecture: finalArchitecture };
+        return {
+          type: 'complete',
+          architecture: finalArchitecture,
+          claudeArchitecture: claudeArch,
+          geminiArchitecture: geminiArch,
+          negotiationRounds: consensusResult.rounds.length,
+        };
       }
 
       // Attempt replan with validation feedback

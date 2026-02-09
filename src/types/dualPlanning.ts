@@ -405,6 +405,10 @@ export interface DualPlanSSEEvent {
     message: string;
     details?: string;
     architecture?: FinalValidatedArchitecture;
+    /** Individual architectures from each AI (sent on both complete AND escalation) */
+    claudeArchitecture?: ArchitecturePosition;
+    geminiArchitecture?: ArchitecturePosition;
+    negotiationRounds?: number;
     escalation?: EscalationData;
     error?: string;
   };

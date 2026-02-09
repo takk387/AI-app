@@ -140,6 +140,9 @@ export async function GET(
               progress: 100,
               message: 'Architecture planning complete',
               architecture: result.architecture,
+              claudeArchitecture: result.claudeArchitecture,
+              geminiArchitecture: result.geminiArchitecture,
+              negotiationRounds: result.negotiationRounds,
             },
           });
           updateSessionStatus(sessionId, 'complete');

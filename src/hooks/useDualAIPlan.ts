@@ -55,12 +55,24 @@ export interface UseDualAIPlanReturn {
   escalation: EscalationData | null;
   stageLabel: string;
   isComplete: boolean;
+  /** Whether the user has reviewed and confirmed the architecture */
+  architectureReviewed: boolean;
+  /** Whether review dialog should be shown (pipeline done + both archs available + not yet reviewed) */
+  needsArchitectureReview: boolean;
+  /** Individual architecture from Claude */
+  claudeArchitecture: ArchitecturePosition | null;
+  /** Individual architecture from Gemini */
+  geminiArchitecture: ArchitecturePosition | null;
+  /** Number of negotiation rounds */
+  negotiationRounds: number;
 
   // Actions
   startPlanning: (concept: AppConcept, manifest: LayoutManifest) => Promise<void>;
   cancelPlanning: () => void;
   retryPlanning: () => void;
   resolveEscalation: (choice: 'claude' | 'gemini' | 'merge') => void;
+  /** Confirm architecture choice (used for both consensus and escalation) */
+  confirmArchitectureChoice: (choice: 'claude' | 'gemini' | 'merge' | 'consensus') => void;
   setUserAISelection: (selection: UserAISelection) => void;
 }
 
@@ -80,16 +92,31 @@ export function useDualAIPlan(): UseDualAIPlanReturn {
   const progress = useAppStore((s) => s.dualPlanProgress);
   const result = useAppStore((s) => s.dualArchitectureResult);
   const escalation = useAppStore((s) => s.dualArchitectureEscalation);
+  const claudeArchitecture = useAppStore((s) => s.claudeArchitecturePosition);
+  const geminiArchitecture = useAppStore((s) => s.geminiArchitecturePosition);
+  const negotiationRounds = useAppStore((s) => s.architectureNegotiationRounds);
+  const architectureReviewed = useAppStore((s) => s.architectureReviewed);
 
   const cachedIntelligence = useAppStore((s) => s.cachedIntelligence);
   const setDualPlanProgress = useAppStore((s) => s.setDualPlanProgress);
   const setDualArchitectureResult = useAppStore((s) => s.setDualArchitectureResult);
   const setDualArchitectureEscalation = useAppStore((s) => s.setDualArchitectureEscalation);
   const setUserAISelectionStore = useAppStore((s) => s.setUserAISelection);
+  const setClaudeArchitecturePosition = useAppStore((s) => s.setClaudeArchitecturePosition);
+  const setGeminiArchitecturePosition = useAppStore((s) => s.setGeminiArchitecturePosition);
+  const setArchitectureNegotiationRounds = useAppStore((s) => s.setArchitectureNegotiationRounds);
+  const setArchitectureReviewed = useAppStore((s) => s.setArchitectureReviewed);
 
   const isEscalated = escalation !== null;
   const isComplete = result !== null;
   const stageLabel = STAGE_LABELS[progress?.stage ?? 'idle'];
+
+  // Review is needed when: pipeline is done, both architectures are available, and user hasn't reviewed yet
+  const needsArchitectureReview =
+    (isComplete || isEscalated) &&
+    claudeArchitecture !== null &&
+    geminiArchitecture !== null &&
+    !architectureReviewed;
 
   // Cleanup EventSource on unmount
   useEffect(() => {
@@ -114,6 +141,10 @@ export function useDualAIPlan(): UseDualAIPlanReturn {
       setDualPlanProgress({ stage: 'idle', percent: 0, message: 'Starting pipeline...' });
       setDualArchitectureResult(null);
       setDualArchitectureEscalation(null);
+      setClaudeArchitecturePosition(null);
+      setGeminiArchitecturePosition(null);
+      setArchitectureNegotiationRounds(0);
+      setArchitectureReviewed(false);
 
       try {
         // Step 1: Create session (include cached intelligence if available)
@@ -156,6 +187,16 @@ export function useDualAIPlan(): UseDualAIPlanReturn {
                 if (sseEvent.data.architecture) {
                   setDualArchitectureResult(sseEvent.data.architecture);
                 }
+                // Store individual architectures for the review dialog
+                if (sseEvent.data.claudeArchitecture) {
+                  setClaudeArchitecturePosition(sseEvent.data.claudeArchitecture);
+                }
+                if (sseEvent.data.geminiArchitecture) {
+                  setGeminiArchitecturePosition(sseEvent.data.geminiArchitecture);
+                }
+                if (sseEvent.data.negotiationRounds) {
+                  setArchitectureNegotiationRounds(sseEvent.data.negotiationRounds);
+                }
                 setDualPlanProgress({
                   stage: 'complete',
                   percent: 100,
@@ -168,6 +209,10 @@ export function useDualAIPlan(): UseDualAIPlanReturn {
               case 'escalation':
                 if (sseEvent.data.escalation) {
                   setDualArchitectureEscalation(sseEvent.data.escalation);
+                  // Store individual architectures from escalation data for the review dialog
+                  setClaudeArchitecturePosition(sseEvent.data.escalation.claudeArchitecture);
+                  setGeminiArchitecturePosition(sseEvent.data.escalation.geminiArchitecture);
+                  setArchitectureNegotiationRounds(sseEvent.data.escalation.negotiationRounds);
                 }
                 setDualPlanProgress({
                   stage: 'escalated',
@@ -288,6 +333,76 @@ export function useDualAIPlan(): UseDualAIPlanReturn {
   );
 
   /**
+   * Confirm architecture choice from the review dialog.
+   * Works for both consensus (accept/override) and escalation cases.
+   */
+  const confirmArchitectureChoice = useCallback(
+    (choice: 'claude' | 'gemini' | 'merge' | 'consensus') => {
+      if (!claudeArchitecture || !geminiArchitecture) return;
+
+      if (choice === 'consensus') {
+        // Accept the consensus architecture as-is (result is already set)
+        setArchitectureReviewed(true);
+        setDualArchitectureEscalation(null);
+        return;
+      }
+
+      // User chose a specific architecture over the consensus
+      let chosenArchitecture: ArchitecturePosition;
+
+      switch (choice) {
+        case 'claude':
+          chosenArchitecture = claudeArchitecture;
+          break;
+        case 'gemini':
+          chosenArchitecture = geminiArchitecture;
+          break;
+        case 'merge':
+          chosenArchitecture = {
+            ...claudeArchitecture,
+            agentic: geminiArchitecture.agentic,
+          };
+          break;
+      }
+
+      // Create a FinalValidatedArchitecture from the user's choice
+      const finalArchitecture: FinalValidatedArchitecture = {
+        ...chosenArchitecture,
+        consensusReport: {
+          rounds: negotiationRounds,
+          finalAgreements: [`User chose ${choice} architecture`],
+          compromises: choice === 'merge' ? ['User-directed merge of both architectures'] : [],
+        },
+        validation: {
+          approvedAt: new Date().toISOString(),
+          coverage: result?.validation?.coverage ?? 85,
+          issuesResolved: 0,
+          replanAttempts: 0,
+        },
+      };
+
+      setDualArchitectureResult(finalArchitecture);
+      setDualArchitectureEscalation(null);
+      setArchitectureReviewed(true);
+      setDualPlanProgress({
+        stage: 'complete',
+        percent: 100,
+        message: `Architecture confirmed (${choice})`,
+      });
+    },
+    [
+      claudeArchitecture,
+      geminiArchitecture,
+      negotiationRounds,
+      result,
+      setDualArchitectureResult,
+      setDualArchitectureEscalation,
+      setArchitectureReviewed,
+      setDualPlanProgress,
+    ]
+  );
+
+  /**
    * Save the user's AI tier/model selection.
    */
   const setUserAISelection = useCallback(
@@ -306,10 +421,16 @@ export function useDualAIPlan(): UseDualAIPlanReturn {
     escalation,
     stageLabel,
     isComplete,
+    architectureReviewed,
+    needsArchitectureReview,
+    claudeArchitecture,
+    geminiArchitecture,
+    negotiationRounds,
     startPlanning,
     cancelPlanning,
     retryPlanning,
     resolveEscalation,
+    confirmArchitectureChoice,
     setUserAISelection,
   };
 }
