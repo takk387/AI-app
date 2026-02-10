@@ -175,23 +175,29 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
      - Root nodes: relative to canvas (the full image)
      - Child nodes: relative to parent content area
    - **Bounds Strategy:** Approximate the visual bounding box. Trust your eye. If a header looks like it takes 10% height, use 10%.
-   - These bounds are key for the Builder to understand scale and for extracting custom assets.
 
-5. **Icons & Custom Visuals — Trust Your Intuition:**
-   - **Contextual Detection:** If an element looks like a custom brand logo, illustration, or complex graphic -> set \`hasCustomVisual: true\` and \`extractionAction: "crop"\`.
-   - **Standard Icons:** If an element is clearly a standard UI icon (chevron, hamburger menu, search glass) -> identify it.
-   - **Unsure?** If you are 50/50 on whether it's an icon or a custom graphic, DEFAULT TO CROP (\`hasCustomVisual: true\`). It's safer to extract the original pixel data than to replace it with a generic icon.
-   - **Vibe Check:** Does the button have a wood texture? Is the card glassmorphic? Capture these details in the \`styles\` object (e.g., \`backdropFilter: "blur(12px)"\`, \`backgroundImage: "url(...)"\`).
+5. **Icons & Logos — TRACE THE VECTORS (CRITICAL):**
+   - **DO NOT CROP.** DO NOT USE IMAGES. **TRACE IT.**
+   - For every icon, logo, or simple graphic, you MUST extract its SVG path data.
+   - Add these fields to the node:
+     - \`"svgPath"\`: string (e.g., "M10 10 H 90 V 90 H 10 Z")
+     - \`"viewBox"\`: string (e.g., "0 0 24 24")
+     - \`"fill"\`: string (hex code)
+   - If it's a complex brand logo, **TRACE IT ANYWAY.** You are an AI Vision model; you can see the curves. Output the path.
+   - Only use \`hasCustomVisual: true\` (cropping) for **PHOTOGRAPHS ONLY** (real people/scenes). Everything else is vector.
 
-6. **Semantic Understanding:**
+6. **Literal CSS Extraction (NO DESCRIPTIONS):**
+   - **Gradients:** Extract the EXACT \`linear-gradient(...)\` string. Do not say "blue gradient". Say \`"linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%)"\`.
+   - **Shadows:** Extract the EXACT \`box-shadow\`. E.g., \`"0 4px 6px -1px rgba(0, 0, 0, 0.1)"\`.
+   - **Shapes:** If a button is rounded, give me \`borderRadius: "9999px"\`.
+   - **Transforms:** If rotated, give me \`transform: "rotate(-5deg)"\`.
+   - **Glassmorphism:** Give me \`backdropFilter: "blur(12px)"\` and \`background: "rgba(255,255,255,0.1)"\`.
+   - **Output DATA, not English.**
+
+7. **Semantic Understanding:**
    - Don't just look at pixels. Look at **Intent**.
    - If a button is big and colorful, it's a Call to Action (CTA). Flag distinct styles for it.
-   - If a text block is bold and at the top, it's a Heading. Use <h1>-<h6> tags.
    - Group elements logically: "Hero Section", "Feature Card", "Footer Column".
-
-7. **Advanced Effects:**
-   - Capture gradients (\`linear-gradient(...)\`), shadows, roundness, and transparency.
-   - If you see a complex background, describe it or flag it for extraction.
 
 ### Critical Instruction
 Do NOT just list bounding boxes. Output a recursive JSON tree.

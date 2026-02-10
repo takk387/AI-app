@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Feb 8, 2026 — post wizard cleanup + CREATE mode streamlining)
+> **Status**: VERIFIED (Feb 10, 2026 — removed 8 dead code files)
 
 ---
 
@@ -9,12 +9,12 @@
 
 | Metric               | Previous | Verified (Actual) |
 | -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 547      | **582**           |
-| API Route Handlers   | 60       | **65**            |
-| Custom Hooks         | 35       | **38**            |
-| Service Classes      | 73       | **82**            |
-| Type Definitions     | ~12,987  | **~13,940 lines** |
-| Utilities            | ~24,728  | **~24,728 lines** |
+| TypeScript/TSX Files | 582      | **576**           |
+| API Route Handlers   | 65       | **65**            |
+| Custom Hooks         | 38       | **38**            |
+| Service Classes      | 82       | **77**            |
+| Type Definitions     | ~13,940  | **~13,891 lines** |
+| Utilities            | ~24,728  | **~24,516 lines** |
 
 **Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
 
