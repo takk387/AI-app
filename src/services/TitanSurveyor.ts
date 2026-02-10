@@ -171,67 +171,27 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
    - Values are percentages (0-100):
      - Root nodes: relative to canvas (the full image)
      - Child nodes: relative to parent content area
-   - Measure ACTUAL pixel positions from the image, then convert to percentages using canvas dimensions
-   - These bounds are REQUIRED for:
-     a) Extracting custom icons/logos from the original image
-     b) Providing the Builder with exact element sizes for pixel-perfect output
-   - Example: A header spanning the full width at the top = { "top": 0, "left": 0, "width": 100, "height": 8 }
-5. **Icons — DEFAULT TO EXTRACTION (Critical for Custom Icons):**
-   
-   **DEFAULT BEHAVIOR FOR ALL ICONS:**
-   Extract the icon by setting:
-   - \`hasCustomVisual\`: true
-   - \`extractionAction\`: "crop"
-   - \`extractionBounds\`: { top, left, width, height } in percentage (0-100)
-   - Measure and set \`iconColor\`: "#hexcode"
-   
-   **EXCEPTION - Use Lucide ONLY for these 12 standard UI icons:**
-   - Navigation: ChevronLeft, ChevronRight, ChevronUp, ChevronDown
-   - Actions: X (close), Menu (hamburger), Check, Plus, Minus
-   - Utility: Search, ArrowRight, ArrowLeft
-   
-   **NEVER use Lucide for:**
-   - Company logos or brand marks (e.g., social media icons, app icons)
-   - Stylized icons with artistic flourishes, shadows, gradients
-   - Decorative icons (stars with textures, hearts with patterns)
-   - Custom illustrations or drawings
-   - Icons with unique shapes not matching standard UI patterns
-   - Any icon where you're uncertain if it's standard UI
-   
-   **Rule of Thumb:** When in doubt, EXTRACT. Only use Lucide if you're 100% certain it's
-   a basic navigation or utility icon from the exception list above.
+   - Values are percentages (0-100):
+     - Root nodes: relative to canvas (the full image)
+     - Child nodes: relative to parent content area
+   - **Bounds Strategy:** Approximate the visual bounding box. Trust your eye. If a header looks like it takes 10% height, use 10%.
+   - These bounds are key for the Builder to understand scale and for extracting custom assets.
 
-6. **CRITICAL - CUSTOM VISUAL DETECTION:**
-   For ANY non-standard visual element (textured buttons, custom icons, logos, unique gradients, images):
-   - Set "hasCustomVisual": true
-   - Set "extractionAction": "crop" (to extract exact pixels from original)
-   - Use the element's "bounds" field for cropping coordinates (already required by rule 4)
-   - DO NOT provide "imageDescription" - we extract, not generate
+5. **Icons & Custom Visuals — Trust Your Intuition:**
+   - **Contextual Detection:** If an element looks like a custom brand logo, illustration, or complex graphic -> set \`hasCustomVisual: true\` and \`extractionAction: "crop"\`.
+   - **Standard Icons:** If an element is clearly a standard UI icon (chevron, hamburger menu, search glass) -> identify it.
+   - **Unsure?** If you are 50/50 on whether it's an icon or a custom graphic, DEFAULT TO CROP (\`hasCustomVisual: true\`). It's safer to extract the original pixel data than to replace it with a generic icon.
+   - **Vibe Check:** Does the button have a wood texture? Is the card glassmorphic? Capture these details in the \`styles\` object (e.g., \`backdropFilter: "blur(12px)"\`, \`backgroundImage: "url(...)"\`).
 
-   Examples of custom visuals to flag:
-   - Company logos (always extract)
-   - Custom icons (not standard Lucide)
-   - Textured backgrounds (wood, fabric, clouds, etc.)
-   - Photographs or realistic images
-   - Hand-drawn elements
-   - Unique gradient combinations
-7. **Advanced Effects (CRITICAL for visual fidelity):**
-   - Gradients: Extract full CSS gradient syntax (type, angle, color stops with %)
-   - Glassmorphism: backdrop-filter blur, background opacity
-   - Transforms: rotation, scale, skew
-   - Filters: blur, brightness, saturation
-   - Clip-path: shaped elements (circular avatars, angled sections)
-   - Animations: describe any visible motion
-   - For ANY CSS property visible in the design, include it in the styles object
-8. **Interactive States:**
-   - For buttons, links, and interactive cards: infer likely hover/active/focus states
-     based on the visual design (shadow changes, color shifts, scale effects).
-   - Include an "interactionStates" field on the element node (sibling to "styles"):
-     "interactionStates": { "hover": { ...css }, "active": { ...css }, "focus": { ...css } }
-9. **Icon & Logo Containers:**
-   - If an icon/logo sits inside a visible container (circle, badge, rounded rect),
-     include the container as a parent node with its own styles.
-   - Extract spacing between icon and adjacent text.
+6. **Semantic Understanding:**
+   - Don't just look at pixels. Look at **Intent**.
+   - If a button is big and colorful, it's a Call to Action (CTA). Flag distinct styles for it.
+   - If a text block is bold and at the top, it's a Heading. Use <h1>-<h6> tags.
+   - Group elements logically: "Hero Section", "Feature Card", "Footer Column".
+
+7. **Advanced Effects:**
+   - Capture gradients (\`linear-gradient(...)\`), shadows, roundness, and transparency.
+   - If you see a complex background, describe it or flag it for extraction.
 
 ### Critical Instruction
 Do NOT just list bounding boxes. Output a recursive JSON tree.

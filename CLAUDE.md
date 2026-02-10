@@ -37,7 +37,7 @@ Personal AI App Builder - Build React components and apps using Claude AI with n
 - **State:** Zustand 4.5 with Immer middleware
 - **Backend:** Next.js API Routes with SSE streaming
 - **Database:** Supabase (PostgreSQL, Auth, Storage)
-- **AI:** Anthropic Claude SDK (Sonnet), Google GenAI SDK (Gemini 2.5 Flash/Pro for vision + image generation)
+- **AI:** Anthropic Claude SDK (Sonnet 4.5, Opus 4.6), Google GenAI SDK (Gemini 3 Flash/Pro for vision + image generation)
 - **AI (Secondary):** OpenAI SDK (embeddings, proxy services only - DALL-E removed)
 - **Parsing:** Tree-sitter for AST analysis, js-tiktoken for tokens
 
@@ -75,7 +75,7 @@ src/
 │   ├── build/              # Build UI components
 │   └── ui/                 # Base UI components
 │
-├── hooks/                  # Custom hooks (30+ files)
+├── hooks/                  # Custom hooks (38+ files)
 │   ├── useLayoutBuilder.ts # Layout design state + GENERATE mode
 │   ├── useDualAIPlan.ts    # Dual AI planning pipeline (SSE, escalation)
 │   ├── useBackgroundIntelligence.ts # Background intelligence pre-caching
@@ -83,7 +83,7 @@ src/
 │   ├── useDynamicBuildPhases.ts # Phase execution
 │   └── __tests__/          # Hook tests
 │
-├── services/               # Business logic (30+ files)
+├── services/               # Business logic (80+ files)
 │   ├── TitanPipelineService.ts   # Titan Pipeline orchestrator (~1074 lines)
 │   ├── GeminiLayoutCritique.ts   # Vision critique for healing loop (~286 lines, new SDK)
 │   ├── GeminiImageService.ts     # Multimodal image generation (new SDK)

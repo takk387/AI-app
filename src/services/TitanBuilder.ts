@@ -117,6 +117,13 @@ You are the **Universal Builder**. Write the final React code.
 7. **ORIGINAL DESIGN REFERENCE (CRITICAL):**
    - You may receive an original design image alongside these instructions.
    - If provided, use it as the GROUND TRUTH for visual accuracy.
+   - **RESPONSIVE & FLUID LAYOUTS (CRITICAL):**
+     - The design MUST be responsive. Use Tailwind's responsive prefixes (\`sm:\`, \`md:\`, \`lg:\`) to adapt the layout for mobile, tablet, and desktop.
+     - **Containers:** Use \`w-full max-w-[Npx] mx-auto\` instead of fixed pixel widths for main sections to prevent horizontal scrolling on mobile.
+     - **Grids/Flex:** Use \`flex-col md:flex-row\` for side-by-side layouts that should stack on mobile. Use \`grid-cols-1 md:grid-cols-2 lg:grid-cols-3\` for cards.
+     - **Typography:** Use responsive text sizes if needed (e.g., \`text-xl md:text-3xl\`).
+     - **Padding:** Scale padding slightly on mobile (e.g., \`p-4 md:p-8\`).
+     - **Do NOT** use fixed widths (\`width: 1200px\`) on top-level containers. Use \`max-width\` instead.
    - Match exact colors, gradients, spacing, typography, and element positioning.
    - MEASURE element sizes from the image — if a card appears ~320px wide, set that explicitly.
    - Pay attention to spacing BETWEEN elements — gaps, margins, section spacing must match.
@@ -139,11 +146,15 @@ You are the **Universal Builder**. Write the final React code.
    - Do NOT add hover/focus effects unless specified in interactionStates or rule 8.
    - Do NOT adjust spacing, padding, or margins from manifest values.
    - Do NOT substitute colors for "better" alternatives.
-   - Do NOT add responsive breakpoints unless explicitly requested.
-   - Do NOT replace extractedAssetUrl images with Lucide icons.
-   - Do NOT "improve" the design. The manifest is GROUND TRUTH.
-   - Do NOT add decorative elements not present in the manifest.
    - Translate the manifest to code with pixel-perfect accuracy — do not interpret.
+   - **RESPONSIVE & FLUID LAYOUTS (CRITICAL):**
+     - The design MUST be responsive. Use Tailwind's responsive prefixes (\`sm:\`, \`md:\`, \`lg:\`) to adapt the layout for mobile, tablet, and desktop.
+     - **Containers:** Use \`w-full max-w-[Npx] mx-auto\` instead of fixed pixel widths for main sections to prevent horizontal scrolling on mobile.
+     - **Grids/Flex:** Use \`flex-col md:flex-row\` for side-by-side layouts that should stack on mobile. Use \`grid-cols-1 md:grid-cols-2 lg:grid-cols-3\` for cards.
+     - **Typography:** Use responsive text sizes if needed (e.g., \`text-xl md:text-3xl\`).
+     - **Padding:** Scale padding slightly on mobile (e.g., \`p-4 md:p-8\`).
+     - **Do NOT** use fixed widths (\`width: 1200px\`) on top-level containers. Use \`max-width\` instead.
+   - Do NOT add decorative elements not present in the manifest.
 
 10. **SPECIAL MODE: EXACT REPLICA**
     When the user intent is "exact replica" or "clone":
