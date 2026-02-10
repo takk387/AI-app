@@ -13,7 +13,6 @@
  */
 
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
-import Anthropic from '@anthropic-ai/sdk';
 import type {
   PipelineInput,
   MergeStrategy,
@@ -25,7 +24,6 @@ import type {
   FileInput,
   CanvasConfig,
 } from '@/types/titanPipeline';
-import { geminiImageService } from '@/services/GeminiImageService';
 import { getAssetExtractionService } from './AssetExtractionService';
 
 // Import from split modules
@@ -58,7 +56,6 @@ export const extractJSXMarkup = _extractJSXMarkup;
 
 const GEMINI_PRO_MODEL = 'gemini-3-pro-preview';
 const GEMINI_DEEP_THINK_MODEL = 'gemini-3-pro-preview';
-const CLAUDE_OPUS_MODEL = 'claude-opus-4-6';
 
 function getGeminiApiKey(): string {
   const key = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
@@ -66,61 +63,15 @@ function getGeminiApiKey(): string {
   return key;
 }
 
-function getAnthropicApiKey(): string {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error('Anthropic API key missing');
-  return key;
-}
-
 // ============================================================================
 // STEP 1: ARCHITECT (Structure) — BYPASSED, preserved for future integration
 // ============================================================================
 
-const ARCHITECT_PROMPT = `### Role
-You are the **Architect**. Convert visual manifests into a component structure tree.
+// ============================================================================
+// STEP 1: ARCHITECT (Structure) — REMOVED (Builder handles structure)
+// ============================================================================
 
-### Rules
-1. If 'dom_tree' is provided in manifests, USE IT AS-IS. Do not simplify or restructure.
-2. PRESERVE every style property from the Surveyor's output — do not drop any CSS values.
-3. Add data-id attributes to every element for the inspector system.
-4. Use semantic HTML tags (nav, header, main, section, article, button, footer).
-5. Preserve ALL nested elements — do not flatten or merge nodes.
-6. Keep any interactionStates objects intact for the Builder to use.
-
-### Output Schema (JSON)
-{
-  "tree": [{ "type": "div", "data_id": "root", "styles": {}, "children": [] }],
-  "layout_strategy": "flex" | "grid"
-}`;
-
-export async function buildStructure(
-  manifests: VisualManifest[],
-  _strategy: MergeStrategy,
-  instructions: string
-): Promise<ComponentStructure> {
-  const apiKey = getAnthropicApiKey();
-  const anthropic = new Anthropic({ apiKey });
-
-  const msg = await anthropic.messages.create({
-    model: CLAUDE_OPUS_MODEL,
-    max_tokens: 4000,
-    messages: [
-      {
-        role: 'user',
-        content: `${ARCHITECT_PROMPT}\nInstructions: ${instructions}\nManifests: ${JSON.stringify(manifests)}`,
-      },
-    ],
-  });
-
-  const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    return jsonMatch ? JSON.parse(jsonMatch[0]) : { tree: [], layout_strategy: 'flex' };
-  } catch (error) {
-    console.warn('[TitanPipeline] Architect JSON parse failed:', error);
-    return { tree: [], layout_strategy: 'flex' };
-  }
-}
+// Architect service removed. Builder now handles structure generation directly.
 
 // ============================================================================
 // STEP 2: PHYSICIST (Motion) — BYPASSED, preserved for future integration
@@ -435,40 +386,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
         physics = await extractPhysics(videoFiles, strategy);
       }
     })(),
-    // Photographer — only for non-CREATE modes (CREATE replicates the image, not generates new assets)
+    // Photographer — REMOVED (Asset generation deprecated)
     (async () => {
-      if (strategy.mode !== 'CREATE' && strategy.execution_plan.generate_assets) {
-        for (const asset of strategy.execution_plan.generate_assets) {
-          try {
-            const result = await geminiImageService.generateBackgroundFromReference({
-              vibe: asset.vibe || 'photorealistic',
-              vibeKeywords: [asset.description],
-              referenceImage:
-                asset.source === 'reference_image' && input.files.length > 0
-                  ? input.files[0].base64
-                  : undefined,
-              targetElement: asset.name.includes('button')
-                ? 'button'
-                : asset.name.includes('hero')
-                  ? 'hero section'
-                  : asset.name.includes('card')
-                    ? 'card'
-                    : 'background',
-            });
-            if (result.imageUrl) {
-              generatedAssets[asset.name] = result.imageUrl;
-            } else {
-              warnings.push(
-                `Asset "${asset.name}" generation returned no image — Gemini may have declined the request`
-              );
-            }
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error('[TitanPipeline] Asset generation failed:', msg);
-            warnings.push(`Asset generation failed for "${asset.name}": ${msg}`);
-          }
-        }
-      }
+      // Logic removed. Pipeline no longer generates assets from scratch.
     })(),
   ]);
 
