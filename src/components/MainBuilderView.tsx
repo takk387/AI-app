@@ -936,9 +936,17 @@ export function MainBuilderView() {
     const loadApps = async () => {
       if (sessionReady && user?.id) {
         setLoadingApps(true);
-        const apps = await loadComponentsFromDb();
-        setComponents(apps);
-        setLoadingApps(false);
+        try {
+          const apps = await loadComponentsFromDb();
+          setComponents(apps);
+          if (apps.length === 0) {
+            console.warn('[MainBuilderView] No apps loaded from database. User may need to create a new app.');
+          }
+        } catch (err) {
+          console.error('[MainBuilderView] Failed to load apps from database:', err);
+        } finally {
+          setLoadingApps(false);
+        }
       }
     };
     loadApps();
@@ -1010,12 +1018,17 @@ export function MainBuilderView() {
     if (storedAppId && components.length > 0 && components.some((c) => c.id === storedAppId))
       return;
 
+    // Skip if user has gone through the guided flow (has concept or plan in store)
+    // This prevents the redirect when the database query fails but the user
+    // navigated here intentionally from the wizard → design → review flow
+    if (appConcept || dynamicPhasePlan) return;
+
     // Wait for session to be ready and initial app load to complete
     // Redirect to wizard for guided flow instead of showing name modal
     if (sessionReady && !loadingApps && !currentComponent) {
       router.push('/app/wizard');
     }
-  }, [sessionReady, loadingApps, currentComponent, searchParams, components, router]);
+  }, [sessionReady, loadingApps, currentComponent, searchParams, components, router, appConcept, dynamicPhasePlan]);
 
   // Get layout manifest from store for auto-save sync
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
