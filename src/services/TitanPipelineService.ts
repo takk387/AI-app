@@ -373,9 +373,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       if (shouldSurvey && input.files.length > 0) {
         // Enhance image quality before analysis (upscale + sharpen for crisp replications)
         const enhancedFile = await enhanceImageQuality(input.files[0]);
-        // CREATE mode: skip autoFixIconDecisions — no extraction will run, so
-        // mutating the manifest (deleting iconName, setting crop flags) would break nodes.
-        const skipAutoFix = strategy.mode === 'CREATE';
+        // Enable autoFixIconDecisions for ALL modes to ensure custom visuals are flagged
+        const skipAutoFix = false;
         manifests.push(await _surveyLayout(enhancedFile, 0, canvasConfig, skipAutoFix));
       }
     })(),
@@ -405,10 +404,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   stepTimings.architect = 0;
 
   // Asset Extraction: crop custom visuals from original image
-  // Skipped for CREATE mode — Builder handles everything from manifest + original image.
+  // ENABLED for CREATE mode to support "Exact Replica" fidelity
   const extractStart = Date.now();
   let extractedAssets: Record<string, string> = {};
-  if (strategy.mode !== 'CREATE' && input.files.length > 0 && manifests.length > 0) {
+  if (input.files.length > 0 && manifests.length > 0) {
     try {
       extractedAssets = await extractCustomVisualAssets(manifests, input.files[0].base64);
       if (Object.keys(extractedAssets).length > 0) {
@@ -425,8 +424,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   }
   stepTimings.extraction = Date.now() - extractStart;
 
-  // Merge assets — CREATE mode has none (Builder works from manifest + image directly)
-  const finalAssets = strategy.mode === 'CREATE' ? {} : { ...generatedAssets, ...extractedAssets };
+  // Merge assets
+  const finalAssets = { ...generatedAssets, ...extractedAssets };
 
   const buildStart = Date.now();
   const primaryImageRef = manifests[0]?.originalImageRef;

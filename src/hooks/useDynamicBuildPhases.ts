@@ -105,6 +105,9 @@ export interface UseDynamicBuildPhasesReturn {
   setAccumulatedCode: (code: string) => void;
   addGeneratedFiles: (files: string[]) => void;
   addImplementedFeatures: (features: string[]) => void;
+
+  // Code context (for UI display — matches singleton key used by PhaseExecutionManager)
+  codeContextAppId: string | null;
 }
 
 // ============================================================================
@@ -648,6 +651,9 @@ export function useDynamicBuildPhases(
     setAccumulatedCode,
     addGeneratedFiles,
     addImplementedFeatures,
+
+    // Code context
+    codeContextAppId: plan?.appName ?? null,
   };
 }
 

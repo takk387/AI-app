@@ -5,3 +5,4 @@ export { TechnicalSection } from './TechnicalSection';
 export { RolesSection } from './RolesSection';
 export { WorkflowsSection } from './WorkflowsSection';
 export { PhasePlanSection } from './PhasePlanSection';
+export { CodeContextSection } from './CodeContextSection';

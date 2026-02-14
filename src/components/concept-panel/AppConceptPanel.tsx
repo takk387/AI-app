@@ -23,6 +23,7 @@ import {
   RolesSection,
   WorkflowsSection,
   PhasePlanSection,
+  CodeContextSection,
 } from './sections';
 
 /**
@@ -35,6 +36,7 @@ export interface BuildState {
   isBuilding: boolean;
   isPaused: boolean;
   currentPhase: DynamicPhase | null;
+  codeContextAppId?: string | null;
 }
 
 interface AppConceptPanelProps {
@@ -318,6 +320,14 @@ export function AppConceptPanel({
                 buildState={buildState}
                 onPhaseClick={mode === 'act' ? handlePhaseClick : undefined}
               />
+            </>
+          )}
+
+          {/* Code Intelligence (ACT mode only, when appId available) */}
+          {mode === 'act' && buildState?.codeContextAppId && (
+            <>
+              <div style={{ borderTop: '1px solid var(--border-color)' }} />
+              <CodeContextSection appId={buildState.codeContextAppId} />
             </>
           )}
         </div>

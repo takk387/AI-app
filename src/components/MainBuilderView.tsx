@@ -1622,6 +1622,7 @@ export function MainBuilderView() {
                   isBuilding: dynamicBuildPhases.isBuilding,
                   isPaused: dynamicBuildPhases.isPaused,
                   currentPhase: dynamicBuildPhases.currentPhase,
+                  codeContextAppId: dynamicBuildPhases.codeContextAppId,
                 }}
                 onPauseBuild={dynamicBuildPhases.pauseBuild}
                 onResumeBuild={dynamicBuildPhases.resumeBuild}
