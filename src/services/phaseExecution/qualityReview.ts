@@ -7,7 +7,7 @@
  * - Report storage and retrieval
  */
 
-import type { DynamicPhasePlan } from '@/types/dynamicPhases';
+import type { DynamicPhasePlan, AccumulatedFeature, APIContract } from '@/types/dynamicPhases';
 import type { QualityReport, ReviewFile, ReviewStrictness } from '@/types/codeReview';
 import { success, skipped, error, getFileLanguage, type OperationResult } from './executionUtils';
 
@@ -86,8 +86,8 @@ export interface QualityReviewState {
   qualityReports: Map<number, QualityReport>;
   rawGeneratedFiles: Array<{ path: string; content: string }>;
   accumulatedCode: string;
-  accumulatedFeaturesRich: Array<{ name: string; [key: string]: unknown }>;
-  apiContracts: Array<{ endpoint: string; method: string; [key: string]: unknown }>;
+  accumulatedFeaturesRich: AccumulatedFeature[];
+  apiContracts: APIContract[];
 }
 
 /**
