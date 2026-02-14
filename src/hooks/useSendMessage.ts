@@ -509,6 +509,21 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
           // Small delay to ensure React has processed state updates
           await new Promise((resolve) => setTimeout(resolve, 50));
           setActiveTab('preview');
+
+          // Complete phase tracking (matches handleModifyTrigger pattern)
+          if (dynamicBuildPhases.currentPhase) {
+            const phaseResult: PhaseExecutionResult = {
+              phaseNumber: dynamicBuildPhases.currentPhase.number,
+              phaseName: dynamicBuildPhases.currentPhase.name,
+              success: true,
+              generatedCode: JSON.stringify(streamResult, null, 2),
+              generatedFiles: files.map((f) => f.path),
+              implementedFeatures: dynamicBuildPhases.currentPhase.features,
+              duration: 0,
+              tokensUsed: { input: 0, output: 0 },
+            };
+            dynamicBuildPhases.completePhase(phaseResult);
+          }
         } else {
           // Files array is empty - show error message
           const emptyFilesMessage: ChatMessage = {

@@ -103,7 +103,10 @@
       "Bash(npx next build)",
       "Bash(cmd /c \"dir c:\\\\Users\\\\willi\\\\Projects\\\\APster\\\\AI-app\\\\node_modules\\\\.bin\\\\tsc*\")",
       "Bash(npm exec:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(cmd /c \"cd /d c:\\\\Users\\\\willi\\\\Projects\\\\Ai-appy2\\\\AI-app && npm run typecheck\")",
+      "Bash(where.exe:*)",
+      "Bash(npx --yes tsc:*)"
     ],
     "deny": [],
     "ask": []

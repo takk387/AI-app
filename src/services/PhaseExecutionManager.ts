@@ -6,6 +6,12 @@
  * - Tracking accumulated code and features
  * - Handling phase dependencies
  * - Managing the execution flow
+ *
+ * Sub-module delegation:
+ * - phaseExecution/promptBuilder     — Prompt assembly & layout formatting
+ * - phaseExecution/qualityReview     — Code quality review orchestration
+ * - phaseExecution/phaseIntegrity    — Phase Integrity System (P1-P9)
+ * - phaseExecution/executionUtils    — OperationResult type & utility helpers
  */
 
 import type {
@@ -17,11 +23,7 @@ import type {
   AccumulatedFeature,
   APIContract,
   // Phase Integrity Types (P1-P9)
-  FileConflict,
   FileConflictResult,
-  ImportInfo,
-  ImportValidationResult,
-  UnresolvedImport,
   PhaseSnapshot,
   TypeCheckResult,
   TypeDefinition,
@@ -29,678 +31,66 @@ import type {
   PhaseTestResults,
   ContractValidationResult,
   RegressionTestResult,
+  ImportValidationResult,
 } from '@/types/dynamicPhases';
 import type { QualityReport, ReviewFile, ReviewStrictness } from '@/types/codeReview';
-
-// ============================================================================
-// RESULT TYPES FOR EXPLICIT ERROR HANDLING
-// ============================================================================
-
-/**
- * Result type for operations that can fail or be intentionally skipped
- * Distinguishes between: success, intentional skip, and actual error
- */
-export type OperationResult<T> =
-  | { status: 'success'; data: T }
-  | { status: 'skipped'; reason: string }
-  | { status: 'error'; error: string; details?: unknown };
-
-/**
- * Helper to create success result
- */
-function success<T>(data: T): OperationResult<T> {
-  return { status: 'success', data };
-}
-
-/**
- * Helper to create skipped result
- */
-function skipped<T>(reason: string): OperationResult<T> {
-  return { status: 'skipped', reason };
-}
-
-/**
- * Helper to create error result
- */
-function error<T>(message: string, details?: unknown): OperationResult<T> {
-  return { status: 'error', error: message, details };
-}
-
-// Dynamic import for CodeReviewService to avoid bundling tree-sitter in client
-// This is imported lazily only when quality review methods are called (server-side only)
-// Using webpackIgnore to prevent webpack from analyzing this import at build time
-type CodeReviewServiceType = typeof import('./CodeReviewService');
-let codeReviewService: CodeReviewServiceType | null = null;
-
-async function getCodeReviewService(): Promise<CodeReviewServiceType> {
-  if (!codeReviewService) {
-    // webpackIgnore tells webpack to skip this import during bundling
-    // This import will only be resolved at runtime on the server
-    codeReviewService = await import(/* webpackIgnore: true */ './CodeReviewService');
-  }
-  return codeReviewService;
-}
-import type { LayoutManifest } from '@/types/schema';
 import { DynamicPhaseGenerator } from './DynamicPhaseGenerator';
 import { getCodeContextService, CodeContextService } from './CodeContextService';
 import type { CodeContextSnapshot } from '@/types/codeContext';
+
+// Sub-module imports
 import {
-  borderRadiusMap,
-  shadowMap,
-  blurMap,
-  spacingDensityMap,
-  sectionPaddingMap,
-  containerWidthMap,
-  componentGapMap,
-  fontWeightMap,
-  headingSizeMap,
-  bodySizeMap,
-  lineHeightMap,
-  letterSpacingMap,
-  animationMap,
-  headerHeightMap,
-  headerStyleMap,
-  heroHeightMap,
-  heroLayoutMap,
-  cardStyleMap,
-  cardHoverEffectMap,
-  sidebarWidthMap,
-  listStyleMap,
-  listDensityMap,
-  footerStyleMap,
-  footerColumnsMap,
-  generateGlobalsCSSContent,
-} from '@/utils/designTokenMappings';
-import { NEUTRAL_PALETTE, STATUS_COLORS } from '@/constants/themeDefaults';
+  type OperationResult,
+  success,
+  skipped,
+  error,
+} from './phaseExecution/executionUtils';
+
+import {
+  type PhaseExecutionContextWithEnhancedTracking,
+} from './phaseExecution/promptBuilder';
+
+import {
+  type QualityReviewState,
+  runPhaseQualityReview as _runPhaseQualityReview,
+  runFinalQualityReview as _runFinalQualityReview,
+} from './phaseExecution/qualityReview';
+
+import {
+  type PhaseIntegrityState,
+  detectFileConflicts as _detectFileConflicts,
+  validateImportExports as _validateImportExports,
+  capturePhaseSnapshot as _capturePhaseSnapshot,
+  rollbackToSnapshot as _rollbackToSnapshot,
+  syncPlanState as _syncPlanState,
+  getPhaseSnapshot as _getPhaseSnapshot,
+  runPhaseTypeCheck as _runPhaseTypeCheck,
+  getTypeCheckResult as _getTypeCheckResult,
+  checkTypeCompatibility as _checkTypeCompatibility,
+  runPhaseTests as _runPhaseTests,
+  getPhaseTestResults as _getPhaseTestResults,
+  validateApiContracts as _validateApiContracts,
+  verifyArchitectureImplementation as _verifyArchitectureImplementation,
+  runRegressionTests as _runRegressionTests,
+} from './phaseExecution/phaseIntegrity';
 
 // ============================================================================
-// LAYOUT MANIFEST FORMATTING
+// RE-EXPORTS (preserve public API for consumers)
 // ============================================================================
 
-/**
- * Format a LayoutManifest into a detailed prompt section for code generation
- * Extracts design tokens from manifest.designSystem and provides implementation guidance
- */
-export function formatLayoutManifestForPrompt(manifest: LayoutManifest): string {
-  const colors = manifest.designSystem?.colors || {};
-  const fonts = manifest.designSystem?.fonts || { heading: 'Inter', body: 'Inter' };
-
-  const prompt = `## CRITICAL: Design Fidelity Requirements
-
-You MUST implement the design specifications EXACTLY as specified below.
-Do NOT deviate from these values. Do NOT substitute colors, spacing, or effects.
-
-**MANDATORY RULES:**
-1. Use the EXACT hex colors provided - do not substitute or approximate
-2. Apply consistent border radius, shadow, and spacing
-3. Match typography and font settings exactly
-4. Create CSS variables in globals.css for design tokens
-
----
-
-## Design System Specifications
-
-### Typography
-- Heading Font: ${fonts.heading || 'Inter, system-ui, sans-serif'}
-- Body Font: ${fonts.body || 'Inter, system-ui, sans-serif'}
-
-### Color Palette (USE EXACT HEX VALUES)
-- Primary: ${colors.primary || NEUTRAL_PALETTE.gray500} -> var(--color-primary)
-- Secondary: ${colors.secondary || NEUTRAL_PALETTE.gray400} -> var(--color-secondary)
-- Accent: ${colors.accent || NEUTRAL_PALETTE.gray500} -> var(--color-accent)
-- Background: ${colors.background || NEUTRAL_PALETTE.gray50} -> var(--color-background)
-- Surface: ${colors.surface || NEUTRAL_PALETTE.white} -> var(--color-surface)
-- Text: ${colors.text || NEUTRAL_PALETTE.gray700} -> var(--color-text)
-- Text Muted: ${colors.textMuted || NEUTRAL_PALETTE.gray500} -> var(--color-text-muted)
-- Border: ${colors.border || NEUTRAL_PALETTE.gray200} -> var(--color-border)
-- Success: ${colors.success || STATUS_COLORS.success}
-- Warning: ${colors.warning || STATUS_COLORS.warning}
-- Error: ${colors.error || STATUS_COLORS.error}
-
----
-
-## CSS Variables Setup (CREATE THIS IN globals.css)
-
-\`\`\`css
-:root {
-  --color-primary: ${colors.primary || NEUTRAL_PALETTE.gray500};
-  --color-secondary: ${colors.secondary || NEUTRAL_PALETTE.gray400};
-  --color-accent: ${colors.accent || NEUTRAL_PALETTE.gray500};
-  --color-background: ${colors.background || NEUTRAL_PALETTE.gray50};
-  --color-surface: ${colors.surface || NEUTRAL_PALETTE.white};
-  --color-text: ${colors.text || NEUTRAL_PALETTE.gray700};
-  --color-text-muted: ${colors.textMuted || NEUTRAL_PALETTE.gray500};
-  --color-border: ${colors.border || NEUTRAL_PALETTE.gray200};
-  --font-heading: ${fonts.heading || 'Inter, system-ui, sans-serif'};
-  --font-body: ${fonts.body || 'Inter, system-ui, sans-serif'};
-}
-\`\`\`
-
-`;
-
-  return prompt;
-}
-
-// Legacy placeholder to prevent breaking imports that may reference the old function
-export const formatLayoutDesignForPrompt = formatLayoutManifestForPrompt;
-
-// ============================================================================
-// EXTENDED CONTEXT TYPE
-// ============================================================================
-
-/**
- * Extended PhaseExecutionContext with enhanced tracking fields
- */
-interface PhaseExecutionContextWithEnhancedTracking extends PhaseExecutionContext {
-  apiContracts?: APIContract[];
-  establishedPatterns?: string[];
-  accumulatedFilesRich?: AccumulatedFile[];
-  /** Smart context from CodeContextService */
-  smartContextSnapshot?: CodeContextSnapshot;
-}
-
-// ============================================================================
-// SMART CONTEXT FORMATTER
-// ============================================================================
-
-/**
- * Format CodeContextSnapshot into a prompt-friendly string
- * Provides intelligent context with clear structure for the LLM
- */
-function formatCodeContextSnapshot(snapshot: CodeContextSnapshot): string {
-  let result = '';
-
-  // Group files by representation for clarity
-  const fullFiles = snapshot.context.filter((f) => f.representation === 'full');
-  const signatureFiles = snapshot.context.filter((f) => f.representation === 'signature');
-  const typesOnlyFiles = snapshot.context.filter((f) => f.representation === 'types-only');
-  const summaryFiles = snapshot.context.filter((f) => f.representation === 'summary');
-
-  // Full files - most important context
-  if (fullFiles.length > 0) {
-    result += `### Complete Files (Reference for Implementation)\n`;
-    for (const file of fullFiles) {
-      result += `\n#### ${file.path}\n`;
-      result += `> Priority: ${(file.priority * 100).toFixed(0)}% | Reason: ${file.reason}\n`;
-      result += `\`\`\`typescript\n${file.content}\n\`\`\`\n`;
-    }
-  }
-
-  // Type definitions - critical for type safety
-  if (typesOnlyFiles.length > 0) {
-    result += `\n### Type Definitions (Use These Types)\n`;
-    for (const file of typesOnlyFiles) {
-      result += `\n#### ${file.path}\n`;
-      result += `\`\`\`typescript\n${file.content}\n\`\`\`\n`;
-    }
-  }
-
-  // Signatures - understand interfaces without full implementation
-  if (signatureFiles.length > 0) {
-    result += `\n### Component & Function Signatures (API Reference)\n`;
-    for (const file of signatureFiles) {
-      result += `\n#### ${file.path}\n`;
-      result += `\`\`\`typescript\n${file.content}\n\`\`\`\n`;
-    }
-  }
-
-  // Summaries - lightweight context
-  if (summaryFiles.length > 0) {
-    result += `\n### File Summaries (Overview)\n`;
-    for (const file of summaryFiles) {
-      result += `- **${file.path}**: ${file.content}\n`;
-    }
-  }
-
-  // Dependency hints - help LLM understand relationships
-  if (snapshot.dependencyHints.length > 0) {
-    result += `\n### Import/Export Relationships\n`;
-    for (const hint of snapshot.dependencyHints) {
-      const imports = hint.imports.map((i) => `imports {${i.symbols.join(', ')}} from "${i.from}"`);
-      const usedBy =
-        hint.usedBy.length > 0
-          ? `Used by: ${hint.usedBy.slice(0, 3).join(', ')}${hint.usedBy.length > 3 ? '...' : ''}`
-          : '';
-      result += `- **${hint.file}**: ${imports.join('; ')}${usedBy ? ` | ${usedBy}` : ''}\n`;
-    }
-  }
-
-  // Omitted summary - tell LLM what's NOT included
-  if (snapshot.omittedSummary.fileCount > 0) {
-    result += `\n### Files Not Shown (${snapshot.omittedSummary.fileCount} files, ~${snapshot.omittedSummary.totalTokens} tokens)\n`;
-    result += `> These files exist but weren't included due to token limits. Ask if you need specific content.\n`;
-    const categories = Object.entries(snapshot.omittedSummary.categories)
-      .filter(([, count]) => count > 0)
-      .map(([type, count]) => `${type}: ${count}`);
-    if (categories.length > 0) {
-      result += `> Categories: ${categories.join(', ')}\n`;
-    }
-  }
-
-  return result;
-}
-
-// ============================================================================
-// PHASE PROMPT BUILDER
-// ============================================================================
-
-/**
- * Build the prompt for executing a specific phase
- * Now includes full concept context for rich detail preservation
- */
-export function buildPhaseExecutionPrompt(context: PhaseExecutionContext): string {
-  const isFirstPhase = context.phaseNumber === 1;
-
-  // Start with truncation notice if context was truncated
-  let prompt = '';
-  if (context.truncationNotice) {
-    prompt += `${context.truncationNotice}
-
-`;
-  }
-
-  // Base context about the app
-  prompt += `# Phase ${context.phaseNumber} of ${context.totalPhases}: ${context.phaseName}
-
-## App Overview
-**Name:** ${context.appName}
-**Description:** ${context.appDescription}
-**Type:** ${context.appType}
-`;
-
-  // Add rich concept context if available
-  if (context.fullConcept) {
-    if (context.fullConcept.purpose) {
-      prompt += `**Purpose:** ${context.fullConcept.purpose}
-`;
-    }
-    if (context.fullConcept.targetUsers) {
-      prompt += `**Target Users:** ${context.fullConcept.targetUsers}
-`;
-    }
-  }
-
-  prompt += `
-`;
-
-  // User roles context (critical for role-based apps)
-  if (context.fullConcept?.roles && context.fullConcept.roles.length > 0) {
-    prompt += `## User Roles
-`;
-    for (const role of context.fullConcept.roles) {
-      prompt += `### ${role.name}
-- Capabilities: ${role.capabilities.join(', ')}
-`;
-      if (role.permissions && role.permissions.length > 0) {
-        prompt += `- Permissions: ${role.permissions.join(', ')}
-`;
-      }
-    }
-    prompt += `
-`;
-  }
-
-  // User workflows context (critical for multi-step process generation)
-  if (context.fullConcept?.workflows && context.fullConcept.workflows.length > 0) {
-    prompt += `## User Workflows
-`;
-    for (const workflow of context.fullConcept.workflows) {
-      prompt += `### ${workflow.name}
-`;
-      if (workflow.description) {
-        prompt += `${workflow.description}
-`;
-      }
-      prompt += `**Steps:**
-`;
-      workflow.steps.forEach((step, i) => {
-        prompt += `${i + 1}. ${step}
-`;
-      });
-      if (workflow.involvedRoles && workflow.involvedRoles.length > 0) {
-        prompt += `**Roles involved:** ${workflow.involvedRoles.join(', ')}
-`;
-      }
-      prompt += `
-`;
-    }
-  }
-
-  // Phase-specific role context
-  if (context.relevantRoles && context.relevantRoles.length > 0) {
-    prompt += `## This Phase Serves
-Users in roles: **${context.relevantRoles.join(', ')}**
-
-`;
-  }
-
-  // Design preferences context - use full LayoutManifest if available
-  // This is CRITICAL for ensuring design specifications reach code generation
-  if (context.phaseConceptContext?.layoutManifest) {
-    // Full layout manifest available - use complete specifications
-    prompt += formatLayoutManifestForPrompt(context.phaseConceptContext.layoutManifest);
-    prompt += `
-`;
-  } else if (context.fullConcept?.layoutManifest) {
-    // Layout manifest in full concept - use complete specifications
-    prompt += formatLayoutManifestForPrompt(context.fullConcept.layoutManifest);
-    prompt += `
-`;
-  } else if (context.fullConcept?.uiPreferences) {
-    // Fallback to simplified UIPreferences (legacy support)
-    const ui = context.fullConcept.uiPreferences;
-    prompt += `## Design Requirements
-- Style: ${ui.style || 'modern'}
-- Color Scheme: ${ui.colorScheme || 'auto'}
-- Layout: ${ui.layout || 'single-page'}
-`;
-    if (ui.primaryColor) {
-      prompt += `- Primary Color: ${ui.primaryColor}
-`;
-    }
-    if (ui.secondaryColor) {
-      prompt += `- Secondary Color: ${ui.secondaryColor}
-`;
-    }
-    if (ui.accentColor) {
-      prompt += `- Accent Color: ${ui.accentColor}
-`;
-    }
-    if (ui.fontFamily) {
-      prompt += `- Font Family: ${ui.fontFamily}
-`;
-    }
-    if (ui.borderRadius) {
-      prompt += `- Border Radius: ${ui.borderRadius}
-`;
-    }
-    if (ui.shadowIntensity) {
-      prompt += `- Shadow Intensity: ${ui.shadowIntensity}
-`;
-    }
-    if (ui.spacing) {
-      prompt += `- Spacing: ${ui.spacing}
-`;
-    }
-    if (ui.inspiration) {
-      prompt += `- Inspiration: ${ui.inspiration}
-`;
-    }
-    prompt += `
-`;
-  }
-
-  // Technical stack info
-  prompt += `## Technical Stack
-`;
-  if (context.techStack.needsAuth) {
-    prompt += `- Authentication: ${context.techStack.authType || 'email'} based
-`;
-  }
-  if (context.techStack.needsDatabase) {
-    prompt += `- Database: Required (use localStorage for frontend-only, or indicate schema for full-stack)
-`;
-  }
-  if (context.techStack.needsRealtime) {
-    prompt += `- Real-time: WebSocket/SSE needed
-`;
-  }
-  if (context.techStack.needsFileUpload) {
-    prompt += `- File Upload: Storage integration needed
-`;
-  }
-
-  // Data models if available
-  if (context.fullConcept?.dataModels && context.fullConcept.dataModels.length > 0) {
-    prompt += `
-## Data Models
-`;
-    for (const model of context.fullConcept.dataModels) {
-      prompt += `### ${model.name}
-`;
-      for (const field of model.fields) {
-        prompt += `- ${field.name}: ${field.type}${field.required ? ' (required)' : ''}
-`;
-      }
-    }
-  }
-
-  prompt += `
-## Phase Goal
-${context.phaseDescription}
-
-## Features to Implement in This Phase
-${context.features.map((f) => `- ${f}`).join('\n')}
-
-`;
-
-  // Include extracted phase-specific context from conversation analysis
-  if (context.extractedPhaseContext) {
-    const epc = context.extractedPhaseContext;
-
-    if (epc.extractedRequirements.length > 0) {
-      prompt += `## User Requirements (from conversation)
-${epc.extractedRequirements.map((r) => `- ${r}`).join('\n')}
-
-`;
-    }
-
-    if (epc.userDecisions.length > 0) {
-      prompt += `## User Decisions
-${epc.userDecisions.map((d) => `- ${d}`).join('\n')}
-
-`;
-    }
-
-    if (epc.technicalNotes.length > 0) {
-      prompt += `## Technical Notes
-${epc.technicalNotes.map((n) => `- ${n}`).join('\n')}
-
-`;
-    }
-
-    if (epc.validationRules.length > 0) {
-      prompt += `## Validation Rules
-${epc.validationRules.map((r) => `- ${r}`).join('\n')}
-
-`;
-    }
-
-    if (epc.uiPatterns.length > 0) {
-      prompt += `## UI Patterns
-${epc.uiPatterns.map((p) => `- ${p}`).join('\n')}
-
-`;
-    }
-
-    if (epc.contextSummary) {
-      prompt += `## Conversation Context Summary
-${epc.contextSummary}
-
-`;
-    }
-  }
-
-  // Context from previous phases
-  if (!isFirstPhase && context.cumulativeFiles.length > 0) {
-    prompt += `## Existing Project Context
-
-### Files Created So Far
-${context.cumulativeFiles.map((f) => `- ${f}`).join('\n')}
-
-### Features Already Implemented
-${context.cumulativeFeatures.map((f) => `- ${f}`).join('\n')}
-
-### CRITICAL INSTRUCTIONS
-1. **DO NOT** recreate files that already exist unless you need to modify them
-2. **PRESERVE** all existing functionality - don't break what's working
-3. **BUILD ON** the existing codebase - import and use existing components
-4. **EXTEND** rather than replace - add new features incrementally
-
-`;
-
-    // Include API contracts if available (from enhanced tracking)
-    const apiContracts = (context as PhaseExecutionContextWithEnhancedTracking).apiContracts;
-    if (apiContracts && apiContracts.length > 0) {
-      prompt += `### Existing API Contracts
-These endpoints are already implemented. Use them, don't recreate:
-${apiContracts.map((c) => `- ${c.method} ${c.endpoint}${c.authentication ? ' (requires auth)' : ''}`).join('\n')}
-
-`;
-    }
-
-    // Include established patterns if available
-    const patterns = (context as PhaseExecutionContextWithEnhancedTracking).establishedPatterns;
-    if (patterns && patterns.length > 0) {
-      prompt += `### Established Patterns
-Follow these patterns for consistency:
-${patterns.map((p) => `- ${p}`).join('\n')}
-
-`;
-    }
-  }
-
-  // Include relevant existing code for context
-  // Priority: Smart context snapshot > previousPhaseCode string
-  const enhancedContext = context as PhaseExecutionContextWithEnhancedTracking;
-  if (enhancedContext.smartContextSnapshot) {
-    // Use the intelligent CodeContextService output
-    prompt += `## Existing Code Reference (Smart Context)
-
-The following is intelligently selected code from previous phases, organized by relevance:
-
-${formatCodeContextSnapshot(enhancedContext.smartContextSnapshot)}
-`;
-  } else if (context.previousPhaseCode) {
-    // Legacy fallback - just include the code as-is (already processed by getSmartCodeContext)
-    prompt += `## Existing Code Reference
-
-The following code was generated in previous phases. Reference it when building new features:
-
-${context.previousPhaseCode}
-`;
-  }
-
-  // Architecture context for backend phases (from BackendArchitectureAgent)
-  if (context.architectureContext) {
-    prompt += `## Backend Architecture Context
-
-This phase has specific backend architecture requirements. Follow these exactly:
-
-`;
-
-    // Include Prisma schema if available
-    if (context.architectureContext.prismaSchema) {
-      prompt += `### Prisma Schema
-\`\`\`prisma
-${context.architectureContext.prismaSchema}
-\`\`\`
-
-`;
-    }
-
-    // Include API routes if available
-    if (context.architectureContext.apiRoutes && context.architectureContext.apiRoutes.length > 0) {
-      prompt += `### API Routes to Implement
-${context.architectureContext.apiRoutes.map((r) => `- ${r.method} ${r.path}: ${r.description}`).join('\n')}
-
-`;
-    }
-
-    // Include backend files if available
-    if (context.architectureContext.files && context.architectureContext.files.length > 0) {
-      prompt += `### Backend Files to Create
-${context.architectureContext.files.map((f) => `- ${f.path}: ${f.description}`).join('\n')}
-
-`;
-    }
-
-    prompt += `**CRITICAL**: Follow the architecture specification exactly. Do not modify field names, routes, or types.
-
-`;
-  }
-
-  // Phase-specific instructions
-  prompt += `## Phase ${context.phaseNumber} Requirements
-
-${isFirstPhase ? getPhase1Instructions() : getSubsequentPhaseInstructions(context)}
-
-## Test Criteria
-After this phase, the following should work:
-${context.testCriteria.map((c) => `- ${c}`).join('\n')}
-
-## Output Format
-Generate the code using the standard delimiter format:
-===NAME===
-[App Name]
-===DESCRIPTION===
-[Brief description]
-===APP_TYPE===
-${context.techStack.needsDatabase && context.techStack.needsAPI ? 'FULL_STACK' : 'FRONTEND_ONLY'}
-===FILE:path/to/file===
-[File content]
-===DEPENDENCIES===
-{"dependency": "version"}
-===END===
-`;
-
-  return prompt;
-}
-
-/**
- * Instructions specific to Phase 1 (Foundation)
- */
-function getPhase1Instructions(): string {
-  return `This is **Phase 1 - Foundation**. Create the core structure:
-
-### Required Files
-1. **src/App.tsx** - Main app component with routing/layout
-2. **src/index.css** - Global styles with Tailwind
-3. **src/components/** - Core layout components (Header, Footer, Layout)
-4. **src/types/** - TypeScript interfaces for main data structures
-
-### Focus Areas
-- Clean project structure
-- Responsive base layout
-- Navigation setup
-- Global styling with Tailwind CSS
-- TypeScript types for core entities
-
-### DO NOT Include Yet
-- Feature implementations (those come in later phases)
-- API integrations
-- Authentication logic (unless this phase specifically includes it)
-- Complex state management`;
-}
-
-/**
- * Instructions for phases after Phase 1
- */
-function getSubsequentPhaseInstructions(context: PhaseExecutionContext): string {
-  return `This is **Phase ${context.phaseNumber}** - building on the foundation.
-
-### Your Task
-Add the following features to the existing codebase:
-${context.features.map((f) => `- **${f}**`).join('\n')}
-
-### Integration Guidelines
-1. **Import existing components** from previous phases
-2. **Follow established patterns** in the codebase
-3. **Maintain consistent styling** with existing UI
-4. **Use existing types** and extend them if needed
-5. **Add new files** only for new functionality
-
-### Files You May Need to Create/Modify
-- New components for these features
-- Updated types if new data structures are needed
-- New hooks for feature-specific logic
-- Modified existing components to integrate new features
-
-### Remember
-- The app should remain fully functional after this phase
-- Test all existing features still work
-- New features should integrate seamlessly`;
-}
+// Consumers import these from this file — keep backwards compatibility
+export type { OperationResult } from './phaseExecution/executionUtils';
+export {
+  extractFilePaths,
+  extractImplementedFeatures,
+  createPhaseResult,
+} from './phaseExecution/executionUtils';
+
+export {
+  formatLayoutManifestForPrompt,
+  formatLayoutDesignForPrompt,
+  buildPhaseExecutionPrompt,
+} from './phaseExecution/promptBuilder';
 
 // ============================================================================
 // PHASE EXECUTION MANAGER
@@ -763,6 +153,10 @@ export class PhaseExecutionManager {
     }
   }
 
+  // ==========================================================================
+  // CONTEXT BUILDING
+  // ==========================================================================
+
   /**
    * Get the execution context for a specific phase
    * Now includes full concept context for rich detail preservation
@@ -775,9 +169,6 @@ export class PhaseExecutionManager {
 
     const concept = this.plan.concept;
 
-    // Use smart code context instead of raw accumulated code
-    const smartCodeContext = this.getSmartCodeContext();
-
     return {
       phaseNumber,
       totalPhases: this.plan.totalPhases,
@@ -785,7 +176,9 @@ export class PhaseExecutionManager {
       phaseDescription: phase.description,
       features: phase.features,
       testCriteria: phase.testCriteria,
-      previousPhaseCode: smartCodeContext || this.accumulatedCode || null,
+      // Raw accumulated code as fallback — CodeContextService provides richer context
+      // via cachedSmartContextSnapshot (populated by getExecutionContextAsync)
+      previousPhaseCode: this.accumulatedCode || null,
       allPhases: this.plan.phases,
       completedPhases: [...this.completedPhases],
       cumulativeFeatures: [...this.accumulatedFeatures],
@@ -864,6 +257,10 @@ export class PhaseExecutionManager {
   clearCachedSmartContext(): void {
     this.cachedSmartContextSnapshot = null;
   }
+
+  // ==========================================================================
+  // PHASE RESULT TRACKING
+  // ==========================================================================
 
   /**
    * Record the result of executing a phase
@@ -998,52 +395,36 @@ export class PhaseExecutionManager {
     return parts.join(' • ') || 'Phase completed';
   }
 
-  /**
-   * Get smart code context using importance scoring
-   * Returns prioritized code from previous phases
-   */
-  getSmartCodeContext(): string {
-    return this.phaseGenerator.buildSmartCodeContext(this.rawGeneratedFiles);
-  }
+  // ==========================================================================
+  // ACCESSORS & STATE QUERIES
+  // ==========================================================================
 
-  /**
-   * Get API contracts established so far
-   */
+  /** Get API contracts established so far */
   getAPIContracts(): APIContract[] {
     return [...this.apiContracts];
   }
 
-  /**
-   * Get established coding patterns
-   */
+  /** Get established coding patterns */
   getEstablishedPatterns(): string[] {
     return [...this.establishedPatterns];
   }
 
-  /**
-   * Get rich file tracking
-   */
+  /** Get rich file tracking */
   getAccumulatedFilesRich(): AccumulatedFile[] {
     return [...this.accumulatedFilesRich];
   }
 
-  /**
-   * Get the next phase to execute
-   */
+  /** Get the next phase to execute */
   getNextPhase(): DynamicPhase | null {
     return this.plan.phases.find((p) => p.status === 'pending') || null;
   }
 
-  /**
-   * Check if all phases are complete
-   */
+  /** Check if all phases are complete */
   isComplete(): boolean {
     return this.plan.phases.every((p) => p.status === 'completed' || p.status === 'skipped');
   }
 
-  /**
-   * Get current progress
-   */
+  /** Get current progress */
   getProgress(): {
     completed: number;
     total: number;
@@ -1062,16 +443,12 @@ export class PhaseExecutionManager {
     };
   }
 
-  /**
-   * Get the updated plan
-   */
+  /** Get the updated plan */
   getPlan(): DynamicPhasePlan {
     return this.plan;
   }
 
-  /**
-   * Skip a phase
-   */
+  /** Skip a phase */
   skipPhase(phaseNumber: number): void {
     const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (phase) {
@@ -1079,18 +456,29 @@ export class PhaseExecutionManager {
     }
   }
 
-  /**
-   * Reset a failed phase for retry
-   */
+  /** Reset a failed phase for retry */
   resetPhase(phaseNumber: number): void {
     const phase = this.plan.phases.find((p) => p.number === phaseNumber);
     if (phase) {
       phase.status = 'pending';
       phase.errors = undefined;
-
-      // Remove from failed list
       this.plan.failedPhaseNumbers = this.plan.failedPhaseNumbers.filter((n) => n !== phaseNumber);
     }
+  }
+
+  /** Get raw generated files (for external access) */
+  getRawGeneratedFiles(): Array<{ path: string; content: string }> {
+    return [...this.rawGeneratedFiles];
+  }
+
+  /** Get accumulated code (for P4 fix) */
+  getAccumulatedCode(): string {
+    return this.accumulatedCode;
+  }
+
+  /** Get a copy of the plan (for P4 fix) */
+  getPlanCopy(): DynamicPhasePlan {
+    return { ...this.plan };
   }
 
   // ==========================================================================
@@ -1122,13 +510,7 @@ export class PhaseExecutionManager {
 
   /**
    * Get optimized context for a phase using CodeContextService
-   * Falls back to legacy getSmartCodeContext if service not initialized
-   * Caches result for synchronous access via getExecutionContext
-   *
-   * @returns OperationResult with:
-   *   - success: CodeContextSnapshot data
-   *   - skipped: Service not initialized or no files to process
-   *   - error: Phase not found or context update failed
+   * Falls back to raw accumulated code if service not initialized
    */
   async getOptimizedPhaseContext(
     phaseNumber: number,
@@ -1147,16 +529,14 @@ export class PhaseExecutionManager {
     if (this.rawGeneratedFiles.length > 0) {
       const updateResult = await this.codeContextService.updateContext(this.rawGeneratedFiles, {
         incremental: true,
-        phaseNumber: phaseNumber, // Mark files as from current phase
+        phaseNumber: phaseNumber,
       });
 
-      // Check if any files failed to parse
       if (updateResult.failures.length > 0) {
         console.warn(
           `[PhaseExecutionManager] ${updateResult.failures.length} files failed to parse:`,
           updateResult.failures.map((f) => f.path)
         );
-        // Continue anyway - some context is better than none
       }
     }
 
@@ -1192,904 +572,187 @@ export class PhaseExecutionManager {
     return this.codeContextService.getModificationContext(targetFile, changeDescription, maxTokens);
   }
 
-  /**
-   * Get the CodeContextService instance
-   */
+  /** Get the CodeContextService instance */
   getCodeContextService(): CodeContextService | null {
     return this.codeContextService;
   }
 
   // ==========================================================================
-  // QUALITY REVIEW API
+  // QUALITY REVIEW API (delegated to phaseExecution/qualityReview)
   // ==========================================================================
 
-  /**
-   * Set the review strictness level
-   */
+  /** Set the review strictness level */
   setReviewStrictness(strictness: ReviewStrictness): void {
     this.reviewStrictness = strictness;
   }
 
-  /**
-   * Get the review strictness level
-   */
+  /** Get the review strictness level */
   getReviewStrictness(): ReviewStrictness {
     return this.reviewStrictness;
   }
 
-  /**
-   * Run a light quality review on files from a specific phase
-   * This should be called after recordPhaseResult()
-   *
-   * @returns OperationResult with:
-   *   - success: Quality report and modified files
-   *   - skipped: No files to review
-   *   - error: Phase not found or review service failed
-   */
-  async runPhaseQualityReview(phaseNumber: number): Promise<
-    OperationResult<{
-      report: QualityReport;
-      modifiedFiles: ReviewFile[];
-    }>
-  > {
-    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
-    if (!phase) {
-      return error(`Phase ${phaseNumber} not found in plan`);
-    }
-
-    // Get files generated in this phase
-    const phaseFiles = this.getPhaseFiles(phaseNumber);
-    if (phaseFiles.length === 0) {
-      return skipped(`No files generated in phase ${phaseNumber}`);
-    }
-
-    // Convert to ReviewFile format
-    const reviewFiles: ReviewFile[] = phaseFiles.map((f) => ({
-      path: f.path,
-      content: f.content,
-      language: this.getFileLanguage(f.path),
-    }));
-
-    try {
-      // Run light review (dynamic import to avoid bundling tree-sitter in client)
-      const { performLightReview } = await getCodeReviewService();
-      const result = await performLightReview(
-        reviewFiles,
-        {
-          phaseNumber,
-          phaseName: phase.name,
-          features: phase.features,
-        },
-        { strictness: this.reviewStrictness }
-      );
-
-      // Store the report
-      this.qualityReports.set(phaseNumber, result.report);
-
-      // Update raw files with fixed content
-      if (result.modifiedFiles.length > 0) {
-        this.updateFilesWithFixes(result.modifiedFiles);
-      }
-
-      return success({
-        report: result.report,
-        modifiedFiles: result.modifiedFiles,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return error(`Quality review failed: ${message}`, err);
-    }
-  }
-
-  /**
-   * Run a comprehensive quality review at the end of the build
-   * This includes semantic analysis with Claude AI
-   *
-   * @returns OperationResult with:
-   *   - success: Quality report and modified files
-   *   - skipped: No files to review
-   *   - error: Review service failed
-   */
-  async runFinalQualityReview(): Promise<
-    OperationResult<{
-      report: QualityReport;
-      modifiedFiles: ReviewFile[];
-    }>
-  > {
-    if (this.rawGeneratedFiles.length === 0) {
-      return skipped('No generated files to review');
-    }
-
-    // Convert all files to ReviewFile format
-    const reviewFiles: ReviewFile[] = this.rawGeneratedFiles.map((f) => ({
-      path: f.path,
-      content: f.content,
-      language: this.getFileLanguage(f.path),
-    }));
-
-    // Build comprehensive review context
-    const requirements = {
-      originalRequirements: this.plan.concept.conversationContext || '',
-      expectedFeatures: this.accumulatedFeaturesRich.map((f) => f.name),
+  /** Build quality review state snapshot for delegation */
+  private getQualityReviewState(): QualityReviewState {
+    return {
+      plan: this.plan,
+      reviewStrictness: this.reviewStrictness,
+      qualityReports: this.qualityReports,
+      rawGeneratedFiles: this.rawGeneratedFiles,
+      accumulatedCode: this.accumulatedCode,
+      accumulatedFeaturesRich: this.accumulatedFeaturesRich,
       apiContracts: this.apiContracts,
-      allFeatures: this.accumulatedFeaturesRich.map((f) => ({
-        name: f.name,
-        description: f.name,
-        priority: 'high' as const,
-      })),
-      technicalRequirements: this.plan.concept.technical,
     };
-
-    try {
-      // Run comprehensive review (dynamic import to avoid bundling tree-sitter in client)
-      const { performComprehensiveReview } = await getCodeReviewService();
-      const result = await performComprehensiveReview(reviewFiles, requirements, {
-        strictness: this.reviewStrictness,
-      });
-
-      // Store the final report
-      this.qualityReports.set(-1, result.report); // -1 indicates final review
-
-      // Update files with fixes
-      if (result.modifiedFiles.length > 0) {
-        this.updateFilesWithFixes(result.modifiedFiles);
-      }
-
-      return success({
-        report: result.report,
-        modifiedFiles: result.modifiedFiles,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return error(`Comprehensive review failed: ${message}`, err);
-    }
   }
 
-  /**
-   * Get the quality report for a specific phase
-   */
+  /** Sync back mutable state from quality review */
+  private syncFromQualityReview(state: QualityReviewState): void {
+    this.accumulatedCode = state.accumulatedCode;
+    this.rawGeneratedFiles = state.rawGeneratedFiles;
+  }
+
+  async runPhaseQualityReview(phaseNumber: number): Promise<
+    OperationResult<{ report: QualityReport; modifiedFiles: ReviewFile[] }>
+  > {
+    const state = this.getQualityReviewState();
+    const result = await _runPhaseQualityReview(state, phaseNumber);
+    this.syncFromQualityReview(state);
+    return result;
+  }
+
+  async runFinalQualityReview(): Promise<
+    OperationResult<{ report: QualityReport; modifiedFiles: ReviewFile[] }>
+  > {
+    const state = this.getQualityReviewState();
+    const result = await _runFinalQualityReview(state);
+    this.syncFromQualityReview(state);
+    return result;
+  }
+
   getPhaseQualityReport(phaseNumber: number): QualityReport | null {
     return this.qualityReports.get(phaseNumber) || null;
   }
 
-  /**
-   * Get the final quality report
-   */
   getFinalQualityReport(): QualityReport | null {
     return this.qualityReports.get(-1) || null;
   }
 
-  /**
-   * Get all quality reports
-   */
   getAllQualityReports(): Map<number, QualityReport> {
     return new Map(this.qualityReports);
   }
 
-  /**
-   * Get files generated in a specific phase
-   */
-  private getPhaseFiles(phaseNumber: number): Array<{ path: string; content: string }> {
-    // Get files that were generated in this phase
-    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
-    if (!phase || !phase.generatedCode) {
-      return [];
-    }
+  // ==========================================================================
+  // PHASE INTEGRITY API (delegated to phaseExecution/phaseIntegrity)
+  // ==========================================================================
 
-    return this.extractRawFiles(phase.generatedCode);
-  }
-
-  /**
-   * Update raw files with fixed content
-   */
-  private updateFilesWithFixes(modifiedFiles: ReviewFile[]): void {
-    for (const modified of modifiedFiles) {
-      const index = this.rawGeneratedFiles.findIndex((f) => f.path === modified.path);
-      if (index !== -1) {
-        this.rawGeneratedFiles[index].content = modified.content;
-      }
-    }
-
-    // Update accumulated code with the fixed files
-    this.accumulatedCode = this.rebuildAccumulatedCode();
-  }
-
-  /**
-   * Rebuild accumulated code from raw files
-   */
-  private rebuildAccumulatedCode(): string {
-    let code = `===NAME===\n${this.plan.appName}\n`;
-    code += `===DESCRIPTION===\n${this.plan.appDescription}\n`;
-    code += `===APP_TYPE===\n${this.plan.concept.technical.needsDatabase ? 'FULL_STACK' : 'FRONTEND_ONLY'}\n`;
-
-    for (const file of this.rawGeneratedFiles) {
-      code += `===FILE:${file.path}===\n${file.content}\n`;
-    }
-
-    code += `===END===`;
-    return code;
-  }
-
-  /**
-   * Get the file language from path
-   */
-  private getFileLanguage(path: string): string {
-    const ext = path.split('.').pop()?.toLowerCase() || '';
-    const languageMap: Record<string, string> = {
-      ts: 'typescript',
-      tsx: 'typescript',
-      js: 'javascript',
-      jsx: 'javascript',
-      css: 'css',
-      json: 'json',
-      md: 'markdown',
-      html: 'html',
+  /** Build phase integrity state snapshot for delegation */
+  private getIntegrityState(): PhaseIntegrityState {
+    return {
+      plan: this.plan,
+      accumulatedCode: this.accumulatedCode,
+      accumulatedFiles: this.accumulatedFiles,
+      accumulatedFeatures: this.accumulatedFeatures,
+      accumulatedFilesRich: this.accumulatedFilesRich,
+      accumulatedFeaturesRich: this.accumulatedFeaturesRich,
+      establishedPatterns: this.establishedPatterns,
+      apiContracts: this.apiContracts,
+      rawGeneratedFiles: this.rawGeneratedFiles,
+      completedPhases: this.completedPhases,
+      fileVersionMap: this.fileVersionMap,
+      phaseSnapshots: this.phaseSnapshots,
+      typeCheckResults: this.typeCheckResults,
+      typeDefinitions: this.typeDefinitions,
+      phaseTestResults: this.phaseTestResults,
     };
-    return languageMap[ext] || 'text';
   }
 
-  /**
-   * Get raw generated files (for external access)
-   */
-  getRawGeneratedFiles(): Array<{ path: string; content: string }> {
-    return [...this.rawGeneratedFiles];
+  /** Sync back mutable state from integrity operations */
+  private syncFromIntegrity(state: PhaseIntegrityState): void {
+    this.accumulatedCode = state.accumulatedCode;
+    this.accumulatedFiles = state.accumulatedFiles;
+    this.accumulatedFeatures = state.accumulatedFeatures;
+    this.accumulatedFilesRich = state.accumulatedFilesRich;
+    this.accumulatedFeaturesRich = state.accumulatedFeaturesRich;
+    this.establishedPatterns = state.establishedPatterns;
+    this.apiContracts = state.apiContracts;
+    this.rawGeneratedFiles = state.rawGeneratedFiles;
+    this.completedPhases = state.completedPhases;
   }
 
-  // ==========================================================================
-  // PHASE INTEGRITY SYSTEM (P1-P9)
-  // ==========================================================================
-
-  // ========== P1: FILE CONFLICT DETECTION ==========
-
-  /**
-   * Detect file conflicts when new files are generated
-   * Warns when phases overwrite files from previous phases
-   */
+  // P1: File Conflict Detection
   detectFileConflicts(
     newFiles: Array<{ path: string; content: string }>,
     phaseNumber: number
   ): FileConflictResult {
-    const conflicts: FileConflict[] = [];
-
-    for (const file of newFiles) {
-      const hash = this.computeHash(file.content);
-      const existing = this.fileVersionMap.get(file.path);
-
-      if (existing && existing.hash !== hash) {
-        conflicts.push({
-          path: file.path,
-          type: 'OVERWRITE',
-          previousPhase: existing.phase,
-          currentPhase: phaseNumber,
-          severity: this.assessConflictSeverity(file.path, existing),
-        });
-      }
-
-      this.fileVersionMap.set(file.path, { hash, phase: phaseNumber, exports: [] });
-    }
-
-    return { conflicts, hasBreakingChanges: conflicts.some((c) => c.severity === 'critical') };
+    const state = this.getIntegrityState();
+    return _detectFileConflicts(state, newFiles, phaseNumber);
   }
 
-  /**
-   * Compute a hash of file content for change detection (djb2 algorithm)
-   */
-  private computeHash(content: string): string {
-    let hash = 5381;
-    for (let i = 0; i < content.length; i++) {
-      hash = (hash << 5) + hash + content.charCodeAt(i);
-    }
-    return Math.abs(hash).toString(16);
-  }
-
-  /**
-   * Assess severity of file conflict based on file type
-   */
-  private assessConflictSeverity(
-    path: string,
-    _existing: { hash: string; phase: number; exports: string[] }
-  ): 'critical' | 'warning' | 'info' {
-    // Critical: Core files that affect entire app
-    if (path.includes('App.tsx') || path.includes('layout.tsx') || path.includes('/types/')) {
-      return 'critical';
-    }
-    // Critical: API routes
-    if (path.includes('/api/')) {
-      return 'critical';
-    }
-    // Warning: Components and utilities
-    if (path.includes('/components/') || path.includes('/utils/')) {
-      return 'warning';
-    }
-    // Info: Styles and configs
-    return 'info';
-  }
-
-  // ========== P2: IMPORT/EXPORT VALIDATION ==========
-
-  /**
-   * Validate that all imports reference valid exports
-   */
+  // P2: Import/Export Validation
   validateImportExports(): ImportValidationResult {
-    const unresolved: UnresolvedImport[] = [];
-    const exportMap = new Map<string, Set<string>>();
-
-    // Build export map from all files
-    for (const file of this.accumulatedFilesRich) {
-      exportMap.set(file.path, new Set(file.exports));
-    }
-
-    // Check each file's imports
-    for (const file of this.accumulatedFilesRich) {
-      for (const imp of file.imports || []) {
-        if (!imp.isRelative) continue; // Skip package imports
-
-        const resolvedPath = this.resolveImportPath(file.path, imp.from);
-        const targetExports = exportMap.get(resolvedPath);
-
-        if (!targetExports) {
-          unresolved.push({
-            file: file.path,
-            importFrom: imp.from,
-            resolvedTo: resolvedPath,
-            reason: 'FILE_NOT_FOUND',
-          });
-          continue;
-        }
-
-        for (const symbol of imp.symbols) {
-          if (!targetExports.has(symbol)) {
-            unresolved.push({
-              file: file.path,
-              symbol,
-              importFrom: imp.from,
-              reason: 'SYMBOL_NOT_EXPORTED',
-            });
-          }
-        }
-      }
-    }
-
-    return { valid: unresolved.length === 0, unresolved };
+    return _validateImportExports(this.getIntegrityState());
   }
 
-  /**
-   * Resolve a relative import path to an absolute path
-   */
-  private resolveImportPath(fromFile: string, importPath: string): string {
-    // Get directory of the importing file
-    const fromDir = fromFile.substring(0, fromFile.lastIndexOf('/'));
-
-    // Handle relative paths
-    if (importPath.startsWith('./')) {
-      return `${fromDir}/${importPath.substring(2)}`;
-    }
-    if (importPath.startsWith('../')) {
-      const parts = fromDir.split('/');
-      let upCount = 0;
-      let remaining = importPath;
-
-      while (remaining.startsWith('../')) {
-        upCount++;
-        remaining = remaining.substring(3);
-      }
-
-      const newParts = parts.slice(0, -upCount);
-      return `${newParts.join('/')}/${remaining}`;
-    }
-
-    // Add file extension if missing
-    if (!importPath.includes('.')) {
-      // Try common extensions
-      for (const ext of ['.tsx', '.ts', '.js', '.jsx']) {
-        const fullPath = importPath + ext;
-        if (this.rawGeneratedFiles.some((f) => f.path === fullPath)) {
-          return fullPath;
-        }
-      }
-      // Try index file
-      return `${importPath}/index.tsx`;
-    }
-
-    return importPath;
-  }
-
-  // ========== P3: PHASE SNAPSHOT & ROLLBACK ==========
-
-  /**
-   * Capture current state before phase execution
-   */
+  // P3: Phase Snapshot & Rollback
   capturePhaseSnapshot(phaseNumber: number): PhaseSnapshot {
-    const snapshot: PhaseSnapshot = {
-      id: `snapshot-${phaseNumber}-${Date.now()}`,
-      phaseNumber,
-      timestamp: new Date().toISOString(),
-      accumulatedCode: this.accumulatedCode,
-      accumulatedFiles: [...this.accumulatedFiles],
-      accumulatedFeatures: [...this.accumulatedFeatures],
-      accumulatedFilesRich: JSON.parse(JSON.stringify(this.accumulatedFilesRich)),
-      accumulatedFeaturesRich: JSON.parse(JSON.stringify(this.accumulatedFeaturesRich)),
-      establishedPatterns: [...this.establishedPatterns],
-      apiContracts: JSON.parse(JSON.stringify(this.apiContracts)),
-      rawGeneratedFiles: JSON.parse(JSON.stringify(this.rawGeneratedFiles)),
-      completedPhases: [...this.completedPhases],
-      phaseStatuses: this.plan.phases.map((p) => ({ number: p.number, status: p.status })),
-    };
-
-    this.phaseSnapshots.set(phaseNumber, snapshot);
-    return snapshot;
+    const state = this.getIntegrityState();
+    return _capturePhaseSnapshot(state, phaseNumber);
   }
 
-  /**
-   * Rollback to a previous phase snapshot
-   */
   rollbackToSnapshot(phaseNumber: number): boolean {
-    const snapshot = this.phaseSnapshots.get(phaseNumber);
-    if (!snapshot) return false;
-
-    // Restore all state
-    this.accumulatedCode = snapshot.accumulatedCode;
-    this.accumulatedFiles = [...snapshot.accumulatedFiles];
-    this.accumulatedFeatures = [...snapshot.accumulatedFeatures];
-    this.accumulatedFilesRich = JSON.parse(JSON.stringify(snapshot.accumulatedFilesRich));
-    this.accumulatedFeaturesRich = JSON.parse(JSON.stringify(snapshot.accumulatedFeaturesRich));
-    this.establishedPatterns = [...snapshot.establishedPatterns];
-    this.apiContracts = JSON.parse(JSON.stringify(snapshot.apiContracts));
-    this.rawGeneratedFiles = JSON.parse(JSON.stringify(snapshot.rawGeneratedFiles));
-    this.completedPhases = [...snapshot.completedPhases];
-
-    // Restore phase statuses
-    for (const { number, status } of snapshot.phaseStatuses) {
-      const phase = this.plan.phases.find((p) => p.number === number);
-      if (phase) phase.status = status;
-    }
-
-    // Clear snapshots after this point
-    for (const key of this.phaseSnapshots.keys()) {
-      if (key > phaseNumber) this.phaseSnapshots.delete(key);
-    }
-
-    // Update plan
-    this.syncPlanState();
-    return true;
+    const state = this.getIntegrityState();
+    const result = _rollbackToSnapshot(state, phaseNumber);
+    this.syncFromIntegrity(state);
+    return result;
   }
 
-  /**
-   * Sync internal state back to the plan object
-   */
-  private syncPlanState(): void {
-    this.plan.completedPhaseNumbers = [...this.completedPhases];
-    this.plan.accumulatedFiles = [...this.accumulatedFiles];
-    this.plan.accumulatedFeatures = [...this.accumulatedFeatures];
-    this.plan.accumulatedFilesRich = [...this.accumulatedFilesRich];
-    this.plan.accumulatedFeaturesRich = [...this.accumulatedFeaturesRich];
-    this.plan.establishedPatterns = [...this.establishedPatterns];
-    this.plan.apiContracts = [...this.apiContracts];
-    this.plan.updatedAt = new Date().toISOString();
+  syncPlanState(): void {
+    _syncPlanState(this.getIntegrityState());
   }
 
-  /**
-   * Get snapshot for a specific phase
-   */
   getPhaseSnapshot(phaseNumber: number): PhaseSnapshot | null {
-    return this.phaseSnapshots.get(phaseNumber) || null;
+    return _getPhaseSnapshot(this.getIntegrityState(), phaseNumber);
   }
 
-  // ========== P5: CROSS-PHASE TYPE CHECKING ==========
-
-  /**
-   * Run TypeScript type checking on accumulated code
-   * Called after each phase completion
-   */
+  // P5: Cross-Phase Type Checking
   async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
-    try {
-      const { runTypeCheck } = await import('./TypeScriptCompilerService');
-
-      // Only check TypeScript/TSX files
-      const tsFiles = this.rawGeneratedFiles.filter(
-        (f) => f.path.endsWith('.ts') || f.path.endsWith('.tsx')
-      );
-
-      if (tsFiles.length === 0) {
-        return { success: true, errors: [], warnings: [] };
-      }
-
-      const result = await runTypeCheck(tsFiles);
-
-      // Store result for reporting
-      this.typeCheckResults.set(phaseNumber, result);
-
-      return result;
-    } catch (err) {
-      console.error('Type checking failed:', err);
-      return {
-        success: false, // Fix 15: Fail closed
-        errors: [
-          {
-            file: 'system',
-            line: 0,
-            column: 0,
-            message: `Type checking failed: ${err}`,
-            code: 500,
-            severity: 'error',
-          },
-        ],
-        warnings: [],
-      };
-    }
+    return _runPhaseTypeCheck(this.getIntegrityState(), phaseNumber);
   }
 
-  /**
-   * Get type check result for a specific phase
-   */
   getTypeCheckResult(phaseNumber: number): TypeCheckResult | null {
-    return this.typeCheckResults.get(phaseNumber) || null;
+    return _getTypeCheckResult(this.getIntegrityState(), phaseNumber);
   }
 
-  // ========== P6: TYPE COMPATIBILITY CHECKS ==========
-
-  /**
-   * Check type compatibility after phase completion
-   */
+  // P6: Type Compatibility Checks
   async checkTypeCompatibility(phaseNumber: number): Promise<TypeCompatibilityResult> {
-    try {
-      const { extractTypeDefinitions, checkTypeCompatibility } =
-        await import('@/utils/typeCompatibilityChecker');
-
-      // Extract types from new files in this phase
-      const newFiles = this.rawGeneratedFiles.filter(
-        (f) => f.path.endsWith('.ts') || f.path.endsWith('.tsx')
-      );
-
-      const newTypes: TypeDefinition[] = [];
-      for (const file of newFiles) {
-        const extracted = extractTypeDefinitions(file.content, file.path, phaseNumber);
-        newTypes.push(...extracted);
-      }
-
-      // Check against previous types
-      const result = checkTypeCompatibility(this.typeDefinitions, newTypes, phaseNumber);
-
-      // Update stored types (merge new definitions)
-      for (const newType of newTypes) {
-        const existingIndex = this.typeDefinitions.findIndex((t) => t.name === newType.name);
-        if (existingIndex >= 0) {
-          this.typeDefinitions[existingIndex] = newType;
-        } else {
-          this.typeDefinitions.push(newType);
-        }
-      }
-
-      return result;
-    } catch (err) {
-      console.error('Type compatibility check failed:', err);
-      return {
-        compatible: false,
-        breakingChanges: [
-          {
-            typeName: 'System Error',
-            file: 'unknown',
-            changeType: 'TYPE_DELETED',
-            details: `Type compatibility check failed: ${err}`,
-            previousPhase: 0,
-            currentPhase: phaseNumber,
-            severity: 'critical',
-          },
-        ],
-      };
-    }
+    const state = this.getIntegrityState();
+    const result = await _checkTypeCompatibility(state, phaseNumber);
+    // typeDefinitions updated in-place via state reference
+    return result;
   }
 
-  // ========== P7: TEST CRITERIA EXECUTION ==========
-
-  /**
-   * Run smoke tests for phase criteria
-   */
+  // P7: Smoke Test Execution
   async runPhaseTests(phaseNumber: number): Promise<PhaseTestResults> {
-    const phase = this.plan.phases.find((p) => p.number === phaseNumber);
-
-    if (!phase || !phase.testCriteria?.length) {
-      return {
-        phaseNumber,
-        total: 0,
-        passed: 0,
-        failed: 0,
-        results: [],
-        allPassed: true,
-      };
-    }
-
-    try {
-      const { runSmokeTests } = await import('@/utils/smokeTestRunner');
-      const result = runSmokeTests(phase.testCriteria, this.rawGeneratedFiles, phaseNumber);
-
-      this.phaseTestResults.set(phaseNumber, result);
-      return result;
-    } catch (err) {
-      console.error('Smoke tests failed:', err);
-      return {
-        phaseNumber,
-        total: phase.testCriteria.length,
-        passed: 0,
-        failed: 0,
-        results: [],
-        allPassed: false, // Fix 15: Fail closed
-      };
-    }
+    return _runPhaseTests(this.getIntegrityState(), phaseNumber);
   }
 
-  /**
-   * Get smoke test results for a specific phase
-   */
   getPhaseTestResults(phaseNumber: number): PhaseTestResults | null {
-    return this.phaseTestResults.get(phaseNumber) || null;
+    return _getPhaseTestResults(this.getIntegrityState(), phaseNumber);
   }
 
-  // ========== P8: API CONTRACT ENFORCEMENT ==========
-
-  /**
-   * Validate API implementations against declared contracts
-   */
+  // P8: API Contract Enforcement
   validateApiContracts(): ContractValidationResult {
-    const violations: import('@/types/dynamicPhases').ContractViolation[] = [];
-
-    // Find all API route files
-    const apiFiles = this.rawGeneratedFiles.filter(
-      (f) => f.path.includes('/api/') && (f.path.endsWith('.ts') || f.path.endsWith('.tsx'))
-    );
-
-    // Check each contract
-    for (const contract of this.apiContracts) {
-      // Find matching API file
-      const expectedPath = `/api${contract.endpoint}`;
-      const apiFile = apiFiles.find(
-        (f) =>
-          f.path.includes(expectedPath) || f.path.includes(contract.endpoint.replace(/\//g, '/'))
-      );
-
-      if (!apiFile) {
-        violations.push({
-          endpoint: contract.endpoint,
-          method: contract.method,
-          violation: 'MISSING_ENDPOINT',
-          expected: `API route at ${expectedPath}`,
-          severity: 'error',
-        });
-        continue;
-      }
-
-      // Check for HTTP method handler
-      const methodUpper = contract.method.toUpperCase();
-      const hasMethod =
-        apiFile.content.includes(`export async function ${methodUpper}`) ||
-        apiFile.content.includes(`export function ${methodUpper}`) ||
-        apiFile.content.includes(`${methodUpper}:`);
-
-      if (!hasMethod) {
-        violations.push({
-          endpoint: contract.endpoint,
-          method: contract.method,
-          violation: 'WRONG_METHOD',
-          expected: `${methodUpper} handler`,
-          actual: 'Handler not found',
-          severity: 'error',
-        });
-      }
-
-      // Check response schema if specified
-      if (contract.responseSchema) {
-        const hasResponseSchema = apiFile.content.includes(contract.responseSchema);
-        if (!hasResponseSchema) {
-          violations.push({
-            endpoint: contract.endpoint,
-            method: contract.method,
-            violation: 'MISSING_RESPONSE_TYPE',
-            expected: contract.responseSchema,
-            severity: 'warning',
-          });
-        }
-      }
-    }
-
-    return {
-      valid: violations.filter((v) => v.severity === 'error').length === 0,
-      violations,
-    };
+    return _validateApiContracts(this.getIntegrityState());
   }
 
-  // ========== P16: ARCHITECTURE VERIFICATION (Fix 16) ==========
-
-  /**
-   * Verify that the generated code matches the architecture specification
-   */
+  // P16: Architecture Verification
   async verifyArchitectureImplementation(): Promise<{ verified: boolean; issues: string[] }> {
-    if (!this.plan.architectureSpec) {
-      return { verified: true, issues: [] };
-    }
-
-    const issues: string[] = [];
-    const spec = this.plan.architectureSpec;
-
-    // 1. Verify API routes exist
-    if (spec.api?.routes) {
-      for (const route of spec.api.routes) {
-        // Strip leading slashes for matching
-        const normalizedPath = route.path.replace(/^\//, '');
-        const routeFile = this.rawGeneratedFiles.find(
-          (f) =>
-            f.path.includes(`api/${normalizedPath}`) || f.path.includes(`app/api/${normalizedPath}`)
-        );
-
-        if (!routeFile) {
-          issues.push(`Missing API route: ${route.method} ${route.path}`);
-        } else {
-          // Check for HTTP method export
-          const methodUpper = route.method.toUpperCase();
-          if (
-            !routeFile.content.includes(`export async function ${methodUpper}`) &&
-            !routeFile.content.includes(`export function ${methodUpper}`)
-          ) {
-            issues.push(`API route ${route.path} missing ${methodUpper} handler`);
-          }
-        }
-      }
-    }
-
-    // 2. Verify Prisma schema matches
-    if (spec.database?.tables) {
-      const schemaFile = this.rawGeneratedFiles.find((f) => f.path.endsWith('schema.prisma'));
-      if (schemaFile) {
-        for (const table of spec.database.tables) {
-          if (!schemaFile.content.includes(`model ${table.name}`)) {
-            issues.push(`Missing database model: ${table.name}`);
-          }
-        }
-      } else if (spec.database.tables.length > 0) {
-        issues.push('Missing schema.prisma file despite database tables being defined');
-      }
-    }
-
-    // 3. Verify auth is applied (if required)
-    if (spec.auth?.strategy) {
-      const apiFiles = this.rawGeneratedFiles.filter(
-        (f) => f.path.includes('/api/') && !f.path.includes('auth') && !f.path.includes('public')
-      );
-      for (const file of apiFiles) {
-        if (
-          !file.content.includes('requireAuth') &&
-          !file.content.includes('getServerSession') &&
-          !file.content.includes('auth()')
-        ) {
-          issues.push(`API route ${file.path} may be missing authentication`);
-        }
-      }
-    }
-
-    return {
-      verified: issues.length === 0,
-      issues,
-    };
+    return _verifyArchitectureImplementation(this.getIntegrityState());
   }
 
-  // ========== P9: REGRESSION TESTING ==========
-
-  /**
-   * Run regression tests - verify all previous phase criteria still pass
-   */
+  // P9: Regression Testing
   async runRegressionTests(currentPhase: number): Promise<RegressionTestResult> {
-    const failures: import('@/types/dynamicPhases').RegressionFailure[] = [];
-    const previousPhasesChecked: number[] = [];
-
-    try {
-      const { runSmokeTests } = await import('@/utils/smokeTestRunner');
-
-      // Run tests for all completed phases
-      for (const phaseNum of this.completedPhases) {
-        if (phaseNum >= currentPhase) continue;
-
-        const phase = this.plan.phases.find((p) => p.number === phaseNum);
-        if (!phase?.testCriteria?.length) continue;
-
-        previousPhasesChecked.push(phaseNum);
-
-        // Run smoke tests with current accumulated files
-        const result = runSmokeTests(phase.testCriteria, this.rawGeneratedFiles, phaseNum);
-
-        // Collect failures
-        for (const testResult of result.results) {
-          if (!testResult.passed) {
-            failures.push({
-              originalPhase: phaseNum,
-              criterion: testResult.criterion,
-              error: testResult.error || 'Test failed',
-            });
-          }
-        }
-      }
-
-      return {
-        phaseNumber: currentPhase,
-        previousPhasesChecked,
-        failures,
-        allPassed: failures.length === 0,
-      };
-    } catch (err) {
-      console.error('Regression tests failed:', err);
-      return {
-        phaseNumber: currentPhase,
-        previousPhasesChecked: [],
-        failures: [],
-        allPassed: false, // Fix 15: Fail closed
-      };
-    }
+    return _runRegressionTests(this.getIntegrityState(), currentPhase);
   }
-
-  // ========== P4 SUPPORT: Getter Methods ==========
-
-  /**
-   * Get accumulated code (for P4 fix)
-   */
-  getAccumulatedCode(): string {
-    return this.accumulatedCode;
-  }
-
-  /**
-   * Get a copy of the plan (for P4 fix)
-   */
-  getPlanCopy(): DynamicPhasePlan {
-    return { ...this.plan };
-  }
-}
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-/**
- * Extract file paths from generated code
- */
-export function extractFilePaths(generatedCode: string): string[] {
-  const filePattern = /===FILE:([^=]+)===/g;
-  const paths: string[] = [];
-  let match;
-
-  while ((match = filePattern.exec(generatedCode)) !== null) {
-    paths.push(match[1].trim());
-  }
-
-  return paths;
-}
-
-/**
- * Extract feature names that were implemented
- */
-export function extractImplementedFeatures(
-  generatedCode: string,
-  expectedFeatures: string[]
-): string[] {
-  const lowerCode = generatedCode.toLowerCase();
-
-  return expectedFeatures.filter((feature) => {
-    // Check if the feature name or key words appear in the code
-    const keywords = feature.toLowerCase().split(/\s+/);
-    return keywords.some((keyword) => keyword.length > 3 && lowerCode.includes(keyword));
-  });
-}
-
-/**
- * Create an empty phase result for tracking
- */
-export function createPhaseResult(phaseNumber: number, phaseName: string): PhaseExecutionResult {
-  return {
-    phaseNumber,
-    phaseName,
-    success: false,
-    generatedCode: '',
-    generatedFiles: [],
-    implementedFeatures: [],
-    duration: 0,
-    tokensUsed: { input: 0, output: 0 },
-  };
 }
 
 export default PhaseExecutionManager;

@@ -91,7 +91,9 @@ export interface UseDynamicBuildPhasesReturn {
 
   // Phase execution helpers
   getExecutionContext: (phaseNumber: number) => PhaseExecutionContext | null;
+  getExecutionContextAsync: (phaseNumber: number) => Promise<PhaseExecutionContext | null>;
   getExecutionPrompt: (phaseNumber: number) => string | null;
+  getExecutionPromptAsync: (phaseNumber: number) => Promise<string | null>;
   getNextPhase: () => DynamicPhase | null;
   isComplete: () => boolean;
 
@@ -412,6 +414,36 @@ export function useDynamicBuildPhases(
   );
 
   /**
+   * Get execution context with CodeContextService initialized (async)
+   * This populates the smart context snapshot for richer code context.
+   */
+  const getExecutionContextAsync = useCallback(
+    async (phaseNumber: number): Promise<PhaseExecutionContext | null> => {
+      if (!manager) return null;
+
+      try {
+        return await manager.getExecutionContextAsync(phaseNumber);
+      } catch {
+        return null;
+      }
+    },
+    [manager]
+  );
+
+  /**
+   * Get the prompt for executing a phase with async context (CodeContextService)
+   */
+  const getExecutionPromptAsync = useCallback(
+    async (phaseNumber: number): Promise<string | null> => {
+      const context = await getExecutionContextAsync(phaseNumber);
+      if (!context) return null;
+
+      return buildPhaseExecutionPrompt(context);
+    },
+    [getExecutionContextAsync]
+  );
+
+  /**
    * Get the next pending phase
    */
   const getNextPhase = useCallback((): DynamicPhase | null => {
@@ -602,7 +634,9 @@ export function useDynamicBuildPhases(
 
     // Execution helpers
     getExecutionContext,
+    getExecutionContextAsync,
     getExecutionPrompt,
+    getExecutionPromptAsync,
     getNextPhase,
     isComplete,
 
