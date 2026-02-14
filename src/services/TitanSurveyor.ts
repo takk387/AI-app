@@ -183,8 +183,14 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
      - \`"svgPath"\`: string (e.g., "M10 10 H 90 V 90 H 10 Z")
      - \`"viewBox"\`: string (e.g., "0 0 24 24")
      - \`"fill"\`: string (hex code)
-   - If it's a complex brand logo, **TRACE IT ANYWAY.** You are an AI Vision model; you can see the curves. Output the path.
-   - Only use \`hasCustomVisual: true\` (cropping) for **PHOTOGRAPHS ONLY** (real people/scenes). Everything else is vector.
+   - If it's a complex brand logo, mascot, or 3D/textured element that cannot be perfect with CSS/SVG:
+     - **CROP IT.** Set \`hasCustomVisual: true\`.
+     - Do NOT force a bad vector trace.
+   - Use \`hasCustomVisual: true\` for:
+     - **PHOTOGRAPHS** (people, scenes)
+     - **BRAND LOGOS** (complex shapes, gradients)
+     - **TEXTURED BUTTONS** (bevels, glow, metallics)
+     - **COMPLEX ICONS** (multi-color, detailed)
 
 6. **Literal CSS Extraction (NO DESCRIPTIONS):**
    - **Gradients:** Extract the EXACT \`linear-gradient(...)\` string. Do not say "blue gradient". Say \`"linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%)"\`.
