@@ -5,169 +5,44 @@
  * Handles all message sending logic including:
  * - PLAN mode wizard chat
  * - ACT mode builder chat
- * - Build/modify/design triggers
+ * - Build/modify/design triggers (delegated to handlers)
  * - Phase completion tracking
  * - Error handling
  */
 
 import { useCallback, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import type {
-  ChatMessage,
-  GeneratedComponent,
-  PendingDiff,
-  AppVersion,
-} from '@/types/aiBuilderTypes';
-import type { AppConcept } from '@/types/appConcept';
-import type { LayoutMessage } from '@/types/layoutDesign';
-import type { PhaseExecutionResult, DynamicPhasePlan } from '@/types/dynamicPhases';
-import type { WizardState } from '@/types/wizardState';
+import type { ChatMessage } from '@/types/aiBuilderTypes';
 import {
   compressConversation,
   buildCompressedContext,
   needsCompression,
 } from '@/utils/contextCompression';
-import { captureLayoutPreview } from '@/utils/screenshotCapture';
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// Re-export types for API compatibility
+export type {
+  WizardState,
+  UseSendMessageOptions,
+  UseSendMessageReturn,
+  SuggestedAction,
+} from './useSendMessageTypes';
 
-// Re-export WizardState from consolidated types for backwards compatibility
-export type { WizardState } from '@/types/wizardState';
+import type {
+  UseSendMessageOptions,
+  UseSendMessageReturn,
+  SuggestedAction,
+} from './useSendMessageTypes';
+import type { WizardState } from '@/types/wizardState';
 
-/**
- * Return type from useMessageSender hook
- */
-interface MessageSenderReturn {
-  isQuestion: (input: string) => boolean;
-  getProgressMessages: (isQuestion: boolean, isModification: boolean) => string[];
-}
-
-/**
- * Return type from useStreamingGeneration hook
- */
-interface StreamingGenerationReturn {
-  generate: (requestBody: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
-}
-
-/**
- * Return type from useVersionControl hook
- */
-interface VersionControlReturn {
-  pushToUndoStack: (version: AppVersion) => void;
-  clearRedoStack: () => void;
-}
-
-/**
- * Dynamic build phases interface (subset of useDynamicBuildPhases)
- */
-interface DynamicBuildPhasesReturn {
-  currentPhase: { number: number; name: string; features: string[] } | null;
-  completePhase: (result: PhaseExecutionResult) => void;
-  plan: DynamicPhasePlan | null;
-}
-
-/**
- * Options for useSendMessage hook
- */
-export interface UseSendMessageOptions {
-  wizardState: WizardState;
-  appConcept: AppConcept | null;
-  messageSender: MessageSenderReturn;
-  streaming: StreamingGenerationReturn;
-  versionControl: VersionControlReturn;
-  dynamicBuildPhases: DynamicBuildPhasesReturn;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  // Callbacks
-  onWizardStateUpdate: (state: WizardState) => void;
-  onSaveComponent: (
-    component: GeneratedComponent
-  ) => Promise<{ success: boolean; error?: unknown }>;
-  saveVersion: (
-    component: GeneratedComponent,
-    changeType: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE',
-    description: string
-  ) => GeneratedComponent;
-}
-
-/**
- * Suggested action for PLAN mode
- */
-export interface SuggestedAction {
-  label: string;
-  action: string;
-}
-
-/**
- * Return type for useSendMessage hook
- */
-export interface UseSendMessageReturn {
-  sendMessage: () => Promise<void>;
-  suggestedActions: SuggestedAction[];
-  clearSuggestedActions: () => void;
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Generate a unique ID for messages and components
- */
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-}
-
-/**
- * Extract component name from user prompt
- */
-function extractComponentName(prompt: string): string {
-  const words = prompt.split(' ').slice(0, 3).join(' ');
-  return words.length > 30 ? words.slice(0, 27) + '...' : words;
-}
-
-/**
- * Compress conversation history for ACT mode requests
- */
-function compressForACTMode(
-  messages: ChatMessage[],
-  maxTokens = 50000
-): { history: Array<{ role: 'user' | 'assistant'; content: string }>; summary?: string } {
-  const filteredMessages = messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      id: m.id,
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-      timestamp: m.timestamp,
-    }));
-
-  if (needsCompression(filteredMessages, maxTokens)) {
-    const compressed = compressConversation(filteredMessages, {
-      maxTokens,
-      preserveLastN: 30,
-    });
-
-    return {
-      history: compressed.recentMessages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-      summary: compressed.summary.messageCount > 0 ? buildCompressedContext(compressed) : undefined,
-    };
-  }
-
-  return {
-    history: filteredMessages.slice(-50).map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    })),
-  };
-}
+import {
+  generateId,
+  handleBuildTrigger,
+  handleModifyTrigger,
+  handleDesignTrigger,
+  handleFullAppResponse,
+  compressForACTMode,
+} from './useSendMessageHandlers';
+import type { HandlerContext } from './useSendMessageHandlers';
 
 // ============================================================================
 // HOOK
@@ -258,6 +133,26 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         progressIndex++;
       }
     }, 3000);
+
+    // Build handler context for delegation
+    const ctx: HandlerContext = {
+      chatMessages,
+      setChatMessages,
+      currentComponent,
+      setCurrentComponent,
+      setComponents,
+      setActiveTab,
+      setPendingDiff,
+      setShowDiffPreview,
+      setNewAppStagePlan,
+      uploadedImage,
+      streaming,
+      versionControl,
+      dynamicBuildPhases,
+      appConcept,
+      onSaveComponent,
+      saveVersion,
+    };
 
     try {
       let data: Record<string, unknown> | null = null;
@@ -360,19 +255,19 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
 
       // Handle ACT mode build trigger
       if (currentMode === 'ACT' && data?.shouldTriggerBuild) {
-        await handleBuildTrigger(userInput, userMessage);
+        await handleBuildTrigger(ctx, userInput, userMessage);
         return;
       }
 
       // Handle ACT mode modify trigger
       if (currentMode === 'ACT' && data?.shouldTriggerModify && currentComponent) {
-        await handleModifyTrigger(userInput, userMessage);
+        await handleModifyTrigger(ctx, userInput, userMessage);
         return;
       }
 
       // Handle ACT mode design trigger
       if (currentMode === 'ACT' && data?.shouldTriggerDesign && currentComponent) {
-        await handleDesignTrigger(userInput);
+        await handleDesignTrigger(ctx, userInput);
         return;
       }
 
@@ -381,7 +276,7 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         setPendingDiff({
           id: generateId(),
           summary: data.summary as string,
-          files: data.files as PendingDiff['files'],
+          files: data.files as import('@/types/aiBuilderTypes').PendingDiff['files'],
           timestamp: new Date().toISOString(),
         });
         setShowDiffPreview(true);
@@ -412,7 +307,7 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         setChatMessages((prev) => [...prev, chatResponse]);
       } else if (data) {
         // Handle full-app response
-        await handleFullAppResponse(data, userMessage, isModification);
+        await handleFullAppResponse(ctx, data, userMessage, isModification, userInput);
       }
     } catch (error) {
       if (progressIntervalRef.current) {
@@ -433,343 +328,6 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
       setUploadedImage(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
-      }
-    }
-
-    // ========================================================================
-    // NESTED HANDLERS (to avoid recreating on each render)
-    // ========================================================================
-
-    /**
-     * Handle build trigger from builder expert
-     */
-    async function handleBuildTrigger(prompt: string, userMsg: ChatMessage) {
-      const buildCompressed = compressForACTMode(chatMessages);
-
-      const buildRequestBody: Record<string, unknown> = {
-        prompt,
-        conversationHistory: buildCompressed.history,
-        contextSummary: buildCompressed.summary,
-        isModification: false,
-        image: uploadedImage || undefined,
-        hasImage: !!uploadedImage,
-        layoutManifest: appConcept?.layoutManifest || undefined,
-        architectureSpec: dynamicBuildPhases.plan?.architectureSpec || undefined,
-        phaseContexts: dynamicBuildPhases.plan?.phaseContexts || undefined,
-      };
-
-      const buildingMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: "🔨 **Building your app...**\n\nI'm generating the code for your application.",
-        timestamp: new Date().toISOString(),
-      };
-      setChatMessages((prev) => [...prev, buildingMessage]);
-
-      const streamResult = await streaming.generate(buildRequestBody);
-
-      if (streamResult) {
-        const aiAppMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content: `🚀 App created!\n\n${streamResult.description || `I've created your ${streamResult.name} app!`}`,
-          timestamp: new Date().toISOString(),
-          componentCode: JSON.stringify(streamResult),
-          componentPreview: !!(streamResult.files as unknown[])?.length,
-        };
-        setChatMessages((prev) => [...prev, aiAppMessage]);
-
-        const files = streamResult.files as Array<{ path: string; content: string }>;
-
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('[useSendMessage] handleBuildTrigger result:', {
-            name: streamResult.name,
-            filesCount: files?.length ?? 0,
-            hasFiles: !!(files && files.length > 0),
-          });
-        }
-
-        if (files && files.length > 0) {
-          let newComponent: GeneratedComponent = {
-            id: generateId(),
-            name: (streamResult.name as string) || extractComponentName(prompt),
-            code: JSON.stringify(streamResult, null, 2),
-            description: prompt,
-            timestamp: new Date().toISOString(),
-            isFavorite: false,
-            conversationHistory: [...chatMessages, userMsg, aiAppMessage],
-            versions: [],
-          };
-
-          newComponent = saveVersion(newComponent, 'NEW_APP', prompt);
-          setCurrentComponent(newComponent);
-          setComponents((prev) => [newComponent, ...prev].slice(0, 50));
-          await onSaveComponent(newComponent);
-
-          // Small delay to ensure React has processed state updates
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          setActiveTab('preview');
-
-          // Complete phase tracking (matches handleModifyTrigger pattern)
-          if (dynamicBuildPhases.currentPhase) {
-            const phaseResult: PhaseExecutionResult = {
-              phaseNumber: dynamicBuildPhases.currentPhase.number,
-              phaseName: dynamicBuildPhases.currentPhase.name,
-              success: true,
-              generatedCode: JSON.stringify(streamResult, null, 2),
-              generatedFiles: files.map((f) => f.path),
-              implementedFeatures: dynamicBuildPhases.currentPhase.features,
-              duration: 0,
-              tokensUsed: { input: 0, output: 0 },
-            };
-            dynamicBuildPhases.completePhase(phaseResult);
-          }
-        } else {
-          // Files array is empty - show error message
-          const emptyFilesMessage: ChatMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content:
-              '⚠️ The app was created but no code files were generated. This might be due to a formatting issue. Please try rephrasing your request or try again.',
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, emptyFilesMessage]);
-        }
-      } else {
-        const errorMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content:
-            '❌ Failed to generate the app. The streaming request returned no result. Please try again.',
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, errorMessage]);
-      }
-    }
-
-    /**
-     * Handle modify trigger from builder expert
-     */
-    async function handleModifyTrigger(prompt: string, userMsg: ChatMessage) {
-      if (!currentComponent) return;
-
-      const modifyCompressed = compressForACTMode(chatMessages);
-
-      const modifyRequestBody: Record<string, unknown> = {
-        prompt,
-        conversationHistory: modifyCompressed.history,
-        contextSummary: modifyCompressed.summary,
-        isModification: true,
-        currentAppName: currentComponent.name,
-        currentAppState: JSON.parse(currentComponent.code),
-        image: uploadedImage || undefined,
-        hasImage: !!uploadedImage,
-        layoutManifest: appConcept?.layoutManifest || undefined,
-        architectureSpec: dynamicBuildPhases.plan?.architectureSpec || undefined,
-        phaseContexts: dynamicBuildPhases.plan?.phaseContexts || undefined,
-      };
-
-      const modifyingMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: '🔧 **Updating your app...**',
-        timestamp: new Date().toISOString(),
-      };
-      setChatMessages((prev) => [...prev, modifyingMessage]);
-
-      const streamResult = await streaming.generate(modifyRequestBody);
-
-      if (streamResult) {
-        const aiAppMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content: `✅ App updated!\n\n${streamResult.description || 'Changes applied.'}`,
-          timestamp: new Date().toISOString(),
-          componentCode: JSON.stringify(streamResult),
-          componentPreview: !!(streamResult.files as unknown[])?.length,
-        };
-        setChatMessages((prev) => [...prev, aiAppMessage]);
-
-        const files = streamResult.files as Array<{ path: string; content: string }>;
-
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('[useSendMessage] handleModifyTrigger result:', {
-            name: streamResult.name,
-            filesCount: files?.length ?? 0,
-            hasFiles: !!(files && files.length > 0),
-          });
-        }
-
-        if (files && files.length > 0) {
-          versionControl.pushToUndoStack({
-            id: generateId(),
-            versionNumber: (currentComponent.versions?.length || 0) + 1,
-            code: currentComponent.code,
-            description: currentComponent.description,
-            timestamp: currentComponent.timestamp,
-            changeType: 'MINOR_CHANGE',
-          });
-          versionControl.clearRedoStack();
-
-          let updatedComponent: GeneratedComponent = {
-            ...currentComponent,
-            code: JSON.stringify(streamResult, null, 2),
-            description: prompt,
-            timestamp: new Date().toISOString(),
-            conversationHistory: [...chatMessages, userMsg, aiAppMessage],
-          };
-
-          updatedComponent = saveVersion(updatedComponent, 'MAJOR_CHANGE', prompt);
-          setCurrentComponent(updatedComponent);
-          setComponents((prev) =>
-            prev.map((c) => (c.id === currentComponent.id ? updatedComponent : c))
-          );
-          await onSaveComponent(updatedComponent);
-
-          // Small delay to ensure React has processed state updates
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          setActiveTab('preview');
-
-          // Complete phase tracking
-          if (dynamicBuildPhases.currentPhase) {
-            const phaseResult: PhaseExecutionResult = {
-              phaseNumber: dynamicBuildPhases.currentPhase.number,
-              phaseName: dynamicBuildPhases.currentPhase.name,
-              success: true,
-              generatedCode: JSON.stringify(streamResult, null, 2),
-              generatedFiles: files.map((f) => f.path),
-              implementedFeatures: dynamicBuildPhases.currentPhase.features,
-              duration: 0,
-              tokensUsed: { input: 0, output: 0 },
-            };
-            dynamicBuildPhases.completePhase(phaseResult);
-          }
-        } else {
-          // Files array is empty - show error message
-          const emptyFilesMessage: ChatMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content:
-              '⚠️ The modification was processed but no updated code files were returned. Please try again.',
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, emptyFilesMessage]);
-        }
-      } else {
-        const errorMessage: ChatMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content:
-            '❌ Failed to update the app. The streaming request returned no result. Please try again.',
-          timestamp: new Date().toISOString(),
-        };
-        setChatMessages((prev) => [...prev, errorMessage]);
-      }
-    }
-
-    /**
-     * Handle design trigger from builder expert
-     * Note: Legacy design-chat API has been removed. Design is now handled through the Layout Builder Wizard.
-     */
-    async function handleDesignTrigger(prompt: string) {
-      // Design chat API has been removed in favor of the Layout Builder Wizard
-      const infoMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: `🎨 **Design Changes**\n\nTo modify the design, please use the **Layout Builder** in the Design step. The inline design chat has been replaced with the more powerful visual Layout Builder.\n\nYour request: "${prompt.slice(0, 100)}${prompt.length > 100 ? '...' : ''}"`,
-        timestamp: new Date().toISOString(),
-      };
-      setChatMessages((prev) => [...prev, infoMessage]);
-    }
-
-    /**
-     * Handle full app response (non-streaming or legacy)
-     */
-    async function handleFullAppResponse(
-      data: Record<string, unknown>,
-      userMsg: ChatMessage,
-      isMod: boolean
-    ) {
-      const aiAppMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: `🚀 App created\n\n${data.description || `I've created your ${data.name} app!`}`,
-        timestamp: new Date().toISOString(),
-        componentCode: JSON.stringify(data),
-        componentPreview: !!(data.files as unknown[])?.length,
-      };
-      setChatMessages((prev) => [...prev, aiAppMessage]);
-
-      const files = data.files as Array<{ path: string; content: string }>;
-      if (files && files.length > 0) {
-        if (isMod && currentComponent) {
-          versionControl.pushToUndoStack({
-            id: generateId(),
-            versionNumber: (currentComponent.versions?.length || 0) + 1,
-            code: currentComponent.code,
-            description: currentComponent.description,
-            timestamp: currentComponent.timestamp,
-            changeType: 'MINOR_CHANGE',
-          });
-          versionControl.clearRedoStack();
-        }
-
-        let newComponent: GeneratedComponent = {
-          id: isMod && currentComponent ? currentComponent.id : generateId(),
-          name: (data.name as string) || extractComponentName(userInput),
-          code: JSON.stringify(data, null, 2),
-          description: userInput,
-          timestamp: new Date().toISOString(),
-          isFavorite: isMod && currentComponent ? currentComponent.isFavorite : false,
-          conversationHistory: [...chatMessages, userMsg, aiAppMessage],
-          versions: isMod && currentComponent ? currentComponent.versions : [],
-        };
-
-        newComponent = saveVersion(
-          newComponent,
-          isMod ? 'MAJOR_CHANGE' : 'NEW_APP',
-          (data.description as string) || userInput
-        );
-
-        setCurrentComponent(newComponent);
-
-        if (isMod && currentComponent) {
-          setComponents((prev) =>
-            prev.map((comp) => (comp.id === currentComponent.id ? newComponent : comp))
-          );
-        } else {
-          setComponents((prev) => [newComponent, ...prev].slice(0, 50));
-        }
-
-        await onSaveComponent(newComponent);
-        setActiveTab('preview');
-
-        // Complete phase tracking
-        if (dynamicBuildPhases.currentPhase) {
-          const phaseResult: PhaseExecutionResult = {
-            phaseNumber: dynamicBuildPhases.currentPhase.number,
-            phaseName: dynamicBuildPhases.currentPhase.name,
-            success: true,
-            generatedCode: JSON.stringify(data, null, 2),
-            generatedFiles: files.map((f) => f.path),
-            implementedFeatures: dynamicBuildPhases.currentPhase.features,
-            duration: 0,
-            tokensUsed: { input: 0, output: 0 },
-          };
-          dynamicBuildPhases.completePhase(phaseResult);
-
-          setNewAppStagePlan((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  currentPhase: phaseResult.phaseNumber,
-                  phases: prev.phases.map((p) =>
-                    p.number === phaseResult.phaseNumber ? { ...p, status: 'complete' as const } : p
-                  ),
-                }
-              : null
-          );
-        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
