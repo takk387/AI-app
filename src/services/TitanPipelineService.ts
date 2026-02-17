@@ -201,7 +201,7 @@ async function extractCustomVisualAssets(
   function walkTree(node: Record<string, unknown>) {
     // Track icon detection patterns
     if (node.iconName) iconNameCount++;
-    if (node.iconSvgPath) iconSvgPathCount++;
+    if (node.iconSvgPath || node.svgPath) iconSvgPathCount++;
 
     if (node.hasCustomVisual === true && node.extractionAction === 'crop') {
       customVisualCount++;

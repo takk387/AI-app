@@ -260,6 +260,65 @@ import { FALLBACK_CANVAS } from '@/types/titanPipeline';
 import { createVisionLoopEngine } from './VisionLoopEngine';
 import { assembleCode } from './TitanBuilder';
 
+// ============================================================================
+// DOM TREE FLATTENING (bridges nested dom_tree ↔ flat array for AutoFixEngine)
+// ============================================================================
+
+/**
+ * Flatten a nested dom_tree into a flat array for AutoFixEngine.applyCritique().
+ * AutoFixEngine expects a flat array to findIndex by id.
+ */
+function flattenDomTree(node: Record<string, unknown>): Record<string, unknown>[] {
+  const result: Record<string, unknown>[] = [node];
+  const children = node.children as Record<string, unknown>[] | undefined;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (child && typeof child === 'object') {
+        result.push(...flattenDomTree(child));
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Write fixed component properties back into the nested dom_tree.
+ * AutoFixEngine.applyCritique() returns shallow copies, so we match by id
+ * and copy the modified style/bounds/content back into the original tree nodes.
+ */
+function applyFixesToDomTree(
+  domTree: Record<string, unknown>,
+  fixedComponents: Record<string, unknown>[]
+): void {
+  const fixMap = new Map<string, Record<string, unknown>>();
+  for (const comp of fixedComponents) {
+    if (typeof comp.id === 'string') {
+      fixMap.set(comp.id, comp);
+    }
+  }
+
+  function walkAndApply(node: Record<string, unknown>): void {
+    const nodeId = node.id as string | undefined;
+    if (nodeId && fixMap.has(nodeId)) {
+      const fixed = fixMap.get(nodeId)!;
+      // Copy back style, bounds, and content (the properties AutoFixEngine modifies)
+      if (fixed.style) node.style = fixed.style;
+      if (fixed.bounds) node.bounds = fixed.bounds;
+      if (fixed.content) node.content = fixed.content;
+    }
+    const children = node.children as Record<string, unknown>[] | undefined;
+    if (Array.isArray(children)) {
+      for (const child of children) {
+        if (child && typeof child === 'object') {
+          walkAndApply(child);
+        }
+      }
+    }
+  }
+
+  walkAndApply(domTree);
+}
+
 export interface HealingLoopParams {
   files: AppFile[];
   manifests: VisualManifest[];
@@ -339,11 +398,14 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       }
 
       // 3. Critique and fix
-      // Caller guarantees manifests[0].global_theme.dom_tree exists before invoking healing loop
-      const currentComponents = [manifests[0].global_theme!.dom_tree] as any;
+      // Flatten the nested dom_tree into a flat array so AutoFixEngine.applyCritique()
+      // can find ANY node by id (not just the root). Nodes are references, so mutations
+      // from the fix engine propagate back into the nested tree automatically.
+      const domTree = manifests[0].global_theme!.dom_tree as Record<string, unknown>;
+      const flatComponents = flattenDomTree(domTree) as any;
       const stepResult = await visionEngine.executeStep(
         originalImage,
-        currentComponents,
+        flatComponents,
         null,
         async () => screenshot,
         iteration
@@ -370,8 +432,10 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
         break;
       }
 
-      // 5. Update manifest and regenerate code for next iteration
-      manifests[0].global_theme!.dom_tree = stepResult.components[0];
+      // 5. Write fixes back into the nested dom_tree.
+      // AutoFixEngine returns shallow copies (not references), so we match by id
+      // and copy modified properties back into the original tree.
+      applyFixesToDomTree(domTree, stepResult.components as unknown as Record<string, unknown>[]);
 
       // NOTE: Describe what was ALREADY FIXED, not what needs fixing.
       // The manifest now contains the corrected components, so telling the AI

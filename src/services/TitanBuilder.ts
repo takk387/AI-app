@@ -128,21 +128,14 @@ You are the **Universal Builder**. Write the final React code.
    - Do NOT adjust spacing, padding, or margins from manifest values.
    - Do NOT substitute colors for "better" alternatives.
    - Translate the manifest to code with pixel-perfect accuracy — do not interpret.
-   - **RESPONSIVE & FLUID LAYOUTS (CRITICAL):**
-     - The design MUST be responsive. Use Tailwind's responsive prefixes (\`sm:\`, \`md:\`, \`lg:\`) to adapt the layout for mobile, tablet, and desktop.
-     - **Containers:** Use \`w-full max-w-[Npx] mx-auto\` instead of fixed pixel widths for main sections to prevent horizontal scrolling on mobile.
-     - **Grids/Flex:** Use \`flex-col md:flex-row\` for side-by-side layouts that should stack on mobile. Use \`grid-cols-1 md:grid-cols-2 lg:grid-cols-3\` for cards.
-     - **Typography:** Use responsive text sizes if needed (e.g., \`text-xl md:text-3xl\`).
-     - **Padding:** Scale padding slightly on mobile (e.g., \`p-4 md:p-8\`).
-     - **Do NOT** use fixed widths (\`width: 1200px\`) on top-level containers. Use \`max-width\` instead.
+   - Follow the responsive layout rules from rule 7 above.
    - Do NOT add decorative elements not present in the manifest.
 
 10. **SPECIAL MODE: EXACT REPLICA**
     When the user intent is "exact replica" or "clone":
     1. Suppress Creativity: Do not "modernize", "clean up", or "fix" the design. If the button is ugly, make it ugly.
-    2. Hardcoded Metrics: Do not use generic Tailwind spacing (e.g., p-4). Use arbitrary values (e.g., p-[13px]) to match the image pixels exactly.
+    2. Hardcoded Metrics: Do not use generic Tailwind spacing (e.g., p-4). Use arbitrary values (e.g., p-[13px]) to match the image pixels exactly. This OVERRIDES Rule 7 — use fixed pixel widths everywhere to match the reference image precisely. Responsiveness is not a goal for replicas.
     3. Typography: If you can't identify the font, use the closest generic sans/serif, but match the weight and letter-spacing perfectly.
-    4. Physics Extraction: Buttons with hard shadow → "Clicky" physics, glow → "Neon" physics. Return physics object.
 
 ### Output Format
 Return TWO files separated by markers:

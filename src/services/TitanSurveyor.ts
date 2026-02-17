@@ -171,9 +171,6 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
    - Values are percentages (0-100):
      - Root nodes: relative to canvas (the full image)
      - Child nodes: relative to parent content area
-   - Values are percentages (0-100):
-     - Root nodes: relative to canvas (the full image)
-     - Child nodes: relative to parent content area
    - **Bounds Strategy:** Approximate the visual bounding box. Trust your eye. If a header looks like it takes 10% height, use 10%.
 
 5. **Icons & Logos — TRACE THE VECTORS (CRITICAL):**
@@ -246,15 +243,10 @@ If an element contains text, use the "text" field.
     },
     "text": "Click Me",
     "hasIcon": true,
-    "hasCustomVisual": true,
-    "extractionAction": "crop",
-    "extractionBounds": { "top": 2, "left": 5, "width": 4, "height": 6 },
-    "iconColor": "#1DA1F2",
-    "iconPosition": "left",
-    "iconSize": "md",
-    "iconSvgPath": null,
-    "iconViewBox": "0 0 24 24",
-    "iconName": null,
+    "svgPath": "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+    "viewBox": "0 0 24 24",
+    "fill": "#1DA1F2",
+    "hasCustomVisual": false,
     "children": [
       // Recursive nodes — each child MUST also have "bounds"
     ]
@@ -268,13 +260,16 @@ If an element contains text, use the "text" field.
 
 /**
  * Walk the parsed dom_tree and force hasCustomVisual=true on nodes that need
- * extraction from the reference image. Catches the AI's tendency to skip
- * flagging custom visuals.
+ * extraction from the reference image (photographs only).
  *
  * Enforces extraction for:
- * 1. Non-UI-chrome icons (iconName that isn't chevron/X/menu/etc.)
- * 2. Image nodes (type: "img") — photos, illustrations, logos
- * 3. Nodes the AI identified as having images (hasImage: true)
+ * 1. Image nodes (type: "img") — photographs, illustrations
+ * 2. Nodes the AI identified as having images (hasImage: true)
+ * 3. Nodes with backgroundImage url(...)
+ *
+ * Does NOT force extraction for icons/logos — the AI should trace SVG paths
+ * or provide iconName for the Builder. Cropping tiny pixel regions produces
+ * blurry results and defeats the SVG-from-scratch approach.
  */
 function autoFixIconDecisions(node: Record<string, unknown>): void {
   const alreadyCustomVisual = node.hasCustomVisual === true;
@@ -288,30 +283,17 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
     | undefined;
   const extractionSource = existingExtractionBounds || bounds;
 
-  // --- Fix 1: Non-chrome icon names → force extraction ---
+  // --- Fix 1: Non-chrome icon names WITHOUT svgPath → keep iconName as-is ---
+  // Previously this would delete iconName and force cropping, which produced blurry
+  // pixel crops. Now we trust the Builder to handle iconName directly (it can use
+  // Lucide or the AI can re-attempt SVG tracing). Cropping is only for photographs.
   const iconName = node.iconName as string | undefined;
-  const hasIconSvgPath = !!node.iconSvgPath;
+  const hasIconSvgPath = !!node.iconSvgPath || !!node.svgPath;
 
   if (iconName && !hasIconSvgPath && !alreadyCustomVisual && !isUIChromeIcon(iconName)) {
-    if (extractionSource) {
-      node.hasCustomVisual = true;
-      node.extractionAction = 'crop';
-      node.extractionBounds = {
-        top: extractionSource.top,
-        left: extractionSource.left,
-        width: extractionSource.width,
-        height: extractionSource.height,
-      };
-      // Preserve iconName as fallback in case extraction fails
-      node._originalIconName = node.iconName;
-      delete node.iconName;
-
-      console.log(`[Surveyor:VisualFix] Icon "${iconName}" → hasCustomVisual (node: ${node.id})`);
-    } else {
-      console.warn(
-        `[Surveyor:VisualFix] Icon "${iconName}" has no bounds or extractionBounds for extraction (node: ${node.id}). Cannot crop.`
-      );
-    }
+    console.log(
+      `[Surveyor:VisualFix] Icon "${iconName}" has no svgPath — keeping iconName for Builder (node: ${node.id})`
+    );
   }
 
   // --- Fix 2: Image nodes (type: "img") → force extraction ---
