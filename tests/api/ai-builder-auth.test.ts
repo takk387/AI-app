@@ -61,6 +61,20 @@ jest.mock('@anthropic-ai/sdk', () => {
   }));
 });
 
+// Mock services that transitively import ESM-only packages (@google/genai)
+jest.mock('@/services/AppImageGenerator', () => ({
+  generateImagesForApp: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('@/utils/imageUrlInjector', () => ({
+  injectImageUrls: jest.fn((files: unknown) => files),
+}));
+
+jest.mock('@/utils/mockAI', () => ({
+  isMockAIEnabled: jest.fn().mockReturnValue(false),
+  mockFullAppResponse: jest.fn(),
+}));
+
 import { POST as modifyPost } from '../../src/app/api/ai-builder/modify/route';
 import { POST as fullAppPost } from '../../src/app/api/ai-builder/full-app/route';
 
