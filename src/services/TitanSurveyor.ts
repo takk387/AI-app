@@ -173,19 +173,31 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
      - Child nodes: relative to parent content area
    - **Bounds Strategy:** Approximate the visual bounding box. Trust your eye. If a header looks like it takes 10% height, use 10%.
 
-5. **Icons & Logos — TRACE THE VECTORS (CRITICAL):**
-   - **DO NOT CROP.** DO NOT USE IMAGES. **TRACE IT.**
-   - For every icon, logo, or simple graphic, you MUST extract its SVG path data.
-   - Add these fields to the node:
-     - \`"svgPath"\`: string (e.g., "M10 10 H 90 V 90 H 10 Z")
-     - \`"viewBox"\`: string (e.g., "0 0 24 24")
-     - \`"fill"\`: string (hex code)
-   - If it's a complex brand logo, **TRACE IT.** You are an AI Vision model; you can see the curves. Output the path.
-   - **Only use \`hasCustomVisual: true\` (cropping) for **PHOTOGRAPHS ONLY** (real people/scenes). Everything else is vector.**
-   - **AGENTIC VERIFICATION (CRITICAL):**
+5. **Icons & Logos — CATEGORIZE THEN DECIDE (CRITICAL):**
+   Add a \`"visualCategory"\` field to EVERY non-text, non-container node:
+   - \`"photograph"\`: real-world photo (person, scene, product shot)
+   - \`"logo"\`: brand wordmark, logotype, combination mark (company name + icon)
+   - \`"brand_icon"\`: brand symbol/badge (e.g., social media icon, app icon, shield emblem)
+   - \`"decorative_graphic"\`: illustration, texture, pattern, hero background art
+   - \`"simple_icon"\`: geometric UI icon with ≤4 path commands (arrow, check, plus)
+   - \`"ui_chrome"\`: standard UI control icon (chevron, X close, search magnifier)
+
+   **Extraction rules by category:**
+   - \`"photograph"\`, \`"logo"\`, \`"brand_icon"\`, \`"decorative_graphic"\`:
+     → Set \`"hasCustomVisual": true\`, \`"extractionAction": "crop"\`, provide \`"extractionBounds"\`.
+     → Do NOT attempt SVG tracing for these. Cropping from the original image is more accurate.
+   - \`"simple_icon"\`:
+     → Provide \`"svgPath"\`, \`"viewBox"\`, \`"fill"\` fields.
+     → Also provide \`"iconName"\` as Lucide fallback (e.g., "ArrowRight").
+   - \`"ui_chrome"\`:
+     → Just provide \`"iconName"\` (Lucide name). No SVG tracing needed.
+
+   **CRITICAL:** Logos and brand icons MUST use \`hasCustomVisual: true\`. A cropped image
+   at full resolution is always more accurate than an AI-traced SVG path.
+
+   - **AGENTIC VERIFICATION:**
      - Use your \`codeExecution\` to SAMPLE the pixels of buttons and backgrounds to get the **EXACT** hex/rgba color.
      - Do not guess the color. Measure it.
-     - For logos, look closely at the path data. Ensure curves are smooth.
 
 6. **Literal CSS Extraction (NO DESCRIPTIONS):**
    - **Gradients:** Extract the EXACT \`linear-gradient(...)\` string. Do not say "blue gradient". Say \`"linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%)"\`.
@@ -193,6 +205,8 @@ Analyze the image and reconstruct the **exact DOM Component Tree**.
    - **Shapes:** If a button is rounded, give me \`borderRadius: "9999px"\`.
    - **Transforms:** If rotated, give me \`transform: "rotate(-5deg)"\`.
    - **Glassmorphism:** Give me \`backdropFilter: "blur(12px)"\` and \`background: "rgba(255,255,255,0.1)"\`.
+   - **Buttons (MEASURE PRECISELY):** Extract EXACT pixel dimensions: \`width\`, \`height\`, \`padding\` (as "12px 24px"), \`borderRadius\`, \`border\`, \`boxShadow\`, \`fontSize\`, \`fontWeight\`. Measure from the image — if a button is 140px wide and 48px tall, write those values.
+   - **Decorative backgrounds:** If a section background is a photograph, illustration, or texture (not a pure CSS gradient), set \`"visualCategory": "decorative_graphic"\`, \`"hasCustomVisual": true\`, \`"extractionAction": "crop"\` on that container node.
    - **Output DATA, not English.**
 
 7. **Semantic Understanding:**
@@ -243,10 +257,11 @@ If an element contains text, use the "text" field.
     },
     "text": "Click Me",
     "hasIcon": true,
-    "svgPath": "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
-    "viewBox": "0 0 24 24",
-    "fill": "#1DA1F2",
-    "hasCustomVisual": false,
+    "visualCategory": "logo",
+    "hasCustomVisual": true,
+    "extractionAction": "crop",
+    "extractionBounds": { "top": 2, "left": 2, "width": 15, "height": 6 },
+    "iconName": "optional_lucide_fallback",
     "children": [
       // Recursive nodes — each child MUST also have "bounds"
     ]
@@ -255,21 +270,40 @@ If an element contains text, use the "text" field.
 }`;
 
 // ============================================================================
+// SVG PATH VALIDATION
+// ============================================================================
+
+/**
+ * Basic structural validation of an SVG path string.
+ * Returns false for paths that are clearly too short or malformed to represent
+ * the claimed visual — used to detect failed traces and trigger cropping fallback.
+ */
+function validateSvgPath(path: string | undefined): boolean {
+  if (!path || typeof path !== 'string') return false;
+  const trimmed = path.trim();
+  // Must start with a Move command
+  if (!/^[Mm]/.test(trimmed)) return false;
+  // Must be at least 10 chars to represent anything meaningful
+  if (trimmed.length < 10) return false;
+  // Must contain at least one additional path command beyond the initial Move
+  if (!/[LlHhVvCcSsQqTtAaZz]/.test(trimmed)) return false;
+  return true;
+}
+
+// ============================================================================
 // VISUAL AUTO-FIX (earliest enforcement point — immediately after AI response)
 // ============================================================================
 
 /**
  * Walk the parsed dom_tree and force hasCustomVisual=true on nodes that need
- * extraction from the reference image (photographs only).
+ * extraction from the reference image.
  *
  * Enforces extraction for:
- * 1. Image nodes (type: "img") — photographs, illustrations
- * 2. Nodes the AI identified as having images (hasImage: true)
- * 3. Nodes with backgroundImage url(...)
- *
- * Does NOT force extraction for icons/logos — the AI should trace SVG paths
- * or provide iconName for the Builder. Cropping tiny pixel regions produces
- * blurry results and defeats the SVG-from-scratch approach.
+ * 1. Logos, brand icons, decorative graphics (visualCategory-based)
+ * 2. Non-chrome icons with failed SVG traces (size >= 4% canvas)
+ * 3. Image nodes (type: "img") — photographs, illustrations
+ * 4. Nodes the AI identified as having images (hasImage: true)
+ * 5. Nodes with backgroundImage url(...)
  */
 function autoFixIconDecisions(node: Record<string, unknown>): void {
   const alreadyCustomVisual = node.hasCustomVisual === true;
@@ -294,6 +328,60 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
     console.log(
       `[Surveyor:VisualFix] Icon "${iconName}" has no svgPath — keeping iconName for Builder (node: ${node.id})`
     );
+  }
+
+  // --- Fix 1b: visualCategory "logo" or "brand_icon" or "decorative_graphic" → force extraction ---
+  // The Surveyor should already set hasCustomVisual for these, but enforce here
+  // in case the AI missed it or reverted to the old tracing behavior.
+  const visualCategory = node.visualCategory as string | undefined;
+  if (
+    (visualCategory === 'logo' ||
+      visualCategory === 'brand_icon' ||
+      visualCategory === 'decorative_graphic') &&
+    !alreadyCustomVisual
+  ) {
+    if (extractionSource) {
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: extractionSource.top,
+        left: extractionSource.left,
+        width: extractionSource.width,
+        height: extractionSource.height,
+      };
+      console.log(
+        `[Surveyor:VisualFix] visualCategory="${visualCategory}" → hasCustomVisual (node: ${node.id})`
+      );
+    }
+  }
+
+  // --- Fix 1c: Failed SVG trace on non-chrome icon → force extraction if large enough ---
+  // If the AI attempted to trace an icon but produced a bad/short path AND the node
+  // is large enough to produce a usable crop (>= 4% of canvas in either dimension),
+  // switch it to extraction. Tiny icons stay as iconName (Lucide fallback).
+  if (
+    iconName &&
+    !alreadyCustomVisual &&
+    !node.hasCustomVisual &&
+    !isUIChromeIcon(iconName) &&
+    extractionSource &&
+    (extractionSource.width >= 4 || extractionSource.height >= 4)
+  ) {
+    const svgPath = node.svgPath as string | undefined;
+    if (!validateSvgPath(svgPath)) {
+      node._originalIconName = iconName;
+      node.hasCustomVisual = true;
+      node.extractionAction = 'crop';
+      node.extractionBounds = {
+        top: extractionSource.top,
+        left: extractionSource.left,
+        width: extractionSource.width,
+        height: extractionSource.height,
+      };
+      console.log(
+        `[Surveyor:VisualFix] Icon "${iconName}" has invalid/missing svgPath AND is ≥4% canvas → forcing extraction (node: ${node.id})`
+      );
+    }
   }
 
   // --- Fix 2: Image nodes (type: "img") → force extraction ---

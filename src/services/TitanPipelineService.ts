@@ -445,7 +445,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
 
   // HEALING LOOP: Compare rendered output vs original and apply fixes iteratively
   if (input.files.length > 0 && manifests.length > 0 && manifests[0]?.global_theme?.dom_tree) {
-    console.log('[TitanPipeline] Starting healing loop (up to 2 iterations)...');
+    console.log('[TitanPipeline] Starting healing loop (up to 3 iterations)...');
 
     const healResult = await runHealingLoop({
       files,
@@ -457,7 +457,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       finalAssets,
       primaryImageRef,
       canvasConfig,
-      maxIterations: 2,
+      maxIterations: 3,
       targetFidelity: 95,
     });
 

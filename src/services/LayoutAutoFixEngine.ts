@@ -411,23 +411,20 @@ export class LayoutAutoFixEngine {
       };
     }
 
-    // GUARD: Don't replace an existing custom iconSvgPath with a shorter/generic one
-    // This prevents the healing loop from overwriting custom-extracted icon paths
+    // GUARD: Don't replace an existing custom iconSvgPath with a trivially short/empty value.
+    // Allows the healing loop to fix a bad long path with a correct shorter one,
+    // but blocks replacements that are clearly generic placeholders (< 15 chars).
     if (property === 'iconSvgPath') {
       const existing = component.content.iconSvgPath as string | undefined;
       const replacement = value as string | undefined;
-      if (
-        existing &&
-        existing.length > 50 &&
-        (!replacement || replacement.length < existing.length * 0.5)
-      ) {
+      if (existing && existing.length > 50 && (!replacement || replacement.length < 15)) {
         return {
           componentId: component.id,
           success: false,
           property: `content.${property}`,
           oldValue: (existing.substring(0, 50) + '...') as string,
           newValue: replacement as string | undefined,
-          error: 'Skipped: Refusing to replace custom SVG path with shorter/generic value',
+          error: 'Skipped: Refusing to replace custom SVG path with trivial/empty value',
         };
       }
     }
