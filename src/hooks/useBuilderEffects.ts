@@ -29,7 +29,9 @@ export interface UseBuilderEffectsOptions {
   clearSuggestedActions: () => void;
   setIsClient: (value: boolean) => void;
   loadComponentsFromDb: () => Promise<GeneratedComponent[]>;
-  setComponents: (fn: ((prev: GeneratedComponent[]) => GeneratedComponent[]) | GeneratedComponent[]) => void;
+  setComponents: (
+    fn: ((prev: GeneratedComponent[]) => GeneratedComponent[]) | GeneratedComponent[]
+  ) => void;
   setLoadingApps: (value: boolean) => void;
   loadingApps: boolean;
   components: GeneratedComponent[];
@@ -129,7 +131,9 @@ export function useBuilderEffects(options: UseBuilderEffectsOptions): void {
           const apps = await loadComponentsFromDb();
           setComponents(apps);
           if (apps.length === 0) {
-            console.warn('[MainBuilderView] No apps loaded from database. User may need to create a new app.');
+            console.warn(
+              '[MainBuilderView] No apps loaded from database. User may need to create a new app.'
+            );
           }
         } catch (err) {
           console.error('[MainBuilderView] Failed to load apps from database:', err);
@@ -217,7 +221,16 @@ export function useBuilderEffects(options: UseBuilderEffectsOptions): void {
     if (sessionReady && !loadingApps && !currentComponent) {
       router.push('/app/wizard');
     }
-  }, [sessionReady, loadingApps, currentComponent, searchParams, components, router, appConcept, dynamicPhasePlan]);
+  }, [
+    sessionReady,
+    loadingApps,
+    currentComponent,
+    searchParams,
+    components,
+    router,
+    appConcept,
+    dynamicPhasePlan,
+  ]);
 
   // Debounced auto-save for chat messages, code changes, phase plans, AND wizard data (2000ms)
   // This ensures that modifications to appConcept, layoutManifest, etc. are persisted

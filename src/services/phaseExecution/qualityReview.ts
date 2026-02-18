@@ -36,9 +36,7 @@ async function getCodeReviewService(): Promise<CodeReviewServiceType> {
 /**
  * Extract raw file contents from generated code string
  */
-function extractRawFilesFromCode(
-  generatedCode: string
-): Array<{ path: string; content: string }> {
+function extractRawFilesFromCode(generatedCode: string): Array<{ path: string; content: string }> {
   const files: Array<{ path: string; content: string }> = [];
   const filePattern = /===FILE:([^=]+)===\n([\s\S]*?)(?=\n===(?:FILE|DEPENDENCIES|END)===|$)/g;
   let match;
@@ -164,9 +162,7 @@ export async function runPhaseQualityReview(
  *
  * @returns OperationResult with report and any modified files
  */
-export async function runFinalQualityReview(
-  state: QualityReviewState
-): Promise<
+export async function runFinalQualityReview(state: QualityReviewState): Promise<
   OperationResult<{
     report: QualityReport;
     modifiedFiles: ReviewFile[];

@@ -10,11 +10,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import type { ChatMessage } from '@/types/aiBuilderTypes';
-import {
-  generateEmbedding,
-  hasEmbeddingAPI,
-  getEmbeddingProvider,
-} from './embeddings';
+import { generateEmbedding, hasEmbeddingAPI, getEmbeddingProvider } from './embeddings';
 
 // Re-export types for API compatibility
 export type {
@@ -337,9 +333,17 @@ export class SemanticMemoryManager {
       return {
         totalMemories: 0,
         byType: {
-          preference: 0, decision: 0, project: 0, feature: 0, style: 0,
-          error_solution: 0, data_model: 0, workflow: 0, integration: 0,
-          constraint: 0, api_contract: 0,
+          preference: 0,
+          decision: 0,
+          project: 0,
+          feature: 0,
+          style: 0,
+          error_solution: 0,
+          data_model: 0,
+          workflow: 0,
+          integration: 0,
+          constraint: 0,
+          api_contract: 0,
         },
         averageImportance: 0,
         oldestMemory: null,
@@ -359,9 +363,17 @@ export class SemanticMemoryManager {
         return {
           totalMemories: 0,
           byType: {
-            preference: 0, decision: 0, project: 0, feature: 0, style: 0,
-            error_solution: 0, data_model: 0, workflow: 0, integration: 0,
-            constraint: 0, api_contract: 0,
+            preference: 0,
+            decision: 0,
+            project: 0,
+            feature: 0,
+            style: 0,
+            error_solution: 0,
+            data_model: 0,
+            workflow: 0,
+            integration: 0,
+            constraint: 0,
+            api_contract: 0,
           },
           averageImportance: 0,
           oldestMemory: null,
@@ -370,9 +382,17 @@ export class SemanticMemoryManager {
       }
 
       const byType: Record<MemoryType, number> = {
-        preference: 0, decision: 0, project: 0, feature: 0, style: 0,
-        error_solution: 0, data_model: 0, workflow: 0, integration: 0,
-        constraint: 0, api_contract: 0,
+        preference: 0,
+        decision: 0,
+        project: 0,
+        feature: 0,
+        style: 0,
+        error_solution: 0,
+        data_model: 0,
+        workflow: 0,
+        integration: 0,
+        constraint: 0,
+        api_contract: 0,
       };
 
       let totalImportance = 0;
@@ -404,9 +424,17 @@ export class SemanticMemoryManager {
       return {
         totalMemories: 0,
         byType: {
-          preference: 0, decision: 0, project: 0, feature: 0, style: 0,
-          error_solution: 0, data_model: 0, workflow: 0, integration: 0,
-          constraint: 0, api_contract: 0,
+          preference: 0,
+          decision: 0,
+          project: 0,
+          feature: 0,
+          style: 0,
+          error_solution: 0,
+          data_model: 0,
+          workflow: 0,
+          integration: 0,
+          constraint: 0,
+          api_contract: 0,
         },
         averageImportance: 0,
         oldestMemory: null,
@@ -484,13 +512,8 @@ export class SemanticMemoryManager {
     minSimilarity: number = 0.3
   ): Promise<Array<SemanticMemory & { similarity: number }>> {
     if (!this.isReady()) return [];
-    return searchByEmbedding(
-      this.supabase,
-      this.userId!,
-      query,
-      limit,
-      minSimilarity,
-      (q, l) => this.search(q, l)
+    return searchByEmbedding(this.supabase, this.userId!, query, limit, minSimilarity, (q, l) =>
+      this.search(q, l)
     );
   }
 

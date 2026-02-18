@@ -51,10 +51,7 @@ import {
   buildReplaceFunctionBodyMod,
   buildDeleteElementMods,
 } from './astModifierJsx';
-import {
-  findFunction,
-  findElementToDelete,
-} from './astModifierSearch';
+import { findFunction, findElementToDelete } from './astModifierSearch';
 
 /**
  * AST Modifier - Makes surgical modifications to code using Tree-sitter
@@ -256,7 +253,13 @@ export class ASTModifier {
   wrapInConditional(spec: ConditionalWrapSpec): this {
     if (!this.tree) return this;
 
-    const mods = buildConditionalMods(this.parser, this.tree, this.originalCode, spec, this.options);
+    const mods = buildConditionalMods(
+      this.parser,
+      this.tree,
+      this.originalCode,
+      spec,
+      this.options
+    );
     this.modifications.push(...mods);
 
     return this;
@@ -314,7 +317,13 @@ export class ASTModifier {
       namedImports: ['useState'],
     });
 
-    const mod = buildStateVariableMod(this.parser, this.tree, this.originalCode, spec, this.options);
+    const mod = buildStateVariableMod(
+      this.parser,
+      this.tree,
+      this.originalCode,
+      spec,
+      this.options
+    );
     if (mod) this.modifications.push(mod);
 
     return this;

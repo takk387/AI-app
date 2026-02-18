@@ -28,8 +28,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({ component, ico
 
   // Check for icon content - support named icons, SVG paths, and custom visuals
   const hasIconContent =
-    content?.hasIcon &&
-    (content?.iconSvgPath || content?.iconName || content?.hasCustomVisual);
+    content?.hasIcon && (content?.iconSvgPath || content?.iconName || content?.hasCustomVisual);
   const hasTextContent = content?.text;
   const hasImageContent = content?.hasImage;
 

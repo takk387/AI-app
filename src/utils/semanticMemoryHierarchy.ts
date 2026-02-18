@@ -8,11 +8,7 @@
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type {
-  MemoryCategory,
-  SemanticMemory,
-  SupabaseClient,
-} from './semanticMemoryTypes';
+import type { MemoryCategory, SemanticMemory, SupabaseClient } from './semanticMemoryTypes';
 
 // ============================================================================
 // HIERARCHICAL MEMORY FUNCTIONS

@@ -71,7 +71,6 @@ import { useAppBuilderSync } from '@/hooks/useAppBuilderSync';
 // Types
 import type { GeneratedComponent, ChatMessage, AppVersion, Phase } from '../types/aiBuilderTypes';
 
-
 // Utils
 import { parseAppFiles } from '../utils/exportApp';
 import { captureLayoutPreview } from '../utils/screenshotCapture';
@@ -462,20 +461,24 @@ export function MainBuilderView() {
   });
 
   // Concept updates hook (PLAN mode concept mutation logic)
-  const { handlePlanModeMessage, confirmConceptUpdate, cancelConceptUpdate, handleRegeneratePhases } =
-    useConceptUpdates({
-      currentMode,
-      appConcept,
-      dynamicPhasePlan,
-      userInput,
-      pendingConceptUpdate,
-      setChatMessages,
-      setUserInput,
-      setAppConcept,
-      setDynamicPhasePlan,
-      setPhasePlanGeneratedAt,
-      setPendingConceptUpdate,
-    });
+  const {
+    handlePlanModeMessage,
+    confirmConceptUpdate,
+    cancelConceptUpdate,
+    handleRegeneratePhases,
+  } = useConceptUpdates({
+    currentMode,
+    appConcept,
+    dynamicPhasePlan,
+    userInput,
+    pendingConceptUpdate,
+    setChatMessages,
+    setUserInput,
+    setAppConcept,
+    setDynamicPhasePlan,
+    setPhasePlanGeneratedAt,
+    setPendingConceptUpdate,
+  });
 
   /**
    * Wrapped send message that intercepts PLAN mode concept updates

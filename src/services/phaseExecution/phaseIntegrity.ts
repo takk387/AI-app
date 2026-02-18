@@ -501,8 +501,7 @@ export function validateApiContracts(state: PhaseIntegrityState): ContractValida
     // Find matching API file
     const expectedPath = `/api${contract.endpoint}`;
     const apiFile = apiFiles.find(
-      (f) =>
-        f.path.includes(expectedPath) || f.path.includes(contract.endpoint.replace(/\//g, '/'))
+      (f) => f.path.includes(expectedPath) || f.path.includes(contract.endpoint.replace(/\//g, '/'))
     );
 
     if (!apiFile) {

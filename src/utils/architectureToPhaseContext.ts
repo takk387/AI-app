@@ -97,7 +97,15 @@ function buildReasoning(arch: FinalValidatedArchitecture) {
 function inferRelationType(name: string): RelationDefinition['type'] {
   const lower = name.toLowerCase();
   // Singular nouns typically imply one-to-one (profile, address, settings, avatar)
-  const oneToOnePatterns = ['profile', 'address', 'setting', 'avatar', 'config', 'metadata', 'preference'];
+  const oneToOnePatterns = [
+    'profile',
+    'address',
+    'setting',
+    'avatar',
+    'config',
+    'metadata',
+    'preference',
+  ];
   if (oneToOnePatterns.some((p) => lower.includes(p))) return 'one-to-one';
   // Plural junction-table patterns imply many-to-many (tags, categories, roles, permissions)
   const manyToManyPatterns = ['tags', 'categories', 'roles', 'permissions', 'labels', 'groups'];

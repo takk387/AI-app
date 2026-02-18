@@ -22,13 +22,7 @@ interface CodeContextSectionProps {
 export function CodeContextSection({ appId }: CodeContextSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const {
-    contextState,
-    isAnalyzing,
-    error,
-    isInitialized,
-    getCacheStats,
-  } = useCodeContext(appId);
+  const { contextState, isAnalyzing, error, isInitialized, getCacheStats } = useCodeContext(appId);
 
   // Derive key files sorted by inDegree (most depended-on first)
   const keyFiles = useMemo(() => {
@@ -97,14 +91,8 @@ export function CodeContextSection({ appId }: CodeContextSectionProps) {
         )}
         <GitBranchIcon size={14} className="text-garden-400" />
         <span className="text-xs text-slate-500 uppercase tracking-wide">Code Intelligence</span>
-        {isAnalyzing && (
-          <LoaderIcon size={12} className="text-garden-400 animate-spin ml-1" />
-        )}
-        {stats && (
-          <span className="ml-auto text-xs text-slate-500">
-            {stats.totalFiles} files
-          </span>
-        )}
+        {isAnalyzing && <LoaderIcon size={12} className="text-garden-400 animate-spin ml-1" />}
+        {stats && <span className="ml-auto text-xs text-slate-500">{stats.totalFiles} files</span>}
       </button>
 
       {isExpanded && (
@@ -139,7 +127,10 @@ export function CodeContextSection({ appId }: CodeContextSectionProps) {
           {stats && stats.circularDependencies > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-warning-400 p-1.5 rounded bg-warning-500/10">
               <AlertCircleIcon size={12} />
-              <span>{stats.circularDependencies} circular {stats.circularDependencies === 1 ? 'dependency' : 'dependencies'}</span>
+              <span>
+                {stats.circularDependencies} circular{' '}
+                {stats.circularDependencies === 1 ? 'dependency' : 'dependencies'}
+              </span>
             </div>
           )}
 
@@ -192,7 +183,8 @@ export function CodeContextSection({ appId }: CodeContextSectionProps) {
           {/* Cache stats (compact) */}
           {cacheStats && cacheStats.hits + cacheStats.misses > 0 && (
             <div className="text-[10px] text-slate-600 pt-1 border-t border-slate-800">
-              Cache: {cacheStats.hits}h / {cacheStats.misses}m ({Math.round(cacheStats.hitRate * 100)}%)
+              Cache: {cacheStats.hits}h / {cacheStats.misses}m (
+              {Math.round(cacheStats.hitRate * 100)}%)
             </div>
           )}
         </div>

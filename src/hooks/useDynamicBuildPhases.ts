@@ -136,7 +136,9 @@ export function useDynamicBuildPhases(
   const [isBuilding, setIsBuilding] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const isPausedRef = useRef(isPaused);
-  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
   const [accumulatedCode, setAccumulatedCodeState] = useState('');
 
   // Quality state

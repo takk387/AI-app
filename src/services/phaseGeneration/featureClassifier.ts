@@ -19,10 +19,7 @@ import {
   MODERATE_FEATURE_PATTERNS as moderatePatterns,
 } from '@/types/dynamicPhases';
 
-import {
-  MEMORY_DETECTION_KEYWORDS,
-  STATE_COMPLEXITY_KEYWORDS,
-} from './phaseKeywords';
+import { MEMORY_DETECTION_KEYWORDS, STATE_COMPLEXITY_KEYWORDS } from './phaseKeywords';
 
 // ============================================================================
 // SINGLE FEATURE CLASSIFICATION

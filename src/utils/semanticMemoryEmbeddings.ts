@@ -8,14 +8,8 @@
 
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import {
-  generateEmbedding,
-  cosineSimilarity,
-} from './embeddings';
-import type {
-  SemanticMemory,
-  SupabaseClient,
-} from './semanticMemoryTypes';
+import { generateEmbedding, cosineSimilarity } from './embeddings';
+import type { SemanticMemory, SupabaseClient } from './semanticMemoryTypes';
 
 // ============================================================================
 // EMBEDDING-BASED SEARCH FUNCTIONS
@@ -105,7 +99,11 @@ export async function hybridSearch(
   limit: number = 10,
   embeddingWeight: number = 0.7,
   keywordSearch: (query: string, limit: number) => Promise<SemanticMemory[]>,
-  embeddingSearch: (query: string, limit: number, minSimilarity: number) => Promise<Array<SemanticMemory & { similarity: number }>>
+  embeddingSearch: (
+    query: string,
+    limit: number,
+    minSimilarity: number
+  ) => Promise<Array<SemanticMemory & { similarity: number }>>
 ): Promise<
   Array<SemanticMemory & { score: number; embeddingScore: number; keywordScore: number }>
 > {

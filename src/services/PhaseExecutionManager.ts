@@ -39,16 +39,9 @@ import { getCodeContextService, CodeContextService } from './CodeContextService'
 import type { CodeContextSnapshot } from '@/types/codeContext';
 
 // Sub-module imports
-import {
-  type OperationResult,
-  success,
-  skipped,
-  error,
-} from './phaseExecution/executionUtils';
+import { type OperationResult, success, skipped, error } from './phaseExecution/executionUtils';
 
-import {
-  type PhaseExecutionContextWithEnhancedTracking,
-} from './phaseExecution/promptBuilder';
+import { type PhaseExecutionContextWithEnhancedTracking } from './phaseExecution/promptBuilder';
 
 import {
   type QualityReviewState,
@@ -520,11 +513,7 @@ export class PhaseExecutionManager {
   initializeCodeContext(): CodeContextService {
     if (!this.codeContextService) {
       const appType = this.plan.concept.technical.needsDatabase ? 'FULL_STACK' : 'FRONTEND_ONLY';
-      this.codeContextService = getCodeContextService(
-        this.plan.id,
-        this.plan.appName,
-        appType
-      );
+      this.codeContextService = getCodeContextService(this.plan.id, this.plan.appName, appType);
 
       // Initialize with existing files
       if (this.rawGeneratedFiles.length > 0) {
@@ -636,9 +625,9 @@ export class PhaseExecutionManager {
     this.rawGeneratedFiles = state.rawGeneratedFiles;
   }
 
-  async runPhaseQualityReview(phaseNumber: number): Promise<
-    OperationResult<{ report: QualityReport; modifiedFiles: ReviewFile[] }>
-  > {
+  async runPhaseQualityReview(
+    phaseNumber: number
+  ): Promise<OperationResult<{ report: QualityReport; modifiedFiles: ReviewFile[] }>> {
     const state = this.getQualityReviewState();
     const result = await _runPhaseQualityReview(state, phaseNumber);
     this.syncFromQualityReview(state);

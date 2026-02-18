@@ -47,7 +47,11 @@ export interface UsePhaseExecutionOptions {
   setCurrentComponent: (component: GeneratedComponent | null) => void;
   setComponents: (fn: (prev: GeneratedComponent[]) => GeneratedComponent[]) => void;
   setActiveTab: (tab: ActiveTab) => void;
-  saveVersion: (component: GeneratedComponent, type: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE', label: string) => GeneratedComponent;
+  saveVersion: (
+    component: GeneratedComponent,
+    type: 'NEW_APP' | 'MAJOR_CHANGE' | 'MINOR_CHANGE',
+    label: string
+  ) => GeneratedComponent;
   saveComponentToDb: (component: GeneratedComponent) => Promise<any>;
 }
 
@@ -183,199 +187,214 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
    * Execute a phase via streaming generation using the structured phase prompt.
    * This is the core function that connects startPhase() (UI status) to actual AI generation.
    */
-  const executePhase = useCallback(async (phaseNumber: number) => {
-    if (!dynamicBuildPhases.plan) return;
+  const executePhase = useCallback(
+    async (phaseNumber: number) => {
+      if (!dynamicBuildPhases.plan) return;
 
-    // Build the structured phase prompt via PhaseExecutionManager
-    // Async version initializes CodeContextService for richer dependency-graph-based code context
-    const executionPrompt = await dynamicBuildPhases.getExecutionPromptAsync(phaseNumber);
-    const executionContext = dynamicBuildPhases.getExecutionContext(phaseNumber);
+      // Build the structured phase prompt via PhaseExecutionManager
+      // Async version initializes CodeContextService for richer dependency-graph-based code context
+      const executionPrompt = await dynamicBuildPhases.getExecutionPromptAsync(phaseNumber);
+      const executionContext = dynamicBuildPhases.getExecutionContext(phaseNumber);
 
-    if (!executionPrompt || !executionContext) {
-      const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
-      phaseRetryCountRef.current.set(phaseNumber, retries);
-      const errorMsg: ChatMessage = {
-        id: generateId(),
-        role: 'system',
-        content: retries >= MAX_PHASE_RETRIES
-          ? `**Phase ${phaseNumber} Failed Permanently:** Could not build execution context after ${retries} attempts. Please check the phase configuration.`
-          : `**Phase ${phaseNumber} Error:** Could not build execution context. The phase may be misconfigured. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
-        timestamp: new Date().toISOString(),
-      };
-      setChatMessages((prev) => [...prev, errorMsg]);
-      executingPhaseRef.current = null;
-      return;
-    }
-
-    setIsGenerating(true);
-
-    // Notify user
-    const buildingMsg: ChatMessage = {
-      id: generateId(),
-      role: 'system',
-      content: `**Building Phase ${phaseNumber}: ${executionContext.phaseName}...**\n\nFeatures: ${executionContext.features.join(', ')}`,
-      timestamp: new Date().toISOString(),
-    };
-    setChatMessages((prev) => [...prev, buildingMsg]);
-
-    try {
-      // Parse current app state from existing component code
-      let currentAppState: Record<string, unknown> | undefined;
-      if (currentComponent?.code) {
-        try {
-          currentAppState = JSON.parse(currentComponent.code);
-        } catch {
-          // Code is not JSON — skip currentAppState
-        }
-      }
-
-      // Build request body matching what the API route already destructures (route.ts:169-210)
-      const requestBody: Record<string, unknown> = {
-        prompt: executionPrompt,
-        isPhaseBuilding: true,
-        isModification: phaseNumber > 1,
-        phaseContext: {
-          phaseNumber,
-          phaseName: executionContext.phaseName,
-          previousPhaseCode: executionContext.previousPhaseCode,
-          allPhases: executionContext.allPhases?.map((p: any) => ({
-            number: p.number,
-            name: p.name,
-            features: p.features,
-            status: p.status,
-          })),
-          completedPhases: executionContext.completedPhases,
-          cumulativeFeatures: executionContext.cumulativeFeatures,
-        },
-        currentAppState,
-        layoutManifest: appConcept?.layoutManifest || undefined,
-        architectureSpec: dynamicBuildPhases.plan?.architectureSpec || undefined,
-        phaseContexts: dynamicBuildPhases.plan?.phaseContexts || undefined,
-      };
-
-      const streamResult = await streaming.generate(requestBody);
-
-      if (streamResult) {
-        const files = streamResult.files as Array<{ path: string; content: string }>;
-
-        if (files && files.length > 0) {
-          // Update or create component with generated code
-          let updatedComponent: GeneratedComponent;
-
-          if (currentComponent) {
-            updatedComponent = {
-              ...currentComponent,
-              code: JSON.stringify(streamResult, null, 2),
-              description: `Phase ${phaseNumber}: ${executionContext.phaseName}`,
-              timestamp: new Date().toISOString(),
-            };
-            updatedComponent = saveVersion(updatedComponent, 'MAJOR_CHANGE', `Phase ${phaseNumber}: ${executionContext.phaseName}`);
-          } else {
-            updatedComponent = {
-              id: generateId(),
-              name: appConcept?.name || 'My App',
-              code: JSON.stringify(streamResult, null, 2),
-              description: `Phase ${phaseNumber}: ${executionContext.phaseName}`,
-              timestamp: new Date().toISOString(),
-              isFavorite: false,
-              conversationHistory: [] as ChatMessage[],
-              versions: [],
-              appConcept: appConcept,
-              layoutManifest: appConcept?.layoutManifest ?? null,
-              dynamicPhasePlan: dynamicBuildPhases.plan,
-            };
-            updatedComponent = saveVersion(updatedComponent, 'NEW_APP', `Phase ${phaseNumber}: ${executionContext.phaseName}`);
-          }
-
-          setCurrentComponent(updatedComponent);
-          setComponents((prev) => {
-            const exists = prev.find((c) => c.id === updatedComponent.id);
-            if (exists) {
-              return prev.map((c) => (c.id === updatedComponent.id ? updatedComponent : c));
-            }
-            return [updatedComponent, ...prev].slice(0, 50);
-          });
-          await saveComponentToDb(updatedComponent);
-
-          // Switch to preview
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          setActiveTab('preview');
-
-          // Complete the phase — this triggers auto-advance if enabled
-          const phaseResult: PhaseExecutionResult = {
-            phaseNumber,
-            phaseName: executionContext.phaseName,
-            success: true,
-            generatedCode: JSON.stringify(streamResult, null, 2),
-            generatedFiles: files.map((f) => f.path),
-            implementedFeatures: executionContext.features,
-            duration: 0,
-            tokensUsed: { input: 0, output: 0 },
-          };
-          dynamicBuildPhases.completePhase(phaseResult);
-        } else {
-          // No files generated
-          const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
-          phaseRetryCountRef.current.set(phaseNumber, retries);
-          const noFilesMsg: ChatMessage = {
-            id: generateId(),
-            role: 'system',
-            content: retries >= MAX_PHASE_RETRIES
-              ? `**Phase ${phaseNumber} Failed Permanently:** AI generated no code files after ${retries} attempts.`
-              : `**Phase ${phaseNumber} Warning:** The AI responded but generated no code files. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, noFilesMsg]);
-          executingPhaseRef.current = null;
-        }
-      } else {
-        // Streaming returned null
+      if (!executionPrompt || !executionContext) {
         const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
         phaseRetryCountRef.current.set(phaseNumber, retries);
-        const failMsg: ChatMessage = {
+        const errorMsg: ChatMessage = {
           id: generateId(),
           role: 'system',
-          content: retries >= MAX_PHASE_RETRIES
-            ? `**Phase ${phaseNumber} Failed Permanently:** No response from AI after ${retries} attempts.`
-            : `**Phase ${phaseNumber} Failed:** No response from AI. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
+          content:
+            retries >= MAX_PHASE_RETRIES
+              ? `**Phase ${phaseNumber} Failed Permanently:** Could not build execution context after ${retries} attempts. Please check the phase configuration.`
+              : `**Phase ${phaseNumber} Error:** Could not build execution context. The phase may be misconfigured. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
           timestamp: new Date().toISOString(),
         };
-        setChatMessages((prev) => [...prev, failMsg]);
+        setChatMessages((prev) => [...prev, errorMsg]);
         executingPhaseRef.current = null;
+        return;
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
-      phaseRetryCountRef.current.set(phaseNumber, retries);
-      const errorMsg: ChatMessage = {
+
+      setIsGenerating(true);
+
+      // Notify user
+      const buildingMsg: ChatMessage = {
         id: generateId(),
         role: 'system',
-        content: retries >= MAX_PHASE_RETRIES
-          ? `**Phase ${phaseNumber} Failed Permanently:** ${errorMessage} (after ${retries} attempts)`
-          : `**Phase ${phaseNumber} Error:** ${errorMessage} (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
+        content: `**Building Phase ${phaseNumber}: ${executionContext.phaseName}...**\n\nFeatures: ${executionContext.features.join(', ')}`,
         timestamp: new Date().toISOString(),
       };
-      setChatMessages((prev) => [...prev, errorMsg]);
-      executingPhaseRef.current = null;
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [
-    dynamicBuildPhases.plan,
-    dynamicBuildPhases.getExecutionPromptAsync,
-    dynamicBuildPhases.getExecutionContext,
-    dynamicBuildPhases.completePhase,
-    streaming,
-    currentComponent,
-    appConcept,
-    setChatMessages,
-    setIsGenerating,
-    setCurrentComponent,
-    setComponents,
-    setActiveTab,
-    saveVersion,
-    saveComponentToDb,
-  ]);
+      setChatMessages((prev) => [...prev, buildingMsg]);
+
+      try {
+        // Parse current app state from existing component code
+        let currentAppState: Record<string, unknown> | undefined;
+        if (currentComponent?.code) {
+          try {
+            currentAppState = JSON.parse(currentComponent.code);
+          } catch {
+            // Code is not JSON — skip currentAppState
+          }
+        }
+
+        // Build request body matching what the API route already destructures (route.ts:169-210)
+        const requestBody: Record<string, unknown> = {
+          prompt: executionPrompt,
+          isPhaseBuilding: true,
+          isModification: phaseNumber > 1,
+          phaseContext: {
+            phaseNumber,
+            phaseName: executionContext.phaseName,
+            previousPhaseCode: executionContext.previousPhaseCode,
+            allPhases: executionContext.allPhases?.map((p: any) => ({
+              number: p.number,
+              name: p.name,
+              features: p.features,
+              status: p.status,
+            })),
+            completedPhases: executionContext.completedPhases,
+            cumulativeFeatures: executionContext.cumulativeFeatures,
+          },
+          currentAppState,
+          layoutManifest: appConcept?.layoutManifest || undefined,
+          architectureSpec: dynamicBuildPhases.plan?.architectureSpec || undefined,
+          phaseContexts: dynamicBuildPhases.plan?.phaseContexts || undefined,
+        };
+
+        const streamResult = await streaming.generate(requestBody);
+
+        if (streamResult) {
+          const files = streamResult.files as Array<{ path: string; content: string }>;
+
+          if (files && files.length > 0) {
+            // Update or create component with generated code
+            let updatedComponent: GeneratedComponent;
+
+            if (currentComponent) {
+              updatedComponent = {
+                ...currentComponent,
+                code: JSON.stringify(streamResult, null, 2),
+                description: `Phase ${phaseNumber}: ${executionContext.phaseName}`,
+                timestamp: new Date().toISOString(),
+              };
+              updatedComponent = saveVersion(
+                updatedComponent,
+                'MAJOR_CHANGE',
+                `Phase ${phaseNumber}: ${executionContext.phaseName}`
+              );
+            } else {
+              updatedComponent = {
+                id: generateId(),
+                name: appConcept?.name || 'My App',
+                code: JSON.stringify(streamResult, null, 2),
+                description: `Phase ${phaseNumber}: ${executionContext.phaseName}`,
+                timestamp: new Date().toISOString(),
+                isFavorite: false,
+                conversationHistory: [] as ChatMessage[],
+                versions: [],
+                appConcept: appConcept,
+                layoutManifest: appConcept?.layoutManifest ?? null,
+                dynamicPhasePlan: dynamicBuildPhases.plan,
+              };
+              updatedComponent = saveVersion(
+                updatedComponent,
+                'NEW_APP',
+                `Phase ${phaseNumber}: ${executionContext.phaseName}`
+              );
+            }
+
+            setCurrentComponent(updatedComponent);
+            setComponents((prev) => {
+              const exists = prev.find((c) => c.id === updatedComponent.id);
+              if (exists) {
+                return prev.map((c) => (c.id === updatedComponent.id ? updatedComponent : c));
+              }
+              return [updatedComponent, ...prev].slice(0, 50);
+            });
+            await saveComponentToDb(updatedComponent);
+
+            // Switch to preview
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            setActiveTab('preview');
+
+            // Complete the phase — this triggers auto-advance if enabled
+            const phaseResult: PhaseExecutionResult = {
+              phaseNumber,
+              phaseName: executionContext.phaseName,
+              success: true,
+              generatedCode: JSON.stringify(streamResult, null, 2),
+              generatedFiles: files.map((f) => f.path),
+              implementedFeatures: executionContext.features,
+              duration: 0,
+              tokensUsed: { input: 0, output: 0 },
+            };
+            dynamicBuildPhases.completePhase(phaseResult);
+          } else {
+            // No files generated
+            const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+            phaseRetryCountRef.current.set(phaseNumber, retries);
+            const noFilesMsg: ChatMessage = {
+              id: generateId(),
+              role: 'system',
+              content:
+                retries >= MAX_PHASE_RETRIES
+                  ? `**Phase ${phaseNumber} Failed Permanently:** AI generated no code files after ${retries} attempts.`
+                  : `**Phase ${phaseNumber} Warning:** The AI responded but generated no code files. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
+              timestamp: new Date().toISOString(),
+            };
+            setChatMessages((prev) => [...prev, noFilesMsg]);
+            executingPhaseRef.current = null;
+          }
+        } else {
+          // Streaming returned null
+          const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+          phaseRetryCountRef.current.set(phaseNumber, retries);
+          const failMsg: ChatMessage = {
+            id: generateId(),
+            role: 'system',
+            content:
+              retries >= MAX_PHASE_RETRIES
+                ? `**Phase ${phaseNumber} Failed Permanently:** No response from AI after ${retries} attempts.`
+                : `**Phase ${phaseNumber} Failed:** No response from AI. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
+            timestamp: new Date().toISOString(),
+          };
+          setChatMessages((prev) => [...prev, failMsg]);
+          executingPhaseRef.current = null;
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+        phaseRetryCountRef.current.set(phaseNumber, retries);
+        const errorMsg: ChatMessage = {
+          id: generateId(),
+          role: 'system',
+          content:
+            retries >= MAX_PHASE_RETRIES
+              ? `**Phase ${phaseNumber} Failed Permanently:** ${errorMessage} (after ${retries} attempts)`
+              : `**Phase ${phaseNumber} Error:** ${errorMessage} (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
+          timestamp: new Date().toISOString(),
+        };
+        setChatMessages((prev) => [...prev, errorMsg]);
+        executingPhaseRef.current = null;
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [
+      dynamicBuildPhases.plan,
+      dynamicBuildPhases.getExecutionPromptAsync,
+      dynamicBuildPhases.getExecutionContext,
+      dynamicBuildPhases.completePhase,
+      streaming,
+      currentComponent,
+      appConcept,
+      setChatMessages,
+      setIsGenerating,
+      setCurrentComponent,
+      setComponents,
+      setActiveTab,
+      saveVersion,
+      saveComponentToDb,
+    ]
+  );
 
   // Auto-start build if in ACT mode, reviewed, and ready (Zombie State Prevention)
   useEffect(() => {

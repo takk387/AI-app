@@ -439,8 +439,7 @@ export function buildFunctionMod(
       const afterDecl = bodyText.substring(lastDecl.index);
       const endMatch = afterDecl.match(/[;}]\s*\n/);
       if (endMatch && endMatch.index !== undefined) {
-        insertPosition =
-          bodyNode.startIndex + lastDecl.index + endMatch.index + endMatch[0].length;
+        insertPosition = bodyNode.startIndex + lastDecl.index + endMatch.index + endMatch[0].length;
       }
     }
   }

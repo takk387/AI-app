@@ -35,11 +35,13 @@ export interface UseConceptUpdatesOptions {
   setAppConcept: (concept: AppConcept | null) => void;
   setDynamicPhasePlan: (plan: DynamicPhasePlan | null) => void;
   setPhasePlanGeneratedAt: (date: string) => void;
-  setPendingConceptUpdate: (update: {
-    changes: ConceptChange[];
-    updatedConcept: AppConcept;
-    phasePlan: DynamicPhasePlan | null;
-  } | null) => void;
+  setPendingConceptUpdate: (
+    update: {
+      changes: ConceptChange[];
+      updatedConcept: AppConcept;
+      phasePlan: DynamicPhasePlan | null;
+    } | null
+  ) => void;
 }
 
 export interface UseConceptUpdatesReturn {

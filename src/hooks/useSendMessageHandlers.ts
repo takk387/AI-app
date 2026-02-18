@@ -104,7 +104,9 @@ export interface HandlerContext {
   setActiveTab: (tab: ActiveTab) => void;
   setPendingDiff: (diff: PendingDiff) => void;
   setShowDiffPreview: (show: boolean) => void;
-  setNewAppStagePlan: (plan: StagePlan | null | ((prev: StagePlan | null) => StagePlan | null)) => void;
+  setNewAppStagePlan: (
+    plan: StagePlan | null | ((prev: StagePlan | null) => StagePlan | null)
+  ) => void;
   uploadedImage: string | null;
   streaming: StreamingGenerationReturn;
   versionControl: VersionControlReturn;
@@ -363,10 +365,7 @@ export async function handleModifyTrigger(
  * Handle design trigger from builder expert
  * Note: Legacy design-chat API has been removed. Design is now handled through the Layout Builder Wizard.
  */
-export async function handleDesignTrigger(
-  ctx: HandlerContext,
-  prompt: string
-): Promise<void> {
+export async function handleDesignTrigger(ctx: HandlerContext, prompt: string): Promise<void> {
   // Design chat API has been removed in favor of the Layout Builder Wizard
   const infoMessage: ChatMessage = {
     id: generateId(),

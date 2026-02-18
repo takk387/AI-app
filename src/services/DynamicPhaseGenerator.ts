@@ -46,10 +46,7 @@ import { analyzeGeneratedFiles } from './phaseGeneration/fileAnalyzer';
 
 // Re-export sub-module functions that were previously class methods
 // so consumers using static-like access patterns still work
-export {
-  inferStateComplexity,
-  detectMemoryNeeds,
-} from './phaseGeneration/featureClassifier';
+export { inferStateComplexity, detectMemoryNeeds } from './phaseGeneration/featureClassifier';
 
 // ============================================================================
 // MAIN GENERATOR CLASS

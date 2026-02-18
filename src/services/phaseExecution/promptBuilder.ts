@@ -62,8 +62,17 @@ export interface PhaseExecutionContextWithEnhancedTracking extends PhaseExecutio
 
 /** Known color keys that are explicitly handled in the prompt */
 const KNOWN_COLOR_KEYS = new Set([
-  'primary', 'secondary', 'accent', 'background', 'surface',
-  'text', 'textMuted', 'border', 'success', 'warning', 'error',
+  'primary',
+  'secondary',
+  'accent',
+  'background',
+  'surface',
+  'text',
+  'textMuted',
+  'border',
+  'success',
+  'warning',
+  'error',
 ]);
 
 /** Format extra (non-standard) colors from the design system palette */

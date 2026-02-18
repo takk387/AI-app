@@ -126,11 +126,7 @@ export function classifyFileType(
   ) {
     return 'component';
   }
-  if (
-    lowerPath.endsWith('.css') ||
-    lowerPath.endsWith('.scss') ||
-    lowerPath.includes('/styles/')
-  ) {
+  if (lowerPath.endsWith('.css') || lowerPath.endsWith('.scss') || lowerPath.includes('/styles/')) {
     return 'style';
   }
   if (lowerPath.includes('.config.') || lowerPath.includes('/config/')) {

@@ -90,10 +90,7 @@ export function extractFeatureSpecs(
     // Extract technical notes
     const technicalNotes = extractPatternMatches(
       context,
-      new RegExp(
-        `(?:api|database|backend|endpoint)[^.]*${escapeRegex(featureName)}[^.]*`,
-        'gi'
-      )
+      new RegExp(`(?:api|database|backend|endpoint)[^.]*${escapeRegex(featureName)}[^.]*`, 'gi')
     );
 
     // Determine priority from feature

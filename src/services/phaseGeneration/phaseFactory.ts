@@ -114,10 +114,7 @@ export function createSetupPhase(
  * in the Layout Builder. The Builder will inject the pre-built code
  * directly (no AI call), auto-completing this phase instantly.
  */
-export function createLayoutInjectionPhase(
-  phaseNumber: number,
-  concept: AppConcept
-): DynamicPhase {
+export function createLayoutInjectionPhase(phaseNumber: number, concept: AppConcept): DynamicPhase {
   const layoutManifest = concept.layoutManifest!;
   const designSystem = layoutManifest.designSystem || {
     colors: {},
@@ -378,8 +375,7 @@ export function splitFeaturesIntoPhases(
   });
 
   for (const feature of sortedFeatures) {
-    const wouldExceedTokens =
-      currentTokens + feature.estimatedTokens > config.maxTokensPerPhase;
+    const wouldExceedTokens = currentTokens + feature.estimatedTokens > config.maxTokensPerPhase;
     const wouldExceedFeatures = currentFeatures.length >= config.maxFeaturesPerPhase;
 
     if ((wouldExceedTokens || wouldExceedFeatures) && currentFeatures.length > 0) {
@@ -390,9 +386,7 @@ export function splitFeaturesIntoPhases(
           currentFeatures,
           subPhaseIndex,
           subPhases.length +
-            Math.ceil(
-              (sortedFeatures.length - currentFeatures.length) / config.maxFeaturesPerPhase
-            )
+            Math.ceil((sortedFeatures.length - currentFeatures.length) / config.maxFeaturesPerPhase)
         ),
         description: generatePhaseDescription(currentFeatures),
         features: currentFeatures,
