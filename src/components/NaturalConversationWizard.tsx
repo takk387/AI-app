@@ -16,7 +16,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { AppConcept, TechnicalRequirements, UIPreferences } from '@/types/appConcept';
 import type { LayoutManifest } from '@/types/schema';
-import type { WizardState } from '@/types/wizardState';
+import type { WizardState, VisionDocument } from '@/types/wizardState';
 import { wizardFeaturesToFeatures } from '@/types/wizardState';
 import { useToast } from '@/components/Toast';
 import { LoaderIcon } from './ui/Icons';
@@ -37,6 +37,7 @@ import {
   ChatInputArea,
   WizardHeader,
   ConceptSummaryPanel,
+  VisionDocumentPanel,
 } from './conversation-wizard';
 import type { ChatInputAreaRef } from './conversation-wizard';
 
@@ -143,6 +144,11 @@ What would you like to build?`,
   const [importedLayoutManifest, setImportedLayoutManifest] = useState<LayoutManifest | null>(
     initialConcept?.layoutManifest || null
   );
+  const [activeTab, setActiveTab] = useState<'summary' | 'vision'>('summary');
+  const [visionDocument, setVisionDocument] = useState<VisionDocument | null>(
+    wizardState.visionDocument || null
+  );
+  const [isGeneratingVision, setIsGeneratingVision] = useState(false);
 
   // Get current layout manifest from store
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
@@ -199,6 +205,13 @@ What would you like to build?`,
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onCancel]);
+
+  // Sync visionDocument from recovered wizardState (draft persistence restore)
+  useEffect(() => {
+    if (wizardState.visionDocument && !visionDocument) {
+      setVisionDocument(wizardState.visionDocument);
+    }
+  }, [wizardState.visionDocument]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -307,6 +320,34 @@ What would you like to build?`,
         } else {
           setSuggestedActions([]);
         }
+
+        // Fire parallel vision document extraction (non-blocking)
+        const fullHistory = [
+          ...conversationHistory,
+          { role: 'user' as const, content: messageText },
+          { role: 'assistant' as const, content: data.message },
+        ];
+        if (fullHistory.length >= 4) {
+          setIsGeneratingVision(true);
+          fetch('/api/wizard/generate-vision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversationHistory: fullHistory,
+              currentVision: visionDocument,
+            }),
+          })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((visionData) => {
+              if (visionData?.visionDocument) {
+                setVisionDocument(visionData.visionDocument);
+                // Sync into wizardState so auto-save persists it
+                setWizardState((prev) => ({ ...prev, visionDocument: visionData.visionDocument }));
+              }
+            })
+            .catch((err) => console.warn('[Vision] Generation failed:', err))
+            .finally(() => setIsGeneratingVision(false));
+        }
       } catch (err) {
         console.error('Chat error:', err);
         setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -321,6 +362,7 @@ What would you like to build?`,
     [
       messages,
       wizardState,
+      visionDocument,
       showToast,
       setMessages,
       setWizardState,
@@ -633,11 +675,51 @@ What would you like to build?`,
         />
       </div>
 
-      {/* Side Panel - Concept Summary */}
-      <ConceptSummaryPanel
-        wizardState={wizardState}
-        onContinueToDesign={() => handleAction('continue_to_design')}
-      />
+      {/* Side Panel - Tabbed (Summary / Vision) */}
+      <div
+        className="w-80 border-l flex flex-col"
+        style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
+      >
+        {/* Tab Headers */}
+        <div className="flex border-b" style={{ borderColor: 'var(--border-color)' }}>
+          <button
+            onClick={() => setActiveTab('summary')}
+            className="flex-1 py-2 text-sm font-medium transition-colors"
+            style={{
+              color: activeTab === 'summary' ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: activeTab === 'summary' ? '2px solid var(--brand-primary, #6366f1)' : '2px solid transparent',
+            }}
+          >
+            Summary
+          </button>
+          <button
+            onClick={() => setActiveTab('vision')}
+            className="flex-1 py-2 text-sm font-medium transition-colors relative"
+            style={{
+              color: activeTab === 'vision' ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: activeTab === 'vision' ? '2px solid var(--brand-primary, #6366f1)' : '2px solid transparent',
+            }}
+          >
+            Vision
+            {isGeneratingVision && (
+              <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-garden-500 animate-pulse" />
+            )}
+          </button>
+        </div>
+        {/* Tab Content */}
+        {activeTab === 'summary' ? (
+          <ConceptSummaryPanel
+            wizardState={wizardState}
+            onContinueToDesign={() => handleAction('continue_to_design')}
+          />
+        ) : (
+          <VisionDocumentPanel
+            visionDocument={visionDocument || undefined}
+            isGenerating={isGeneratingVision}
+            onContinueToDesign={() => handleAction('continue_to_design')}
+          />
+        )}
+      </div>
     </div>
   );
 

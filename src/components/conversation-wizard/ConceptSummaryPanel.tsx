@@ -15,7 +15,7 @@ export function ConceptSummaryPanel({ wizardState, onContinueToDesign }: Concept
 
   return (
     <div
-      className="w-80 border-l flex flex-col"
+      className="flex-1 flex flex-col"
       style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
     >
       <div className="p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>

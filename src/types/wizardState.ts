@@ -67,6 +67,45 @@ export interface WizardState {
 
   /** True when user has confirmed the plan (prevents auto-regeneration) */
   planConfirmed?: boolean;
+
+  /** Vision Document — rich PRD built progressively via parallel AI extraction */
+  visionDocument?: VisionDocument;
+}
+
+// ============================================================================
+// Vision Document Types (VisionBoard-format PRD)
+// ============================================================================
+
+/**
+ * A feature with rich specification detail — user stories, behavior states,
+ * acceptance criteria, edge cases, and UX notes.
+ */
+export interface VisionFeature {
+  id: string;
+  title: string;
+  userStory: string;
+  description: string;
+  behavior: string;
+  acceptanceCriteria: string[];
+  edgeCases: string;
+  uxNotes: string;
+  complexityLevel: 'low' | 'medium' | 'high';
+}
+
+/**
+ * A rich Vision Document (PRD) progressively built during wizard conversation.
+ * Contains specification-grade detail for every aspect of the app.
+ */
+export interface VisionDocument {
+  name?: string;
+  overview?: string;
+  corePurpose?: string;
+  targetAudience?: string;
+  competitiveEdge?: string;
+  features: VisionFeature[];
+  userFlow?: string;
+  pageBreakdown?: string;
+  designMood?: string;
 }
 
 /**
