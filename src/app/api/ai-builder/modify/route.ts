@@ -283,7 +283,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
     // ============================================================================
     // PHASE 5.2: RETRY LOGIC WITH SPECIFIC FIXES
     // ============================================================================
-    const modelName = 'claude-sonnet-4-5-20250929';
+    const modelName = 'claude-sonnet-4-6';
     const maxRetries = DEFAULT_RETRY_CONFIG.maxAttempts;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

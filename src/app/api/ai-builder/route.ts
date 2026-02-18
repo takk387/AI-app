@@ -138,7 +138,7 @@ DETECTION RULES:
 
     perfTracker.checkpoint('prompt_built');
 
-    const modelName = 'claude-sonnet-4-5-20250929';
+    const modelName = 'claude-sonnet-4-6';
 
     // Use streaming for better responsiveness and timeout handling
     const stream = await anthropic.messages.stream({

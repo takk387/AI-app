@@ -136,7 +136,7 @@ Return ONLY the JSON object, no other text.`;
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2000,
       temperature: 0,
       messages: [{ role: 'user', content: extractionPrompt }],
@@ -293,7 +293,7 @@ Continue the conversation naturally.`;
 
     // Call Claude API with extended thinking for deeper reasoning
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-sonnet-4-6',
       max_tokens: 16000, // Increased to accommodate thinking budget + response
       temperature: 1, // Required for extended thinking
       thinking: {

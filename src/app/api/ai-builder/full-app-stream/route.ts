@@ -470,7 +470,7 @@ MODIFICATION MODE for "${currentAppName}":
             }
           : undefined;
 
-      const modelName = 'claude-sonnet-4-5-20250929';
+      const modelName = 'claude-sonnet-4-6';
       const phaseNumber = phaseContext?.phaseNumber || 1;
       const tokenBudget = getTokenBudget(phaseNumber);
 

@@ -12,7 +12,7 @@
 export const MODEL_IDS = {
   // Claude models
   CLAUDE_OPUS: 'claude-opus-4-6',
-  CLAUDE_SONNET: 'claude-sonnet-4-5-20250929',
+  CLAUDE_SONNET: 'claude-sonnet-4-6',
 
   // Gemini models
   GEMINI_PRO: 'gemini-3-pro-preview',
@@ -59,7 +59,7 @@ export const MODEL_CATALOG: AIModelOption[] = [
   {
     id: MODEL_IDS.CLAUDE_SONNET,
     provider: 'anthropic',
-    name: 'Claude Sonnet 4.5',
+    name: 'Claude Sonnet 4.6',
     tier: 'standard',
     capabilities: ['code-generation', 'synthesis', 'analysis', 'fast-response'],
     costTier: 'medium',

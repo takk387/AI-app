@@ -247,7 +247,7 @@ MODIFICATION MODE for "${currentAppName}":
     // ============================================================================
     // PHASE 5.2: RETRY LOGIC WITH SPECIFIC FIXES
     // ============================================================================
-    const modelName = 'claude-sonnet-4-5-20250929';
+    const modelName = 'claude-sonnet-4-6';
     const maxRetries = DEFAULT_RETRY_CONFIG.maxAttempts;
 
     // Build phase context if this is a phased build
