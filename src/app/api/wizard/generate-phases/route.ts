@@ -322,7 +322,7 @@ export async function GET() {
 
     alwaysSeparatePhases: [
       'Authentication',
-      'Database Setup',
+      'Database Schema',
       'Real-time Features',
       'Offline Support',
       'External Integrations',

@@ -29,7 +29,6 @@ export {
   buildDesignContext,
   createSetupPhase,
   createLayoutInjectionPhase,
-  createDesignSystemPhase,
   createPolishPhase,
   createPhaseFromFeatures,
   generatePhaseName,

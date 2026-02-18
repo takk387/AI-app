@@ -953,7 +953,7 @@ ${spec.architectureReasoning.securityNotes.map((n) => `- ${n}`).join('\n')}
 2. **Implement ALL API routes listed** - each with proper error handling
 3. **Follow the auth strategy specified** - including RBAC if defined
 4. **This architecture is designed to scale** - do not simplify or remove features
-5. **SQLite is used for development** - schema is PostgreSQL-compatible for production migration
+5. **Database: ${spec.database?.strategy === 'sqlite' ? 'SQLite is used for development - schema is PostgreSQL-compatible for production migration' : spec.database?.strategy === 'supabase' ? 'Supabase (PostgreSQL) is the database - use Supabase client for queries' : 'PostgreSQL is the database - use Prisma for all database operations'}**
 
 This architecture was specifically generated for "${spec.appName}" based on its features and requirements.
 `);

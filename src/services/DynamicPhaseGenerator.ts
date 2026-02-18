@@ -224,13 +224,17 @@ export class DynamicPhaseGenerator {
       })),
     ];
 
+    const updatedTotalTokens =
+      plan.estimatedTotalTokens +
+      sortedBackendPhases.reduce((sum, p) => sum + p.estimatedTokens, 0);
+    const totalMinutes = Math.ceil(updatedTotalTokens / 1500);
+
     return {
       ...plan,
       phases: newPhases,
       totalPhases: newPhases.length,
-      estimatedTotalTokens:
-        plan.estimatedTotalTokens +
-        sortedBackendPhases.reduce((sum, p) => sum + p.estimatedTokens, 0),
+      estimatedTotalTokens: updatedTotalTokens,
+      estimatedTotalTime: `${totalMinutes}-${totalMinutes + newPhases.length * 2} min`,
     };
   }
 
@@ -396,6 +400,8 @@ export class DynamicPhaseGenerator {
       'analytics',
       'admin',
       'ui-role',
+      'i18n',
+      'testing',
       'backend-validator',
       'devops',
       'monitoring',

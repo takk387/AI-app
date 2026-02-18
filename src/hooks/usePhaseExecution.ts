@@ -77,6 +77,9 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
 
   // Ref for tracking which phase is currently executing (prevents duplicate runs)
   const executingPhaseRef = useRef<number | null>(null);
+  // Retry counter per phase — prevents infinite retry loops on persistent errors
+  const phaseRetryCountRef = useRef<Map<number, number>>(new Map());
+  const MAX_PHASE_RETRIES = 3;
 
   // Sync global dynamic phase plan to local hook manager
   useEffect(() => {
@@ -189,10 +192,14 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
     const executionContext = dynamicBuildPhases.getExecutionContext(phaseNumber);
 
     if (!executionPrompt || !executionContext) {
+      const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+      phaseRetryCountRef.current.set(phaseNumber, retries);
       const errorMsg: ChatMessage = {
         id: generateId(),
         role: 'system',
-        content: `**Phase ${phaseNumber} Error:** Could not build execution context. The phase may be misconfigured.`,
+        content: retries >= MAX_PHASE_RETRIES
+          ? `**Phase ${phaseNumber} Failed Permanently:** Could not build execution context after ${retries} attempts. Please check the phase configuration.`
+          : `**Phase ${phaseNumber} Error:** Could not build execution context. The phase may be misconfigured. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
         timestamp: new Date().toISOString(),
       };
       setChatMessages((prev) => [...prev, errorMsg]);
@@ -308,10 +315,14 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
           dynamicBuildPhases.completePhase(phaseResult);
         } else {
           // No files generated
+          const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+          phaseRetryCountRef.current.set(phaseNumber, retries);
           const noFilesMsg: ChatMessage = {
             id: generateId(),
             role: 'system',
-            content: `**Phase ${phaseNumber} Warning:** The AI responded but generated no code files. The phase remains in-progress for retry.`,
+            content: retries >= MAX_PHASE_RETRIES
+              ? `**Phase ${phaseNumber} Failed Permanently:** AI generated no code files after ${retries} attempts.`
+              : `**Phase ${phaseNumber} Warning:** The AI responded but generated no code files. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
             timestamp: new Date().toISOString(),
           };
           setChatMessages((prev) => [...prev, noFilesMsg]);
@@ -319,10 +330,14 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
         }
       } else {
         // Streaming returned null
+        const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+        phaseRetryCountRef.current.set(phaseNumber, retries);
         const failMsg: ChatMessage = {
           id: generateId(),
           role: 'system',
-          content: `**Phase ${phaseNumber} Failed:** No response from AI. The phase remains in-progress for retry.`,
+          content: retries >= MAX_PHASE_RETRIES
+            ? `**Phase ${phaseNumber} Failed Permanently:** No response from AI after ${retries} attempts.`
+            : `**Phase ${phaseNumber} Failed:** No response from AI. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
           timestamp: new Date().toISOString(),
         };
         setChatMessages((prev) => [...prev, failMsg]);
@@ -330,10 +345,14 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
+      phaseRetryCountRef.current.set(phaseNumber, retries);
       const errorMsg: ChatMessage = {
         id: generateId(),
         role: 'system',
-        content: `**Phase ${phaseNumber} Error:** ${errorMessage}\n\nThe phase remains in-progress for retry.`,
+        content: retries >= MAX_PHASE_RETRIES
+          ? `**Phase ${phaseNumber} Failed Permanently:** ${errorMessage} (after ${retries} attempts)`
+          : `**Phase ${phaseNumber} Error:** ${errorMessage} (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
         timestamp: new Date().toISOString(),
       };
       setChatMessages((prev) => [...prev, errorMsg]);
@@ -378,18 +397,19 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
     tryStartPhase1,
   ]);
 
-  // Auto-execute phases when they become "in-progress" (Phase 2+)
-  // Phase 1 is handled by tryStartPhase1 (layout injection or manual).
+  // Auto-execute phases when they become "in-progress" (all phases including Phase 1).
+  // Layout injection phases are excluded — they are handled synchronously by tryStartPhase1.
   // This effect connects startPhase() → executePhase() for automatic AI generation.
   useEffect(() => {
     const phase = dynamicBuildPhases.currentPhase;
     if (
       phase &&
-      phase.number > 1 &&
+      !phase.isLayoutInjection &&
       !streaming.isStreaming &&
       !isGenerating &&
       !dynamicBuildPhases.isPaused &&
-      executingPhaseRef.current !== phase.number
+      executingPhaseRef.current !== phase.number &&
+      (phaseRetryCountRef.current.get(phase.number) ?? 0) < MAX_PHASE_RETRIES
     ) {
       executingPhaseRef.current = phase.number;
       executePhase(phase.number);

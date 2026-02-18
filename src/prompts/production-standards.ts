@@ -120,18 +120,18 @@ class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-background,#f9fafb)] p-4">
+          <div className="bg-[var(--color-surface,#ffffff)] p-6 rounded-lg shadow-lg max-w-md text-center">
             <div className="text-red-500 text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-[var(--color-text,#111827)] mb-2">
               Something went wrong
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-[var(--color-text-muted,#6b7280)] mb-4">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             <button
               onClick={this.handleReset}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-[var(--color-primary,#2563eb)] text-white rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary,#2563eb)] focus:ring-offset-2"
             >
               Try Again
             </button>

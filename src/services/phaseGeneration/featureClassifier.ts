@@ -118,7 +118,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
       estimatedTokens: 4000,
       requiresOwnPhase: true,
       suggestedPhaseName: 'Authentication System',
-      dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+      dependencies: tech.needsDatabase ? ['Database Schema'] : [],
       keywords: ['auth', authType],
     });
   }
@@ -127,7 +127,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
     implicit.push({
       originalFeature: {
         id: 'implicit-database',
-        name: 'Database Setup',
+        name: 'Database Schema',
         description: 'Database schema, configuration, and data models',
         priority: 'high',
       },
@@ -154,7 +154,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
       estimatedTokens: 4000,
       requiresOwnPhase: true,
       suggestedPhaseName: 'Real-time Features',
-      dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+      dependencies: tech.needsDatabase ? ['Database Schema'] : [],
       keywords: ['realtime', 'websocket'],
     });
   }
@@ -230,7 +230,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
       estimatedTokens: 4500,
       requiresOwnPhase: true,
       suggestedPhaseName: 'Memory & Context System',
-      dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+      dependencies: tech.needsDatabase ? ['Database Schema'] : [],
       keywords: ['memory', 'context', 'persistence', 'history', 'preferences', 'semantic'],
     });
   }
@@ -250,7 +250,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
       estimatedTokens: 2000,
       requiresOwnPhase: true,
       suggestedPhaseName: 'Backend Validation',
-      dependencies: ['Database Setup', 'Authentication System', 'API Integration'],
+      dependencies: ['Database Schema', 'Authentication System', 'API Integration'],
       keywords: ['validation', 'integrity', 'schema check'],
     });
   }
@@ -290,7 +290,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
       estimatedTokens: 4000,
       requiresOwnPhase: true,
       suggestedPhaseName: 'Offline Support',
-      dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+      dependencies: tech.needsDatabase ? ['Database Schema'] : [],
       keywords: ['offline', 'service worker', 'sync', 'pwa', 'indexeddb'],
     });
   }
@@ -331,7 +331,7 @@ export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassif
       estimatedTokens: 4000,
       requiresOwnPhase: true,
       suggestedPhaseName: 'DevOps & Infrastructure',
-      dependencies: tech.needsDatabase ? ['Database Setup'] : [],
+      dependencies: tech.needsDatabase ? ['Database Schema'] : [],
       keywords: ['docker', 'ci/cd', 'deployment', 'infrastructure', 'vercel', 'aws'],
     });
 
@@ -467,7 +467,10 @@ export function analyzeLayoutComplexity(root: any): {
   let hasVideo = false;
   const types = new Set<string>();
 
+  const MAX_DEPTH = 50;
+
   const traverse = (node: any, currentDepth: number) => {
+    if (currentDepth > MAX_DEPTH) return;
     count++;
     depth = Math.max(depth, currentDepth);
 
@@ -593,7 +596,7 @@ export function inferDependencies(feature: Feature, _domain: FeatureDomain): str
     lowerDesc.includes('persist') ||
     lowerDesc.includes('history')
   ) {
-    deps.push('Database Setup');
+    deps.push('Database Schema');
   }
 
   // Features that depend on storage

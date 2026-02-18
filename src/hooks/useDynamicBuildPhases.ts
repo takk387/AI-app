@@ -135,6 +135,8 @@ export function useDynamicBuildPhases(
   const [manager, setManager] = useState<PhaseExecutionManager | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(isPaused);
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
   const [accumulatedCode, setAccumulatedCodeState] = useState('');
 
   // Quality state
@@ -296,7 +298,7 @@ export function useDynamicBuildPhases(
           if (nextPhaseNumber) {
             // Use a timeout to allow UI update before starting next phase
             setTimeout(() => {
-              if (mountedRef.current && !isPaused) {
+              if (mountedRef.current && !isPausedRef.current) {
                 startPhase(nextPhaseNumber);
               }
             }, 1500);
@@ -306,7 +308,7 @@ export function useDynamicBuildPhases(
         onError?.(error as Error);
       }
     },
-    [plan, manager, onPhaseComplete, onBuildComplete, onError, autoAdvance, startPhase, isPaused]
+    [plan, manager, onPhaseComplete, onBuildComplete, onError, autoAdvance, startPhase]
   );
 
   /**
@@ -499,15 +501,12 @@ export function useDynamicBuildPhases(
    */
   const addGeneratedFiles = useCallback(
     (files: string[]) => {
-      if (!mountedRef.current || !plan) return;
+      if (!mountedRef.current || !plan || !manager) return;
 
-      const updated = {
-        ...plan,
-        accumulatedFiles: [...plan.accumulatedFiles, ...files],
-      };
-      setPlan(updated);
+      manager.addFiles(files);
+      setPlan({ ...manager.getPlan() });
     },
-    [plan]
+    [plan, manager]
   );
 
   /**
@@ -515,15 +514,12 @@ export function useDynamicBuildPhases(
    */
   const addImplementedFeatures = useCallback(
     (features: string[]) => {
-      if (!mountedRef.current || !plan) return;
+      if (!mountedRef.current || !plan || !manager) return;
 
-      const updated = {
-        ...plan,
-        accumulatedFeatures: [...plan.accumulatedFeatures, ...features],
-      };
-      setPlan(updated);
+      manager.addFeatures(features);
+      setPlan({ ...manager.getPlan() });
     },
-    [plan]
+    [plan, manager]
   );
 
   // ========== Quality Actions ==========

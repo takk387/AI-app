@@ -327,7 +327,7 @@ export interface PhasePlanGenerationResult {
  */
 export interface PhaseGeneratorConfig {
   // Token limits
-  maxTokensPerPhase: number; // Default: 8000
+  maxTokensPerPhase: number; // Default: 16000
   targetTokensPerPhase: number; // Default: 5000 (aim for this, allow up to max)
 
   // Feature limits
@@ -532,7 +532,7 @@ export const COMPLEX_FEATURE_PATTERNS: ComplexFeaturePattern[] = [
     complexity: 'complex',
     requiresOwnPhase: true,
     baseTokenEstimate: 3500,
-    suggestedName: 'Database Setup',
+    suggestedName: 'Database Schema',
   },
   // Payments
   {

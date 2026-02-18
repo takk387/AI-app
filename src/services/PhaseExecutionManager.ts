@@ -355,6 +355,20 @@ export class PhaseExecutionManager {
    * Extract raw file contents from generated code string
    */
   private extractRawFiles(generatedCode: string): Array<{ path: string; content: string }> {
+    // Primary: parse JSON (generatedCode is JSON.stringify(streamResult))
+    try {
+      const parsed = JSON.parse(generatedCode);
+      if (parsed?.files && Array.isArray(parsed.files)) {
+        return parsed.files.filter(
+          (f: Record<string, unknown>) =>
+            typeof f.path === 'string' && typeof f.content === 'string'
+        ) as Array<{ path: string; content: string }>;
+      }
+    } catch {
+      // Not JSON — fall through to delimiter parsing
+    }
+
+    // Fallback: legacy ===FILE:=== delimiter format
     const files: Array<{ path: string; content: string }> = [];
     const filePattern = /===FILE:([^=]+)===\n([\s\S]*?)(?=\n===(?:FILE|DEPENDENCIES|END)===|$)/g;
     let match;
@@ -476,6 +490,18 @@ export class PhaseExecutionManager {
     return this.accumulatedCode;
   }
 
+  /** Add generated file paths to tracking (keeps manager and plan in sync) */
+  addFiles(files: string[]): void {
+    this.accumulatedFiles = [...this.accumulatedFiles, ...files];
+    this.plan.accumulatedFiles = [...this.accumulatedFiles];
+  }
+
+  /** Add implemented feature names to tracking (keeps manager and plan in sync) */
+  addFeatures(features: string[]): void {
+    this.accumulatedFeatures = [...this.accumulatedFeatures, ...features];
+    this.plan.accumulatedFeatures = [...this.accumulatedFeatures];
+  }
+
   /** Get a copy of the plan (for P4 fix) */
   getPlanCopy(): DynamicPhasePlan {
     return { ...this.plan };
@@ -495,7 +521,7 @@ export class PhaseExecutionManager {
     if (!this.codeContextService) {
       const appType = this.plan.concept.technical.needsDatabase ? 'FULL_STACK' : 'FRONTEND_ONLY';
       this.codeContextService = getCodeContextService(
-        this.plan.appName,
+        this.plan.id,
         this.plan.appName,
         appType
       );

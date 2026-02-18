@@ -93,6 +93,19 @@ function buildReasoning(arch: FinalValidatedArchitecture) {
 // DATABASE
 // ============================================================================
 
+/** Infer relation type from a relation name string (best-effort heuristic) */
+function inferRelationType(name: string): RelationDefinition['type'] {
+  const lower = name.toLowerCase();
+  // Singular nouns typically imply one-to-one (profile, address, settings, avatar)
+  const oneToOnePatterns = ['profile', 'address', 'setting', 'avatar', 'config', 'metadata', 'preference'];
+  if (oneToOnePatterns.some((p) => lower.includes(p))) return 'one-to-one';
+  // Plural junction-table patterns imply many-to-many (tags, categories, roles, permissions)
+  const manyToManyPatterns = ['tags', 'categories', 'roles', 'permissions', 'labels', 'groups'];
+  if (manyToManyPatterns.some((p) => lower.includes(p))) return 'many-to-many';
+  // Default: one-to-many (posts, comments, orders, items, etc.)
+  return 'one-to-many';
+}
+
 function convertDatabase(arch: FinalValidatedArchitecture): ArchSpecDatabase {
   const provider = arch.database?.provider?.toLowerCase() ?? 'postgresql';
 
@@ -116,7 +129,7 @@ function convertDatabase(arch: FinalValidatedArchitecture): ArchSpecDatabase {
     relations: (model.relations ?? []).map(
       (r): RelationDefinition => ({
         name: r,
-        type: 'one-to-many',
+        type: inferRelationType(r),
         targetTable: r,
       })
     ),

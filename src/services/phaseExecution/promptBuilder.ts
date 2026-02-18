@@ -12,6 +12,7 @@ import type { PhaseExecutionContext, APIContract, AccumulatedFile } from '@/type
 import type { LayoutManifest } from '@/types/schema';
 import type { CodeContextSnapshot } from '@/types/codeContext';
 import { NEUTRAL_PALETTE, STATUS_COLORS } from '@/constants/themeDefaults';
+import { getPhaseQualityRules } from '@/prompts/quality-standards';
 import {
   borderRadiusMap,
   shadowMap,
@@ -59,6 +60,26 @@ export interface PhaseExecutionContextWithEnhancedTracking extends PhaseExecutio
 // LAYOUT MANIFEST FORMATTING
 // ============================================================================
 
+/** Known color keys that are explicitly handled in the prompt */
+const KNOWN_COLOR_KEYS = new Set([
+  'primary', 'secondary', 'accent', 'background', 'surface',
+  'text', 'textMuted', 'border', 'success', 'warning', 'error',
+]);
+
+/** Format extra (non-standard) colors from the design system palette */
+function formatExtraColors(colors: Record<string, string>): string {
+  const extras = Object.entries(colors).filter(([key]) => !KNOWN_COLOR_KEYS.has(key));
+  if (extras.length === 0) return '';
+  return '\n' + extras.map(([key, val]) => `- ${key}: ${val} -> var(--color-${key})`).join('\n');
+}
+
+/** Format extra color CSS variable declarations */
+function formatExtraColorVars(colors: Record<string, string>): string {
+  const extras = Object.entries(colors).filter(([key]) => !KNOWN_COLOR_KEYS.has(key));
+  if (extras.length === 0) return '';
+  return '\n' + extras.map(([key, val]) => `  --color-${key}: ${val};`).join('\n');
+}
+
 /**
  * Format a LayoutManifest into a detailed prompt section for code generation
  * Extracts design tokens from manifest.designSystem and provides implementation guidance
@@ -97,7 +118,7 @@ Do NOT deviate from these values. Do NOT substitute colors, spacing, or effects.
 - Border: ${colors.border || NEUTRAL_PALETTE.gray200} -> var(--color-border)
 - Success: ${colors.success || STATUS_COLORS.success}
 - Warning: ${colors.warning || STATUS_COLORS.warning}
-- Error: ${colors.error || STATUS_COLORS.error}
+- Error: ${colors.error || STATUS_COLORS.error}${formatExtraColors(colors)}
 
 ---
 
@@ -114,7 +135,7 @@ Do NOT deviate from these values. Do NOT substitute colors, spacing, or effects.
   --color-text-muted: ${colors.textMuted || NEUTRAL_PALETTE.gray500};
   --color-border: ${colors.border || NEUTRAL_PALETTE.gray200};
   --font-heading: ${fonts.heading || 'Inter, system-ui, sans-serif'};
-  --font-body: ${fonts.body || 'Inter, system-ui, sans-serif'};
+  --font-body: ${fonts.body || 'Inter, system-ui, sans-serif'};${formatExtraColorVars(colors)}
 }
 \`\`\`
 
@@ -555,7 +576,7 @@ ${isFirstPhase ? getPhase1Instructions() : getSubsequentPhaseInstructions(contex
 ## Test Criteria
 After this phase, the following should work:
 ${context.testCriteria.map((c) => `- ${c}`).join('\n')}
-
+${getPhaseQualityRules(context.allPhases.find((p) => p.number === context.phaseNumber)?.domain ?? '')}
 ## Output Format
 Generate the code using the standard delimiter format:
 ===NAME===

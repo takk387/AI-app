@@ -381,6 +381,37 @@ grep -r "from.*moduleName\|import.*moduleName" src --include="*.ts" --include="*
 
 If asked to review or analyze something, go deep by default. Surface-level summaries are not helpful.
 
+### Trust AI Context — Don't Over-Explain Prompts
+
+**AI models (Claude, Gemini) understand context. Don't treat them as dumb.**
+
+When writing prompts that get sent to AI models — in services, API routes, or anywhere in this codebase — resist the urge to over-explain or over-engineer the prompt structure. Verbose, padded prompts are not more effective; they dilute signal with noise.
+
+**Anti-patterns to avoid:**
+
+- Restating the same instruction 3 different ways "just to be safe"
+- Adding exhaustive bullet-point lists of obvious constraints the model already knows
+- Writing multi-page system prompts for tasks that need two sentences
+- Wrapping simple instructions in elaborate scaffolding (headers, sub-sections, numbered lists) when plain prose would be clearer
+- Defensive hedging ("Make sure to...", "Remember to...", "Don't forget to...") on every instruction
+
+**The right approach:**
+
+- Write prompts like you're briefing a senior engineer — concise, specific, high-signal
+- Trust the model to infer reasonable behaviour from context; only state what is genuinely non-obvious or task-specific
+- Use structure (bullets, sections) only when it genuinely aids clarity, not as a default
+- If a prompt feels long, cut it in half and check if the output quality drops — it usually doesn't
+
+**This applies to:**
+- System prompts in `src/prompts/`
+- Inline prompts constructed in services (`src/services/`)
+- Phase execution prompts in `PhaseExecutionManager.ts` and `useDynamicBuildPhases.ts`
+- Any other location that constructs strings passed to an AI API
+
+### Debugging Workflow
+
+**All debugging and bug-fixing tasks MUST follow the Masterchain Debugging Workflow** (see dedicated section below). Key principles: diagnose first and get approval before touching code, surgical minimal changes, one fix at a time with BEFORE/AFTER diffs, and verify all existing code is preserved after each fix.
+
 ### Dual-AI Collaborative Workflow (Claude-Gemini Consensus)
 
 **CONTEXT:** The user works with two AIs - Claude (you) and Gemini. Responses are shared between both AIs to reach consensus before implementation decisions are made.
@@ -573,6 +604,79 @@ const result = modifyFunction(code, 'old', { rename: 'new' });
 - [ ] `MASTER_CONTEXT_VERIFIED.md` line counts updated if critical files changed significantly
 - [ ] New high-dependency files added to Dependency Hierarchy if applicable
 - [ ] New large files (500+ lines) added to Critical Files or Known Risks if applicable
+
+---
+
+## Masterchain Debugging Workflow
+
+**This workflow is MANDATORY for all debugging and bug-fixing tasks. DO NOT VIOLATE.**
+
+Thorough Coding (below) governs how to BUILD. This section governs how to DEBUG. Both apply when debugging involves code changes.
+
+### Global Rules
+
+**1. DIAGNOSE FIRST, ACT SECOND**
+Do not write or suggest any code changes until a plain-language diagnosis is presented and approved by the user.
+
+**2. SURGICAL CHANGES ONLY**
+Change the absolute minimum code required. If 3 lines fix it, change exactly 3 lines. No cleanup, no refactoring "while we're here."
+
+**3. DO NOT TOUCH UNRELATED CODE**
+Do not modify, rename, reformat, or reorganize anything not directly part of the fix. Report other issues separately.
+
+**4. PRESERVE ALL EXISTING CODE**
+Do not remove code unless the diagnosis specifically identifies it as the cause. Code that appears unused may be hooked in elsewhere, called dynamically, or needed for future features. If unsure, ASK.
+
+**5. TRACE BEFORE REMOVING**
+Before removing or replacing ANY code, trace its connections: imports, callers, config references, routing, other files. Report the trace results.
+
+**6. SHOW THE DIFF**
+Present every change as BEFORE/AFTER blocks with file name and line location. Show only changed sections with enough context to locate them — not entire rewritten files.
+
+**7. ONE FIX AT A TIME**
+Address issues sequentially. Complete one fix, let the user verify, then move to the next. Do not bundle fixes.
+
+**8. EXPLAIN EVERY CHANGE**
+For every line changed, explain in plain language: what it did before, what it does now, why the change fixes the problem.
+
+**9. NO BROAD RECODING**
+Match the existing code style exactly. Do not change patterns, conventions, or structure. The goal is to fix the bug, not improve the codebase.
+
+**10. NO PACKAGE CHANGES**
+Do not install, update, or remove packages unless the problem is specifically caused by a package issue. State which package and why, then wait for approval.
+
+**11. VERIFY PRESERVATION**
+After each fix, list every function, component, and export in the modified file(s) and confirm each still exists and behaves the same (except for the intentional fix).
+
+**12. ASK ABOUT UNKNOWNS**
+If you see code you don't understand the purpose of, ask. Do not assume it is dead code, leftover code, or a mistake.
+
+**13. NO HARDCODED FALLBACKS**
+Do not add fallback values that silently mask failures (e.g., `user?.name || "User"`, `data ?? []`). If real data is unavailable, the code should fail visibly. If a problematic fallback already exists, report it but do not remove without approval.
+
+### Phase 1: Diagnosis Only
+
+When a bug or error is reported:
+
+1. **Read** the relevant files and trace the problem from symptom to root cause
+2. **Identify** the specific file(s) and line(s) causing the issue
+3. **Explain** the diagnosis in plain language — what is happening, why, where
+4. **STOP** — present the diagnosis and wait for user approval before proceeding
+
+Do not write any code or suggest fixes during Phase 1.
+
+### Phase 2: Approved Fix
+
+After the user approves the diagnosis:
+
+1. **Re-read** the files to modify directly from the project before changing anything
+2. **Fix only** the approved diagnosis — nothing else
+3. **Show BEFORE/AFTER** blocks for every change with file name and line location
+4. **Minimum changes** — the smallest diff that resolves the issue
+5. **Verify preservation** — provide the Rule 11 checklist
+6. **STOP** — wait for user confirmation that the fix works
+
+If the fix reveals additional issues, return to Phase 1 for the new issue. Do not chain fixes without approval.
 
 ---
 

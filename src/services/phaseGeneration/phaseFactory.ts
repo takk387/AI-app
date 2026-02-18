@@ -1,19 +1,17 @@
 /**
  * Phase Factory
  *
- * Creates special phases (setup, layout injection, design system, polish)
+ * Creates special phases (setup, layout injection, polish)
  * and feature-based phases with proper naming, test criteria, and context.
  */
 
 import type { AppConcept, UserRole } from '@/types/appConcept';
-import type { LayoutManifest } from '@/types/schema';
 import type {
   FeatureDomain,
   FeatureClassification,
   DynamicPhase,
   PhaseGeneratorConfig,
 } from '@/types/dynamicPhases';
-import { DEFAULT_COLORS } from '@/constants/themeDefaults';
 
 // ============================================================================
 // DESIGN CONTEXT
@@ -71,10 +69,10 @@ export function createSetupPhase(
       'Folder structure and organization',
       'Package.json with dependencies',
       'TypeScript configuration',
-      `Base styling (Tailwind setup with ${concept.uiPreferences.colorScheme} theme, ${concept.uiPreferences.style} style)`,
+      `Base styling (Tailwind setup with ${concept.uiPreferences?.colorScheme ?? 'neutral'} theme, ${concept.uiPreferences?.style ?? 'modern'} style)`,
       'Core layout components',
       'Routing configuration',
-      ...(concept.uiPreferences.layout === 'dashboard' ? ['Dashboard layout skeleton'] : []),
+      ...(concept.uiPreferences?.layout === 'dashboard' ? ['Dashboard layout skeleton'] : []),
       // Production features - always included
       'ErrorBoundary component wrapping App with fallback UI and retry button',
       'Semantic HTML structure (nav, main, section, footer)',
@@ -90,7 +88,7 @@ export function createSetupPhase(
     testCriteria: [
       'Project runs without errors',
       'Base layout renders correctly',
-      `Theme matches ${concept.uiPreferences.style} style with ${concept.uiPreferences.colorScheme} colors`,
+      `Theme matches ${concept.uiPreferences?.style ?? 'modern'} style with ${concept.uiPreferences?.colorScheme ?? 'neutral'} colors`,
       'Navigation works between routes',
       'No console errors',
       // Production test criteria
@@ -165,90 +163,6 @@ export function createLayoutInjectionPhase(
 }
 
 /**
- * Create the Design System phase (when layoutManifest exists)
- * This phase creates design tokens, component variants, and layout components
- * ensuring all subsequent phases have access to the complete design specification
- */
-export function createDesignSystemPhase(
-  phaseNumber: number,
-  concept: AppConcept,
-  layoutManifest: LayoutManifest
-): DynamicPhase {
-  const designSystem = layoutManifest.designSystem || {
-    colors: {},
-    fonts: { heading: 'Inter', body: 'Inter' },
-  };
-  const colors = designSystem.colors || {};
-  const fonts = designSystem.fonts || { heading: 'Inter', body: 'Inter' };
-
-  // Build detailed design context for the phase description
-  const designDetails: string[] = [];
-  if (fonts.heading || fonts.body) {
-    designDetails.push(`Typography: ${fonts.heading} headings, ${fonts.body} body`);
-  }
-  if (Object.keys(colors).length > 0) {
-    const primaryColor = colors.primary || colors.background || DEFAULT_COLORS.primary;
-    designDetails.push(
-      `Colors: primary ${primaryColor}, ${Object.keys(colors).length} color tokens`
-    );
-  }
-
-  // Extract detected features from manifest
-  const detectedFeatures = layoutManifest.detectedFeatures || [];
-  const componentsList = detectedFeatures.filter((f) =>
-    ['header', 'footer', 'sidebar', 'hero', 'cards', 'navigation', 'form'].some((c) =>
-      f.toLowerCase().includes(c)
-    )
-  );
-
-  const primaryColor = colors.primary || DEFAULT_COLORS.primary;
-  const backgroundColor = colors.background || DEFAULT_COLORS.surface;
-  const textColor = colors.text || DEFAULT_COLORS.text;
-  const borderColor = colors.border || DEFAULT_COLORS.border;
-
-  return {
-    number: phaseNumber,
-    name: 'Design System Setup',
-    description: `Create complete design system based on layout manifest for "${concept.name}". ${designDetails.join('. ')}. Detected features: ${detectedFeatures.slice(0, 5).join(', ')}. CRITICAL: Use EXACT colors and values from the design specification.`,
-    domain: 'ui-component',
-    features: [
-      `CRITICAL: Create globals.css with CSS variables: --color-primary: ${primaryColor}; --color-background: ${backgroundColor}; --color-text: ${textColor}; --color-border: ${borderColor};`,
-      `Tailwind theme extension in tailwind.config.ts with primary: "${primaryColor}", background: "${backgroundColor}"`,
-      `Typography: heading font "${fonts.heading}", body font "${fonts.body}"`,
-      `Color palette: ${Object.entries(colors)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(', ')}`,
-      ...componentsList.map((c) => `${c} component matching design specs`),
-      'Responsive layout with mobile-first approach',
-      'Layout structure based on UISpecNode tree',
-    ],
-    featureDetails: [],
-    estimatedTokens: 4500, // Design system is substantial
-    estimatedTime: '4-6 min',
-    dependencies: [1], // Depends on Project Setup
-    dependencyNames: ['Project Setup'],
-    testCriteria: [
-      'Design tokens are accessible via CSS variables',
-      'Tailwind classes match design specifications',
-      `Typography renders with ${fonts.heading} font for headings`,
-      `Primary color ${primaryColor} is applied correctly`,
-      'All layout components render with correct styling',
-      'Responsive breakpoints work correctly',
-      'No style conflicts or overrides',
-    ],
-    status: 'pending',
-    // CRITICAL: Include full layoutManifest for code generation
-    conceptContext: {
-      purpose: concept.purpose,
-      targetUsers: concept.targetUsers,
-      uiPreferences: concept.uiPreferences,
-      roles: concept.roles,
-      layoutManifest: layoutManifest, // Full design specification
-    },
-  };
-}
-
-/**
  * Create the polish phase (always last)
  * Includes full concept context for final refinements
  */
@@ -268,7 +182,7 @@ export function createPolishPhase(
       'Loading states and skeletons',
       'Error handling and error states',
       'Empty states with helpful messages',
-      `Micro-interactions and animations (${concept.uiPreferences.style} style)`,
+      `Micro-interactions and animations (${concept.uiPreferences?.style ?? 'modern'} style)`,
       'README.md with setup instructions',
       'Final code cleanup',
       ...(concept.roles && concept.roles.length > 0
@@ -278,11 +192,11 @@ export function createPolishPhase(
     featureDetails: [],
     estimatedTokens: config.baseTokenEstimates.polishPhase,
     estimatedTime: '2-3 min',
-    dependencies: [phaseNumber - 1], // Depends on all previous
+    dependencies: Array.from({ length: phaseNumber - 1 }, (_, i) => i + 1), // Depends on all previous
     dependencyNames: ['All previous phases'],
     testCriteria: [
       'All states have appropriate feedback',
-      `Animations match ${concept.uiPreferences.style} style`,
+      `Animations match ${concept.uiPreferences?.style ?? 'modern'} style`,
       'Documentation is complete',
       `App serves ${concept.targetUsers} effectively`,
       'No console warnings or errors',
