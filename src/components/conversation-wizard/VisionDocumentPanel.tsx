@@ -59,7 +59,10 @@ function FeatureCard({ feature }: { feature: VisionFeature }) {
         <div className="mt-3 space-y-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
           {/* User Story */}
           <div>
-            <label className="text-[10px] uppercase tracking-wide block mb-0.5" style={{ color: 'var(--text-muted)' }}>
+            <label
+              className="text-[10px] uppercase tracking-wide block mb-0.5"
+              style={{ color: 'var(--text-muted)' }}
+            >
               User Story
             </label>
             <p className="italic">{feature.userStory}</p>
@@ -67,7 +70,10 @@ function FeatureCard({ feature }: { feature: VisionFeature }) {
 
           {/* Description */}
           <div>
-            <label className="text-[10px] uppercase tracking-wide block mb-0.5" style={{ color: 'var(--text-muted)' }}>
+            <label
+              className="text-[10px] uppercase tracking-wide block mb-0.5"
+              style={{ color: 'var(--text-muted)' }}
+            >
               Description
             </label>
             <p>{feature.description}</p>
@@ -75,7 +81,10 @@ function FeatureCard({ feature }: { feature: VisionFeature }) {
 
           {/* Behavior */}
           <div>
-            <label className="text-[10px] uppercase tracking-wide block mb-0.5" style={{ color: 'var(--text-muted)' }}>
+            <label
+              className="text-[10px] uppercase tracking-wide block mb-0.5"
+              style={{ color: 'var(--text-muted)' }}
+            >
               Behavior &amp; States
             </label>
             <p>{feature.behavior}</p>
@@ -84,12 +93,17 @@ function FeatureCard({ feature }: { feature: VisionFeature }) {
           {/* Acceptance Criteria */}
           {feature.acceptanceCriteria.length > 0 && (
             <div>
-              <label className="text-[10px] uppercase tracking-wide block mb-0.5" style={{ color: 'var(--text-muted)' }}>
+              <label
+                className="text-[10px] uppercase tracking-wide block mb-0.5"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 Acceptance Criteria
               </label>
               <ul className="space-y-0.5 ml-3">
                 {feature.acceptanceCriteria.map((criterion, i) => (
-                  <li key={i} className="list-disc">{criterion}</li>
+                  <li key={i} className="list-disc">
+                    {criterion}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -97,7 +111,10 @@ function FeatureCard({ feature }: { feature: VisionFeature }) {
 
           {/* Edge Cases */}
           <div>
-            <label className="text-[10px] uppercase tracking-wide block mb-0.5" style={{ color: 'var(--text-muted)' }}>
+            <label
+              className="text-[10px] uppercase tracking-wide block mb-0.5"
+              style={{ color: 'var(--text-muted)' }}
+            >
               Edge Cases
             </label>
             <p>{feature.edgeCases}</p>
@@ -105,7 +122,10 @@ function FeatureCard({ feature }: { feature: VisionFeature }) {
 
           {/* UX Notes */}
           <div>
-            <label className="text-[10px] uppercase tracking-wide block mb-0.5" style={{ color: 'var(--text-muted)' }}>
+            <label
+              className="text-[10px] uppercase tracking-wide block mb-0.5"
+              style={{ color: 'var(--text-muted)' }}
+            >
               UX Notes
             </label>
             <p>{feature.uxNotes}</p>
@@ -124,11 +144,9 @@ export function VisionDocumentPanel({
   isGenerating,
   onContinueToDesign,
 }: VisionDocumentPanelProps) {
-  const hasContent = visionDocument && (
-    visionDocument.name ||
-    visionDocument.overview ||
-    visionDocument.features.length > 0
-  );
+  const hasContent =
+    visionDocument &&
+    (visionDocument.name || visionDocument.overview || visionDocument.features.length > 0);
   const isConceptReady = !!(visionDocument?.name && visionDocument.features.length > 0);
 
   return (
@@ -139,7 +157,11 @@ export function VisionDocumentPanel({
           Vision Document
         </h2>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          {isGenerating ? 'Updating...' : hasContent ? 'PRD in progress' : 'Waiting for conversation...'}
+          {isGenerating
+            ? 'Updating...'
+            : hasContent
+              ? 'PRD in progress'
+              : 'Waiting for conversation...'}
         </p>
         {isGenerating && (
           <div
@@ -159,8 +181,8 @@ export function VisionDocumentPanel({
         {!hasContent ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Start chatting to build your Vision Document. Rich feature specs, user flows, and design
-              direction will appear here as the conversation develops.
+              Start chatting to build your Vision Document. Rich feature specs, user flows, and
+              design direction will appear here as the conversation develops.
             </p>
           </div>
         ) : (
@@ -168,7 +190,10 @@ export function VisionDocumentPanel({
             {/* App Name */}
             {visionDocument.name && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   App Name
                 </label>
                 <p className="mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -180,10 +205,16 @@ export function VisionDocumentPanel({
             {/* Overview */}
             {visionDocument.overview && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Overview
                 </label>
-                <p className="mt-1 text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                <p
+                  className="mt-1 text-sm whitespace-pre-line"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {visionDocument.overview}
                 </p>
               </div>
@@ -192,7 +223,10 @@ export function VisionDocumentPanel({
             {/* Core Purpose */}
             {visionDocument.corePurpose && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Core Purpose
                 </label>
                 <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -204,10 +238,16 @@ export function VisionDocumentPanel({
             {/* Target Audience */}
             {visionDocument.targetAudience && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Target Audience
                 </label>
-                <p className="mt-1 text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                <p
+                  className="mt-1 text-sm whitespace-pre-line"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {visionDocument.targetAudience}
                 </p>
               </div>
@@ -216,7 +256,10 @@ export function VisionDocumentPanel({
             {/* Competitive Edge */}
             {visionDocument.competitiveEdge && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Competitive Edge
                 </label>
                 <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -228,7 +271,10 @@ export function VisionDocumentPanel({
             {/* Features */}
             {visionDocument.features.length > 0 && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Features ({visionDocument.features.length})
                 </label>
                 <div className="mt-2 space-y-2">
@@ -242,10 +288,16 @@ export function VisionDocumentPanel({
             {/* User Flow */}
             {visionDocument.userFlow && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   User Flow
                 </label>
-                <p className="mt-1 text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                <p
+                  className="mt-1 text-sm whitespace-pre-line"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {visionDocument.userFlow}
                 </p>
               </div>
@@ -254,10 +306,16 @@ export function VisionDocumentPanel({
             {/* Page Breakdown */}
             {visionDocument.pageBreakdown && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Page Breakdown
                 </label>
-                <p className="mt-1 text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                <p
+                  className="mt-1 text-sm whitespace-pre-line"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {visionDocument.pageBreakdown}
                 </p>
               </div>
@@ -266,10 +324,16 @@ export function VisionDocumentPanel({
             {/* Design Mood */}
             {visionDocument.designMood && (
               <div>
-                <label className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                <label
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Design Mood
                 </label>
-                <p className="mt-1 text-sm whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                <p
+                  className="mt-1 text-sm whitespace-pre-line"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {visionDocument.designMood}
                 </p>
               </div>

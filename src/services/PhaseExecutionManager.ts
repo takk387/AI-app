@@ -132,6 +132,12 @@ export class PhaseExecutionManager {
     this.phaseGenerator = new DynamicPhaseGenerator();
 
     // Initialize from plan if available
+    if (plan.accumulatedFiles) {
+      this.accumulatedFiles = [...plan.accumulatedFiles];
+    }
+    if (plan.accumulatedFeatures) {
+      this.accumulatedFeatures = [...plan.accumulatedFeatures];
+    }
     if (plan.accumulatedFilesRich) {
       this.accumulatedFilesRich = [...plan.accumulatedFilesRich];
     }

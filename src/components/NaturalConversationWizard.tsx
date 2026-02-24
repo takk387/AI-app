@@ -687,7 +687,10 @@ What would you like to build?`,
             className="flex-1 py-2 text-sm font-medium transition-colors"
             style={{
               color: activeTab === 'summary' ? 'var(--text-primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === 'summary' ? '2px solid var(--brand-primary, #6366f1)' : '2px solid transparent',
+              borderBottom:
+                activeTab === 'summary'
+                  ? '2px solid var(--brand-primary, #6366f1)'
+                  : '2px solid transparent',
             }}
           >
             Summary
@@ -697,7 +700,10 @@ What would you like to build?`,
             className="flex-1 py-2 text-sm font-medium transition-colors relative"
             style={{
               color: activeTab === 'vision' ? 'var(--text-primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === 'vision' ? '2px solid var(--brand-primary, #6366f1)' : '2px solid transparent',
+              borderBottom:
+                activeTab === 'vision'
+                  ? '2px solid var(--brand-primary, #6366f1)'
+                  : '2px solid transparent',
             }}
           >
             Vision

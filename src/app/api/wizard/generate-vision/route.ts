@@ -134,7 +134,7 @@ function mergeVisionDocument(
   const base: VisionDocument = current || { features: [] };
 
   // Merge features by id: update existing, add new, keep unmentioned
-  let mergedFeatures = [...base.features];
+  const mergedFeatures = [...base.features];
   if (update.features && update.features.length > 0) {
     for (const newFeat of update.features) {
       const existingIdx = mergedFeatures.findIndex((f) => f.id === newFeat.id);
@@ -169,10 +169,7 @@ export async function POST(request: Request) {
     const { conversationHistory, currentVision } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { error: 'Anthropic API key not configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
     }
 
     // Gate: only process if we have meaningful conversation
