@@ -218,6 +218,10 @@ export function useFileStorage(options: UseFileStorageOptions): UseFileStorageRe
               fileCount: 0,
               totalSize: 0,
             },
+            'ai-images': {
+              fileCount: 0,
+              totalSize: 0,
+            },
           },
           byType,
           quota: storageQuota,

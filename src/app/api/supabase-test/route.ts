@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Enhanced Test endpoint to verify Supabase connection and storage functionality
@@ -98,8 +99,25 @@ export async function GET() {
     // ========================================================================
     // 5. Test Storage Buckets Existence
     // ========================================================================
-    const requiredBuckets = ['user-uploads', 'generated-apps', 'app-assets'];
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    const requiredBuckets = ['user-uploads', 'generated-apps', 'app-assets', 'ai-images'];
+
+    // Use service role client for listBuckets — anon key lacks permission
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const sbServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    let bucketsError: { message: string } | null = null;
+    let buckets: { name: string }[] | null = null;
+
+    if (sbUrl && sbServiceKey) {
+      const adminClient = createSupabaseClient(sbUrl, sbServiceKey);
+      const result = await adminClient.storage.listBuckets();
+      bucketsError = result.error;
+      buckets = result.data;
+    } else {
+      // Fallback to anon key (may return empty)
+      const result = await supabase.storage.listBuckets();
+      bucketsError = result.error;
+      buckets = result.data;
+    }
 
     if (bucketsError) {
       testResults.tests.storageBuckets = {
@@ -121,6 +139,7 @@ export async function GET() {
         required: requiredBuckets,
         existing: existingBuckets,
         missing: missingBuckets,
+        usingServiceRole: !!(sbUrl && sbServiceKey),
       };
 
       if (missingBuckets.length > 0) {

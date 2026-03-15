@@ -60,7 +60,7 @@ export type SignedUrl = BrandedString<'SignedUrl'>;
  * Valid storage bucket names
  * Derived from STORAGE_BUCKETS constant in storage.ts
  */
-export type BucketName = 'user-uploads' | 'generated-apps' | 'app-assets';
+export type BucketName = 'user-uploads' | 'generated-apps' | 'app-assets' | 'ai-images';
 
 /**
  * Type-safe bucket configuration

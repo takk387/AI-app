@@ -76,6 +76,11 @@ const BUCKET_CONFIGS: Record<BucketName, FileValidationRules> = {
     allowedTypes: ['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'],
     allowedExtensions: ['jpg', 'jpeg', 'png', 'svg', 'webp'],
   },
+  'ai-images': {
+    maxSize: 5 * 1024 * 1024, // 5 MB
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+  },
 };
 
 /**

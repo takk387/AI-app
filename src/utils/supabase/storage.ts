@@ -11,6 +11,7 @@ export const STORAGE_BUCKETS = {
   USER_UPLOADS: 'user-uploads',
   GENERATED_APPS: 'generated-apps',
   APP_ASSETS: 'app-assets',
+  AI_IMAGES: 'ai-images',
 } as const;
 
 /**
