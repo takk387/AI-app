@@ -15,8 +15,12 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      return NextResponse.json({ error: 'Google AI API key not configured' }, { status: 500 });
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Gemini API not configured. Set GOOGLE_API_KEY or GEMINI_API_KEY.' },
+        { status: 500 }
+      );
     }
 
     const { prompt, model } = await request.json();
@@ -27,9 +31,7 @@ export async function POST(request: Request) {
 
     const modelId = model ?? MODEL_IDS.GEMINI_PRO;
 
-    const genAI = new GoogleGenAI({
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    });
+    const genAI = new GoogleGenAI({ apiKey });
 
     const response = await genAI.models.generateContent({
       model: modelId,
