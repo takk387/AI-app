@@ -529,6 +529,33 @@ export class CodeContextService {
 // ============================================================================
 
 const serviceInstances = new Map<string, CodeContextService>();
+const serviceLastAccessed = new Map<string, number>();
+
+// Auto-cleanup: remove service instances not accessed for 30 minutes
+const SERVICE_TTL_MS = 30 * 60 * 1000;
+const serviceCleanupInterval = setInterval(
+  () => {
+    const now = Date.now();
+    for (const [appId, lastAccessed] of serviceLastAccessed) {
+      if (now - lastAccessed > SERVICE_TTL_MS) {
+        const service = serviceInstances.get(appId);
+        if (service) {
+          service.clearCache();
+        }
+        serviceInstances.delete(appId);
+        serviceLastAccessed.delete(appId);
+      }
+    }
+  },
+  5 * 60 * 1000
+); // Run every 5 minutes
+if (
+  serviceCleanupInterval &&
+  typeof serviceCleanupInterval === 'object' &&
+  'unref' in serviceCleanupInterval
+) {
+  serviceCleanupInterval.unref();
+}
 
 /**
  * Get or create a CodeContextService for an app
@@ -545,6 +572,7 @@ export function getCodeContextService(
     serviceInstances.set(appId, service);
   }
 
+  serviceLastAccessed.set(appId, Date.now());
   return service;
 }
 
@@ -557,6 +585,7 @@ export function clearCodeContextService(appId: string): void {
     service.clearCache();
     serviceInstances.delete(appId);
   }
+  serviceLastAccessed.delete(appId);
 }
 
 /**
@@ -567,4 +596,5 @@ export function clearAllCodeContextServices(): void {
     service.clearCache();
   }
   serviceInstances.clear();
+  serviceLastAccessed.clear();
 }

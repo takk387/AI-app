@@ -41,3 +41,13 @@ export function cleanupExpiredSessions(): void {
     }
   }
 }
+
+// Auto-cleanup: run every 10 minutes instead of only on new requests
+const sessionCleanupInterval = setInterval(cleanupExpiredSessions, 10 * 60 * 1000);
+if (
+  sessionCleanupInterval &&
+  typeof sessionCleanupInterval === 'object' &&
+  'unref' in sessionCleanupInterval
+) {
+  sessionCleanupInterval.unref();
+}

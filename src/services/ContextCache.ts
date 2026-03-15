@@ -47,9 +47,8 @@ export class ContextCache {
     maxSnapshotCacheSize?: number;
     ttlMs?: number;
   }) {
-    this.maxAnalysisCacheSize = options?.maxAnalysisCacheSize ?? 500;
-    // Increased from 50 to 200 for multi-phase builds with many files
-    this.maxSnapshotCacheSize = options?.maxSnapshotCacheSize ?? 200;
+    this.maxAnalysisCacheSize = options?.maxAnalysisCacheSize ?? 250;
+    this.maxSnapshotCacheSize = options?.maxSnapshotCacheSize ?? 100;
     // Increased from 5 to 15 minutes to prevent cold starts between phases
     this.ttlMs = options?.ttlMs ?? 15 * 60 * 1000; // 15 minutes default
   }
@@ -307,6 +306,7 @@ export class ContextCache {
 // ============================================================================
 
 let cacheInstance: ContextCache | null = null;
+let pruneInterval: ReturnType<typeof setInterval> | null = null;
 
 export function getContextCache(options?: {
   maxAnalysisCacheSize?: number;
@@ -315,6 +315,20 @@ export function getContextCache(options?: {
 }): ContextCache {
   if (!cacheInstance || options) {
     cacheInstance = new ContextCache(options);
+
+    // Schedule automatic pruning every 5 minutes
+    if (!pruneInterval) {
+      pruneInterval = setInterval(
+        () => {
+          cacheInstance?.prune();
+        },
+        5 * 60 * 1000
+      );
+      // Allow process to exit even if interval is active
+      if (pruneInterval && typeof pruneInterval === 'object' && 'unref' in pruneInterval) {
+        pruneInterval.unref();
+      }
+    }
   }
   return cacheInstance;
 }

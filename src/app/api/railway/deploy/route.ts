@@ -19,6 +19,27 @@ const RAILWAY_API_URL = 'https://backboard.railway.app/graphql/v2';
 // Maps deployment ID to deployment record with user ownership
 const deployments = new Map<string, RailwayDeployment>();
 
+// Auto-cleanup: remove deployment records older than 2 hours
+const DEPLOYMENT_TTL_MS = 2 * 60 * 60 * 1000;
+const deploymentCleanupInterval = setInterval(
+  () => {
+    const now = Date.now();
+    for (const [id, record] of deployments) {
+      if (now - new Date(record.createdAt).getTime() > DEPLOYMENT_TTL_MS) {
+        deployments.delete(id);
+      }
+    }
+  },
+  10 * 60 * 1000
+); // Run every 10 minutes
+if (
+  deploymentCleanupInterval &&
+  typeof deploymentCleanupInterval === 'object' &&
+  'unref' in deploymentCleanupInterval
+) {
+  deploymentCleanupInterval.unref();
+}
+
 // Module-level logger for Railway API helpers
 import { logger } from '@/utils/logger';
 const railwayLog = logger.child({ route: '/api/railway/deploy' });
