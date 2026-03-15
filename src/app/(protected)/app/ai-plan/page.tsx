@@ -240,6 +240,34 @@ export default function AIPlanPage() {
                 </p>
               </div>
             )}
+
+          {/* Stale state fallback: result exists but architectures lost */}
+          {!isPlanning &&
+            !error &&
+            isComplete &&
+            !architectureReviewed &&
+            (!claudeArchitecture || !geminiArchitecture) && (
+              <div
+                className="p-6 rounded-xl text-center"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                <Brain className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                  Previous planning data is incomplete. Re-run to generate a fresh architecture.
+                </p>
+                <button
+                  onClick={() => startPlanning(appConcept, currentLayoutManifest)}
+                  className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{ background: 'var(--accent-primary)', color: 'white' }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Re-run Planning
+                </button>
+              </div>
+            )}
         </motion.div>
       </div>
 

@@ -295,8 +295,8 @@ class BrowserPreviewService {
               return { path: virtualName, namespace: 'global-shim' };
             }
 
-            // For other packages, mark as external (will fail at runtime if not available)
-            return { path: args.path, external: true };
+            // Route to npm-shim namespace — provides stub modules for preview
+            return { path: args.path, namespace: 'npm-shim' };
           }
 
           // For relative paths not found in virtual fs, return as virtual (will error in onLoad)
@@ -359,6 +359,143 @@ class BrowserPreviewService {
             return { errors: [{ text: `Unknown global shim: ${args.path}` }] };
           }
         );
+
+        // Load npm package shims for preview (stubs that prevent runtime crashes)
+        build.onLoad({ filter: /.*/, namespace: 'npm-shim' }, (args: esbuildTypes.OnLoadArgs) => {
+          const NPM_SHIMS: Record<string, { contents: string; loader: esbuildTypes.Loader }> = {
+            // react-router-dom: passthrough wrappers so layout code renders without crashing
+            'react-router-dom': {
+              contents: `
+import React from 'react';
+const wrap = (tag) => ({children, ...props}) => React.createElement(tag || 'div', props, children);
+export const BrowserRouter = wrap('div');
+export const HashRouter = wrap('div');
+export const MemoryRouter = wrap('div');
+export const Routes = wrap('div');
+export const Route = ({element, children}) => element || (children ? React.createElement('div', null, children) : null);
+export const NavLink = ({to, children, className, style, ...props}) => React.createElement('a', {href: to || '#', className, style, ...props}, children);
+export const Link = ({to, children, className, style, ...props}) => React.createElement('a', {href: to || '#', className, style, ...props}, children);
+export const Outlet = () => null;
+export const Navigate = () => null;
+export const useNavigate = () => () => {};
+export const useLocation = () => ({pathname: '/', search: '', hash: '', state: null, key: 'default'});
+export const useParams = () => ({});
+export const useSearchParams = () => [new URLSearchParams(), () => {}];
+export const useMatch = () => null;
+`,
+              loader: 'jsx',
+            },
+
+            // lucide-react: Proxy returns generic SVG icon for any named import
+            'lucide-react': {
+              contents: `
+var React = require('react');
+var Icon = function(props) { return React.createElement('svg', Object.assign({width:24,height:24,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'}, props)); };
+module.exports = new Proxy({}, { get: function(_, name) { return name === '__esModule' ? true : Icon; } });
+`,
+              loader: 'js',
+            },
+
+            // framer-motion: motion.div/span/etc as passthrough elements
+            'framer-motion': {
+              contents: `
+var React = require('react');
+var motion = new Proxy({}, { get: function(_, tag) { return React.forwardRef(function(props, ref) { return React.createElement(tag, Object.assign({ref: ref}, props)); }); } });
+var passthrough = function(p) { return p.children || null; };
+module.exports = { motion: motion, AnimatePresence: passthrough, useAnimation: function(){return{start:function(){}}}, useInView: function(){return false}, useScroll: function(){return{scrollY:0,scrollYProgress:0}}, __esModule: true };
+`,
+              loader: 'js',
+            },
+
+            // clsx / classnames: simple className merger
+            clsx: {
+              contents: `
+function clsx() { var args = Array.prototype.slice.call(arguments); return args.flat(Infinity).filter(Boolean).join(' '); }
+module.exports = clsx; module.exports.default = clsx; module.exports.clsx = clsx; module.exports.__esModule = true;
+`,
+              loader: 'js',
+            },
+            classnames: {
+              contents: `
+function cn() { var args = Array.prototype.slice.call(arguments); return args.flat(Infinity).filter(Boolean).join(' '); }
+module.exports = cn; module.exports.default = cn; module.exports.__esModule = true;
+`,
+              loader: 'js',
+            },
+
+            // date-fns: basic stubs for format/parseISO
+            'date-fns': {
+              contents: `
+var format = function(d) { return d instanceof Date ? d.toLocaleDateString() : String(d); };
+var parseISO = function(s) { return new Date(s); };
+var formatDistance = function(a, b) { return 'some time'; };
+module.exports = new Proxy({}, { get: function(_, name) {
+  if (name === 'format') return format;
+  if (name === 'parseISO') return parseISO;
+  if (name === 'formatDistance') return formatDistance;
+  if (name === '__esModule') return true;
+  return function() {};
+}});
+`,
+              loader: 'js',
+            },
+
+            // axios: full HTTP client stub with create()
+            axios: {
+              contents: `
+var noop = function() { return Promise.resolve({ data: {}, status: 200, headers: {} }); };
+var instance = { get: noop, post: noop, put: noop, delete: noop, patch: noop, head: noop, options: noop, request: noop, defaults: { headers: {} }, interceptors: { request: { use: function(){return 0} }, response: { use: function(){return 0} } } };
+instance.create = function() { return Object.assign({}, instance); };
+module.exports = instance; module.exports.default = instance; module.exports.__esModule = true;
+`,
+              loader: 'js',
+            },
+
+            // recharts: chart components as div placeholders
+            recharts: {
+              contents: `
+var React = require('react');
+var placeholder = function(name) { return function(props) { return React.createElement('div', { style: { border: '1px dashed #ccc', padding: '8px', textAlign: 'center', color: '#999', fontSize: '12px', borderRadius: '4px' } }, name); }; };
+module.exports = new Proxy({}, { get: function(_, name) { return name === '__esModule' ? true : placeholder(name); } });
+`,
+              loader: 'js',
+            },
+
+            // @heroicons/react: same Proxy-icon pattern as lucide-react
+            '@heroicons/react': {
+              contents: `
+var React = require('react');
+var Icon = function(props) { return React.createElement('svg', Object.assign({width:24,height:24,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.5}, props)); };
+module.exports = new Proxy({}, { get: function(_, name) { return name === '__esModule' ? true : Icon; } });
+`,
+              loader: 'js',
+            },
+
+            // @radix-ui: passthrough div components
+            '@radix-ui': {
+              contents: `
+var React = require('react');
+var passthrough = React.forwardRef(function(props, ref) { return React.createElement('div', Object.assign({ref: ref}, props)); });
+module.exports = new Proxy({}, { get: function(_, name) { return name === '__esModule' ? true : passthrough; } });
+`,
+              loader: 'js',
+            },
+          };
+
+          // Exact match
+          const exactShim = NPM_SHIMS[args.path];
+          if (exactShim) return exactShim;
+
+          // Prefix match for scoped packages (e.g. @heroicons/react/24/outline → @heroicons/react)
+          for (const [prefix, shim] of Object.entries(NPM_SHIMS)) {
+            if (args.path.startsWith(prefix + '/')) {
+              return shim;
+            }
+          }
+
+          // Generic fallback: empty ESM module (won't crash, just no-ops)
+          return { contents: 'export default {};', loader: 'js' as esbuildTypes.Loader };
+        });
       },
     };
   }
