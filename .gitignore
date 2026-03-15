@@ -28,6 +28,9 @@ yarn-error.log*
 
 # Local development
 .DS_Store
+
+# Claude Code local settings (user-specific)
+.claude/*.local.*
 *.pem
 
 # Vercel
