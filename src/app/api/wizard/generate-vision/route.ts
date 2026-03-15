@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import type { VisionDocument } from '@/types/wizardState';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 

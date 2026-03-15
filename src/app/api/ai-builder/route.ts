@@ -15,7 +15,7 @@ import {
   RESPONSE_TYPES,
 } from '@/prompts/builderExpertPrompt';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 

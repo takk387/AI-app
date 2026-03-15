@@ -24,7 +24,7 @@ import type { AppFile } from '@/types/railway';
 import { extractContextForAllPhases, type PhaseContext } from '@/utils/phaseContextExtractor';
 import { convertToArchitectureSpec } from '@/utils/architectureToPhaseContext';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 

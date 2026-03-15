@@ -29,7 +29,7 @@ import type { ArchitectureSpec } from '@/types/architectureSpec';
 import type { SerializedPhaseContext } from '@/types/dynamicPhases';
 import { runAgenticGeneration } from '@/utils/agenticCodeGeneration';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 

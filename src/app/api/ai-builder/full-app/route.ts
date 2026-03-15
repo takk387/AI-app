@@ -20,7 +20,7 @@ import { logAPI } from '@/utils/debug';
 // import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 300; // 5 minutes max
 export const dynamic = 'force-dynamic';
 
@@ -383,7 +383,7 @@ MODIFICATION MODE for "${currentAppName}":
     const appType = result.appType;
     const changeType = result.changeType;
     const changeSummary = result.changeSummary;
-    let files = result.files;
+    const files = result.files;
     const dependencies = result.dependencies;
     const setupInstructions = result.setupInstructions;
     const responseText = result.responseText;

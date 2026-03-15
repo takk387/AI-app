@@ -10,7 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { WIZARD_SYSTEM_PROMPT } from '@/prompts/wizardSystemPrompt';
 import type { WizardState } from '@/types/wizardState';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 

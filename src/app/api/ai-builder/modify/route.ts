@@ -14,7 +14,7 @@ import {
   type GenerationError,
 } from './generation-logic';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 

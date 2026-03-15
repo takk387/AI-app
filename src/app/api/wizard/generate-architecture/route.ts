@@ -13,7 +13,7 @@ import { BackendArchitectureAgent } from '@/services/BackendArchitectureAgent';
 import type { AppConcept } from '@/types/appConcept';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 
-// Vercel serverless function config
+// Next.js Route Segment Config
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
