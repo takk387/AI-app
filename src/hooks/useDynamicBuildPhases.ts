@@ -19,15 +19,6 @@ import type { BuildPhase, BuildProgress, PhaseId } from '@/types/buildPhases';
 import type { QualityReport, QualityPipelineState, ReviewStrictness } from '@/types/codeReview';
 import { PhaseExecutionManager, buildPhaseExecutionPrompt } from '@/services/PhaseExecutionManager';
 
-// Dynamic import for CodeReviewService to avoid bundling tree-sitter in client
-// getPipelineState is only called during quality review (which happens server-side via API)
-// Using webpackIgnore to prevent webpack from analyzing this import at build time
-async function getCodeReviewPipelineState(): Promise<QualityPipelineState> {
-  const { getPipelineState } = await import(
-    /* webpackIgnore: true */ '@/services/CodeReviewService'
-  );
-  return getPipelineState();
-}
 import {
   adaptAllPhasesToUI,
   adaptDynamicProgressToUI,
@@ -265,29 +256,6 @@ export function useDynamicBuildPhases(
         // Update accumulated code
         if (result.success && result.generatedCode) {
           setAccumulatedCodeState(result.generatedCode);
-        }
-
-        // Auto-run quality review after successful phase (fire-and-forget)
-        if (result.success) {
-          (async () => {
-            try {
-              setIsReviewing(true);
-              setPipelineState(await getCodeReviewPipelineState());
-              const reviewResult = await manager.runPhaseQualityReview(result.phaseNumber);
-              if (reviewResult.status === 'success' && mountedRef.current) {
-                setQualityReport(reviewResult.data.report);
-                setPipelineState(await getCodeReviewPipelineState());
-              } else if (reviewResult.status === 'error') {
-                console.error('Quality review error:', reviewResult.error);
-              }
-            } catch (err) {
-              console.error('Auto quality review failed:', err);
-            } finally {
-              if (mountedRef.current) {
-                setIsReviewing(false);
-              }
-            }
-          })();
         }
 
         // Check if build is complete
@@ -534,13 +502,25 @@ export function useDynamicBuildPhases(
       if (!mountedRef.current || !manager) return;
 
       setIsReviewing(true);
-      setPipelineState(await getCodeReviewPipelineState());
+      setPipelineState({
+        currentStep: 'reviewing',
+        validationStatus: 'pending',
+        reviewStatus: 'pending',
+        fixStatus: 'pending',
+        progress: 25,
+      });
 
       try {
         const result = await manager.runPhaseQualityReview(phaseNumber);
         if (result.status === 'success' && mountedRef.current) {
           setQualityReport(result.data.report);
-          setPipelineState(await getCodeReviewPipelineState());
+          setPipelineState({
+            currentStep: 'idle',
+            validationStatus: 'passed',
+            reviewStatus: 'passed',
+            fixStatus: 'pending',
+            progress: 100,
+          });
         } else if (result.status === 'error') {
           onError?.(new Error(result.error));
         }
@@ -562,13 +542,25 @@ export function useDynamicBuildPhases(
     if (!mountedRef.current || !manager) return;
 
     setIsReviewing(true);
-    setPipelineState(await getCodeReviewPipelineState());
+    setPipelineState({
+      currentStep: 'reviewing',
+      validationStatus: 'pending',
+      reviewStatus: 'pending',
+      fixStatus: 'pending',
+      progress: 25,
+    });
 
     try {
       const result = await manager.runFinalQualityReview();
       if (result.status === 'success' && mountedRef.current) {
         setQualityReport(result.data.report);
-        setPipelineState(await getCodeReviewPipelineState());
+        setPipelineState({
+          currentStep: 'idle',
+          validationStatus: 'passed',
+          reviewStatus: 'passed',
+          fixStatus: 'pending',
+          progress: 100,
+        });
       } else if (result.status === 'error') {
         onError?.(new Error(result.error));
       }

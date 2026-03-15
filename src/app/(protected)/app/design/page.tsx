@@ -33,57 +33,63 @@ export default function DesignPage() {
   const handleContinueToAIPlan = useCallback(async () => {
     setIsTransitioning(true);
 
-    // Capture layout thumbnail for review page
     try {
-      const result = await captureLayoutPreview('layout-builder-preview');
-      if (result?.success && result.dataUrl) {
-        setLayoutThumbnail({
-          dataUrl: result.dataUrl,
-          capturedAt: new Date().toISOString(),
-        });
-      }
-    } catch (e) {
-      console.warn('Failed to capture layout thumbnail:', e);
-    }
-
-    // Regenerate phase plan with layout context if layout was built
-    // (kept as fallback for non-dual-AI path)
-    const hasLayoutInjectionPhase = dynamicPhasePlan?.phases.some((p) => p.isLayoutInjection);
-
-    if ((appConcept?.layoutManifest || layoutBuilderFiles?.length) && !hasLayoutInjectionPhase) {
+      // Capture layout thumbnail for review page
+      // Use Promise.race with 2s timeout — html2canvas can hang on cross-origin iframes
       try {
-        const response = await fetch('/api/wizard/generate-phases', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ concept: appConcept }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.plan) {
-            // Attach layout builder files to the plan for downstream injection
-            data.plan.layoutBuilderFiles = layoutBuilderFiles ?? undefined;
-            setDynamicPhasePlan(data.plan);
-            setPhasePlanGeneratedAt(new Date().toISOString());
-          }
-        } else {
-          console.warn('Failed to regenerate phase plan:', response.status);
+        const captureWithTimeout = Promise.race([
+          captureLayoutPreview('layout-builder-preview'),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+        ]);
+        const result = await captureWithTimeout;
+        if (result && 'success' in result && result.success && result.dataUrl) {
+          setLayoutThumbnail({
+            dataUrl: result.dataUrl,
+            capturedAt: new Date().toISOString(),
+          });
         }
       } catch (e) {
-        console.warn('Failed to regenerate phase plan:', e);
+        console.warn('Failed to capture layout thumbnail:', e);
       }
-    } else if (dynamicPhasePlan && layoutBuilderFiles) {
-      // Plan already has layout injection, just update the files reference
-      setDynamicPhasePlan({
-        ...dynamicPhasePlan,
-        layoutBuilderFiles,
-      });
+
+      // Regenerate phase plan with layout context if layout was built
+      // (kept as fallback for non-dual-AI path)
+      const hasLayoutInjectionPhase = dynamicPhasePlan?.phases.some((p) => p.isLayoutInjection);
+
+      if ((appConcept?.layoutManifest || layoutBuilderFiles?.length) && !hasLayoutInjectionPhase) {
+        try {
+          const response = await fetch('/api/wizard/generate-phases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ concept: appConcept }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.plan) {
+              // Attach layout builder files to the plan for downstream injection
+              data.plan.layoutBuilderFiles = layoutBuilderFiles ?? undefined;
+              setDynamicPhasePlan(data.plan);
+              setPhasePlanGeneratedAt(new Date().toISOString());
+            }
+          } else {
+            console.warn('Failed to regenerate phase plan:', response.status);
+          }
+        } catch (e) {
+          console.warn('Failed to regenerate phase plan:', e);
+        }
+      } else if (dynamicPhasePlan && layoutBuilderFiles) {
+        // Plan already has layout injection, just update the files reference
+        setDynamicPhasePlan({
+          ...dynamicPhasePlan,
+          layoutBuilderFiles,
+        });
+      }
+    } finally {
+      setIsTransitioning(false);
+      // Navigate to AI Plan step (dual AI architecture planning)
+      router.push('/app/ai-plan');
     }
-
-    setIsTransitioning(false);
-
-    // Navigate to AI Plan step (dual AI architecture planning)
-    router.push('/app/ai-plan');
   }, [
     router,
     setLayoutThumbnail,

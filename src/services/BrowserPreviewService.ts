@@ -310,6 +310,18 @@ class BrowserPreviewService {
             return { errors: [{ text: `File not found: ${args.path}` }] };
           }
 
+          // CSS files: inject via <style> tag instead of using loader: 'css'
+          // (esbuild's css loader requires an output path for separate file emission,
+          // which doesn't exist in our in-memory/browser setup)
+          if (args.path.endsWith('.css')) {
+            const escapedCSS = content
+              .replace(/\\/g, '\\\\')
+              .replace(/`/g, '\\`')
+              .replace(/\$/g, '\\$');
+            const jsWrapper = `(function(){var s=document.createElement('style');s.textContent=\`${escapedCSS}\`;document.head.appendChild(s)})()`;
+            return { contents: jsWrapper, loader: 'js' };
+          }
+
           const ext = args.path.split('.').pop() || '';
           const loader = getLoader(ext);
 

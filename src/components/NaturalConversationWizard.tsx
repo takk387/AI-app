@@ -600,10 +600,13 @@ What would you like to build?`,
           <div className="px-6 pb-4">
             <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between shadow-lg backdrop-blur-sm">
               <div>
-                <h3 className="text-lg font-semibold text-blue-100 flex items-center gap-2">
+                <h3
+                  className="text-lg font-semibold flex items-center gap-2"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   App Concept Ready!
                 </h3>
-                <p className="text-blue-200/80 text-sm mt-1">
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                   We have enough details to analyze your backend architecture.
                 </p>
               </div>
@@ -633,10 +636,13 @@ What would you like to build?`,
           <div className="px-6 pb-4">
             <div className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-xl p-4 flex items-center justify-between shadow-lg backdrop-blur-sm">
               <div>
-                <h3 className="text-lg font-semibold text-green-100 flex items-center gap-2">
+                <h3
+                  className="text-lg font-semibold flex items-center gap-2"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   Ready for Design!
                 </h3>
-                <p className="text-green-200/80 text-sm mt-1">
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                   Your concept is defined. Continue to the visual design step.
                 </p>
               </div>

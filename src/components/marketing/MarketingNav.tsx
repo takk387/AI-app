@@ -133,7 +133,7 @@ export function MarketingNav() {
                   <span>Dashboard</span>
                 </Link>
                 <Link
-                  href="/app"
+                  href="/app/wizard"
                   className="px-4 py-2 text-sm font-medium text-white bg-garden-600 hover:bg-garden-500 rounded-lg transition-colors"
                 >
                   Go to App
@@ -230,7 +230,7 @@ export function MarketingNav() {
                     <span>Dashboard</span>
                   </Link>
                   <Link
-                    href="/app"
+                    href="/app/wizard"
                     className="block px-4 py-2 text-center text-white bg-garden-600 hover:bg-garden-500 rounded-lg"
                     onClick={() => setMobileMenuOpen(false)}
                   >

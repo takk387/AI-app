@@ -64,17 +64,31 @@ export function LayoutCard({ thumbnail, layoutManifest, fileCount = 0, onEdit }:
           className="flex flex-col items-center justify-center py-8 rounded-lg"
           style={{ background: 'var(--bg-tertiary)' }}
         >
-          <ImageIcon className="w-8 h-8 mb-2" style={{ color: 'var(--text-muted)' }} />
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            No layout preview available
-          </p>
-          <button
-            onClick={onEdit}
-            className="mt-2 text-xs font-medium transition-colors hover:opacity-80"
-            style={{ color: 'var(--accent-primary)' }}
-          >
-            Go to Design →
-          </button>
+          {fileCount > 0 ? (
+            <>
+              <FileCode className="w-8 h-8 mb-2" style={{ color: 'var(--accent-primary)' }} />
+              <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                {fileCount} layout file{fileCount !== 1 ? 's' : ''} ready
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                Preview image unavailable
+              </p>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="w-8 h-8 mb-2" style={{ color: 'var(--text-muted)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                No layout preview available
+              </p>
+              <button
+                onClick={onEdit}
+                className="mt-2 text-xs font-medium transition-colors hover:opacity-80"
+                style={{ color: 'var(--accent-primary)' }}
+              >
+                Go to Design →
+              </button>
+            </>
+          )}
         </div>
       )}
 

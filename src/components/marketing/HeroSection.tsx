@@ -50,7 +50,7 @@ export function HeroSection() {
       <div className="relative max-w-5xl mx-auto text-center">
         {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0.7, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-garden-500/10 border border-garden-500/20 mb-8"
@@ -61,9 +61,9 @@ export function HeroSection() {
 
         {/* Headline */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0.7, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.05 }}
           className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
           style={{ color: 'var(--text-primary)' }}
         >
@@ -77,9 +77,9 @@ export function HeroSection() {
 
         {/* Subheadline */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0.7, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="text-lg sm:text-xl mb-10 max-w-2xl mx-auto"
           style={{ color: 'var(--text-secondary)' }}
         >
@@ -89,9 +89,9 @@ export function HeroSection() {
 
         {/* CTAs */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0.7, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link
@@ -117,9 +117,9 @@ export function HeroSection() {
 
         {/* Trust Indicators */}
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 0.5 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-16 pt-8"
           style={{ borderTop: '1px solid var(--border-color)' }}
         >
