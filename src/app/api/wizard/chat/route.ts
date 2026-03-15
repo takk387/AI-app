@@ -201,7 +201,13 @@ function isConfirmingCompletion(message: string): boolean {
 export async function POST(request: Request) {
   try {
     const body: WizardRequest = await request.json();
-    const { message, conversationHistory, currentState, referenceImages, contextSummary } = body;
+    const {
+      message,
+      conversationHistory = [],
+      currentState,
+      referenceImages,
+      contextSummary,
+    } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
