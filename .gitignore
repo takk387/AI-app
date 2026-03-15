@@ -83,3 +83,13 @@ lpt9
 temp/
 tmp/
 .env.local
+
+# Debug sessions (automated nightly test output)
+debug-sessions/findings-puppeteer.md
+debug-sessions/findings.md
+debug-sessions/db-health.md
+debug-sessions/debate-log.md
+debug-sessions/fix-plan.md
+debug-sessions/fix-result.md
+debug-sessions/screenshots/
+debug-sessions/.temp-prompt.txt
