@@ -18,23 +18,24 @@ This plan addresses ALL 8 critical gaps identified in DYNAMIC_PHASE_SYSTEM_ANALY
 
 ## Priority Order (By Risk Level)
 
-| Priority | Feature | Risk Addressed | Files Affected |
-|----------|---------|----------------|----------------|
-| P1 | File Conflict Detection | HIGH - No detection of overwrites | 3 files |
-| P2 | Import/Export Validation | MEDIUM - Broken imports | 2 files |
-| P3 | Phase Snapshot & Rollback | MEDIUM - No recovery | 4 files |
-| P4 | Fix forceUpdate Pattern | LOW - Performance | 2 files |
-| P5 | Cross-Phase Type Checking | MEDIUM - No TS compilation between phases | 2 files |
-| P6 | Type Compatibility Checks | MEDIUM - Breaking type changes undetected | 3 files |
-| P7 | testCriteria Execution | HIGH - Test criteria not executed | 3 files |
-| P8 | API Contract Enforcement | LOW - API contracts not validated | 2 files |
-| P9 | Regression Testing | HIGH - No verification of previous phases | 2 files |
+| Priority | Feature                   | Risk Addressed                            | Files Affected |
+| -------- | ------------------------- | ----------------------------------------- | -------------- |
+| P1       | File Conflict Detection   | HIGH - No detection of overwrites         | 3 files        |
+| P2       | Import/Export Validation  | MEDIUM - Broken imports                   | 2 files        |
+| P3       | Phase Snapshot & Rollback | MEDIUM - No recovery                      | 4 files        |
+| P4       | Fix forceUpdate Pattern   | LOW - Performance                         | 2 files        |
+| P5       | Cross-Phase Type Checking | MEDIUM - No TS compilation between phases | 2 files        |
+| P6       | Type Compatibility Checks | MEDIUM - Breaking type changes undetected | 3 files        |
+| P7       | testCriteria Execution    | HIGH - Test criteria not executed         | 3 files        |
+| P8       | API Contract Enforcement  | LOW - API contracts not validated         | 2 files        |
+| P9       | Regression Testing        | HIGH - No verification of previous phases | 2 files        |
 
 ---
 
 ## P1: File Conflict Detection
 
 ### Goal
+
 Detect when a phase overwrites files from previous phases and warn about breaking changes.
 
 ### Files to Modify
@@ -45,9 +46,11 @@ Detect when a phase overwrites files from previous phases and warn about breakin
 ### Implementation Steps
 
 #### Step 1.1: Extend AccumulatedFile Type
+
 **File:** `src/types/dynamicPhases.ts` (around line 197)
 
 Add new fields to track file versions:
+
 ```typescript
 export interface AccumulatedFile {
   path: string;
@@ -56,17 +59,19 @@ export interface AccumulatedFile {
   dependencies: string[];
   summary: string;
   // NEW FIELDS
-  contentHash: string;           // MD5/SHA256 hash for change detection
-  createdInPhase: number;        // Phase that first created this file
-  lastModifiedPhase: number;     // Phase that last changed it
-  previousVersionHash?: string;  // Hash before modification (for rollback)
+  contentHash: string; // MD5/SHA256 hash for change detection
+  createdInPhase: number; // Phase that first created this file
+  lastModifiedPhase: number; // Phase that last changed it
+  previousVersionHash?: string; // Hash before modification (for rollback)
 }
 ```
 
 #### Step 1.2: Add FileVersionMap to PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts` (after line 956)
 
 Add tracking structure and detection method:
+
 ```typescript
 // After line 956, add new property:
 private fileVersionMap: Map<string, {
@@ -143,6 +148,7 @@ private assessConflictSeverity(
 ```
 
 #### Step 1.3: Integrate Detection into recordPhaseResult
+
 **File:** `src/services/PhaseExecutionManager.ts` (line 1091, before extracting files)
 
 ```typescript
@@ -162,6 +168,7 @@ recordPhaseResult(result: PhaseExecutionResult): void {
 ```
 
 #### Step 1.4: Add Conflict Types
+
 **File:** `src/types/dynamicPhases.ts` (after line 227)
 
 ```typescript
@@ -185,6 +192,7 @@ export interface FileConflictResult {
 ## P2: Import/Export Validation
 
 ### Goal
+
 Validate that all imports in generated files reference valid exports from other files.
 
 ### Files to Modify
@@ -195,9 +203,11 @@ Validate that all imports in generated files reference valid exports from other 
 ### Implementation Steps
 
 #### Step 2.1: Enhance Import Extraction
+
 **File:** `src/services/DynamicPhaseGenerator.ts` (line 2203-2218)
 
 Currently skips relative imports. Change to include them:
+
 ```typescript
 private extractImports(content: string): ImportInfo[] {
   const imports: ImportInfo[] = [];
@@ -229,6 +239,7 @@ private extractImports(content: string): ImportInfo[] {
 ```
 
 #### Step 2.2: Add Import Validation to PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts` (after detectFileConflicts method)
 
 ```typescript
@@ -322,6 +333,7 @@ private resolveImportPath(fromFile: string, importPath: string): string {
 ## P3: Phase Snapshot & Rollback
 
 ### Goal
+
 Capture state before each phase executes; allow rollback to previous state.
 
 ### Files to Modify
@@ -333,6 +345,7 @@ Capture state before each phase executes; allow rollback to previous state.
 ### Implementation Steps
 
 #### Step 3.1: Add PhaseSnapshot Type
+
 **File:** `src/types/dynamicPhases.ts` (after FileConflictResult)
 
 ```typescript
@@ -358,14 +371,17 @@ export interface PhaseSnapshot {
 ```
 
 #### Step 3.2: Add Snapshot Methods to PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts`
 
 Add properties after line 956:
+
 ```typescript
 private phaseSnapshots: Map<number, PhaseSnapshot> = new Map();
 ```
 
 Add methods after recordPhaseResult:
+
 ```typescript
 /**
  * Capture current state before phase execution
@@ -442,6 +458,7 @@ private syncPlanState(): void {
 ```
 
 #### Step 3.3: Integrate Snapshot into Phase Start
+
 **File:** `src/hooks/useDynamicBuildPhases.ts` (line 207-226, startPhase)
 
 ```typescript
@@ -471,6 +488,7 @@ const startPhase = useCallback(
 ```
 
 #### Step 3.4: Add Rollback Action to Hook
+
 **File:** `src/hooks/useDynamicBuildPhases.ts` (after retryPhase, around line 312)
 
 ```typescript
@@ -495,6 +513,7 @@ const rollbackToPhase = useCallback(
 ```
 
 Add to return object (line 520+):
+
 ```typescript
 rollbackToPhase,
 ```
@@ -504,6 +523,7 @@ rollbackToPhase,
 ## P4: Fix forceUpdate Pattern
 
 ### Goal
+
 Replace forceUpdate anti-pattern with proper immutable state management.
 
 ### Files to Modify
@@ -514,9 +534,11 @@ Replace forceUpdate anti-pattern with proper immutable state management.
 ### Implementation Steps
 
 #### Step 4.1: Make Manager Methods Return New State
+
 **File:** `src/services/PhaseExecutionManager.ts`
 
 Change `recordPhaseResult` to return the updated plan:
+
 ```typescript
 recordPhaseResult(result: PhaseExecutionResult): DynamicPhasePlan {
   // ... existing logic ...
@@ -527,6 +549,7 @@ recordPhaseResult(result: PhaseExecutionResult): DynamicPhasePlan {
 ```
 
 Add getter methods:
+
 ```typescript
 getAccumulatedCode(): string {
   return this.accumulatedCode;
@@ -538,9 +561,11 @@ getPlanCopy(): DynamicPhasePlan {
 ```
 
 #### Step 4.2: Update Hook to Use Returned State
+
 **File:** `src/hooks/useDynamicBuildPhases.ts`
 
 In completePhase (line 231-285):
+
 ```typescript
 const completePhase = useCallback(
   (result: PhaseExecutionResult) => {
@@ -549,7 +574,7 @@ const completePhase = useCallback(
     try {
       // Use returned plan instead of forceUpdate
       const updatedPlan = manager.recordPhaseResult(result);
-      setPlan(updatedPlan);  // This triggers natural re-render
+      setPlan(updatedPlan); // This triggers natural re-render
 
       const phase = updatedPlan.phases.find((p) => p.number === result.phaseNumber);
       if (phase) {
@@ -577,6 +602,7 @@ const completePhase = useCallback(
 ## P5: Cross-Phase Type Checking
 
 ### Goal
+
 Run TypeScript compilation on accumulated code after each phase to catch type errors early.
 
 ### Files to Modify
@@ -587,6 +613,7 @@ Run TypeScript compilation on accumulated code after each phase to catch type er
 ### Implementation Steps
 
 #### Step 5.1: Create TypeScript Compiler Service
+
 **File:** `src/services/TypeScriptCompilerService.ts` (NEW)
 
 ```typescript
@@ -656,16 +683,9 @@ export async function runTypeCheck(
   };
 
   // Create program and get diagnostics
-  const program = ts.createProgram(
-    Array.from(fileMap.keys()),
-    compilerOptions,
-    host
-  );
+  const program = ts.createProgram(Array.from(fileMap.keys()), compilerOptions, host);
 
-  const diagnostics = [
-    ...program.getSemanticDiagnostics(),
-    ...program.getSyntacticDiagnostics(),
-  ];
+  const diagnostics = [...program.getSemanticDiagnostics(), ...program.getSyntacticDiagnostics()];
 
   // Convert diagnostics to our format
   for (const diagnostic of diagnostics) {
@@ -708,6 +728,7 @@ function formatDiagnostic(diagnostic: Diagnostic, ts: typeof import('typescript'
 ```
 
 #### Step 5.2: Integrate Type Checking into PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts` (after recordPhaseResult)
 
 ```typescript
@@ -742,6 +763,7 @@ async runPhaseTypeCheck(phaseNumber: number): Promise<TypeCheckResult> {
 ```
 
 Add property after line 956:
+
 ```typescript
 private typeCheckResults: Map<number, TypeCheckResult> = new Map();
 ```
@@ -751,6 +773,7 @@ private typeCheckResults: Map<number, TypeCheckResult> = new Map();
 ## P6: Type Compatibility Checks
 
 ### Goal
+
 Detect when a phase changes type definitions in ways that break previous code.
 
 ### Files to Modify
@@ -762,6 +785,7 @@ Detect when a phase changes type definitions in ways that break previous code.
 ### Implementation Steps
 
 #### Step 6.1: Add Type Compatibility Types
+
 **File:** `src/types/dynamicPhases.ts` (after PhaseSnapshot)
 
 ```typescript
@@ -796,12 +820,18 @@ export interface TypeCompatibilityResult {
 ```
 
 #### Step 6.2: Create Type Compatibility Checker
+
 **File:** `src/utils/typeCompatibilityChecker.ts` (NEW)
 
 ```typescript
 'use client';
 
-import type { TypeDefinition, TypeProperty, BreakingTypeChange, TypeCompatibilityResult } from '@/types/dynamicPhases';
+import type {
+  TypeDefinition,
+  TypeProperty,
+  BreakingTypeChange,
+  TypeCompatibilityResult,
+} from '@/types/dynamicPhases';
 
 /**
  * Extract type definitions from code using regex
@@ -882,7 +912,7 @@ export function checkTypeCompatibility(
 
     // Check for removed properties
     for (const prevProp of previous.properties) {
-      const newProp = newType.properties.find(p => p.name === prevProp.name);
+      const newProp = newType.properties.find((p) => p.name === prevProp.name);
 
       if (!newProp) {
         breakingChanges.push({
@@ -927,7 +957,7 @@ export function checkTypeCompatibility(
 
   // Check for deleted types
   for (const [name, previous] of previousMap) {
-    const stillExists = newTypes.some(t => t.name === name);
+    const stillExists = newTypes.some((t) => t.name === name);
     if (!stillExists) {
       breakingChanges.push({
         typeName: name,
@@ -942,21 +972,24 @@ export function checkTypeCompatibility(
   }
 
   return {
-    compatible: breakingChanges.filter(c => c.severity === 'critical').length === 0,
+    compatible: breakingChanges.filter((c) => c.severity === 'critical').length === 0,
     breakingChanges,
   };
 }
 ```
 
 #### Step 6.3: Integrate into PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts`
 
 Add property:
+
 ```typescript
 private typeDefinitions: TypeDefinition[] = [];
 ```
 
 Add method:
+
 ```typescript
 /**
  * Check type compatibility after phase completion
@@ -1003,6 +1036,7 @@ async checkTypeCompatibility(phaseNumber: number): Promise<TypeCompatibilityResu
 ## P7: testCriteria Execution
 
 ### Goal
+
 Convert testCriteria strings into executable smoke tests that run after each phase.
 
 ### Files to Modify
@@ -1014,6 +1048,7 @@ Convert testCriteria strings into executable smoke tests that run after each pha
 ### Implementation Steps
 
 #### Step 7.1: Add Test Result Types
+
 **File:** `src/types/dynamicPhases.ts` (after TypeCompatibilityResult)
 
 ```typescript
@@ -1035,6 +1070,7 @@ export interface PhaseTestResults {
 ```
 
 #### Step 7.2: Create Smoke Test Runner
+
 **File:** `src/utils/smokeTestRunner.ts` (NEW)
 
 ```typescript
@@ -1057,8 +1093,8 @@ const TEST_MATCHERS: TestMatcher[] = [
   (criterion, context) => {
     if (!criterion.toLowerCase().includes('renders without errors')) return null;
 
-    const appFile = context.files.find(f =>
-      f.path.includes('App.tsx') || f.path.includes('page.tsx')
+    const appFile = context.files.find(
+      (f) => f.path.includes('App.tsx') || f.path.includes('page.tsx')
     );
 
     if (!appFile) {
@@ -1066,10 +1102,11 @@ const TEST_MATCHERS: TestMatcher[] = [
     }
 
     // Check for basic React structure
-    const hasExport = appFile.content.includes('export default') ||
-                      appFile.content.includes('export function');
-    const hasJsx = appFile.content.includes('return') &&
-                   (appFile.content.includes('<') || appFile.content.includes('jsx'));
+    const hasExport =
+      appFile.content.includes('export default') || appFile.content.includes('export function');
+    const hasJsx =
+      appFile.content.includes('return') &&
+      (appFile.content.includes('<') || appFile.content.includes('jsx'));
 
     return {
       criterion,
@@ -1083,10 +1120,11 @@ const TEST_MATCHERS: TestMatcher[] = [
   (criterion, context) => {
     if (!criterion.toLowerCase().includes('navigation')) return null;
 
-    const hasRouter = context.files.some(f =>
-      f.content.includes('useRouter') ||
-      f.content.includes('Link') ||
-      f.content.includes('next/navigation')
+    const hasRouter = context.files.some(
+      (f) =>
+        f.content.includes('useRouter') ||
+        f.content.includes('Link') ||
+        f.content.includes('next/navigation')
     );
 
     return {
@@ -1101,11 +1139,12 @@ const TEST_MATCHERS: TestMatcher[] = [
   (criterion, context) => {
     if (!criterion.toLowerCase().includes('responsive')) return null;
 
-    const hasResponsive = context.files.some(f =>
-      f.content.includes('sm:') ||
-      f.content.includes('md:') ||
-      f.content.includes('lg:') ||
-      f.content.includes('@media')
+    const hasResponsive = context.files.some(
+      (f) =>
+        f.content.includes('sm:') ||
+        f.content.includes('md:') ||
+        f.content.includes('lg:') ||
+        f.content.includes('@media')
     );
 
     return {
@@ -1118,14 +1157,18 @@ const TEST_MATCHERS: TestMatcher[] = [
 
   // "Form validation works"
   (criterion, context) => {
-    if (!criterion.toLowerCase().includes('form') &&
-        !criterion.toLowerCase().includes('validation')) return null;
+    if (
+      !criterion.toLowerCase().includes('form') &&
+      !criterion.toLowerCase().includes('validation')
+    )
+      return null;
 
-    const hasValidation = context.files.some(f =>
-      f.content.includes('required') ||
-      f.content.includes('pattern=') ||
-      f.content.includes('.test(') ||
-      f.content.includes('validate')
+    const hasValidation = context.files.some(
+      (f) =>
+        f.content.includes('required') ||
+        f.content.includes('pattern=') ||
+        f.content.includes('.test(') ||
+        f.content.includes('validate')
     );
 
     return {
@@ -1138,19 +1181,20 @@ const TEST_MATCHERS: TestMatcher[] = [
 
   // "API endpoints respond correctly"
   (criterion, context) => {
-    if (!criterion.toLowerCase().includes('api') &&
-        !criterion.toLowerCase().includes('endpoint')) return null;
+    if (!criterion.toLowerCase().includes('api') && !criterion.toLowerCase().includes('endpoint'))
+      return null;
 
-    const apiFiles = context.files.filter(f => f.path.includes('/api/'));
+    const apiFiles = context.files.filter((f) => f.path.includes('/api/'));
 
     if (apiFiles.length === 0) {
       return { criterion, passed: true, duration: 0 }; // No API = pass (N/A)
     }
 
-    const hasHandlers = apiFiles.every(f =>
-      f.content.includes('export async function') ||
-      f.content.includes('export function') ||
-      f.content.includes('NextResponse')
+    const hasHandlers = apiFiles.every(
+      (f) =>
+        f.content.includes('export async function') ||
+        f.content.includes('export function') ||
+        f.content.includes('NextResponse')
     );
 
     return {
@@ -1165,11 +1209,12 @@ const TEST_MATCHERS: TestMatcher[] = [
   (criterion, context) => {
     if (!criterion.toLowerCase().includes('auth')) return null;
 
-    const hasAuth = context.files.some(f =>
-      f.content.includes('signIn') ||
-      f.content.includes('login') ||
-      f.content.includes('useAuth') ||
-      f.content.includes('session')
+    const hasAuth = context.files.some(
+      (f) =>
+        f.content.includes('signIn') ||
+        f.content.includes('login') ||
+        f.content.includes('useAuth') ||
+        f.content.includes('session')
     );
 
     return {
@@ -1184,10 +1229,11 @@ const TEST_MATCHERS: TestMatcher[] = [
   (criterion, context) => {
     if (!criterion.toLowerCase().includes('error')) return null;
 
-    const hasErrorHandling = context.files.some(f =>
-      f.content.includes('try') && f.content.includes('catch') ||
-      f.content.includes('onError') ||
-      f.content.includes('ErrorBoundary')
+    const hasErrorHandling = context.files.some(
+      (f) =>
+        (f.content.includes('try') && f.content.includes('catch')) ||
+        f.content.includes('onError') ||
+        f.content.includes('ErrorBoundary')
     );
 
     return {
@@ -1242,8 +1288,8 @@ export function runSmokeTests(
     }
   }
 
-  const passed = results.filter(r => r.passed).length;
-  const failed = results.filter(r => !r.passed).length;
+  const passed = results.filter((r) => r.passed).length;
+  const failed = results.filter((r) => !r.passed).length;
 
   return {
     phaseNumber,
@@ -1267,14 +1313,17 @@ function extractExports(content: string): string[] {
 ```
 
 #### Step 7.3: Integrate into PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts`
 
 Add property:
+
 ```typescript
 private phaseTestResults: Map<number, PhaseTestResults> = new Map();
 ```
 
 Add method:
+
 ```typescript
 /**
  * Run smoke tests for phase criteria
@@ -1318,6 +1367,7 @@ async runPhaseTests(phaseNumber: number): Promise<PhaseTestResults> {
 ## P8: API Contract Enforcement
 
 ### Goal
+
 Validate that API implementations match declared contracts.
 
 ### Files to Modify
@@ -1328,6 +1378,7 @@ Validate that API implementations match declared contracts.
 ### Implementation Steps
 
 #### Step 8.1: Add Contract Validation Types
+
 **File:** `src/types/dynamicPhases.ts` (after PhaseTestResults)
 
 ```typescript
@@ -1347,6 +1398,7 @@ export interface ContractValidationResult {
 ```
 
 #### Step 8.2: Add Contract Validation to PhaseExecutionManager
+
 **File:** `src/services/PhaseExecutionManager.ts`
 
 ```typescript
@@ -1426,6 +1478,7 @@ validateApiContracts(): ContractValidationResult {
 ## P9: Regression Testing
 
 ### Goal
+
 Run accumulated tests after each phase to verify previous functionality still works.
 
 ### Files to Modify
@@ -1436,6 +1489,7 @@ Run accumulated tests after each phase to verify previous functionality still wo
 ### Implementation Steps
 
 #### Step 9.1: Add Regression Test Types
+
 **File:** `src/types/dynamicPhases.ts` (after ContractValidationResult)
 
 ```typescript
@@ -1454,6 +1508,7 @@ export interface RegressionFailure {
 ```
 
 #### Step 9.2: Add Regression Test Runner
+
 **File:** `src/services/PhaseExecutionManager.ts`
 
 ```typescript
@@ -1525,13 +1580,13 @@ Add ALL these types to `src/types/dynamicPhases.ts`:
 // Extend PhaseExecutionResult (around line 437)
 export interface PhaseExecutionResult {
   // ... existing fields ...
-  fileConflicts?: FileConflict[];  // NEW - conflicts detected during this phase
+  fileConflicts?: FileConflict[]; // NEW - conflicts detected during this phase
 }
 
 // Extend AccumulatedFile (around line 197)
 export interface AccumulatedFile {
   // ... existing fields ...
-  imports?: ImportInfo[];  // NEW - for import validation
+  imports?: ImportInfo[]; // NEW - for import validation
 }
 ```
 
@@ -1689,19 +1744,20 @@ export interface RegressionFailure {
 
 ### After Each Priority
 
-| Priority | Verification |
-|----------|--------------|
-| P1 | `npm run typecheck`, generate app, verify conflict warnings |
-| P2 | Generate code with missing export, verify validation catches it |
-| P3 | Complete Phase 1, start Phase 2, call rollback, verify state restored |
-| P4 | Remove forceUpdate calls, verify UI still updates correctly |
-| P5 | Generate TS code with type error, verify tsc catches it between phases |
-| P6 | Modify interface in Phase 3, verify breaking change detected |
-| P7 | Complete phase with testCriteria, verify smoke tests run |
-| P8 | Create API contract, verify endpoint validation works |
-| P9 | Complete Phase 1+2, verify Phase 1 tests still pass after Phase 2 |
+| Priority | Verification                                                           |
+| -------- | ---------------------------------------------------------------------- |
+| P1       | `npm run typecheck`, generate app, verify conflict warnings            |
+| P2       | Generate code with missing export, verify validation catches it        |
+| P3       | Complete Phase 1, start Phase 2, call rollback, verify state restored  |
+| P4       | Remove forceUpdate calls, verify UI still updates correctly            |
+| P5       | Generate TS code with type error, verify tsc catches it between phases |
+| P6       | Modify interface in Phase 3, verify breaking change detected           |
+| P7       | Complete phase with testCriteria, verify smoke tests run               |
+| P8       | Create API contract, verify endpoint validation works                  |
+| P9       | Complete Phase 1+2, verify Phase 1 tests still pass after Phase 2      |
 
 ### Full Integration Test
+
 1. `npm run typecheck` - Must pass
 2. `npm run build` - Must pass
 3. `npm test` - Must pass
@@ -1711,15 +1767,15 @@ export interface RegressionFailure {
 
 ## Updated Files Changed Summary
 
-| File | Changes |
-|------|---------|
-| `src/types/dynamicPhases.ts` | Add 15+ new types for all integrity checks |
-| `src/services/PhaseExecutionManager.ts` | Add 8 new methods + 6 new properties |
-| `src/services/DynamicPhaseGenerator.ts` | Enhance extractImports for relative imports |
-| `src/hooks/useDynamicBuildPhases.ts` | Add rollbackToPhase, remove forceUpdate |
-| `src/services/TypeScriptCompilerService.ts` | NEW - TypeScript compilation service |
-| `src/utils/typeCompatibilityChecker.ts` | NEW - Type comparison utility |
-| `src/utils/smokeTestRunner.ts` | NEW - Test criteria execution |
+| File                                        | Changes                                     |
+| ------------------------------------------- | ------------------------------------------- |
+| `src/types/dynamicPhases.ts`                | Add 15+ new types for all integrity checks  |
+| `src/services/PhaseExecutionManager.ts`     | Add 8 new methods + 6 new properties        |
+| `src/services/DynamicPhaseGenerator.ts`     | Enhance extractImports for relative imports |
+| `src/hooks/useDynamicBuildPhases.ts`        | Add rollbackToPhase, remove forceUpdate     |
+| `src/services/TypeScriptCompilerService.ts` | NEW - TypeScript compilation service        |
+| `src/utils/typeCompatibilityChecker.ts`     | NEW - Type comparison utility               |
+| `src/utils/smokeTestRunner.ts`              | NEW - Test criteria execution               |
 
 ---
 

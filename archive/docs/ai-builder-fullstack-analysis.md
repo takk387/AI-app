@@ -13,6 +13,7 @@ The AI builder has **infrastructure for full-stack development** but suffers fro
 **Location:** `src/components/NaturalConversationWizard.tsx`, `src/app/api/wizard/chat/route.ts`, `src/prompts/wizardSystemPrompt.ts`
 
 **What the wizard DOES collect:**
+
 - Boolean flags: `needsAuth`, `needsDatabase`, `needsAPI`, `needsFileUpload`, `needsRealtime`
 - Auth type: `'simple' | 'email' | 'oauth'`
 - Data models: `DataModel[]` with field names, types, and constraints
@@ -75,6 +76,7 @@ The system has **TWO-TIER** backend code generation:
 2. **FALLBACK (Static Templates):** Pre-written template strings if no architecture spec
 
 **Static templates include:**
+
 - `AUTH_TEMPLATE` (lines 15-174) - Hardcoded NextAuth.js boilerplate
 - `FILE_UPLOAD_TEMPLATE` (lines 180-346) - Hardcoded local/S3 upload
 - `REALTIME_TEMPLATE` (lines 352-467) - Hardcoded SSE implementation
@@ -82,6 +84,7 @@ The system has **TWO-TIER** backend code generation:
 - `I18N_TEMPLATE` (lines 528-660) - Hardcoded next-intl setup
 
 **Selection logic in `builder.ts` (lines 131-139):**
+
 ```typescript
 if (architectureSpec) {
   backendContext = formatArchitectureSpec(architectureSpec); // AI-generated
@@ -99,12 +102,14 @@ if (architectureSpec) {
 **Location:** `src/utils/codeValidator.ts`
 
 **What IS validated:**
+
 - JavaScript/TypeScript syntax (Tree-sitter AST parsing)
 - JSX tag balance
 - String completion
 - Brace matching
 
 **What is NOT validated:**
+
 - Prisma schema correctness
 - Database migration validity
 - API route functionality
@@ -121,6 +126,7 @@ if (architectureSpec) {
 **Location:** `src/prompts/full-app/frontend-rules-compressed.ts`, `src/prompts/full-app/fullstack-rules-compressed.ts`
 
 To work in the Sandpack preview, full-stack apps must:
+
 - Add `'use client'` directive (can't use RSC data fetching)
 - NO async Server Components (causes preview errors)
 - NO Next.js Link/Image/useRouter components
@@ -136,6 +142,7 @@ To work in the Sandpack preview, full-stack apps must:
 **Location:** `src/components/NaturalConversationWizard.tsx` (lines 196-202, 406-407)
 
 **Verified Flow:**
+
 1. User completes wizard conversation → AppConcept built
 2. User clicks "Analyze Architecture" button (optional)
 3. `BackendArchitectureAgent.analyze()` generates ArchitectureSpec
@@ -143,6 +150,7 @@ To work in the Sandpack preview, full-stack apps must:
 5. User can "Proceed to Phases" or "Regenerate"
 
 **But critically:**
+
 - Architecture decisions are made BY THE AI, not discussed with user
 - Technology stack is locked before user sees anything
 - Scalability assumptions are hardcoded ("100k+ users" - line 34 of BackendArchitectureAgent)
@@ -170,6 +178,7 @@ To work in the Sandpack preview, full-stack apps must:
 **Location:** `src/services/DynamicPhaseGenerator.ts`
 
 **Phases that ARE auto-generated:**
+
 - `database` - Schema, ORM, migrations
 - `auth` - Authentication, authorization
 - `integration` - External services
@@ -194,12 +203,14 @@ To work in the Sandpack preview, full-stack apps must:
 **Location:** `src/services/DynamicPhaseGenerator.ts` (lines 118-200)
 
 Backend features are detected by keyword matching in feature descriptions:
+
 - "offline", "sync", "service worker" → `needsOfflineSupport`
 - "remember", "learns", "adapts" → `needsContextPersistence`
 - "undo", "redo", "draft" → `needsStateHistory`
 - "third-party", "integration", "webhook" → integration domain
 
 **Impact:** If user doesn't mention keywords, features aren't planned:
+
 - User doesn't say "Stripe" → payment processing not discussed
 - User doesn't say "monitoring" → observability not planned
 - User doesn't mention "scaling" → performance requirements unknown
@@ -209,21 +220,27 @@ Backend features are detected by keyword matching in feature descriptions:
 ## Root Cause Analysis
 
 ### Cause 1: Visual Design Tool First, Backend Second
+
 The system was designed as a **UI builder with backend bolted on**:
+
 - Workflow: Collect idea → Design UI → Add backend if needed
 - Should be: Collect requirements → Design architecture → Generate both
 
 ### Cause 2: Sandbox Preview Priority
+
 Everything optimized for Sandpack preview which can't run:
+
 - Server-side code
 - Database connections
 - Real authentication
 - File uploads
 
 ### Cause 3: Complexity Avoidance
+
 The wizard avoids "interrogating" users. But without detailed requirements, backend is guessed.
 
 ### Cause 4: Single Technology Stack Assumption
+
 Hardcoded Next.js/Prisma/NextAuth means no adaptation to different project needs.
 
 ---
@@ -231,6 +248,7 @@ Hardcoded Next.js/Prisma/NextAuth means no adaptation to different project needs
 ## What IS Working Well
 
 **Positive findings:**
+
 - `ArchitectureSpec` type is comprehensive (database, API, auth, realtime, storage, caching)
 - `ArchitectureReviewPanel` shows user the generated architecture
 - Phase dependency tracking works correctly
@@ -244,48 +262,49 @@ Hardcoded Next.js/Prisma/NextAuth means no adaptation to different project needs
 
 ### High Priority (Core Architecture)
 
-| Fix | Location | Change |
-|-----|----------|--------|
-| **1. Add backend requirements phase** | `wizardSystemPrompt.ts` | Ask about scale, integrations, compliance, infrastructure |
-| **2. Make tech stack configurable** | `BackendArchitectureAgent.ts` | Allow user to choose database, auth, API style |
-| **3. Show architecture for approval** | `NaturalConversationWizard.tsx` | Present decisions before code generation |
-| **4. Remove sandbox constraints for full-stack** | `fullstack-rules-compressed.ts` | Generate real Next.js patterns, not preview-compatible |
-| **5. Add backend validation phases** | `DynamicPhaseGenerator.ts` | Test database, API, auth during phase execution |
+| Fix                                              | Location                        | Change                                                    |
+| ------------------------------------------------ | ------------------------------- | --------------------------------------------------------- |
+| **1. Add backend requirements phase**            | `wizardSystemPrompt.ts`         | Ask about scale, integrations, compliance, infrastructure |
+| **2. Make tech stack configurable**              | `BackendArchitectureAgent.ts`   | Allow user to choose database, auth, API style            |
+| **3. Show architecture for approval**            | `NaturalConversationWizard.tsx` | Present decisions before code generation                  |
+| **4. Remove sandbox constraints for full-stack** | `fullstack-rules-compressed.ts` | Generate real Next.js patterns, not preview-compatible    |
+| **5. Add backend validation phases**             | `DynamicPhaseGenerator.ts`      | Test database, API, auth during phase execution           |
 
 ### Medium Priority (Flexibility)
 
-| Fix | Location | Change |
-|-----|----------|--------|
-| **6. Dynamic template generation** | `backend-templates.ts` | Generate auth/db code based on specific requirements |
-| **7. Add deployment planning phase** | `DynamicPhaseGenerator.ts` | Generate Docker, CI/CD, environment configs |
-| **8. Increase backend token budget** | `generation-logic.ts` | Reserve tokens specifically for backend complexity |
+| Fix                                  | Location                   | Change                                               |
+| ------------------------------------ | -------------------------- | ---------------------------------------------------- |
+| **6. Dynamic template generation**   | `backend-templates.ts`     | Generate auth/db code based on specific requirements |
+| **7. Add deployment planning phase** | `DynamicPhaseGenerator.ts` | Generate Docker, CI/CD, environment configs          |
+| **8. Increase backend token budget** | `generation-logic.ts`      | Reserve tokens specifically for backend complexity   |
 
 ### Lower Priority (Quality)
 
-| Fix | Location | Change |
-|-----|----------|--------|
-| **9. Add backend integrity checks** | `PhaseExecutionManager.ts` | P10+ for Prisma validation, API testing |
-| **10. Generate tests for backend** | `builder.ts` | API tests, integration tests for generated code |
+| Fix                                 | Location                   | Change                                          |
+| ----------------------------------- | -------------------------- | ----------------------------------------------- |
+| **9. Add backend integrity checks** | `PhaseExecutionManager.ts` | P10+ for Prisma validation, API testing         |
+| **10. Generate tests for backend**  | `builder.ts`               | API tests, integration tests for generated code |
 
 ---
 
 ## Key Files to Modify
 
-| File | Purpose | Changes Needed |
-|------|---------|----------------|
-| `src/prompts/wizardSystemPrompt.ts` | Wizard conversation instructions | Add backend requirement questions |
-| `src/types/appConcept.ts` | AppConcept type definition | Add scale, infrastructure, compliance fields |
-| `src/services/BackendArchitectureAgent.ts` | Backend architecture generation | Make tech stack configurable |
-| `src/prompts/full-app/backend-templates.ts` | Static backend templates | Dynamicize or remove |
-| `src/services/DynamicPhaseGenerator.ts` | Phase planning | Add missing backend phases |
-| `src/utils/codeValidator.ts` | Code validation | Add backend-specific validation |
-| `src/prompts/full-app/fullstack-rules-compressed.ts` | Full-stack code rules | Remove preview constraints |
+| File                                                 | Purpose                          | Changes Needed                               |
+| ---------------------------------------------------- | -------------------------------- | -------------------------------------------- |
+| `src/prompts/wizardSystemPrompt.ts`                  | Wizard conversation instructions | Add backend requirement questions            |
+| `src/types/appConcept.ts`                            | AppConcept type definition       | Add scale, infrastructure, compliance fields |
+| `src/services/BackendArchitectureAgent.ts`           | Backend architecture generation  | Make tech stack configurable                 |
+| `src/prompts/full-app/backend-templates.ts`          | Static backend templates         | Dynamicize or remove                         |
+| `src/services/DynamicPhaseGenerator.ts`              | Phase planning                   | Add missing backend phases                   |
+| `src/utils/codeValidator.ts`                         | Code validation                  | Add backend-specific validation              |
+| `src/prompts/full-app/fullstack-rules-compressed.ts` | Full-stack code rules            | Remove preview constraints                   |
 
 ---
 
 ## Verification Plan
 
 After implementing fixes:
+
 1. Create a full-stack app request: "Build a SaaS with user auth, payment processing, and real-time collaboration"
 2. Verify wizard asks about scale, compliance, integrations
 3. Verify user can choose tech stack (not hardcoded)
@@ -331,32 +350,32 @@ build/page.tsx
 
 ### REQUIRED Fields (Validation will FAIL without these)
 
-| Field | Location | Why Required |
-|-------|----------|--------------|
-| `AppConcept.name` | generate-phases:66 | API returns 400 if missing |
-| `AppConcept.coreFeatures[]` | generate-phases:75 | Must have length > 0 |
-| `Feature.id` | DynamicPhaseGenerator | Phase ordering |
-| `Feature.name` | DynamicPhaseGenerator | Phase naming |
-| `Feature.description` | DynamicPhaseGenerator | Context for code gen |
-| `Feature.priority` | DynamicPhaseGenerator | Phase ordering |
+| Field                       | Location              | Why Required               |
+| --------------------------- | --------------------- | -------------------------- |
+| `AppConcept.name`           | generate-phases:66    | API returns 400 if missing |
+| `AppConcept.coreFeatures[]` | generate-phases:75    | Must have length > 0       |
+| `Feature.id`                | DynamicPhaseGenerator | Phase ordering             |
+| `Feature.name`              | DynamicPhaseGenerator | Phase naming               |
+| `Feature.description`       | DynamicPhaseGenerator | Context for code gen       |
+| `Feature.priority`          | DynamicPhaseGenerator | Phase ordering             |
 
 ### OPTIONAL Fields (Auto-defaulted if missing)
 
-| Field | Default Value |
-|-------|---------------|
-| `description` | `A ${concept.name} application` |
-| `purpose` | `concept.description` or 'To be defined' |
-| `targetUsers` | 'General users' |
-| `technical.*` | `false` for all boolean flags |
-| `uiPreferences.*` | System defaults |
-| `architectureSpec` | Generated if `needsBackend` detected |
+| Field              | Default Value                            |
+| ------------------ | ---------------------------------------- |
+| `description`      | `A ${concept.name} application`          |
+| `purpose`          | `concept.description` or 'To be defined' |
+| `targetUsers`      | 'General users'                          |
+| `technical.*`      | `false` for all boolean flags            |
+| `uiPreferences.*`  | System defaults                          |
+| `architectureSpec` | Generated if `needsBackend` detected     |
 
 ### Zustand Store Keys (CANNOT RENAME)
 
 ```typescript
-store.appConcept        // Read by build page
-store.dynamicPhasePlan  // Read by useDynamicBuildPhases
-store.currentAppId      // Read by documentation tracking
+store.appConcept; // Read by build page
+store.dynamicPhasePlan; // Read by useDynamicBuildPhases
+store.currentAppId; // Read by documentation tracking
 ```
 
 ---
@@ -368,12 +387,14 @@ store.currentAppId      // Read by documentation tracking
 **Change:** Update `wizardSystemPrompt.ts` to ask about scale, integrations, compliance
 
 **Why Safe:**
+
 - Only changes CONVERSATION prompts, not data structures
 - New fields go into `technical` object which already exists
 - `technical` fields default to `false` if not set
 - No breaking changes to AppConcept type
 
 **Implementation:**
+
 ```typescript
 // Add to TechnicalRequirements type (appConcept.ts)
 technical: {
@@ -394,12 +415,14 @@ technical: {
 **Change:** Update `BackendArchitectureAgent.ts` to accept user preferences
 
 **Why Safe:**
+
 - `ArchitectureSpec` is OPTIONAL in AppConcept
 - If not provided, system uses defaults (current behavior)
 - New preferences stored in existing `technical` object
 - BackendArchitectureAgent already reads from AppConcept.technical
 
 **Implementation:**
+
 ```typescript
 // Add to TechnicalRequirements (optional)
 technical: {
@@ -418,6 +441,7 @@ technical: {
 **Finding:** `ArchitectureReviewPanel` already shows architecture for user approval
 
 **Current Flow:**
+
 1. User can click "Analyze Architecture"
 2. `ArchitectureReviewPanel` displays database/API/auth details
 3. User can "Proceed" or "Regenerate"
@@ -431,6 +455,7 @@ technical: {
 **Risk:** Preview will break for full-stack apps
 
 **Safe Implementation:**
+
 ```typescript
 // Add app type detection in generation-logic.ts
 if (appType === 'FULL_STACK') {
@@ -442,6 +467,7 @@ if (appType === 'FULL_STACK') {
 ```
 
 **Why Safe:**
+
 - Only affects code GENERATION prompts
 - AppConcept structure unchanged
 - Phase plan structure unchanged
@@ -452,12 +478,14 @@ if (appType === 'FULL_STACK') {
 **Change:** Add new phase types in `DynamicPhaseGenerator.ts`
 
 **Why Safe:**
+
 - Just adds NEW phase types to existing array
 - Existing phases unchanged
 - Phase execution already handles any phase type
 - No changes to AppConcept or store
 
 **Implementation:**
+
 ```typescript
 // Add to FeatureDomain type (dynamicPhases.ts)
 type FeatureDomain =
@@ -472,6 +500,7 @@ type FeatureDomain =
 ### Fix 6-10: All safe - only ADD, never REMOVE
 
 All remaining fixes:
+
 - Add new optional fields to types
 - Add new phase types
 - Add new validation logic
@@ -483,14 +512,14 @@ All remaining fixes:
 
 ## What MUST NOT Change
 
-| Item | Reason |
-|------|--------|
-| `AppConcept.name` required | API validation fails |
-| `AppConcept.coreFeatures[]` required | Phase generation fails |
-| `Feature` structure | Phase ordering breaks |
-| Store key `appConcept` | Build page breaks |
-| Store key `dynamicPhasePlan` | Phase execution breaks |
-| `DynamicPhasePlan.concept` embedding | Phase context lost |
+| Item                                       | Reason                        |
+| ------------------------------------------ | ----------------------------- |
+| `AppConcept.name` required                 | API validation fails          |
+| `AppConcept.coreFeatures[]` required       | Phase generation fails        |
+| `Feature` structure                        | Phase ordering breaks         |
+| Store key `appConcept`                     | Build page breaks             |
+| Store key `dynamicPhasePlan`               | Phase execution breaks        |
+| `DynamicPhasePlan.concept` embedding       | Phase context lost            |
 | `onComplete(concept, phasePlan)` signature | Wizard→Builder handoff breaks |
 
 ---

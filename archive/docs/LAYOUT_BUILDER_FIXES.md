@@ -165,9 +165,16 @@ async function generatePhysicalMetaphor(model: any, userPrompt: string): Promise
 **Fix:** Wrap in try-catch, return original manifest on failure.
 
 ```typescript
-async function synthesizeStyles(model: any, manifest: LayoutManifest, metaphor: string): Promise<LayoutManifest> {
+async function synthesizeStyles(
+  model: any,
+  manifest: LayoutManifest,
+  metaphor: string
+): Promise<LayoutManifest> {
   // ... prompt code ...
-  const result = await model.generateContent([{ text: prompt }, { text: JSON.stringify(manifest) }]);
+  const result = await model.generateContent([
+    { text: prompt },
+    { text: JSON.stringify(manifest) },
+  ]);
   try {
     return JSON.parse(result.response.text());
   } catch {
@@ -340,7 +347,10 @@ let updatedNode;
 try {
   updatedNode = JSON.parse(result.response.text());
 } catch {
-  return NextResponse.json({ error: 'AI returned invalid JSON for refined element' }, { status: 500 });
+  return NextResponse.json(
+    { error: 'AI returned invalid JSON for refined element' },
+    { status: 500 }
+  );
 }
 
 // Validate required fields exist
@@ -388,10 +398,7 @@ try {
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
   if (!contentType?.includes('application/json')) {
-    return NextResponse.json(
-      { error: 'Content-Type must be application/json' },
-      { status: 415 }
-    );
+    return NextResponse.json({ error: 'Content-Type must be application/json' }, { status: 415 });
   }
   // ... rest of handler
 }
@@ -407,7 +414,7 @@ export async function POST(request: Request) {
 
 **Fix:** Basic input sanitization.
 
-```typescript
+````typescript
 function sanitizeUserInput(input: string): string {
   // Remove potential prompt injection patterns
   return input
@@ -424,7 +431,7 @@ async function generatePhysicalMetaphor(model: any, userPrompt: string): Promise
     // ...
   `;
 }
-```
+````
 
 ---
 

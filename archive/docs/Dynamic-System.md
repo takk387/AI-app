@@ -11,6 +11,7 @@
 The Dynamic Phase System is an **AI-driven, adaptive build orchestration engine** that generates variable-length phase plans (2-30 phases) based on app complexity. It replaces a fixed 5-phase approach with intelligent feature classification, domain-based grouping, dependency calculation, and incremental code generation.
 
 **Key capabilities:**
+
 - Classifies features across 20 domains with complexity scoring
 - Auto-detects up to 13 implicit infrastructure features (auth, DB, i18n, state management, etc.)
 - Mines conversation history for per-phase context (user stories, workflows, validation rules)
@@ -26,53 +27,53 @@ The Dynamic Phase System is an **AI-driven, adaptive build orchestration engine*
 
 ### Core Services
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/services/DynamicPhaseGenerator.ts` | 2,718 | Phase planning engine: classifies features, groups by domain, generates phases, calculates dependencies, extracts context, analyzes files |
-| `src/services/PhaseExecutionManager.ts` | 2,095 | Execution orchestrator: builds AI prompts, tracks state, P1-P9 integrity, quality reviews, snapshots/rollback |
-| `src/services/BackendArchitectureAgent.ts` | 583 | Claude Opus 4.6 with extended thinking - generates Prisma schema, API routes, auth config, realtime config. 3-strategy JSON extraction, singleton factory |
-| `src/services/CodeContextService.ts` | 570 | Smart code context management with file importance scoring, dependency tracking, intent-based selection, context pinning (pin/unpin files) |
-| `src/services/ContextCache.ts` | 320 | Cache management for CodeContextService (15-min TTL, smart invalidation, LRU eviction with scoring) |
+| File                                       | Lines | Purpose                                                                                                                                                   |
+| ------------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/services/DynamicPhaseGenerator.ts`    | 2,718 | Phase planning engine: classifies features, groups by domain, generates phases, calculates dependencies, extracts context, analyzes files                 |
+| `src/services/PhaseExecutionManager.ts`    | 2,095 | Execution orchestrator: builds AI prompts, tracks state, P1-P9 integrity, quality reviews, snapshots/rollback                                             |
+| `src/services/BackendArchitectureAgent.ts` | 583   | Claude Opus 4.6 with extended thinking - generates Prisma schema, API routes, auth config, realtime config. 3-strategy JSON extraction, singleton factory |
+| `src/services/CodeContextService.ts`       | 570   | Smart code context management with file importance scoring, dependency tracking, intent-based selection, context pinning (pin/unpin files)                |
+| `src/services/ContextCache.ts`             | 320   | Cache management for CodeContextService (15-min TTL, smart invalidation, LRU eviction with scoring)                                                       |
 
 ### Types
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/types/dynamicPhases.ts` | 915 | All type definitions: DynamicPhase, DynamicPhasePlan, PhaseExecutionContext, P1-P9 types, config constants |
-| `src/types/phaseAdapters.ts` | 359 | DynamicPhase ↔ BuildPhase conversion, ExtendedPhaseInfo, PlanSummary, progress/time adapters |
+| File                         | Lines | Purpose                                                                                                    |
+| ---------------------------- | ----- | ---------------------------------------------------------------------------------------------------------- |
+| `src/types/dynamicPhases.ts` | 915   | All type definitions: DynamicPhase, DynamicPhasePlan, PhaseExecutionContext, P1-P9 types, config constants |
+| `src/types/phaseAdapters.ts` | 359   | DynamicPhase ↔ BuildPhase conversion, ExtendedPhaseInfo, PlanSummary, progress/time adapters               |
 
 ### Hooks
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/hooks/useDynamicBuildPhases.ts` | 620 | React hook: state management, phase lifecycle, quality integration, auto-advance |
+| File                                 | Lines | Purpose                                                                          |
+| ------------------------------------ | ----- | -------------------------------------------------------------------------------- |
+| `src/hooks/useDynamicBuildPhases.ts` | 620   | React hook: state management, phase lifecycle, quality integration, auto-advance |
 
 ### API Routes
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/app/api/wizard/generate-phases/route.ts` | 385 | POST/GET endpoints for phase plan generation with architecture integration, auto memory/state detection |
-| `src/app/api/wizard/generate-architecture/route.ts` | 113 | POST endpoint for backend architecture generation (pre-phase step) |
+| File                                                | Lines | Purpose                                                                                                 |
+| --------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------- |
+| `src/app/api/wizard/generate-phases/route.ts`       | 385   | POST/GET endpoints for phase plan generation with architecture integration, auto memory/state detection |
+| `src/app/api/wizard/generate-architecture/route.ts` | 113   | POST endpoint for backend architecture generation (pre-phase step)                                      |
 
 ### Utilities
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/utils/architectureToPhaseContext.ts` | 320 | Converts FinalValidatedArchitecture → ArchitectureSpec for phase injection |
-| `src/utils/phaseContextExtractor.ts` | 602 | Conversation topic segmentation, semantic similarity search, structured extraction (requirements, decisions, technical notes, validation rules, UI patterns) |
-| `src/utils/contextCompression.ts` | 601 | Tiktoken-based conversation compression, truncation awareness system, summary extraction (project description, features, preferences, decisions) |
-| `src/utils/designTokenMappings.ts` | 454 | 53+ CSS design token mapping functions and CSS variable generators for prompt building |
+| File                                      | Lines | Purpose                                                                                                                                                      |
+| ----------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/utils/architectureToPhaseContext.ts` | 320   | Converts FinalValidatedArchitecture → ArchitectureSpec for phase injection                                                                                   |
+| `src/utils/phaseContextExtractor.ts`      | 602   | Conversation topic segmentation, semantic similarity search, structured extraction (requirements, decisions, technical notes, validation rules, UI patterns) |
+| `src/utils/contextCompression.ts`         | 601   | Tiktoken-based conversation compression, truncation awareness system, summary extraction (project description, features, preferences, decisions)             |
+| `src/utils/designTokenMappings.ts`        | 454   | 53+ CSS design token mapping functions and CSS variable generators for prompt building                                                                       |
 
 ### UI Components
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/components/build/PhaseControlPanel.tsx` | 227 | Build controls: start/pause/resume/skip/retry, current phase info, built summary display |
-| `src/components/build/PhaseDetailView.tsx` | 514 | Modal: 4 tabs - Planned vs Built comparison, tasks, validation, generated code |
-| `src/components/build/PhaseProgressIndicator.tsx` | 225 | Visual timeline: horizontal (≤7 phases) or compact (>7 phases) layout |
-| `src/components/build/QualityPanel.tsx` | 544 | Quality pipeline: validation + review, score ring, auto-fixes, strictness |
-| `src/components/review/PhasesCard.tsx` | 117 | Review step: read-only phase list before building |
-| `src/components/concept-panel/sections/PhasePlanSection.tsx` | 219 | Phase list in concept panel: PLAN mode (simple) vs ACT mode (interactive) |
+| File                                                         | Lines | Purpose                                                                                  |
+| ------------------------------------------------------------ | ----- | ---------------------------------------------------------------------------------------- |
+| `src/components/build/PhaseControlPanel.tsx`                 | 227   | Build controls: start/pause/resume/skip/retry, current phase info, built summary display |
+| `src/components/build/PhaseDetailView.tsx`                   | 514   | Modal: 4 tabs - Planned vs Built comparison, tasks, validation, generated code           |
+| `src/components/build/PhaseProgressIndicator.tsx`            | 225   | Visual timeline: horizontal (≤7 phases) or compact (>7 phases) layout                    |
+| `src/components/build/QualityPanel.tsx`                      | 544   | Quality pipeline: validation + review, score ring, auto-fixes, strictness                |
+| `src/components/review/PhasesCard.tsx`                       | 117   | Review step: read-only phase list before building                                        |
+| `src/components/concept-panel/sections/PhasePlanSection.tsx` | 219   | Phase list in concept panel: PLAN mode (simple) vs ACT mode (interactive)                |
 
 ---
 
@@ -82,11 +83,26 @@ The Dynamic Phase System is an **AI-driven, adaptive build orchestration engine*
 
 ```typescript
 type FeatureDomain =
-  | 'setup' | 'database' | 'auth' | 'i18n'
-  | 'core-entity' | 'feature' | 'ui-component' | 'integration'
-  | 'real-time' | 'storage' | 'notification' | 'offline'
-  | 'search' | 'analytics' | 'admin' | 'ui-role'
-  | 'testing' | 'backend-validator' | 'devops' | 'monitoring'
+  | 'setup'
+  | 'database'
+  | 'auth'
+  | 'i18n'
+  | 'core-entity'
+  | 'feature'
+  | 'ui-component'
+  | 'integration'
+  | 'real-time'
+  | 'storage'
+  | 'notification'
+  | 'offline'
+  | 'search'
+  | 'analytics'
+  | 'admin'
+  | 'ui-role'
+  | 'testing'
+  | 'backend-validator'
+  | 'devops'
+  | 'monitoring'
   | 'polish';
 ```
 
@@ -100,8 +116,8 @@ interface FeatureClassification {
   estimatedTokens: number;
   requiresOwnPhase: boolean;
   suggestedPhaseName: string;
-  dependencies: string[];  // e.g., ['Authentication System', 'Database Setup']
-  keywords: string[];      // Matched pattern keywords
+  dependencies: string[]; // e.g., ['Authentication System', 'Database Setup']
+  keywords: string[]; // Matched pattern keywords
 }
 ```
 
@@ -117,7 +133,7 @@ interface DynamicPhase {
   featureDetails: FeatureClassification[];
   estimatedTokens: number;
   estimatedTime: string;
-  dependencies: number[];       // Phase numbers this depends on
+  dependencies: number[]; // Phase numbers this depends on
   dependencyNames: string[];
   testCriteria: string[];
   status: 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped';
@@ -132,7 +148,7 @@ interface DynamicPhase {
 
   // Context
   conceptContext?: PhaseConceptContext;
-  isLayoutInjection?: boolean;   // Phase 1 flag for pre-built code injection
+  isLayoutInjection?: boolean; // Phase 1 flag for pre-built code injection
   relevantRoles?: string[];
 
   // Architecture context (from dual AI planning)
@@ -191,7 +207,10 @@ interface PhaseConceptContext {
   uiPreferences?: UIPreferences;
   roles?: UserRole[];
   conversationContext?: string;
-  dataModels?: Array<{ name: string; fields: Array<{ name: string; type: string; required: boolean }> }>;
+  dataModels?: Array<{
+    name: string;
+    fields: Array<{ name: string; type: string; required: boolean }>;
+  }>;
   featureSpecs?: FeatureSpecification[];
   workflowSpecs?: WorkflowSpecification[];
   technicalConstraints?: string[];
@@ -320,8 +339,8 @@ const DEFAULT_PHASE_GENERATOR_CONFIG: PhaseGeneratorConfig = {
     moderateFeature: 2000,
     complexFeature: 3500,
     setupPhase: 2000,
-    polishPhase: 2500
-  }
+    polishPhase: 2500,
+  },
 };
 ```
 
@@ -329,65 +348,121 @@ const DEFAULT_PHASE_GENERATOR_CONFIG: PhaseGeneratorConfig = {
 
 ```typescript
 // P1: File conflicts
-interface FileConflict { filePath: string; previousPhase: number; currentPhase: number; severity: 'critical' | 'warning' | 'info' }
-interface FileConflictResult { conflicts: FileConflict[]; hasBreakingChanges: boolean }
+interface FileConflict {
+  filePath: string;
+  previousPhase: number;
+  currentPhase: number;
+  severity: 'critical' | 'warning' | 'info';
+}
+interface FileConflictResult {
+  conflicts: FileConflict[];
+  hasBreakingChanges: boolean;
+}
 
 // P2: Import validation
-interface ImportInfo { symbols: string[]; from: string; isRelative: boolean }
-interface UnresolvedImport { file: string; importPath: string; symbol?: string; reason: string }
-interface ImportValidationResult { valid: boolean; unresolved: UnresolvedImport[] }
+interface ImportInfo {
+  symbols: string[];
+  from: string;
+  isRelative: boolean;
+}
+interface UnresolvedImport {
+  file: string;
+  importPath: string;
+  symbol?: string;
+  reason: string;
+}
+interface ImportValidationResult {
+  valid: boolean;
+  unresolved: UnresolvedImport[];
+}
 
 // P3: Snapshots
-interface PhaseSnapshot { id: string; phaseNumber: number; timestamp: string; accumulatedCode: string; accumulatedFiles: string[]; accumulatedFeatures: string[]; accumulatedFilesRich: AccumulatedFile[]; accumulatedFeaturesRich: AccumulatedFeature[]; establishedPatterns: string[]; apiContracts: APIContract[]; rawGeneratedFiles: Array<{path: string; content: string}>; completedPhases: number[]; phaseStatuses: Array<{number: number; status: string}> }
+interface PhaseSnapshot {
+  id: string;
+  phaseNumber: number;
+  timestamp: string;
+  accumulatedCode: string;
+  accumulatedFiles: string[];
+  accumulatedFeatures: string[];
+  accumulatedFilesRich: AccumulatedFile[];
+  accumulatedFeaturesRich: AccumulatedFeature[];
+  establishedPatterns: string[];
+  apiContracts: APIContract[];
+  rawGeneratedFiles: Array<{ path: string; content: string }>;
+  completedPhases: number[];
+  phaseStatuses: Array<{ number: number; status: string }>;
+}
 
 // P5: Type checking
-interface TypeCheckResult { success: boolean; errors: TypeCheckError[]; warnings: TypeCheckError[] }
+interface TypeCheckResult {
+  success: boolean;
+  errors: TypeCheckError[];
+  warnings: TypeCheckError[];
+}
 
 // P6: Type compatibility
-interface TypeCompatibilityResult { compatible: boolean; breakingChanges: BreakingTypeChange[] }
+interface TypeCompatibilityResult {
+  compatible: boolean;
+  breakingChanges: BreakingTypeChange[];
+}
 
 // P7: Smoke tests
-interface PhaseTestResults { phaseNumber: number; total: number; passed: number; failed: number; results: SmokeTestResult[]; allPassed: boolean }
+interface PhaseTestResults {
+  phaseNumber: number;
+  total: number;
+  passed: number;
+  failed: number;
+  results: SmokeTestResult[];
+  allPassed: boolean;
+}
 
 // P8: Contract validation
-interface ContractValidationResult { valid: boolean; violations: ContractViolation[] }
+interface ContractValidationResult {
+  valid: boolean;
+  violations: ContractViolation[];
+}
 
 // P9: Regression tests
-interface RegressionTestResult { phaseNumber: number; previousPhasesChecked: number[]; failures: RegressionFailure[]; allPassed: boolean }
+interface RegressionTestResult {
+  phaseNumber: number;
+  previousPhasesChecked: number[];
+  failures: RegressionFailure[];
+  allPassed: boolean;
+}
 ```
 
 ### COMPLEX_FEATURE_PATTERNS (11 patterns)
 
 Each pattern has: `patterns: string[]`, `domain: FeatureDomain`, `complexity: 'complex'`, `requiresOwnPhase: boolean`, `baseTokenEstimate: number`, `suggestedName: string`
 
-| Pattern | Domain | Tokens | Trigger Keywords |
-|---------|--------|--------|------------------|
-| Authentication | auth | 4000 | login, signup, register, auth, password, oauth, social login, jwt |
-| Database | database | 3500 | database, schema, table, model, CRUD, persistent storage |
-| Payments | integration | 4500 | payment, stripe, checkout, subscription, billing, invoice |
-| Real-time | real-time | 4000 | real-time, websocket, live, push notification, streaming |
-| File Storage | storage | 3500 | file upload, image upload, storage, media, attachment |
-| Notifications | notification | 3000 | notification system, email notification, push alert |
-| Offline | offline | 4000 | offline, service worker, PWA, local-first, sync |
-| Search | search | 3000 | full-text search, search engine, elasticsearch, algolia |
-| Analytics | analytics | 3500 | analytics dashboard, reporting, metrics, data visualization |
-| Admin | admin | 3500 | admin panel, admin dashboard, content management, CMS |
-| i18n | i18n | 4000 | i18n, internationalization, multi-language, translation, locale |
+| Pattern        | Domain       | Tokens | Trigger Keywords                                                  |
+| -------------- | ------------ | ------ | ----------------------------------------------------------------- |
+| Authentication | auth         | 4000   | login, signup, register, auth, password, oauth, social login, jwt |
+| Database       | database     | 3500   | database, schema, table, model, CRUD, persistent storage          |
+| Payments       | integration  | 4500   | payment, stripe, checkout, subscription, billing, invoice         |
+| Real-time      | real-time    | 4000   | real-time, websocket, live, push notification, streaming          |
+| File Storage   | storage      | 3500   | file upload, image upload, storage, media, attachment             |
+| Notifications  | notification | 3000   | notification system, email notification, push alert               |
+| Offline        | offline      | 4000   | offline, service worker, PWA, local-first, sync                   |
+| Search         | search       | 3000   | full-text search, search engine, elasticsearch, algolia           |
+| Analytics      | analytics    | 3500   | analytics dashboard, reporting, metrics, data visualization       |
+| Admin          | admin        | 3500   | admin panel, admin dashboard, content management, CMS             |
+| i18n           | i18n         | 4000   | i18n, internationalization, multi-language, translation, locale   |
 
 ### MODERATE_FEATURE_PATTERNS (10 patterns)
 
-| Pattern | Domain | Tokens | Trigger Keywords |
-|---------|--------|--------|------------------|
-| Forms | ui-component | 2000 | form builder, multi-step form, wizard form, dynamic form |
-| Tables | ui-component | 2000 | data table, sortable table, filterable list, grid view |
-| Drag-drop | ui-component | 2500 | drag and drop, sortable, reorderable, kanban |
-| Calendar | ui-component | 2500 | calendar, scheduling, booking, date picker, timeline |
-| Maps | integration | 2500 | map, geolocation, location, GPS, mapbox, google maps |
-| PDF Export | feature | 2000 | PDF, export, report generation, print |
-| Filters | feature | 1800 | advanced filter, faceted search, filter panel |
-| Comments | feature | 2000 | comments, discussion, forum, thread |
-| Ratings | feature | 1500 | rating, review, stars, feedback |
-| Dashboard | analytics | 2500 | dashboard, charts, widgets, KPI |
+| Pattern    | Domain       | Tokens | Trigger Keywords                                         |
+| ---------- | ------------ | ------ | -------------------------------------------------------- |
+| Forms      | ui-component | 2000   | form builder, multi-step form, wizard form, dynamic form |
+| Tables     | ui-component | 2000   | data table, sortable table, filterable list, grid view   |
+| Drag-drop  | ui-component | 2500   | drag and drop, sortable, reorderable, kanban             |
+| Calendar   | ui-component | 2500   | calendar, scheduling, booking, date picker, timeline     |
+| Maps       | integration  | 2500   | map, geolocation, location, GPS, mapbox, google maps     |
+| PDF Export | feature      | 2000   | PDF, export, report generation, print                    |
+| Filters    | feature      | 1800   | advanced filter, faceted search, filter panel            |
+| Comments   | feature      | 2000   | comments, discussion, forum, thread                      |
+| Ratings    | feature      | 1500   | rating, review, stars, feedback                          |
+| Dashboard  | analytics    | 2500   | dashboard, charts, widgets, KPI                          |
 
 ---
 
@@ -426,21 +501,21 @@ generatePhasePlan(concept: AppConcept): PhasePlanGenerationResult
 
 `getImplicitFeatures(tech: TechnicalRequirements): FeatureClassification[]`
 
-| # | Feature | Trigger | Domain | Tokens | Own Phase | Dependencies |
-|---|---------|---------|--------|--------|-----------|-------------|
-| 1 | Authentication System | `tech.needsAuth` | auth | 4000 | Yes | Database Setup (if needsDatabase) |
-| 2 | Database Setup | `tech.needsDatabase` | database | 3500 | Yes | None |
-| 3 | Real-time Updates | `tech.needsRealtime` | real-time | 4000 | Yes | Database Setup (if needsDatabase) |
-| 4 | File Storage | `tech.needsFileUpload` | storage | 3500 | Yes | None |
-| 5 | API Integration | `tech.needsAPI` | integration | 2500 | No | None |
-| 6 | State Management Infrastructure | `stateComplexity === 'complex'` OR `needsStateHistory` | setup | 4000 | Yes | None |
-| 7 | Context Memory System | `tech.needsContextPersistence` | storage | 4500 | Yes | Database Setup (if needsDatabase) |
-| 8 | Backend Validation | `needsDatabase OR needsAPI OR needsAuth` | backend-validator | 2000 | Yes | Database, Auth, API |
-| 9 | Caching Infrastructure | `tech.needsCaching` | setup | 2500 | No | None |
-| 10 | Offline Support | `tech.needsOfflineSupport` | offline | 4000 | Yes | Database Setup (if needsDatabase) |
-| 11 | Internationalization | `tech.needsI18n` | i18n | 4000 | Yes | None |
-| 12 | DevOps & Deployment | `scale === 'large' OR 'enterprise'` | devops | 4000 | Yes | Database Setup (if needsDatabase) |
-| 13 | Monitoring & Observability | `scale === 'large' OR 'enterprise'` | monitoring | 3000 | Yes | None |
+| #   | Feature                         | Trigger                                                | Domain            | Tokens | Own Phase | Dependencies                      |
+| --- | ------------------------------- | ------------------------------------------------------ | ----------------- | ------ | --------- | --------------------------------- |
+| 1   | Authentication System           | `tech.needsAuth`                                       | auth              | 4000   | Yes       | Database Setup (if needsDatabase) |
+| 2   | Database Setup                  | `tech.needsDatabase`                                   | database          | 3500   | Yes       | None                              |
+| 3   | Real-time Updates               | `tech.needsRealtime`                                   | real-time         | 4000   | Yes       | Database Setup (if needsDatabase) |
+| 4   | File Storage                    | `tech.needsFileUpload`                                 | storage           | 3500   | Yes       | None                              |
+| 5   | API Integration                 | `tech.needsAPI`                                        | integration       | 2500   | No        | None                              |
+| 6   | State Management Infrastructure | `stateComplexity === 'complex'` OR `needsStateHistory` | setup             | 4000   | Yes       | None                              |
+| 7   | Context Memory System           | `tech.needsContextPersistence`                         | storage           | 4500   | Yes       | Database Setup (if needsDatabase) |
+| 8   | Backend Validation              | `needsDatabase OR needsAPI OR needsAuth`               | backend-validator | 2000   | Yes       | Database, Auth, API               |
+| 9   | Caching Infrastructure          | `tech.needsCaching`                                    | setup             | 2500   | No        | None                              |
+| 10  | Offline Support                 | `tech.needsOfflineSupport`                             | offline           | 4000   | Yes       | Database Setup (if needsDatabase) |
+| 11  | Internationalization            | `tech.needsI18n`                                       | i18n              | 4000   | Yes       | None                              |
+| 12  | DevOps & Deployment             | `scale === 'large' OR 'enterprise'`                    | devops            | 4000   | Yes       | Database Setup (if needsDatabase) |
+| 13  | Monitoring & Observability      | `scale === 'large' OR 'enterprise'`                    | monitoring        | 3000   | Yes       | None                              |
 
 ### 4.4 Memory Detection (Weighted Scoring)
 
@@ -448,10 +523,10 @@ generatePhasePlan(concept: AppConcept): PhasePlanGenerationResult
 
 **Context Persistence scoring:**
 
-| Signal Type | Keywords | Points |
-|-------------|----------|--------|
-| Strong | remember, remembers, memory, memories, recall, forget, learns, adapts, personalize, personalized, conversation history, previous session, cross-session | 2 each |
-| Weak | preferences, habits, conversation, context, previous, past, earlier, before, save, persist, store, keep, maintain, retain | 1 each |
+| Signal Type | Keywords                                                                                                                                                | Points |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Strong      | remember, remembers, memory, memories, recall, forget, learns, adapts, personalize, personalized, conversation history, previous session, cross-session | 2 each |
+| Weak        | preferences, habits, conversation, context, previous, past, earlier, before, save, persist, store, keep, maintain, retain                               | 1 each |
 
 **Threshold:** 2+ points required. Prevents false positives like "save time" or "store page" from triggering.
 
@@ -473,12 +548,12 @@ generatePhasePlan(concept: AppConcept): PhasePlanGenerationResult
 
 Analyzes the LayoutManifest tree via recursive traversal:
 
-| Detection | Condition | Domain | Tokens |
-|-----------|-----------|--------|--------|
-| Authentication | `detectedFeatures.includes('Authentication')` OR auth semantic tags (login, auth, password) | auth | 4000 |
-| File Upload | `detectedFeatures.includes('FileUpload')` | storage | 3500 |
-| Complex UI | `totalNodes > 15` OR `maxDepth > 4` OR dashboard detected | ui-component | 5000 |
-| Media Player | `hasVideo` in layout tree | ui-component | 2500 |
+| Detection      | Condition                                                                                   | Domain       | Tokens |
+| -------------- | ------------------------------------------------------------------------------------------- | ------------ | ------ |
+| Authentication | `detectedFeatures.includes('Authentication')` OR auth semantic tags (login, auth, password) | auth         | 4000   |
+| File Upload    | `detectedFeatures.includes('FileUpload')`                                                   | storage      | 3500   |
+| Complex UI     | `totalNodes > 15` OR `maxDepth > 4` OR dashboard detected                                   | ui-component | 5000   |
+| Media Player   | `hasVideo` in layout tree                                                                   | ui-component | 2500   |
 
 ### 4.7 Domain Grouping
 
@@ -507,6 +582,7 @@ Analyzes the LayoutManifest tree via recursive traversal:
 5. **Final phase:** Polish & Documentation (always last)
 
 **Phase splitting** (`splitFeaturesIntoPhases`):
+
 - Sort features by priority (high→low), then complexity (simple→complex)
 - Split when: `currentTokens + nextFeature > maxTokensPerPhase` OR `currentFeatures >= maxFeaturesPerPhase`
 - Multi-part phases named: `"Domain Name (Part N)"`
@@ -618,6 +694,7 @@ monitoring:         monitoring, observability, logging, error tracking, analytic
 `analyzeGeneratedFiles(files): { accumulatedFiles, apiContracts, establishedPatterns }`
 
 **File type classification:**
+
 - `/api/` or `route.ts` → `'api'`
 - `/types/` or `.d.ts` → `'type'`
 - `/utils/`, `/lib/`, `/helpers/` → `'util'`
@@ -627,17 +704,20 @@ monitoring:         monitoring, observability, logging, error tracking, analytic
 - Otherwise → `'other'`
 
 **Export extraction (regex):**
+
 - Named: `export (const|let|function|class|interface|type) Name`
 - Default: `export default (function|class) Name` → `"default:Name"`
 - Braced: `export { Name1, Name2 }` (handles `as` renames)
 - Limit: top 20
 
 **Import extraction:**
+
 - Rich format: `{ symbols: string[], from: string, isRelative: boolean }`
 - Named: `import { A, B } from 'source'`
 - Default: `import Name from 'source'` → `"default:Name"`
 
 **API contract extraction:**
+
 - Endpoint derived from path: `/api/(.+?)(?:/route)?\.ts/`
 - HTTP methods checked: GET, POST, PUT, DELETE, PATCH
 - Auth detection: `getServerSession`, `auth()`, `requireAuth`, `Authorization`
@@ -660,7 +740,7 @@ react-useState, react-useReducer, react-context, zustand-store, redux, swr, reac
 - ≤3 phases → `'simple'`
 - ≤6 phases → `'moderate'`
 - ≤12 phases → `'complex'`
-- >12 phases → `'enterprise'`
+- > 12 phases → `'enterprise'`
 
 ---
 
@@ -672,16 +752,16 @@ react-useState, react-useReducer, react-context, zustand-store, redux, swr, reac
 
 **Data sources:**
 
-| Data | Source |
-|------|--------|
-| Phase metadata | `plan.phases[phaseNumber]` |
-| App concept | `plan.concept` (purpose, targetUsers, roles, workflows, dataModels) |
-| Layout manifest | `plan.concept.layoutManifest` → design tokens |
-| Architecture | `phase.architectureContext` (Prisma schema, API routes, files) |
-| Previous code | `getSmartCodeContext()` or `cachedSmartContextSnapshot` |
-| Accumulated state | `completedPhases`, `accumulatedFiles`, `accumulatedFeatures` |
-| Phase context | `plan.phaseContexts[phase.domain]` |
-| Enhanced tracking | `apiContracts`, `establishedPatterns`, `accumulatedFilesRich` |
+| Data              | Source                                                              |
+| ----------------- | ------------------------------------------------------------------- |
+| Phase metadata    | `plan.phases[phaseNumber]`                                          |
+| App concept       | `plan.concept` (purpose, targetUsers, roles, workflows, dataModels) |
+| Layout manifest   | `plan.concept.layoutManifest` → design tokens                       |
+| Architecture      | `phase.architectureContext` (Prisma schema, API routes, files)      |
+| Previous code     | `getSmartCodeContext()` or `cachedSmartContextSnapshot`             |
+| Accumulated state | `completedPhases`, `accumulatedFiles`, `accumulatedFeatures`        |
+| Phase context     | `plan.phaseContexts[phase.domain]`                                  |
+| Enhanced tracking | `apiContracts`, `establishedPatterns`, `accumulatedFilesRich`       |
 
 **Async variant:** `getExecutionContextAsync(phaseNumber, maxTokens)` pre-loads smart context via `CodeContextService`.
 
@@ -689,25 +769,25 @@ react-useState, react-useReducer, react-context, zustand-store, redux, swr, reac
 
 `buildPhaseExecutionPrompt(context: PhaseExecutionContext): string`
 
-| # | Section | Condition |
-|---|---------|-----------|
-| 0 | Truncation Notice | If context was truncated |
-| 1 | Phase Header | Always: `# Phase {N} of {total}: {name}` |
-| 2 | App Overview | Always: name, description, type, purpose, target users |
-| 3 | User Roles | If roles defined: name, capabilities, permissions |
-| 4 | User Workflows | If workflows defined: name, description, steps, involved roles |
-| 5 | Phase-Specific Role Context | If relevantRoles: which roles this phase serves |
-| 6 | Design Requirements | LayoutManifest → full CSS variables + design tokens; OR UIPreferences fallback |
-| 7 | Technical Stack | Auth type, database, real-time, file upload flags |
-| 8 | Data Models | If defined: model names with typed fields |
-| 9 | Phase Goal | Description + feature list for this phase |
-| 10 | Extracted Phase Context | If available: requirements, decisions, technical notes, validation rules, UI patterns, context summary |
-| 11 | Existing Project Context | If not phase 1: files created, features implemented, API contracts, established patterns, CRITICAL preservation instructions |
-| 12 | Existing Code Reference | CodeContextService snapshot via `formatCodeContextSnapshot()` (preferred) OR raw accumulated code fallback |
-| 13 | Backend Architecture | If available: Prisma schema, API routes to implement, backend files to create |
-| 14 | Phase Requirements | Phase 1 instructions vs subsequent phase instructions |
-| 15 | Test Criteria | After this phase, the following should work: [...] |
-| 16 | Output Format | `===FILE:path===` delimiter format specification |
+| #   | Section                     | Condition                                                                                                                    |
+| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Truncation Notice           | If context was truncated                                                                                                     |
+| 1   | Phase Header                | Always: `# Phase {N} of {total}: {name}`                                                                                     |
+| 2   | App Overview                | Always: name, description, type, purpose, target users                                                                       |
+| 3   | User Roles                  | If roles defined: name, capabilities, permissions                                                                            |
+| 4   | User Workflows              | If workflows defined: name, description, steps, involved roles                                                               |
+| 5   | Phase-Specific Role Context | If relevantRoles: which roles this phase serves                                                                              |
+| 6   | Design Requirements         | LayoutManifest → full CSS variables + design tokens; OR UIPreferences fallback                                               |
+| 7   | Technical Stack             | Auth type, database, real-time, file upload flags                                                                            |
+| 8   | Data Models                 | If defined: model names with typed fields                                                                                    |
+| 9   | Phase Goal                  | Description + feature list for this phase                                                                                    |
+| 10  | Extracted Phase Context     | If available: requirements, decisions, technical notes, validation rules, UI patterns, context summary                       |
+| 11  | Existing Project Context    | If not phase 1: files created, features implemented, API contracts, established patterns, CRITICAL preservation instructions |
+| 12  | Existing Code Reference     | CodeContextService snapshot via `formatCodeContextSnapshot()` (preferred) OR raw accumulated code fallback                   |
+| 13  | Backend Architecture        | If available: Prisma schema, API routes to implement, backend files to create                                                |
+| 14  | Phase Requirements          | Phase 1 instructions vs subsequent phase instructions                                                                        |
+| 15  | Test Criteria               | After this phase, the following should work: [...]                                                                           |
+| 16  | Output Format               | `===FILE:path===` delimiter format specification                                                                             |
 
 ### 5.3 Design Fidelity
 
@@ -809,6 +889,7 @@ Restores all state from snapshot, clears snapshots after rollback point, syncs p
 ### 5.5 Quality Review System
 
 **Phase Review** (`runPhaseQualityReview`):
+
 - Scope: Files from one phase only
 - Analysis: AST-based (syntax, types, security, React rules, performance)
 - AI usage: None
@@ -816,6 +897,7 @@ Restores all state from snapshot, clears snapshots after rollback point, syncs p
 - Storage key: phaseNumber
 
 **Final Review** (`runFinalQualityReview`):
+
 - Scope: All generated files
 - Analysis: AST + Claude AI semantic analysis
 - AI checks: Missing features, logic consistency, requirements compliance, API contract verification
@@ -923,23 +1005,23 @@ interface UseDynamicBuildPhasesOptions {
   onBuildFailed?: (error: Error, phase?: DynamicPhase) => void;
   onPlanInitialized?: (plan: DynamicPhasePlan) => void;
   onError?: (error: Error, phase?: DynamicPhase) => void;
-  autoAdvance?: boolean;  // Default: false
+  autoAdvance?: boolean; // Default: false
 }
 ```
 
 ### State
 
-| State | Type | Default |
-|-------|------|---------|
-| plan | `DynamicPhasePlan \| null` | null |
-| manager | `PhaseExecutionManager \| null` | null |
-| isBuilding | boolean | false |
-| isPaused | boolean | false |
-| accumulatedCode | string | '' |
-| qualityReport | `QualityReport \| null` | null |
-| pipelineState | QualityPipelineState | idle |
-| isReviewing | boolean | false |
-| reviewStrictness | ReviewStrictness | 'standard' |
+| State            | Type                            | Default    |
+| ---------------- | ------------------------------- | ---------- |
+| plan             | `DynamicPhasePlan \| null`      | null       |
+| manager          | `PhaseExecutionManager \| null` | null       |
+| isBuilding       | boolean                         | false      |
+| isPaused         | boolean                         | false      |
+| accumulatedCode  | string                          | ''         |
+| qualityReport    | `QualityReport \| null`         | null       |
+| pipelineState    | QualityPipelineState            | idle       |
+| isReviewing      | boolean                         | false      |
+| reviewStrictness | ReviewStrictness                | 'standard' |
 
 ### Derived State (useMemo)
 
@@ -956,6 +1038,7 @@ interface UseDynamicBuildPhasesOptions {
 **startPhase(phaseNumber):** Captures snapshot (P3), updates status to `'in-progress'`, sets `isBuilding = true`, calls `onPhaseStart`
 
 **completePhase(result):**
+
 1. `manager.recordPhaseResult(result)`
 2. Update accumulated code if successful
 3. Auto-run quality review (fire-and-forget async)
@@ -977,6 +1060,7 @@ Uses `mountedRef.current` to prevent state updates after component unmount (comm
 ### POST /api/wizard/generate-phases
 
 **Request:**
+
 ```typescript
 {
   concept: AppConcept;                              // Required
@@ -989,6 +1073,7 @@ Uses `mountedRef.current` to prevent state updates after component unmount (comm
 ```
 
 **Logic:**
+
 1. Validate concept (name, features required)
 2. Normalize with defaults (description, purpose, targetUsers, technical flags, uiPreferences)
 3. Auto-detect memory/state needs if not set
@@ -1002,6 +1087,7 @@ Uses `mountedRef.current` to prevent state updates after component unmount (comm
 7. Attach layout builder files (if provided)
 
 **Response:**
+
 ```typescript
 {
   success: boolean;
@@ -1024,15 +1110,16 @@ Returns API info, capabilities, complexity levels, and example input/output for 
 
 **Conversion mappings:**
 
-| Source | Target | Mapping |
-|--------|--------|---------|
-| `arch.database.models` | `spec.database.tables` | Fields mapped via `mapFieldType()` |
-| `arch.api.routes` | `spec.api.routes` | Method uppercased, auth detected from middleware |
-| `arch.auth` | `spec.auth` | Provider mapped (NextAuth→'next-auth', Supabase→'supabase', etc.) |
-| `arch.realtime.channels` | `spec.realtime.channels` | Technology mapped (SSE/WebSocket) |
-| `arch.consensusReport` | `spec.architectureReasoning` | Rounds, coverage %, compromises |
+| Source                   | Target                       | Mapping                                                           |
+| ------------------------ | ---------------------------- | ----------------------------------------------------------------- |
+| `arch.database.models`   | `spec.database.tables`       | Fields mapped via `mapFieldType()`                                |
+| `arch.api.routes`        | `spec.api.routes`            | Method uppercased, auth detected from middleware                  |
+| `arch.auth`              | `spec.auth`                  | Provider mapped (NextAuth→'next-auth', Supabase→'supabase', etc.) |
+| `arch.realtime.channels` | `spec.realtime.channels`     | Technology mapped (SSE/WebSocket)                                 |
+| `arch.consensusReport`   | `spec.architectureReasoning` | Rounds, coverage %, compromises                                   |
 
 **Field type mapping:**
+
 - int/number → Int
 - float/decimal → Float
 - bool → Boolean
@@ -1042,13 +1129,13 @@ Returns API info, capabilities, complexity levels, and example input/output for 
 
 **Generated backend phases (with priorities):**
 
-| Phase | Priority | Trigger | Dependencies | Tokens |
-|-------|----------|---------|-------------|--------|
-| Database Schema Setup | 10 | Models exist | Project Setup | 3000 |
-| Authentication System | 11 | Auth exists | Database Schema Setup | 4000 |
-| API Routes | 12 | Routes exist | Database Schema Setup | 5000 |
-| Agentic Workflows | 13 | Agentic enabled + workflows | API Routes | 6000 |
-| Real-time Features | 14 | Realtime enabled | API Routes | 4000 |
+| Phase                 | Priority | Trigger                     | Dependencies          | Tokens |
+| --------------------- | -------- | --------------------------- | --------------------- | ------ |
+| Database Schema Setup | 10       | Models exist                | Project Setup         | 3000   |
+| Authentication System | 11       | Auth exists                 | Database Schema Setup | 4000   |
+| API Routes            | 12       | Routes exist                | Database Schema Setup | 5000   |
+| Agentic Workflows     | 13       | Agentic enabled + workflows | API Routes            | 6000   |
+| Real-time Features    | 14       | Realtime enabled            | API Routes            | 4000   |
 
 ---
 
@@ -1120,9 +1207,9 @@ interface ConversationSummary {
 }
 
 interface CompressionOptions {
-  maxTokens?: number;           // Default: 6000
-  preserveLastN?: number;       // Default: 20
-  includeTimestamps?: boolean;  // Default: false
+  maxTokens?: number; // Default: 6000
+  preserveLastN?: number; // Default: 20
+  includeTimestamps?: boolean; // Default: false
 }
 
 interface TruncationInfo {
@@ -1276,11 +1363,11 @@ Cache management for CodeContextService with TTL expiration, smart invalidation,
 
 **Configuration:**
 
-| Setting | Value |
-|---------|-------|
-| maxAnalysisCacheSize | 500 |
-| maxSnapshotCacheSize | 200 |
-| TTL | 15 minutes |
+| Setting              | Value      |
+| -------------------- | ---------- |
+| maxAnalysisCacheSize | 500        |
+| maxSnapshotCacheSize | 200        |
+| TTL                  | 15 minutes |
 
 **Analysis cache:**
 
@@ -1314,6 +1401,7 @@ Cache management for CodeContextService with TTL expiration, smart invalidation,
 **Props:** phases, progress, isBuilding, isPaused, onStartBuild, onPauseBuild, onResumeBuild, onSkipPhase, onRetryPhase, onViewPhaseDetails, dynamicPhases
 
 **Features:**
+
 - Build status badge (Paused/Building)
 - Main controls: Start Build / Pause / Resume buttons
 - Current phase info with task progress bar
@@ -1326,6 +1414,7 @@ Cache management for CodeContextService with TTL expiration, smart invalidation,
 **Props:** phase, isOpen, onClose, onBuildPhase, onSkipPhase, onRetryPhase, generatedCode, dynamicPhase
 
 **4 tabs:**
+
 1. **Comparison** (default when dynamicPhase exists): Side-by-side Planned (blue) vs Built (green/red)
    - Planned: features list, test criteria
    - Built: status-dependent (pending/building/completed/failed), builtSummary, implementedFeatures, builtFiles, errors
@@ -1338,6 +1427,7 @@ Cache management for CodeContextService with TTL expiration, smart invalidation,
 **Props:** phases, progress, onPhaseClick, maxHorizontalPhases (default: 7)
 
 **Adaptive layouts:**
+
 - **Horizontal** (≤7 phases): Circle nodes with connectors, hover tooltips, pulse animation for current
 - **Compact** (>7 phases): Summary row + expandable scrollable list (max 264px)
 - Progress bar with garden→gold gradient
@@ -1347,6 +1437,7 @@ Cache management for CodeContextService with TTL expiration, smart invalidation,
 **Props:** phase, validationResult, qualityReport, pipelineState, onRunValidation, onRunReview, onProceedAnyway, onRetryPhase, onStrictnessChange, isValidating, isReviewing, strictness
 
 **Features:**
+
 - 3-step pipeline indicator: Validating → Reviewing → Complete
 - Quality score ring (SVG circular, color-coded: ≥90 green, ≥70 yellow, <70 red)
 - Side-by-side validation and review results
@@ -1365,6 +1456,7 @@ Read-only phase list with loading skeleton, used in Step 4 (Review).
 **Props:** phasePlan, completedPhases, currentPhase, mode, buildState, onPhaseClick
 
 **Mode-specific:**
+
 - **PLAN mode:** Simple list with estimated tokens
 - **ACT mode:** Interactive with build progress, clickable phases, built summary display, status-based styling (failed=red, current=green+pulse, completed=green+checkmark)
 
@@ -1455,57 +1547,57 @@ STEP 5: Builder (/app - MainBuilderView)
 
 ### Phase Generator Config
 
-| Setting | Value | Purpose |
-|---------|-------|---------|
-| maxTokensPerPhase | 16,000 | Max tokens per phase before splitting |
-| targetTokensPerPhase | 5,000 | Target tokens for balanced phases |
-| maxFeaturesPerPhase | 4 | Max features grouped into one phase |
-| minFeaturesPerPhase | 1 | Min features per phase |
-| minPhases | 2 | Absolute minimum phase count |
-| maxPhases | 30 | Absolute maximum phase count |
+| Setting               | Value                                                 | Purpose                                 |
+| --------------------- | ----------------------------------------------------- | --------------------------------------- |
+| maxTokensPerPhase     | 16,000                                                | Max tokens per phase before splitting   |
+| targetTokensPerPhase  | 5,000                                                 | Target tokens for balanced phases       |
+| maxFeaturesPerPhase   | 4                                                     | Max features grouped into one phase     |
+| minFeaturesPerPhase   | 1                                                     | Min features per phase                  |
+| minPhases             | 2                                                     | Absolute minimum phase count            |
+| maxPhases             | 30                                                    | Absolute maximum phase count            |
 | alwaysSeparateDomains | auth, database, real-time, offline, integration, i18n | Domains that always get their own phase |
-| complexityMultipliers | simple: 1.0, moderate: 1.5, complex: 2.5 | Token estimation multipliers |
+| complexityMultipliers | simple: 1.0, moderate: 1.5, complex: 2.5              | Token estimation multipliers            |
 
 ### Token Estimates
 
-| Feature Type | Tokens |
-|-------------|--------|
-| Simple feature | 1,200 |
-| Moderate feature | 2,000 |
-| Complex feature | 3,500 |
-| Setup phase | 2,000 (+800 for production features) |
-| Polish phase | 2,500 |
-| Layout injection | 500 |
+| Feature Type     | Tokens                               |
+| ---------------- | ------------------------------------ |
+| Simple feature   | 1,200                                |
+| Moderate feature | 2,000                                |
+| Complex feature  | 3,500                                |
+| Setup phase      | 2,000 (+800 for production features) |
+| Polish phase     | 2,500                                |
+| Layout injection | 500                                  |
 
 ### Smart Context Limits
 
-| Limit | Value |
-|-------|-------|
-| CodeContextService default budget | 32,000 tokens |
-| Conversation context per phase | 12,000 chars max |
-| Phase description context | 500 chars appended |
-| Feature specs per category | 6 max |
-| Workflow specs per phase | 10 max |
-| Validation rules per phase | 10 max |
-| Exports per file | 20 max |
-| Dependencies per file | 15 max |
+| Limit                             | Value              |
+| --------------------------------- | ------------------ |
+| CodeContextService default budget | 32,000 tokens      |
+| Conversation context per phase    | 12,000 chars max   |
+| Phase description context         | 500 chars appended |
+| Feature specs per category        | 6 max              |
+| Workflow specs per phase          | 10 max             |
+| Validation rules per phase        | 10 max             |
+| Exports per file                  | 20 max             |
+| Dependencies per file             | 15 max             |
 
 ### File Type Importance Scores (`src/types/codeContext.ts` / `CodeParser.ts`)
 
-| File Type | Importance Score |
-|-----------|-----------------|
-| type-definition | 0.85 |
-| context-provider | 0.80 |
-| api-route | 0.75 |
-| hook | 0.70 |
-| layout | 0.65 |
-| page | 0.60 |
-| component | 0.55 |
-| utility | 0.50 |
-| config | 0.45 |
-| other | 0.40 |
-| style | 0.30 |
-| test | 0.20 |
+| File Type        | Importance Score |
+| ---------------- | ---------------- |
+| type-definition  | 0.85             |
+| context-provider | 0.80             |
+| api-route        | 0.75             |
+| hook             | 0.70             |
+| layout           | 0.65             |
+| page             | 0.60             |
+| component        | 0.55             |
+| utility          | 0.50             |
+| config           | 0.45             |
+| other            | 0.40             |
+| style            | 0.30             |
+| test             | 0.20             |
 
 ---
 
@@ -1528,19 +1620,19 @@ STEP 5: Builder (/app - MainBuilderView)
 
 ### Edge Cases
 
-| Scenario | Handling |
-|----------|----------|
-| No features | Generates setup + polish phases only (minimum 2) |
-| Duplicate implicit features | Deduplicated in `groupByDomain()` by `suggestedPhaseName` |
-| Missing dependencies | Logged as warnings, not errors |
-| Empty conversation context | Returns empty string safely |
-| No layout manifest | Falls back to standard setup phase |
-| Backend phases with invalid deps | Resolves what it can, warns for missing |
-| Token overflow per phase | Auto-splits phases, warns if still over 24K |
-| Phase not found | getExecutionContext throws, getOptimizedPhaseContext returns error result |
-| No files generated | Quality review returns `skipped` result |
-| CodeContextService not initialized | Falls back to legacy smart context |
-| Page refresh mid-build | Plan persists (Zustand/localStorage), execution results lost |
+| Scenario                           | Handling                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| No features                        | Generates setup + polish phases only (minimum 2)                          |
+| Duplicate implicit features        | Deduplicated in `groupByDomain()` by `suggestedPhaseName`                 |
+| Missing dependencies               | Logged as warnings, not errors                                            |
+| Empty conversation context         | Returns empty string safely                                               |
+| No layout manifest                 | Falls back to standard setup phase                                        |
+| Backend phases with invalid deps   | Resolves what it can, warns for missing                                   |
+| Token overflow per phase           | Auto-splits phases, warns if still over 24K                               |
+| Phase not found                    | getExecutionContext throws, getOptimizedPhaseContext returns error result |
+| No files generated                 | Quality review returns `skipped` result                                   |
+| CodeContextService not initialized | Falls back to legacy smart context                                        |
+| Page refresh mid-build             | Plan persists (Zustand/localStorage), execution results lost              |
 
 ---
 

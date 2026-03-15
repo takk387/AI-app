@@ -18,35 +18,35 @@ AppConcept → DynamicPhaseGenerator → DynamicPhasePlan → PhaseExecutionMana
 
 ### Files Audited
 
-| File | Lines | Role |
-|------|-------|------|
-| `src/types/dynamicPhases.ts` | 915 | All types, interfaces, enums, constants |
-| `src/services/DynamicPhaseGenerator.ts` | 682 | Phase plan generation from AppConcept |
-| `src/services/phaseGeneration/featureClassifier.ts` | 610 | Feature classification + implicit features |
-| `src/services/phaseGeneration/phaseFactory.ts` | 603 | Phase creation factories |
-| `src/services/phaseGeneration/contextExtractor.ts` | 252 | Context extraction from conversation |
-| `src/services/phaseGeneration/phaseKeywords.ts` | 282 | Keyword dictionaries |
-| `src/services/phaseGeneration/fileAnalyzer.ts` | 396 | File metadata extraction |
-| `src/services/PhaseExecutionManager.ts` | 758 | Phase execution orchestrator |
-| `src/services/phaseExecution/promptBuilder.ts` | 660 | AI prompt assembly |
-| `src/services/phaseExecution/executionUtils.ts` | 111 | OperationResult type + helpers |
-| `src/hooks/useDynamicBuildPhases.ts` | 660 | React hook — phase state machine |
-| `src/hooks/usePhaseExecution.ts` | 406 | Phase lifecycle — tryStartPhase1, executePhase |
-| `src/hooks/useSendMessage.ts` | 355 | User-driven message flow |
-| `src/hooks/useSendMessageHandlers.ts` | 471 | handleBuildTrigger, handleModifyTrigger |
-| `src/hooks/useStreamingGeneration.ts` | 247 | SSE client for full-app-stream |
-| `src/app/api/ai-builder/full-app-stream/route.ts` | 1,220 | Claude API call, SSE output, validation |
-| `src/services/CodeContextService.ts` | 570 | Dependency graph, smart context |
-| `src/services/CodeParser.ts` | 1,070 | AST parsing (TypeScript Compiler API) |
-| `src/services/ContextSelector.ts` | 692 | Context selection + token budgeting |
-| `src/services/DependencyGraphBuilder.ts` | 561 | Dependency graph (DAG) |
-| `src/prompts/builder.ts` | 250 | System prompt assembly |
-| `src/prompts/production-standards.ts` | 314 | Production standards + ErrorBoundary |
-| `src/prompts/quality-standards.ts` | 303 | Quality standards + domain rules |
-| `src/prompts/full-app/backend-templates.ts` | 962 | Backend feature templates |
-| `src/prompts/full-app/examples-compressed.ts` | 277 | Example app templates |
-| `src/prompts/designTokenPrompt.ts` | 456 | Design token prompt (currently dead) |
-| `src/utils/architectureToPhaseContext.ts` | 321 | Architecture → phase context converter |
+| File                                                | Lines | Role                                           |
+| --------------------------------------------------- | ----- | ---------------------------------------------- |
+| `src/types/dynamicPhases.ts`                        | 915   | All types, interfaces, enums, constants        |
+| `src/services/DynamicPhaseGenerator.ts`             | 682   | Phase plan generation from AppConcept          |
+| `src/services/phaseGeneration/featureClassifier.ts` | 610   | Feature classification + implicit features     |
+| `src/services/phaseGeneration/phaseFactory.ts`      | 603   | Phase creation factories                       |
+| `src/services/phaseGeneration/contextExtractor.ts`  | 252   | Context extraction from conversation           |
+| `src/services/phaseGeneration/phaseKeywords.ts`     | 282   | Keyword dictionaries                           |
+| `src/services/phaseGeneration/fileAnalyzer.ts`      | 396   | File metadata extraction                       |
+| `src/services/PhaseExecutionManager.ts`             | 758   | Phase execution orchestrator                   |
+| `src/services/phaseExecution/promptBuilder.ts`      | 660   | AI prompt assembly                             |
+| `src/services/phaseExecution/executionUtils.ts`     | 111   | OperationResult type + helpers                 |
+| `src/hooks/useDynamicBuildPhases.ts`                | 660   | React hook — phase state machine               |
+| `src/hooks/usePhaseExecution.ts`                    | 406   | Phase lifecycle — tryStartPhase1, executePhase |
+| `src/hooks/useSendMessage.ts`                       | 355   | User-driven message flow                       |
+| `src/hooks/useSendMessageHandlers.ts`               | 471   | handleBuildTrigger, handleModifyTrigger        |
+| `src/hooks/useStreamingGeneration.ts`               | 247   | SSE client for full-app-stream                 |
+| `src/app/api/ai-builder/full-app-stream/route.ts`   | 1,220 | Claude API call, SSE output, validation        |
+| `src/services/CodeContextService.ts`                | 570   | Dependency graph, smart context                |
+| `src/services/CodeParser.ts`                        | 1,070 | AST parsing (TypeScript Compiler API)          |
+| `src/services/ContextSelector.ts`                   | 692   | Context selection + token budgeting            |
+| `src/services/DependencyGraphBuilder.ts`            | 561   | Dependency graph (DAG)                         |
+| `src/prompts/builder.ts`                            | 250   | System prompt assembly                         |
+| `src/prompts/production-standards.ts`               | 314   | Production standards + ErrorBoundary           |
+| `src/prompts/quality-standards.ts`                  | 303   | Quality standards + domain rules               |
+| `src/prompts/full-app/backend-templates.ts`         | 962   | Backend feature templates                      |
+| `src/prompts/full-app/examples-compressed.ts`       | 277   | Example app templates                          |
+| `src/prompts/designTokenPrompt.ts`                  | 456   | Design token prompt (currently dead)           |
+| `src/utils/architectureToPhaseContext.ts`           | 321   | Architecture → phase context converter         |
 
 ---
 
@@ -57,6 +57,7 @@ AppConcept → DynamicPhaseGenerator → DynamicPhasePlan → PhaseExecutionMana
 **Files:** `PhaseExecutionManager.ts:357-370`, `usePhaseExecution.ts:302`
 
 **Problem:** When a phase completes, `completePhase()` calls `manager.recordPhaseResult(result)`. The `result.generatedCode` is set to `JSON.stringify(streamResult, null, 2)` — a JSON object like:
+
 ```json
 {
   "name": "MyApp",
@@ -69,6 +70,7 @@ AppConcept → DynamicPhaseGenerator → DynamicPhasePlan → PhaseExecutionMana
 ```
 
 But `extractRawFiles()` uses this regex:
+
 ```
 /===FILE:([^=]+)===\n([\s\S]*?)(?=\n===(?:FILE|DEPENDENCIES|END)===|$)/g
 ```
@@ -76,18 +78,21 @@ But `extractRawFiles()` uses this regex:
 This regex looks for `===FILE:path===\n...` delimiters that exist in the raw SSE stream output but **not** in the JSON-stringified `streamResult`. The regex matches nothing. `this.rawGeneratedFiles` stays empty permanently. `CodeContextService` is never initialized (`rawGeneratedFiles.length > 0` check fails). Smart context — dependency-aware file selection with token budgeting — is never provided to any phase.
 
 **Evidence:**
+
 - `usePhaseExecution.ts:302`: `generatedCode: JSON.stringify(streamResult, null, 2)`
 - `useSendMessageHandlers.ts:207,331`: Same pattern in both handlers
 - `PhaseExecutionManager.ts:277`: `this.rawGeneratedFiles = this.extractRawFiles(result.generatedCode)`
 - `PhaseExecutionManager.ts:236`: `if (this.rawGeneratedFiles.length > 0)` — always false
 
 **Impact:** Every phase after Phase 1 gets `previousPhaseCode` (raw string concatenation with no intelligence) instead of smart context (dependency graph, token budget, representation levels). The AI:
+
 - Doesn't understand project structure or file dependencies
 - May regenerate code it shouldn't touch
 - Gets no guidance on what files are most relevant to the current phase
 - May exceed context limits on large apps
 
 **Fix:** In `recordPhaseResult`, parse `generatedCode` as JSON first, extract `files` array directly:
+
 ```typescript
 private extractRawFiles(generatedCode: string): Array<{ path: string; content: string }> {
   // Try JSON parse first (from streamResult)
@@ -116,10 +121,12 @@ private extractRawFiles(generatedCode: string): Array<{ path: string; content: s
 **Files:** `usePhaseExecution.ts:162-165`, `usePhaseExecution.ts:384-396`
 
 **Problem:** `tryStartPhase1()` has two branches:
+
 - **Branch A (layout injection):** Calls `startPhase(1)`, injects layout files, calls `completePhase()`. Works correctly.
 - **Branch B (no layout):** Calls `startPhase(1)` only. Does NOT call `executePhase(1)`.
 
 The auto-execute effect at line 384-396 has a guard:
+
 ```typescript
 if (phase && phase.number > 1 && ...)
 ```
@@ -127,12 +134,14 @@ if (phase && phase.number > 1 && ...)
 Phase 1 is excluded by `phase.number > 1`. Phase 1 is now stuck in `in-progress` status forever. No AI generation occurs.
 
 **Evidence:**
+
 - `usePhaseExecution.ts:162-164`: `startPhase(1); return true;` — no `executePhase` call
 - `usePhaseExecution.ts:388`: `phase.number > 1` guard excludes Phase 1
 
 **Impact:** Any app built without using the Layout Builder (skipping Step 2) will never start building. The UI shows Phase 1 as "in progress" but nothing happens.
 
 **Fix:** Either:
+
 1. Remove the `> 1` guard: `phase && !streaming.isStreaming && ...`
 2. Or call `executePhase(1)` directly in the non-layout branch of `tryStartPhase1`
 
@@ -145,21 +154,36 @@ Option 1 is cleaner — it unifies the execution path for all phases.
 **Files:** `DynamicPhaseGenerator.ts:387-403`
 
 **Problem:** The `domainPriority` array controls which domains get processed into phases:
+
 ```typescript
 const domainPriority: FeatureDomain[] = [
-  'core-entity', 'feature', 'ui-component', 'integration', 'storage',
-  'real-time', 'notification', 'search', 'analytics', 'admin',
-  'ui-role', 'backend-validator', 'devops', 'monitoring', 'offline',
+  'core-entity',
+  'feature',
+  'ui-component',
+  'integration',
+  'storage',
+  'real-time',
+  'notification',
+  'search',
+  'analytics',
+  'admin',
+  'ui-role',
+  'backend-validator',
+  'devops',
+  'monitoring',
+  'offline',
 ];
 ```
 
 Missing: `'i18n'` and `'testing'`. Both are valid `FeatureDomain` values (defined in `dynamicPhases.ts:28-49`). Both can be assigned by `getImplicitFeatures()`:
+
 - `featureClassifier.ts:299-316`: `tech.needsI18n` creates features with `domain: 'i18n'`
 - `COMPLEX_FEATURE_PATTERNS` includes an i18n pattern
 
 These features are classified and grouped correctly into `featuresByDomain`, but the loop at line 405 (`for (const domain of domainPriority)`) never iterates over `'i18n'` or `'testing'`. The phases are silently never created.
 
 **Evidence:**
+
 - `dynamicPhases.ts:28-49`: Both `'i18n'` and `'testing'` are in the `FeatureDomain` union type
 - `featureClassifier.ts:299`: `domain: 'i18n'` is assigned
 - `DynamicPhaseGenerator.ts:387-403`: Neither appears in `domainPriority`
@@ -167,12 +191,26 @@ These features are classified and grouped correctly into `featuresByDomain`, but
 **Impact:** Apps requesting internationalization will have no i18n phase. The plan reports success with no indication that i18n was dropped.
 
 **Fix:** Add both domains to `domainPriority`:
+
 ```typescript
 const domainPriority: FeatureDomain[] = [
-  'core-entity', 'feature', 'ui-component', 'integration', 'storage',
-  'real-time', 'notification', 'search', 'analytics', 'admin',
-  'ui-role', 'i18n', 'testing', 'backend-validator', 'devops',
-  'monitoring', 'offline',
+  'core-entity',
+  'feature',
+  'ui-component',
+  'integration',
+  'storage',
+  'real-time',
+  'notification',
+  'search',
+  'analytics',
+  'admin',
+  'ui-role',
+  'i18n',
+  'testing',
+  'backend-validator',
+  'devops',
+  'monitoring',
+  'offline',
 ];
 ```
 
@@ -196,22 +234,24 @@ const domainPriority: FeatureDomain[] = [
 // phaseFactory.ts line 77
 `- UI style: ${concept.uiPreferences.style}`
 // phaseFactory.ts line 93
-`- Uses ${concept.uiPreferences.style} design style`
+`- Uses ${concept.uiPreferences.style} design style`;
 ```
 
 If `concept.uiPreferences` is undefined (possible when: user skips style selection, data migration from older version, API creates concept without UI preferences), these lines throw `TypeError: Cannot read properties of undefined (reading 'style')`.
 
 **Evidence:**
+
 - `phaseFactory.ts:74,77,93-94`: Direct property access without optional chaining
 - `phaseFactory.ts:271,285`: Same pattern in `createPolishPhase`
 
 **Impact:** Phase generation crashes. No phases created. Build cannot start.
 
 **Fix:** Add optional chaining with defaults:
+
 ```typescript
-concept.uiPreferences?.colorScheme ?? 'neutral'
-concept.uiPreferences?.style ?? 'modern'
-concept.uiPreferences?.layout ?? 'standard'
+concept.uiPreferences?.colorScheme ?? 'neutral';
+concept.uiPreferences?.style ?? 'modern';
+concept.uiPreferences?.layout ?? 'standard';
 ```
 
 ---
@@ -223,6 +263,7 @@ concept.uiPreferences?.layout ?? 'standard'
 **Files:** `useDynamicBuildPhases.ts:293-309`
 
 **Problem:** After a phase completes, auto-advance fires after 1500ms:
+
 ```typescript
 setTimeout(() => {
   if (mountedRef.current && !isPaused) {
@@ -234,6 +275,7 @@ setTimeout(() => {
 `isPaused` is a React state value captured in the `completePhase` callback's closure. If the user clicks "Pause" between phase completion and the 1500ms timeout, the closure still holds the old `isPaused = false` value. Auto-advance fires despite the user having paused.
 
 **Fix:** Use a ref that stays in sync:
+
 ```typescript
 const isPausedRef = useRef(isPaused);
 useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
@@ -259,10 +301,12 @@ if (mountedRef.current && !isPausedRef.current) { ... }
 **Files:** `promptBuilder.ts:66-124`, `designTokenPrompt.ts` (dead code)
 
 **Problem:** `formatLayoutManifestForPrompt()` only extracts:
+
 - Colors (primary, secondary, accent, background, surface, text, textMuted, border, success, warning, error)
 - Font families (heading, body)
 
 Not extracted:
+
 - Spacing/density settings
 - Border radius values
 - Shadow definitions
@@ -283,6 +327,7 @@ The full `buildDesignTokenPrompt()` in `designTokenPrompt.ts` covers all of thes
 **Files:** `quality-standards.ts` (line ~270), `promptBuilder.ts`
 
 **Problem:** `getPhaseQualityRules(domain)` returns domain-specific quality rules:
+
 - `'auth'` → authentication security patterns
 - `'form'` → form validation and UX rules
 - `'data'` → data handling best practices
@@ -301,12 +346,13 @@ This function exists and is exported but is never imported or called in `promptB
 **Files:** `architectureToPhaseContext.ts:118`
 
 **Problem:**
+
 ```typescript
 relations: model.relations?.map((r: any) => ({
   field: r.field || r.name || 'unknown',
   relatedModel: r.relatedModel || r.target || 'unknown',
-  type: 'one-to-many' as const,  // Always one-to-many
-}))
+  type: 'one-to-many' as const, // Always one-to-many
+}));
 ```
 
 Every relation — `one-to-one`, `many-to-many`, `one-to-many` — becomes `one-to-many`. This flows into the phase context and affects Prisma schema generation.
@@ -314,6 +360,7 @@ Every relation — `one-to-one`, `many-to-many`, `one-to-many` — becomes `one-
 **Impact:** Generated database schemas have incorrect relation types. A `User ↔ Profile` one-to-one relation would be generated as one-to-many, producing wrong foreign key structure.
 
 **Fix:** Map the actual relation type from the source:
+
 ```typescript
 type: r.type || r.relationType || 'one-to-many',
 ```
@@ -325,6 +372,7 @@ type: r.type || r.relationType || 'one-to-many',
 **Files:** `backend-templates.ts:957`
 
 **Problem:** The function ends with:
+
 ```
 "SQLite is used for development - schema is PostgreSQL-compatible for production migration."
 ```
@@ -340,6 +388,7 @@ This appears even when the architecture specifies PostgreSQL or Supabase as the 
 **Files:** `production-standards.ts`
 
 **Problem:** The `ERROR_BOUNDARY_TEMPLATE` includes:
+
 ```
 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500
 ```
@@ -485,40 +534,42 @@ All backend templates (`AUTH_TEMPLATE`, `FILE_UPLOAD_TEMPLATE`, etc.) are includ
 
 ## Hardcoded Magic Numbers Inventory
 
-| Location | Value | Purpose |
-|----------|-------|---------|
-| `featureClassifier.ts:119` | `4000` | Auth implicit feature token estimate |
-| `featureClassifier.ts:136` | `3500` | Database implicit feature token estimate |
-| `featureClassifier.ts:155` | `4000` | Realtime implicit feature token estimate |
-| `featureClassifier.ts:171` | `3500` | File upload implicit feature token estimate |
-| `featureClassifier.ts:193` | `2500` | API implicit feature token estimate |
-| `featureClassifier.ts:209` | `4000` | State management token estimate |
-| `featureClassifier.ts:229` | `4500` | Context memory token estimate |
-| `featureClassifier.ts:249` | `2000` | Backend validator token estimate |
-| `featureClassifier.ts:271` | `2500` | Caching token estimate |
-| `featureClassifier.ts:289` | `4000` | Offline support token estimate |
-| `featureClassifier.ts:309` | `4000` | i18n token estimate |
-| `featureClassifier.ts:330` | `4000` | DevOps token estimate |
-| `featureClassifier.ts:348` | `3000` | Monitoring token estimate |
-| `featureClassifier.ts:411` | `15, 4` | Layout complexity thresholds (nodes, depth) |
-| `phaseFactory.ts:86` | `800` | Extra tokens for production features in setup |
-| `phaseFactory.ts:152` | `500` | Token estimate for layout injection phase |
-| `phaseFactory.ts:226` | `4500` | Design system phase token estimate |
-| `phaseFactory.ts:319` | `1500` | Tokens-per-minute for time estimate |
-| `contextExtractor.ts:43` | `12000` | Max context extraction chars |
-| `contextExtractor.ts:47` | `8` | Max paragraphs extracted |
-| `contextExtractor.ts:244` | `500` | Max context appended to description |
-| `DynamicPhaseGenerator.ts:199` | `1500` | Tokens-per-minute for backend phase time |
-| `PhaseExecutionManager.ts:233` | `16000` | Default max tokens for async context |
-| `useDynamicBuildPhases.ts:298` | `1500` | Auto-advance delay (ms) |
-| `builderExpertPrompt.ts` | `2000` | File content truncation (chars) |
+| Location                       | Value   | Purpose                                       |
+| ------------------------------ | ------- | --------------------------------------------- |
+| `featureClassifier.ts:119`     | `4000`  | Auth implicit feature token estimate          |
+| `featureClassifier.ts:136`     | `3500`  | Database implicit feature token estimate      |
+| `featureClassifier.ts:155`     | `4000`  | Realtime implicit feature token estimate      |
+| `featureClassifier.ts:171`     | `3500`  | File upload implicit feature token estimate   |
+| `featureClassifier.ts:193`     | `2500`  | API implicit feature token estimate           |
+| `featureClassifier.ts:209`     | `4000`  | State management token estimate               |
+| `featureClassifier.ts:229`     | `4500`  | Context memory token estimate                 |
+| `featureClassifier.ts:249`     | `2000`  | Backend validator token estimate              |
+| `featureClassifier.ts:271`     | `2500`  | Caching token estimate                        |
+| `featureClassifier.ts:289`     | `4000`  | Offline support token estimate                |
+| `featureClassifier.ts:309`     | `4000`  | i18n token estimate                           |
+| `featureClassifier.ts:330`     | `4000`  | DevOps token estimate                         |
+| `featureClassifier.ts:348`     | `3000`  | Monitoring token estimate                     |
+| `featureClassifier.ts:411`     | `15, 4` | Layout complexity thresholds (nodes, depth)   |
+| `phaseFactory.ts:86`           | `800`   | Extra tokens for production features in setup |
+| `phaseFactory.ts:152`          | `500`   | Token estimate for layout injection phase     |
+| `phaseFactory.ts:226`          | `4500`  | Design system phase token estimate            |
+| `phaseFactory.ts:319`          | `1500`  | Tokens-per-minute for time estimate           |
+| `contextExtractor.ts:43`       | `12000` | Max context extraction chars                  |
+| `contextExtractor.ts:47`       | `8`     | Max paragraphs extracted                      |
+| `contextExtractor.ts:244`      | `500`   | Max context appended to description           |
+| `DynamicPhaseGenerator.ts:199` | `1500`  | Tokens-per-minute for backend phase time      |
+| `PhaseExecutionManager.ts:233` | `16000` | Default max tokens for async context          |
+| `useDynamicBuildPhases.ts:298` | `1500`  | Auto-advance delay (ms)                       |
+| `builderExpertPrompt.ts`       | `2000`  | File content truncation (chars)               |
 
 ---
 
 ## Recommended Implementation Order
 
 ### Phase 1 — Critical Fixes (C1-C5)
+
 These block production quality. Fix in order:
+
 1. **C1** (`extractRawFiles`) — Unblocks CodeContextService for all phases
 2. **C2** (Phase 1 stall) — Unblocks non-layout builds
 3. **C3** (missing domains) — Fixes silent feature dropping
@@ -526,7 +577,9 @@ These block production quality. Fix in order:
 5. **C5** (null crash) — Prevents generation crashes
 
 ### Phase 2 — High-Impact Fixes (H1-H8)
+
 Quality improvements:
+
 1. **H1** (isPaused race) — Prevents unwanted auto-advance
 2. **H2** (duplicate rules) — Token savings
 3. **H3** (design tokens) — Design fidelity
@@ -536,24 +589,25 @@ Quality improvements:
 7. **H7 + H8** (hardcoded colors) — Design system consistency
 
 ### Phase 3 — Low-Impact Fixes (L1-L9)
+
 Cleanup and edge cases.
 
 ---
 
 ## Files to Modify
 
-| File | Fixes |
-|------|-------|
-| `src/services/PhaseExecutionManager.ts` | C1, L5 |
-| `src/hooks/usePhaseExecution.ts` | C2, L9 |
-| `src/services/DynamicPhaseGenerator.ts` | C3, L6 |
-| `src/services/phaseExecution/promptBuilder.ts` | C4, H3, H4 |
-| `src/services/phaseGeneration/phaseFactory.ts` | C5, L2, L3 |
-| `src/hooks/useDynamicBuildPhases.ts` | H1, L4 |
-| `src/prompts/builder.ts` | H2 |
-| `src/prompts/production-standards.ts` | H7 |
-| `src/prompts/full-app/examples-compressed.ts` | H8 |
-| `src/utils/architectureToPhaseContext.ts` | H5 |
-| `src/prompts/full-app/backend-templates.ts` | H6 |
-| `src/types/dynamicPhases.ts` | L7 |
-| `src/services/phaseGeneration/featureClassifier.ts` | L1, L8 |
+| File                                                | Fixes      |
+| --------------------------------------------------- | ---------- |
+| `src/services/PhaseExecutionManager.ts`             | C1, L5     |
+| `src/hooks/usePhaseExecution.ts`                    | C2, L9     |
+| `src/services/DynamicPhaseGenerator.ts`             | C3, L6     |
+| `src/services/phaseExecution/promptBuilder.ts`      | C4, H3, H4 |
+| `src/services/phaseGeneration/phaseFactory.ts`      | C5, L2, L3 |
+| `src/hooks/useDynamicBuildPhases.ts`                | H1, L4     |
+| `src/prompts/builder.ts`                            | H2         |
+| `src/prompts/production-standards.ts`               | H7         |
+| `src/prompts/full-app/examples-compressed.ts`       | H8         |
+| `src/utils/architectureToPhaseContext.ts`           | H5         |
+| `src/prompts/full-app/backend-templates.ts`         | H6         |
+| `src/types/dynamicPhases.ts`                        | L7         |
+| `src/services/phaseGeneration/featureClassifier.ts` | L1, L8     |

@@ -19,12 +19,14 @@ The root cause pattern: **the system was built incrementally, adding new subsyst
 **Status:** Fixed. `buildSmartCodeContext()` and `getSmartCodeContext()` have been removed. `CodeContextService` is now the sole code context system, initialized via `getExecutionContextAsync()` in the phase execution pipeline. The prompt builder uses `formatCodeContextSnapshot()` when the smart context snapshot is available, falling back to raw `accumulatedCode` if CodeContextService cannot initialize.
 
 **What was removed:**
+
 - `DynamicPhaseGenerator.buildSmartCodeContext()` (~100 lines: importance scoring, 80K char budget, mid-function truncation)
 - `DynamicPhaseGenerator.calculateFileImportance()` (path/content bonus scoring)
 - `DynamicPhaseGenerator.MAX_CODE_CONTEXT` constant
 - `PhaseExecutionManager.getSmartCodeContext()` (delegation wrapper)
 
 **What remains (the unified system):**
+
 - `CodeContextService.getPhaseContext()` — dependency graph analysis, categorized output (full/signature/types-only/summary), 32K token budget
 - `PhaseExecutionManager.getExecutionContextAsync()` — initializes CodeContextService and populates `cachedSmartContextSnapshot`
 - `buildPhaseExecutionPrompt()` uses `formatCodeContextSnapshot()` for rich context, falls back to `previousPhaseCode` (raw accumulated code)
@@ -58,6 +60,7 @@ const filePattern = /===FILE:([^=]+)===\n([\s\S]*?)(?=\n===(?:FILE|DEPENDENCIES|
 ```
 
 **When AI deviates (which it does - evidenced by defensive ALL-CAPS instructions in prompts):**
+
 - AI uses markdown code blocks instead → 0 files extracted
 - AI adds spaces in delimiter → 0 files extracted
 - AI omits final delimiter → last file captures entire remaining output
@@ -86,15 +89,16 @@ After 10+ phases generate ~120 files totaling ~450KB, smart context keeps only 8
 
 ### 5. Token Budget Conflicts (5 Uncoordinated Budgets)
 
-| System | Location | Budget | Unit |
-|--------|----------|--------|------|
-| ContextCompression | `contextCompression.ts:338` | 6,000 | tokens |
-| DynamicPhaseGenerator (conversation) | `DynamicPhaseGenerator.ts:2039` | 12,000 | chars (~3K tokens) |
-| PhaseExecutionManager | `PhaseExecutionManager.ts:840` | 16,000 | tokens |
-| CodeContextService | `CodeContextService.ts:262` | 32,000 | tokens |
+| System                               | Location                        | Budget | Unit                |
+| ------------------------------------ | ------------------------------- | ------ | ------------------- |
+| ContextCompression                   | `contextCompression.ts:338`     | 6,000  | tokens              |
+| DynamicPhaseGenerator (conversation) | `DynamicPhaseGenerator.ts:2039` | 12,000 | chars (~3K tokens)  |
+| PhaseExecutionManager                | `PhaseExecutionManager.ts:840`  | 16,000 | tokens              |
+| CodeContextService                   | `CodeContextService.ts:262`     | 32,000 | tokens              |
 | DynamicPhaseGenerator (code context) | `DynamicPhaseGenerator.ts:2241` | 80,000 | chars (~20K tokens) |
 
 These are never coordinated - no shared config, no parameter passing between systems. Each truncates independently, mixing chars and tokens without normalization. By phase 10, the prompt contains:
+
 - 80KB code context (~20K tokens)
 - ~8KB prompt template (~2K tokens)
 - Phase-specific context (varies)
@@ -147,6 +151,7 @@ While individual sections aren't duplicated (e.g., the two role sections serve d
 **Location:** `DynamicPhaseGenerator.ts:577-922`
 
 Two sources can create auth features independently:
+
 1. `tech.needsAuth = true` → creates "Authentication System" (implicit, line 585)
 2. User explicitly lists "User Login" → creates separate feature
 
@@ -187,11 +192,13 @@ Estimated false positive rate: 40-50% of apps get this phase unnecessarily.
 **Location:** `useDynamicBuildPhases.ts:129-133, 247-259`
 
 Hook maintains `plan`, `manager`, `accumulatedCode` as separate state. Manager has its own internal copies. After every operation, manual sync required:
+
 ```typescript
-manager.recordPhaseResult(result);           // Manager state updated
-setPlan({ ...manager.getPlan() });            // Hook state updated (async)
+manager.recordPhaseResult(result); // Manager state updated
+setPlan({ ...manager.getPlan() }); // Hook state updated (async)
 setAccumulatedCodeState(result.generatedCode); // Third state update (async)
 ```
+
 Between these async updates, state is inconsistent. Retry doesn't rollback accumulated state - only resets phase status, leaving corrupted files/features.
 
 ---
