@@ -199,13 +199,19 @@ export async function GET() {
     // ========================================================================
     if (authData.session?.user) {
       const userId = authData.session.user.id;
-      const testFileName = `test-${Date.now()}.txt`;
+      const testFileName = `test-${Date.now()}.png`;
       const testFilePath = `${userId}/${testFileName}`;
-      const testContent = 'Supabase storage test file - safe to delete';
+      // Minimal 1x1 PNG (allowed by user-uploads bucket MIME policy)
+      const pngBytes = new Uint8Array([
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2,
+        0, 0, 0, 144, 119, 83, 222, 0, 0, 0, 12, 73, 68, 65, 84, 8, 215, 99, 248, 207, 192, 0, 0, 0,
+        2, 0, 1, 226, 33, 188, 51, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
+      ]);
+      const testContent = new TextDecoder().decode(pngBytes);
 
       try {
         // Test 7a: Upload a test file
-        const testBlob = new Blob([testContent], { type: 'text/plain' });
+        const testBlob = new Blob([pngBytes], { type: 'image/png' });
         const { error: uploadError } = await supabase.storage
           .from('user-uploads')
           .upload(testFilePath, testBlob);

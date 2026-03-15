@@ -218,8 +218,9 @@ function determineOverallStatus(
     return 'degraded';
   }
 
-  // Memory warning threshold (85%)
-  if (checks.memory.percentUsed > 85) {
+  // Memory warning: use absolute MB threshold instead of percentage
+  // (Next.js on Railway Micro uses ~96% of a small heap at baseline)
+  if (checks.memory.heapUsed > 450) {
     return 'degraded';
   }
 

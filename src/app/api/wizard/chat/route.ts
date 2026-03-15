@@ -204,10 +204,13 @@ export async function POST(request: Request) {
     const {
       message,
       conversationHistory = [],
-      currentState = { features: [], technical: {}, isComplete: false },
+      currentState,
       referenceImages,
       contextSummary,
     } = body;
+
+    // Null-safe default — covers both undefined (omitted) and explicit null
+    const safeState = currentState ?? { features: [], technical: {}, isComplete: false };
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
@@ -276,18 +279,18 @@ ${contextSummary}
 
     // Add current state context if we have gathered information
     // We frame this as "background notes" so the AI doesn't feel compelled to repeat it
-    if (currentState.name || currentState.features.length > 0 || currentState.roles) {
+    if (safeState.name || safeState.features.length > 0 || safeState.roles) {
       const stateContext = `
 
 ## BACKGROUND CONTEXT (Auto-extracted state)
 
 These are notes on what has been identified so far. Use this for consistency, but do not recite it back to the user unless asked.
 
-${currentState.name ? `- Name: ${currentState.name}` : ''}
-${currentState.description ? `- Desc: ${currentState.description}` : ''}
-${currentState.targetUsers ? `- Users: ${currentState.targetUsers}` : ''}
-${currentState.features.length > 0 ? `- Features: ${currentState.features.length} identified` : ''}
-${Object.keys(currentState.technical).length > 0 ? `- Tech: ${Object.keys(currentState.technical).length} decisions made` : ''}
+${safeState.name ? `- Name: ${safeState.name}` : ''}
+${safeState.description ? `- Desc: ${safeState.description}` : ''}
+${safeState.targetUsers ? `- Users: ${safeState.targetUsers}` : ''}
+${safeState.features.length > 0 ? `- Features: ${safeState.features.length} identified` : ''}
+${Object.keys(safeState.technical).length > 0 ? `- Tech: ${Object.keys(safeState.technical).length} decisions made` : ''}
 
 Continue the conversation naturally.`;
 
@@ -295,7 +298,7 @@ Continue the conversation naturally.`;
     }
 
     // Check for completion signals
-    const isComplete = currentState.isComplete || isConfirmingCompletion(message);
+    const isComplete = safeState.isComplete || isConfirmingCompletion(message);
 
     // Call Claude API with extended thinking for deeper reasoning
     const response = await anthropic.messages.create({
@@ -336,7 +339,7 @@ Continue the conversation naturally.`;
       { role: 'assistant' as const, content: assistantMessage },
     ];
 
-    const updatedState = await extractStateFromConversation(updatedHistory, currentState);
+    const updatedState = await extractStateFromConversation(updatedHistory, safeState);
 
     // Check if concept is sufficiently defined to move forward
     const isConceptSufficient =
