@@ -1,6 +1,22 @@
 /**
  * CodeContextService - Main orchestration service for the Code Context API
  * Coordinates parsing, caching, dependency tracking, and context selection
+ *
+ * WARNING: IN-MEMORY STORE
+ * ========================
+ * Singleton instances live in the Node.js process (see `getCodeContextService()`).
+ * Each appId gets its own instance. All state is lost on process restart.
+ *
+ * Consequences:
+ * - Analysis results are lost on deploy / restart
+ * - Not shared across multiple Railway instances
+ * - Memory grows proportionally with number of active apps
+ *
+ * Migration path → Redis:
+ *   1. Serialize FileAnalysis + DependencyGraph to JSON
+ *   2. Key by `codeContext:{appId}:{fileHash}` with TTL
+ *   3. Replace `ContextCache` in-memory Maps with Redis HSET
+ *   4. Keep CodeParser in-process (Tree-sitter is CPU-bound, not storable)
  */
 
 import { hashSync } from '../utils/hashUtils';

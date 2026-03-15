@@ -39,6 +39,7 @@ const config = {
         '**/src/hooks/__tests__/**/*.test.ts',
         '**/src/hooks/__tests__/**/*.test.tsx',
         '**/src/components/__tests__/**/*.test.tsx',
+        '**/src/store/__tests__/**/*.test.ts',
       ],
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',

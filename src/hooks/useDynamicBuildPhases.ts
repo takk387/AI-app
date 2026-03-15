@@ -6,6 +6,35 @@
  * React wrapper for PhaseExecutionManager that provides dynamic phase
  * management for the AI Builder. Replaces useBuildPhases with support
  * for variable phase counts (3-25+) based on app complexity.
+ *
+ * ## Build Lifecycle State Machine
+ *
+ * ```
+ * uninitialized ──initializePlan()──> ready
+ *        ready ──startPhase(N)──────> building
+ *     building ──completePhase()────> ready     (if more phases remain)
+ *     building ──completePhase()────> complete  (if all phases done)
+ *     building ──pauseBuild()───────> paused
+ *       paused ──resumeBuild()──────> building
+ *     building ──onError───────────> error
+ *        error ──retryPhase()──────> building
+ *          any ──resetBuild()──────> uninitialized
+ * ```
+ *
+ * ## Method Preconditions
+ *
+ * | Method               | Valid States                          | Precondition Notes                          |
+ * |----------------------|---------------------------------------|---------------------------------------------|
+ * | initializePlan()     | any                                   | Resets all state; safe to call anytime       |
+ * | startPhase(N)        | ready, building                       | plan + manager must exist (initializePlan)   |
+ * | completePhase()      | building                              | A phase must be in-progress                  |
+ * | skipPhase(N)         | ready, building                       | plan + manager must exist                    |
+ * | retryPhase(N)        | error, ready                          | Phase must exist and have failed/completed   |
+ * | pauseBuild()         | building                              | Noop if already paused                       |
+ * | resumeBuild()        | paused                                | Noop if not paused                           |
+ * | resetBuild()         | any                                   | Clears all state back to uninitialized       |
+ * | rollbackToPhase(N)   | ready, building, paused               | Snapshot for phase N must exist              |
+ * | getExecutionContext() | ready, building                      | plan + manager must exist                    |
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -29,6 +58,19 @@ import {
 // ============================================================================
 // TYPES
 // ============================================================================
+
+/**
+ * Discriminated union representing the build lifecycle states.
+ * Mirrors the state machine documented above. The `status` discriminant
+ * determines which fields are guaranteed present.
+ */
+export type BuildLifecycleState =
+  | { status: 'uninitialized' }
+  | { status: 'ready'; plan: DynamicPhasePlan }
+  | { status: 'building'; plan: DynamicPhasePlan; currentPhase: DynamicPhase }
+  | { status: 'paused'; plan: DynamicPhasePlan; currentPhase: DynamicPhase }
+  | { status: 'complete'; plan: DynamicPhasePlan }
+  | { status: 'error'; plan: DynamicPhasePlan; error: Error };
 
 export interface UseDynamicBuildPhasesOptions {
   onPhaseStart?: (phase: DynamicPhase) => void;
@@ -212,7 +254,15 @@ export function useDynamicBuildPhases(
    */
   const startPhase = useCallback(
     (phaseNumber: number) => {
-      if (!mountedRef.current || !plan || !manager) return;
+      if (!mountedRef.current || !plan || !manager) {
+        if (process.env.NODE_ENV === 'development' && !plan) {
+          console.warn(
+            '[useDynamicBuildPhases] startPhase() called before initializePlan(). ' +
+              'Call initializePlan(plan) first to transition from "uninitialized" to "ready" state.'
+          );
+        }
+        return;
+      }
 
       const phaseIndex = plan.phases.findIndex((p) => p.number === phaseNumber);
       if (phaseIndex === -1) {

@@ -1,13 +1,34 @@
 /**
  * Type definitions for the Dual AI Architecture Planning system.
  *
- * Organized by pipeline stage:
- * Stage 1: Layout Analysis → FrontendBackendNeeds
- * Stage 2: Intelligence Gathering → IntelligenceContext
- * Stage 3: Parallel Architecture Generation → ArchitecturePosition
- * Stage 4: Consensus Negotiation → ConsensusResult
- * Stage 5: Dual Validation → DualValidationResult
- * Output: FinalValidatedArchitecture
+ * ═══════════════════════════════════════════════════════════════════════════
+ * NAVIGABILITY GUIDE — Read this before modifying any types below.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Pipeline stages and their output types:
+ *
+ *   Stage 1: Layout Analysis        → FrontendBackendNeeds
+ *   Stage 2: Intelligence Gathering → IntelligenceContext
+ *   Stage 3: Architecture Gen       → ArchitecturePosition (one per AI)
+ *   Stage 4: Consensus Negotiation  → ConsensusOutcome (discriminated union)
+ *   Stage 5: Dual Validation        → DualValidationResult
+ *   Output:  Final result           → FinalArchitectureOutput (composed, not inherited)
+ *
+ * TYPE HIERARCHY:
+ *
+ *   ArchitecturePosition     — raw architecture from one AI
+ *   ConsensusOutcome         — discriminated: reached/not-reached (USE THIS)
+ *   FinalArchitectureOutput  — composed: architecture + consensus + validation (USE THIS)
+ *
+ *   @deprecated UnifiedArchitecture         — extends ArchitecturePosition (use FinalArchitectureOutput)
+ *   @deprecated FinalValidatedArchitecture  — extends UnifiedArchitecture (use FinalArchitectureOutput)
+ *   @deprecated ConsensusResult             — bag-of-optionals (use ConsensusOutcome)
+ *   @deprecated DualPlanSSEEvent            — bag-of-optionals (use DualPlanSSEMessage)
+ *
+ * SSE EVENT TYPES:
+ *   Use DualPlanSSEMessage (discriminated on `type`) instead of DualPlanSSEEvent.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 import type { AppConcept } from '@/types/appConcept';
@@ -267,6 +288,10 @@ export interface ConsensusReport {
   compromises: string[];
 }
 
+/**
+ * @deprecated Use ConsensusOutcome instead — it enforces valid field combinations
+ * via discriminated union. This type allows invalid states (e.g., reached=true with escalationReason).
+ */
 export interface ConsensusResult {
   reached: boolean;
   rounds: NegotiationRound[];
@@ -274,6 +299,25 @@ export interface ConsensusResult {
   escalationReason?: string;
   divergentIssues?: Disagreement[];
 }
+
+/**
+ * Type-safe consensus outcome — discriminated on `reached`.
+ *
+ * When reached=true, finalArchitecture is guaranteed present.
+ * When reached=false, escalationReason and divergentIssues are guaranteed present.
+ */
+export type ConsensusOutcome =
+  | {
+      reached: true;
+      rounds: NegotiationRound[];
+      finalArchitecture: UnifiedArchitecture;
+    }
+  | {
+      reached: false;
+      rounds: NegotiationRound[];
+      escalationReason: string;
+      divergentIssues: Disagreement[];
+    };
 
 // ============================================================================
 // STAGE 5: DUAL VALIDATION
@@ -315,6 +359,9 @@ export interface DualValidationResult {
 // ============================================================================
 
 /**
+ * @deprecated Use FinalArchitectureOutput instead — it composes rather than extends,
+ * making the data shape explicit and avoiding 3-level inheritance confusion.
+ *
  * The merged architecture after consensus negotiation.
  * This is the core output before validation.
  */
@@ -323,10 +370,32 @@ export interface UnifiedArchitecture extends ArchitecturePosition {
 }
 
 /**
+ * @deprecated Use FinalArchitectureOutput instead — it composes rather than extends.
+ *
  * The final output of the dual AI planning pipeline.
  * Includes validation metadata on top of the unified architecture.
  */
 export interface FinalValidatedArchitecture extends UnifiedArchitecture {
+  validation: {
+    approvedAt: string;
+    coverage: number;
+    issuesResolved: number;
+    replanAttempts: number;
+  };
+}
+
+/**
+ * Composed (not inherited) final architecture output.
+ * Replaces the FinalValidatedArchitecture → UnifiedArchitecture → ArchitecturePosition chain.
+ *
+ * All data is explicitly grouped — no hidden inherited fields.
+ */
+export interface FinalArchitectureOutput {
+  /** The raw architecture decisions */
+  architecture: ArchitecturePosition;
+  /** Consensus negotiation summary */
+  consensusReport: ConsensusReport;
+  /** Validation metadata */
   validation: {
     approvedAt: string;
     coverage: number;
@@ -382,6 +451,52 @@ export type DualPlanStage =
   | 'error'
   | 'escalated';
 
+/** Active pipeline stage IDs (excludes terminal states idle/complete/error/escalated). */
+export type PipelineStageId =
+  | 'layout-analysis'
+  | 'intelligence'
+  | 'parallel-generation'
+  | 'consensus'
+  | 'validation';
+
+/**
+ * Pipeline stage registry — single source of truth for stage ordering and progress bands.
+ *
+ * Used by BackgroundPlanningOrchestrator for progress calculation.
+ * Progress bands are contiguous and cover 0–100%.
+ */
+export const PIPELINE_STAGES: Record<
+  PipelineStageId,
+  {
+    order: number;
+    progressStart: number;
+    progressEnd: number;
+    label: string;
+  }
+> = {
+  'layout-analysis': { order: 1, progressStart: 0, progressEnd: 5, label: 'Layout Analysis' },
+  intelligence: { order: 2, progressStart: 5, progressEnd: 20, label: 'Intelligence Gathering' },
+  'parallel-generation': {
+    order: 3,
+    progressStart: 20,
+    progressEnd: 40,
+    label: 'Architecture Generation',
+  },
+  consensus: { order: 4, progressStart: 40, progressEnd: 80, label: 'Consensus Negotiation' },
+  validation: { order: 5, progressStart: 80, progressEnd: 100, label: 'Dual Validation' },
+};
+
+/**
+ * Calculate progress within a pipeline stage.
+ * @param stageId - The active pipeline stage
+ * @param fraction - Progress within the stage (0.0 to 1.0)
+ * @returns Absolute progress percentage (0-100)
+ */
+export function stageProgress(stageId: PipelineStageId, fraction: number): number {
+  const { progressStart, progressEnd } = PIPELINE_STAGES[stageId];
+  return Math.round(progressStart + fraction * (progressEnd - progressStart));
+}
+
 export interface DualPlanProgress {
   stage: DualPlanStage;
   percent: number; // 0-100
@@ -397,6 +512,11 @@ export interface DualPlanProgress {
 
 export type DualPlanSSEEventType = 'progress' | 'complete' | 'escalation' | 'error';
 
+/**
+ * @deprecated Use DualPlanSSEMessage instead — it discriminates on `type` so each
+ * variant only has the fields that are actually present. This bag-of-optionals
+ * allows invalid combinations.
+ */
 export interface DualPlanSSEEvent {
   type: DualPlanSSEEventType;
   data: {
@@ -413,6 +533,57 @@ export interface DualPlanSSEEvent {
     error?: string;
   };
 }
+
+/**
+ * Type-safe SSE message — discriminated on `type`.
+ *
+ * Each variant contains exactly the fields that are present for that event type.
+ * Use this instead of DualPlanSSEEvent to prevent accessing fields that don't exist.
+ */
+export type DualPlanSSEMessage =
+  | {
+      type: 'progress';
+      data: {
+        stage: DualPlanStage;
+        progress: number;
+        message: string;
+        details?: string;
+        negotiationRound?: number;
+        maxRounds?: number;
+      };
+    }
+  | {
+      type: 'complete';
+      data: {
+        stage: 'complete';
+        progress: 100;
+        message: string;
+        architecture: FinalValidatedArchitecture;
+        claudeArchitecture: ArchitecturePosition;
+        geminiArchitecture: ArchitecturePosition;
+        negotiationRounds: number;
+      };
+    }
+  | {
+      type: 'escalation';
+      data: {
+        stage: 'escalated';
+        progress: number;
+        message: string;
+        escalation: EscalationData;
+        claudeArchitecture: ArchitecturePosition;
+        geminiArchitecture: ArchitecturePosition;
+      };
+    }
+  | {
+      type: 'error';
+      data: {
+        stage: 'error';
+        progress: 0;
+        message: string;
+        error: string;
+      };
+    };
 
 // ============================================================================
 // PLANNING SESSION (Server-side)

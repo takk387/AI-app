@@ -5,6 +5,48 @@
  *
  * This component contains the main chat + preview builder interface.
  * Main builder view component used on the /app page.
+ *
+ * ## Hook Activation Map
+ *
+ * Which hooks are active in PLAN vs ACT mode:
+ *
+ * | Hook                     | PLAN Mode | ACT Mode | Notes                                    |
+ * |--------------------------|-----------|----------|------------------------------------------|
+ * | useDatabaseSync          | yes       | yes      | Always syncs saved apps                  |
+ * | useVersionControl        | yes       | yes      | Undo/redo always available               |
+ * | useBranchManagement      | yes       | yes      | Branch ops always available              |
+ * | useFileStorage           | yes       | yes      | File management always available         |
+ * | useSmartContext           | yes       | yes      | Context always tracked                   |
+ * | useProjectDocumentation  | yes       | yes      | Auto-captures on concept change          |
+ * | useAppBuilderSync        | yes       | yes      | Layout sync always runs                  |
+ * | useConceptSync           | PLAN only | no       | Syncs wizardState → appConcept           |
+ * | useConceptUpdates        | PLAN only | no       | AI concept mutation via chat              |
+ * | useMessageSender         | yes       | yes      | Handles send in both modes               |
+ * | useStreamingGeneration   | no        | ACT only | Code generation streaming                |
+ * | useDynamicBuildPhases    | no        | ACT only | Phase execution engine                   |
+ * | usePhaseExecution        | no        | ACT only | tryStartPhase1, auto-advance             |
+ * | useSendMessage           | yes       | yes      | Routing layer (delegates per mode)       |
+ * | useBuilderHandlers       | yes       | yes      | Plan actions, image, export, deploy      |
+ * | useBuilderEffects        | yes       | yes      | Data loading, restoration, auto-save     |
+ * | useKeyboardShortcuts     | yes       | yes      | Ctrl+S, Ctrl+Z, Ctrl+Y                  |
+ *
+ * ## Store Field Grouping (Zustand destructuring)
+ *
+ * The large destructuring block at the start of the component pulls ~85 fields
+ * from useAppStore. They are grouped by slice:
+ *
+ * | Slice            | Fields                                                        | Persisted? |
+ * |------------------|---------------------------------------------------------------|------------|
+ * | Chat             | chatMessages, userInput, isGenerating, generationProgress     | No         |
+ * | Mode             | currentMode                                                   | No         |
+ * | Components       | components, currentComponent, loadingApps                     | Yes (2)    |
+ * | UI               | activeTab, show* modals, searchQuery, isConceptPanelCollapsed | No         |
+ * | Data             | pendingDiff, appConcept, dynamicPhasePlan, uploadedImage,     | Yes (mix)  |
+ * |                  | layoutBuilderFiles, isReviewed, buildSettings, etc.           |            |
+ * | Documentation    | showDocumentationPanel, currentAppId                          | Yes (1)    |
+ * | DualPlanning     | (not destructured here — accessed via useDualPlanningState)   | Yes (3)    |
+ * | FileStorage      | (not destructured here — accessed via useFileStorageState)    | No         |
+ * | VersionControl   | (managed by useVersionControl hook)                           | No         |
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';

@@ -29,7 +29,9 @@ import type {
   DualPlanProgress,
   DualPlanStage,
   EscalationData,
+  PipelineStageId,
 } from '@/types/dualPlanning';
+import { stageProgress } from '@/types/dualPlanning';
 import { MODEL_IDS } from '@/constants/aiModels';
 import { layoutBackendAnalyzer } from '@/services/LayoutBackendAnalyzer';
 import { LiveIntelligenceGathererService } from '@/services/LiveIntelligenceGatherer';
@@ -127,54 +129,73 @@ class BackgroundPlanningOrchestratorService {
     ) => void,
     cachedIntelligence?: IntelligenceContext
   ): Promise<PipelineResult> {
+    // Helper: emit progress using the stage registry
+    const emitStageProgress = (
+      stageId: PipelineStageId,
+      fraction: number,
+      message: string,
+      details?: string,
+      negotiationRound?: number,
+      maxRounds?: number
+    ) => {
+      emitProgress(
+        stageId,
+        stageProgress(stageId, fraction),
+        message,
+        details,
+        negotiationRound,
+        maxRounds
+      );
+    };
+
     // -----------------------------------------------------------------------
-    // STAGE 1: Layout Analysis (0-5%)
+    // STAGE 1: Layout Analysis
     // -----------------------------------------------------------------------
-    emitProgress('layout-analysis', 0, 'Analyzing layout for backend requirements...');
+    emitStageProgress('layout-analysis', 0, 'Analyzing layout for backend requirements...');
 
     const backendNeeds: FrontendBackendNeeds = layoutBackendAnalyzer.extractBackendNeeds(manifest);
 
-    emitProgress(
+    emitStageProgress(
       'layout-analysis',
-      5,
+      1,
       `Found ${backendNeeds.dataModels.length} data models, ${backendNeeds.apiEndpoints.length} API endpoints`,
       `Auth: ${backendNeeds.features.authRequired}, Realtime: ${backendNeeds.features.realtimeNeeded}`
     );
 
     // -----------------------------------------------------------------------
-    // STAGE 2: Intelligence Gathering (5-20%)
+    // STAGE 2: Intelligence Gathering
     // -----------------------------------------------------------------------
     let intelligence: IntelligenceContext;
 
     if (cachedIntelligence) {
       // Use pre-gathered intelligence from background hook (started during Design step)
       intelligence = cachedIntelligence;
-      emitProgress(
+      emitStageProgress(
         'intelligence',
-        20,
+        1,
         'Using cached intelligence (gathered during design)',
         `Cached at ${intelligence.gatherTimestamp}, ${intelligence.agenticFrameworks.length} agentic tools`
       );
     } else {
-      emitProgress('intelligence', 5, 'Gathering live intelligence from web...');
+      emitStageProgress('intelligence', 0, 'Gathering live intelligence from web...');
 
       const intelligenceGatherer = new LiveIntelligenceGathererService(this.baseUrl);
       intelligence = await intelligenceGatherer.gather(concept);
 
-      emitProgress(
+      emitStageProgress(
         'intelligence',
-        20,
+        1,
         'Intelligence gathering complete',
         `Gathered data on AI models, frameworks, ${intelligence.agenticFrameworks.length} agentic tools`
       );
     }
 
     // -----------------------------------------------------------------------
-    // STAGE 3: Parallel Architecture Generation (20-40%)
+    // STAGE 3: Parallel Architecture Generation
     // -----------------------------------------------------------------------
-    emitProgress(
+    emitStageProgress(
       'parallel-generation',
-      20,
+      0,
       'Generating architectures — Claude Opus 4.6 + Gemini 3 Pro in parallel...'
     );
 
@@ -183,17 +204,17 @@ class BackgroundPlanningOrchestratorService {
       this.generateGeminiArchitecture(concept, manifest, backendNeeds, intelligence),
     ]);
 
-    emitProgress(
+    emitStageProgress(
       'parallel-generation',
-      40,
+      1,
       'Both architectures generated',
       `Claude: ${claudeArch.api.style} API, ${claudeArch.database.provider} DB | Gemini: ${geminiArch.api.style} API, ${geminiArch.database.provider} DB`
     );
 
     // -----------------------------------------------------------------------
-    // STAGE 4: Consensus Negotiation (40-80%)
+    // STAGE 4: Consensus Negotiation
     // -----------------------------------------------------------------------
-    emitProgress('consensus', 40, 'Starting consensus negotiation...', undefined, 0, 5);
+    emitStageProgress('consensus', 0, 'Starting consensus negotiation...', undefined, 0, 5);
 
     const negotiator = new ConsensusNegotiatorService(this.baseUrl);
     const consensusResult = await negotiator.negotiate(
@@ -202,10 +223,9 @@ class BackgroundPlanningOrchestratorService {
       concept,
       intelligence,
       (round, maxRounds) => {
-        const roundPercent = 40 + (round / maxRounds) * 40;
-        emitProgress(
+        emitStageProgress(
           'consensus',
-          Math.round(roundPercent),
+          round / maxRounds,
           `Negotiation round ${round}/${maxRounds}`,
           round === 1
             ? 'AIs exchanging initial reviews...'
@@ -218,9 +238,9 @@ class BackgroundPlanningOrchestratorService {
 
     // Handle escalation (AIs couldn't agree)
     if (!consensusResult.reached) {
-      emitProgress(
-        'escalated',
-        80,
+      emitStageProgress(
+        'consensus',
+        1,
         consensusResult.escalationReason ?? 'Consensus not reached',
         'User intervention required'
       );
@@ -241,23 +261,24 @@ class BackgroundPlanningOrchestratorService {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const unifiedArchitecture = consensusResult.finalArchitecture!;
 
-    emitProgress(
+    emitStageProgress(
       'consensus',
-      80,
+      1,
       `Consensus reached in ${consensusResult.rounds.length} round(s)`,
       `${unifiedArchitecture.consensusReport.finalAgreements.length} agreements`
     );
 
     // -----------------------------------------------------------------------
-    // STAGE 5: Dual Validation (80-100%) with replan loop
+    // STAGE 5: Dual Validation (with replan loop)
     // -----------------------------------------------------------------------
     let currentArchitecture = unifiedArchitecture;
     let replanAttempts = 0;
 
     while (replanAttempts <= MAX_REPLAN_ATTEMPTS) {
-      emitProgress(
+      const replanFraction = replanAttempts / (MAX_REPLAN_ATTEMPTS + 1);
+      emitStageProgress(
         'validation',
-        80 + replanAttempts * 5,
+        replanFraction,
         replanAttempts === 0
           ? 'Both AIs validating architecture...'
           : `Revalidating after replan attempt ${replanAttempts}...`
@@ -326,9 +347,10 @@ class BackgroundPlanningOrchestratorService {
       }
 
       // Attempt replan with validation feedback
-      emitProgress(
+      const replanProgressFraction = (replanAttempts + 0.5) / (MAX_REPLAN_ATTEMPTS + 1);
+      emitStageProgress(
         'validation',
-        85 + replanAttempts * 5,
+        replanProgressFraction,
         `Replanning — ${validationResult.finalReport.combinedIssues.filter((i) => i.severity === 'critical').length} critical issues to resolve`,
         `Attempt ${replanAttempts + 1}/${MAX_REPLAN_ATTEMPTS}`
       );

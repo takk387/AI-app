@@ -5,6 +5,41 @@
  * Handles SSE connection, progress tracking, escalation resolution,
  * and AI selection state.
  *
+ * ## State Machine
+ *
+ * ```
+ *   idle ──startPlanning()──► connecting ──SSE opened──► streaming
+ *                                  │                        │
+ *                                  │ fetch error            ├─ 'complete'  ──► complete
+ *                                  ▼                        ├─ 'escalation'──► escalated
+ *                                error ◄── 'error' ────────┘
+ *                                  │                        │
+ *                                  │ retryPlanning()        │ cancelPlanning()
+ *                                  ▼                        ▼
+ *                              connecting                  idle
+ *
+ *   escalated ──resolveEscalation()──► complete
+ *   complete  ──confirmArchitectureChoice()──► complete (architectureReviewed=true)
+ * ```
+ *
+ * ## PlanningHookState (conceptual — not yet used as runtime discriminant)
+ *
+ * | Status      | isPlanning | result | escalation | error |
+ * |-------------|------------|--------|------------|-------|
+ * | idle        | false      | null   | null       | null  |
+ * | connecting  | true       | null   | null       | null  |
+ * | streaming   | true       | null   | null       | null  |
+ * | complete    | false      | set    | null       | null  |
+ * | escalated   | false      | null   | set        | null  |
+ * | error       | false      | null   | null       | set   |
+ *
+ * ## cachedIntelligence Dependency Note
+ *
+ * `cachedIntelligence` is in startPlanning's dependency array because it's read
+ * at call time (snapshot semantics). It is NOT reactive — the hook does not
+ * re-run when cachedIntelligence changes. This is intentional: the intelligence
+ * is captured once at pipeline start and never refreshed mid-pipeline.
+ *
  * Usage:
  *   const { startPlanning, isPlanning, progress, result, ... } = useDualAIPlan();
  */
@@ -24,6 +59,24 @@ import type {
   ArchitecturePosition,
   DualPlanStage,
 } from '@/types/dualPlanning';
+
+// ============================================================================
+// PLANNING HOOK STATE (discriminated union for type-safe state reasoning)
+// ============================================================================
+
+/**
+ * Discriminated union representing the planning hook's lifecycle state.
+ *
+ * Use this for type-safe narrowing in consumers:
+ *   if (state.status === 'complete') { state.result — guaranteed present }
+ */
+export type PlanningHookState =
+  | { status: 'idle' }
+  | { status: 'connecting' }
+  | { status: 'streaming'; progress: DualPlanProgress }
+  | { status: 'complete'; result: FinalValidatedArchitecture }
+  | { status: 'escalated'; escalation: EscalationData }
+  | { status: 'error'; error: string };
 
 // ============================================================================
 // STAGE LABEL MAP

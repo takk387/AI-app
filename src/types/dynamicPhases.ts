@@ -22,8 +22,33 @@ import type { AppFile } from '@/types/railway';
 // ============================================================================
 
 /**
+ * Feature domain categories — groups the 21 FeatureDomain values into
+ * 5 high-level categories for navigation, display, and phase ordering.
+ */
+export type FeatureDomainCategory = 'infrastructure' | 'core' | 'ui' | 'integration' | 'quality';
+
+/**
+ * Mapping from category → domains. Use this to group phases in UI or
+ * to determine execution order (infrastructure first, quality last).
+ */
+export const FEATURE_DOMAIN_CATEGORIES: Record<FeatureDomainCategory, FeatureDomain[]> = {
+  infrastructure: ['setup', 'database', 'auth', 'devops', 'monitoring'],
+  core: ['core-entity', 'feature', 'search', 'analytics', 'admin'],
+  ui: ['ui-component', 'ui-role', 'i18n', 'polish', 'offline'],
+  integration: ['integration', 'real-time', 'storage', 'notification'],
+  quality: ['testing', 'backend-validator'],
+};
+
+/**
  * Feature domains for intelligent grouping
  * Each domain may become its own phase or be grouped with related domains
+ *
+ * Grouped by category (see FEATURE_DOMAIN_CATEGORIES):
+ *   infrastructure: setup, database, auth, devops, monitoring
+ *   core:           core-entity, feature, search, analytics, admin
+ *   ui:             ui-component, ui-role, i18n, polish, offline
+ *   integration:    integration, real-time, storage, notification
+ *   quality:        testing, backend-validator
  */
 export type FeatureDomain =
   | 'setup' // Project structure, config, dependencies
@@ -128,8 +153,18 @@ export interface IntegrationPoint {
 }
 
 /**
- * Concept context preserved for each phase
- * Ensures phase execution has access to full app vision
+ * Concept context preserved for each phase.
+ * Ensures phase execution has access to full app vision.
+ *
+ * CONTEXT PRECEDENCE (highest to lowest):
+ *   1. architectureContext — phase-specific backend specs from BackendArchitectureAgent
+ *   2. phaseConceptContext — extracted from conversation for this domain
+ *   3. extractedPhaseContext — serialized domain context from wizard (SerializedPhaseContext)
+ *   4. fullConcept — global app context (always available as PhaseExecutionContext.fullConcept)
+ *
+ * At execution time, the prompt builder in phaseExecution/promptBuilder.ts merges
+ * these layers. If a field exists in a higher-precedence source, it wins.
+ * layoutManifest is always injected from fullConcept regardless of precedence.
  */
 export interface PhaseConceptContext {
   purpose?: string;
@@ -277,11 +312,24 @@ export interface DynamicPhasePlan {
   completedPhaseNumbers: number[];
   failedPhaseNumbers: number[];
 
-  // Context chain for phase execution (legacy - simple arrays)
+  /**
+   * DUAL TRACKING (legacy + enhanced):
+   *
+   * - accumulatedFiles: string[]              — Flat file path list. Used in prompt construction
+   *                                              and legacy APIs. Always a projection of accumulatedFilesRich[].path.
+   * - accumulatedFilesRich?: AccumulatedFile[] — Rich metadata per file. Used for P1 conflict detection,
+   *                                              smart context (CodeContextService), and phase integrity system.
+   *
+   * - accumulatedFeatures: string[]                — Flat feature name list. Used in prompt construction.
+   * - accumulatedFeaturesRich?: AccumulatedFeature[] — Rich metadata per feature.
+   *
+   * PhaseExecutionManager.recordPhaseResult() keeps both in sync.
+   * Single source of truth: accumulatedFilesRich / accumulatedFeaturesRich.
+   * The string[] arrays are projections derived from the rich arrays.
+   */
   accumulatedFiles: string[];
   accumulatedFeatures: string[];
 
-  // Enhanced tracking (new - rich metadata)
   accumulatedFilesRich?: AccumulatedFile[];
   accumulatedFeaturesRich?: AccumulatedFeature[];
   establishedPatterns?: string[];
@@ -912,4 +960,55 @@ export interface RegressionFailure {
   originalPhase: number;
   criterion: string;
   error: string;
+}
+
+// ============================================================================
+// PHASE MANAGER STATE CONTAINER
+// ============================================================================
+
+/**
+ * Readonly snapshot of PhaseExecutionManager's internal state.
+ *
+ * Returned by `PhaseExecutionManager.getState()` for debugging, testing,
+ * and state inspection without exposing mutable internals.
+ *
+ * ## State Invariants
+ *
+ * 1. **accumulatedFiles ⊆ accumulatedFilesRich.map(f => f.path)**
+ *    The string[] array is always a projection of the rich array.
+ *    `syncLegacyProjections()` enforces this after every `recordPhaseResult()`.
+ *
+ * 2. **accumulatedFeatures ⊆ accumulatedFeaturesRich.map(f => f.name)**
+ *    Same projection rule for features.
+ *
+ * 3. **completedPhases is sorted ascending and monotonically growing**
+ *    Phases are appended in execution order. Never re-ordered or removed
+ *    (except via `rollbackToSnapshot()`).
+ *
+ * 4. **phaseSnapshots[n] is immutable once captured**
+ *    Snapshots are deep copies. Mutations to live state do not affect them.
+ *
+ * 5. **plan.currentPhaseNumber === max(completedPhases) + 1** (during normal execution)
+ *    After recording a result, currentPhaseNumber advances to the next phase.
+ *
+ * 6. **rawGeneratedFiles grows monotonically**
+ *    Files are appended per phase. Content is never updated — conflict detection
+ *    uses `fileVersionMap` to track hash changes across phases.
+ */
+export interface PhaseManagerState {
+  readonly plan: DynamicPhasePlan;
+  readonly accumulatedCode: string;
+  readonly accumulatedFiles: readonly string[];
+  readonly accumulatedFeatures: readonly string[];
+  readonly completedPhases: readonly number[];
+  readonly accumulatedFilesRich: readonly AccumulatedFile[];
+  readonly accumulatedFeaturesRich: readonly AccumulatedFeature[];
+  readonly establishedPatterns: readonly string[];
+  readonly apiContracts: readonly APIContract[];
+  readonly rawGeneratedFiles: ReadonlyArray<{ path: string; content: string }>;
+  readonly fileVersionMap: ReadonlyMap<string, { hash: string; phase: number; exports: string[] }>;
+  readonly phaseSnapshots: ReadonlyMap<number, PhaseSnapshot>;
+  readonly typeCheckResults: ReadonlyMap<number, TypeCheckResult>;
+  readonly typeDefinitions: readonly TypeDefinition[];
+  readonly phaseTestResults: ReadonlyMap<number, PhaseTestResults>;
 }

@@ -190,6 +190,25 @@ interface UISlice {
 
 /**
  * Data slice state
+ *
+ * ## Layout Data Map (3 sources of truth)
+ *
+ * | Field                     | Type              | Source of Truth For           | Set By                     |
+ * |---------------------------|-------------------|------------------------------|----------------------------|
+ * | `currentLayoutManifest`   | `LayoutManifest`  | **Design intent** — colors,  | LayoutBuilderView          |
+ * |                           |                   | typography, component layout | (Gemini vision + user)     |
+ * | `layoutBuilderFiles`      | `AppFile[]`       | **Generated code** — actual  | LayoutBuilderView          |
+ * |                           |                   | React/CSS implementing the   | (code generation step)     |
+ * |                           |                   | manifest                     |                            |
+ * | `appConcept.layoutManifest`| `LayoutManifest` | **Snapshot** — copy of       | useConceptSync (auto)      |
+ * |                           |                   | currentLayoutManifest frozen |                            |
+ * |                           |                   | into the concept for export  |                            |
+ *
+ * `currentLayoutManifest` is the live design state — edit this.
+ * `layoutBuilderFiles` is the code artifact — injected into Phase 1 by `tryStartPhase1()`.
+ * `appConcept.layoutManifest` is a read-only snapshot — never edit directly.
+ *
+ * VisualManifest[] (from VisionLoopEngine) is transient runtime analysis and NOT persisted.
  */
 interface DataSlice {
   pendingChange: PendingChange | null;
@@ -359,6 +378,51 @@ export interface AppState
     DocumentationSlice,
     FileStorageSlice,
     DualPlanningSlice {}
+
+// ============================================================================
+// PERSISTENCE CONFIGURATION
+// ============================================================================
+
+/**
+ * Fields persisted to localStorage. Adding/removing a field here automatically
+ * updates the `partialize` function below — no manual sync needed.
+ *
+ * TypeScript enforces that every entry is a valid key of AppState at compile time
+ * via `satisfies`. If you rename or remove a store field, this will fail to compile.
+ *
+ * Ownership (which slice provides each field):
+ *   DataSlice:          appConcept, dynamicPhasePlan, currentLayoutManifest,
+ *                       currentDesignSpec, isReviewed, buildSettings, layoutThumbnail,
+ *                       phasePlanGeneratedAt, layoutBuilderFiles
+ *   ComponentsSlice:    components, currentComponent
+ *   DocumentationSlice: currentAppId
+ *   DualPlanningSlice:  dualArchitectureResult, userAISelection, cachedIntelligence
+ */
+const PERSISTED_FIELDS = [
+  // DataSlice — workflow-critical
+  'appConcept',
+  'dynamicPhasePlan',
+  'currentLayoutManifest',
+  'currentDesignSpec',
+  // ComponentsSlice — builder needs these after refresh
+  'components',
+  'currentComponent',
+  // DocumentationSlice
+  'currentAppId',
+  // DataSlice — review state persists across navigation
+  'isReviewed',
+  'buildSettings',
+  'layoutThumbnail',
+  'phasePlanGeneratedAt',
+  'layoutBuilderFiles',
+  // DualPlanningSlice — persists across navigation
+  'dualArchitectureResult',
+  'userAISelection',
+  'cachedIntelligence',
+] as const satisfies readonly (keyof AppState)[];
+
+/** Type-safe subset of AppState that gets persisted to localStorage */
+type PersistedState = Pick<AppState, (typeof PERSISTED_FIELDS)[number]>;
 
 // ============================================================================
 // STORE IMPLEMENTATION
@@ -679,12 +743,26 @@ export const useAppStore = create<AppState>()(
       {
         name: 'ai-app-builder-storage',
         version: 5, // Bumped: now persists cachedIntelligence
-        // Migration function to preserve data when version changes
+
+        /**
+         * Migration chain: v0 → v1 → v2 → v3 → v4 → v5
+         *
+         * Migrations cascade: a user on v1 gets v1→v2→v3→v4→v5 applied sequentially.
+         * Each `if (version < N)` block adds fields introduced in version N.
+         *
+         * ## HOW TO ADD A MIGRATION
+         *
+         * 1. Bump `version` above (e.g. 5 → 6)
+         * 2. Add a new `if (version < 6)` block at the bottom of `migrate()`
+         *    that defaults the new persisted field(s)
+         * 3. Add the field name(s) to `PERSISTED_FIELDS` above
+         * 4. Verify: `npm run typecheck` — `satisfies` will catch typos
+         * 5. Test: clear localStorage, reload — old users should migrate cleanly
+         */
         migrate: (persistedState: unknown, version: number) => {
-          // Migrations cascade: a user on v1 gets v1→v2→v3→v4→v5 applied sequentially
           let state = persistedState as Record<string, unknown>;
           if (version < 2) {
-            // Migration to v2: add components and currentComponent
+            // v2: persist components for builder-after-refresh
             state = {
               ...state,
               components: state.components ?? [],
@@ -692,14 +770,14 @@ export const useAppStore = create<AppState>()(
             };
           }
           if (version < 3) {
-            // Migration to v3: add layoutBuilderFiles
+            // v3: persist layout builder generated code
             state = {
               ...state,
               layoutBuilderFiles: state.layoutBuilderFiles ?? null,
             };
           }
           if (version < 4) {
-            // Migration to v4: add dual AI planning state
+            // v4: persist dual AI planning results
             state = {
               ...state,
               dualArchitectureResult: state.dualArchitectureResult ?? null,
@@ -707,7 +785,7 @@ export const useAppStore = create<AppState>()(
             };
           }
           if (version < 5) {
-            // Migration to v5: add cached intelligence
+            // v5: persist cached intelligence from background gathering
             state = {
               ...state,
               cachedIntelligence: state.cachedIntelligence ?? null,
@@ -715,27 +793,18 @@ export const useAppStore = create<AppState>()(
           }
           return state;
         },
-        partialize: (state) => ({
-          // Only persist workflow-critical data (not UI state, chat, etc.)
-          appConcept: state.appConcept,
-          dynamicPhasePlan: state.dynamicPhasePlan,
-          currentLayoutManifest: state.currentLayoutManifest,
-          currentAppId: state.currentAppId,
-          currentDesignSpec: state.currentDesignSpec,
-          // Components are critical for builder to work after refresh
-          components: state.components,
-          currentComponent: state.currentComponent,
-          // Review state persists across navigation
-          isReviewed: state.isReviewed,
-          buildSettings: state.buildSettings,
-          layoutThumbnail: state.layoutThumbnail,
-          phasePlanGeneratedAt: state.phasePlanGeneratedAt,
-          layoutBuilderFiles: state.layoutBuilderFiles,
-          // Dual AI Planning (persists across navigation)
-          dualArchitectureResult: state.dualArchitectureResult,
-          userAISelection: state.userAISelection,
-          cachedIntelligence: state.cachedIntelligence,
-        }),
+
+        /**
+         * Partialize — only persist workflow-critical fields (not UI, chat, etc.)
+         * Driven by PERSISTED_FIELDS array. Add new fields there, not here.
+         */
+        partialize: (state): PersistedState => {
+          const persisted = {} as Record<string, unknown>;
+          for (const key of PERSISTED_FIELDS) {
+            persisted[key] = state[key];
+          }
+          return persisted as PersistedState;
+        },
       }
     ),
     {

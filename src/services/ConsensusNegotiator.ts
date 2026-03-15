@@ -45,6 +45,18 @@ interface ReviewResponse {
 
 type RoundCompleteCallback = (round: number, maxRounds: number) => void;
 
+/**
+ * Summary of a completed negotiation for debugging and logging.
+ * Use `getNegotiationSummary()` to generate from a ConsensusResult.
+ */
+export interface NegotiationSummary {
+  readonly reached: boolean;
+  readonly totalRounds: number;
+  readonly finalDisagreementCount: number;
+  readonly disagreementCountPerRound: readonly number[];
+  readonly escalationReason: string | null;
+}
+
 // ============================================================================
 // SERVICE CLASS
 // ============================================================================
@@ -82,7 +94,10 @@ class ConsensusNegotiatorService {
       const agreements = this.findAgreements(claudeReview, geminiReview);
       const disagreements = this.findDisagreements(claudeReview, geminiReview);
 
-      const roundData: NegotiationRound = {
+      // structuredClone prevents reference mutation: without it,
+      // later rounds that mutate currentClaudeArch/currentGeminiArch
+      // would silently corrupt earlier round snapshots in the array.
+      const roundData: NegotiationRound = structuredClone({
         round,
         claudePosition: currentClaudeArch,
         geminiPosition: currentGeminiArch,
@@ -90,7 +105,7 @@ class ConsensusNegotiatorService {
         geminiFeedback: geminiReview.feedback,
         agreements,
         disagreements,
-      };
+      });
       rounds.push(roundData);
 
       // Notify progress
@@ -403,13 +418,21 @@ Return ONLY valid JSON matching the ArchitecturePosition structure (same format 
     return disagreements;
   }
 
+  /**
+   * Convergence criteria: **strictly decreasing disagreement count**.
+   *
+   * Given rounds [R1, R2, ..., Rn], this checks Rn.disagreements < Rn-1.disagreements.
+   * If the count stays flat or increases, the negotiation is NOT converging and
+   * will escalate to the user rather than waste additional AI calls.
+   *
+   * Only called when rounds.length >= 2 (at least two rounds exist).
+   */
   private isConverging(rounds: NegotiationRound[]): boolean {
     if (rounds.length < 2) return true;
 
     const prev = rounds[rounds.length - 2];
     const current = rounds[rounds.length - 1];
 
-    // Converging if disagreements are strictly decreasing
     return current.disagreements.length < prev.disagreements.length;
   }
 
@@ -522,6 +545,24 @@ Return ONLY valid JSON matching the ArchitecturePosition structure (same format 
       // Fall through
     }
     return fallback;
+  }
+
+  // ==========================================================================
+  // DEBUGGING
+  // ==========================================================================
+
+  /**
+   * Build a concise summary of a negotiation result for logging/debugging.
+   */
+  getNegotiationSummary(result: ConsensusResult): NegotiationSummary {
+    return {
+      reached: result.reached,
+      totalRounds: result.rounds.length,
+      finalDisagreementCount:
+        result.rounds.length > 0 ? result.rounds[result.rounds.length - 1].disagreements.length : 0,
+      disagreementCountPerRound: result.rounds.map((r) => r.disagreements.length),
+      escalationReason: result.reached ? null : (result.escalationReason ?? null),
+    };
   }
 }
 

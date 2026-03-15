@@ -1,10 +1,23 @@
 /**
  * Planning Session Store
  *
+ * WARNING: IN-MEMORY STORE
+ * ========================
+ * This Map lives in the Node.js process and is NOT shared between instances.
+ *
+ * Consequences:
+ * - All sessions are lost on process restart / deploy
+ * - No authentication — any caller with a sessionId can read/write
+ * - Will NOT work with horizontal scaling (multiple Railway instances)
+ *
+ * Migration path → Redis:
+ *   1. Replace `sessions` Map with ioredis client
+ *   2. Serialize PlanningSession to JSON (strip non-serializable fields)
+ *   3. Use SETEX with SESSION_TTL_MS for automatic expiry
+ *   4. Remove setInterval cleanup (Redis handles TTL natively)
+ *
  * Shared in-memory session store for the Dual AI Planning pipeline.
  * Used by both /api/planning/start and /api/planning/stream/[sessionId].
- *
- * In production, replace with Redis for multi-instance support.
  */
 
 import type { PlanningSession } from '@/types/dualPlanning';

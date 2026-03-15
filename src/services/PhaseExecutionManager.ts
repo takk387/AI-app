@@ -22,6 +22,7 @@ import type {
   AccumulatedFile,
   AccumulatedFeature,
   APIContract,
+  PhaseManagerState,
   // Phase Integrity Types (P1-P9)
   FileConflictResult,
   PhaseSnapshot,
@@ -346,8 +347,32 @@ export class PhaseExecutionManager {
       this.plan.failedPhaseNumbers.push(result.phaseNumber);
     }
 
+    // Enforce invariants 1 & 2: legacy string[] arrays match rich arrays
+    this.syncLegacyProjections();
+
     // Clear cached smart context so next phase gets fresh context
     this.clearCachedSmartContext();
+  }
+
+  /**
+   * Ensures legacy string[] projections stay in sync with rich arrays.
+   * Called at the end of recordPhaseResult() to enforce invariants 1 & 2.
+   *
+   * Derives accumulatedFiles from accumulatedFilesRich (deduped by path),
+   * and accumulatedFeatures from accumulatedFeaturesRich (deduped by name).
+   */
+  private syncLegacyProjections(): void {
+    // Invariant 1: accumulatedFiles is a projection of accumulatedFilesRich paths
+    const richPaths = this.accumulatedFilesRich.map((f) => f.path);
+    const uniquePaths = [...new Set(richPaths)];
+    this.accumulatedFiles = uniquePaths;
+    this.plan.accumulatedFiles = [...uniquePaths];
+
+    // Invariant 2: accumulatedFeatures is a projection of accumulatedFeaturesRich names
+    const richNames = this.accumulatedFeaturesRich.map((f) => f.name);
+    const uniqueNames = [...new Set(richNames)];
+    this.accumulatedFeatures = uniqueNames;
+    this.plan.accumulatedFeatures = [...uniqueNames];
   }
 
   /**
@@ -406,6 +431,34 @@ export class PhaseExecutionManager {
     }
 
     return parts.join(' • ') || 'Phase completed';
+  }
+
+  // ==========================================================================
+  // STATE INSPECTION
+  // ==========================================================================
+
+  /**
+   * Returns a readonly snapshot of all internal state for debugging and testing.
+   * See PhaseManagerState in dynamicPhases.ts for state invariants documentation.
+   */
+  getState(): Readonly<PhaseManagerState> {
+    return {
+      plan: this.plan,
+      accumulatedCode: this.accumulatedCode,
+      accumulatedFiles: this.accumulatedFiles,
+      accumulatedFeatures: this.accumulatedFeatures,
+      completedPhases: this.completedPhases,
+      accumulatedFilesRich: this.accumulatedFilesRich,
+      accumulatedFeaturesRich: this.accumulatedFeaturesRich,
+      establishedPatterns: this.establishedPatterns,
+      apiContracts: this.apiContracts,
+      rawGeneratedFiles: this.rawGeneratedFiles,
+      fileVersionMap: this.fileVersionMap,
+      phaseSnapshots: this.phaseSnapshots,
+      typeCheckResults: this.typeCheckResults,
+      typeDefinitions: this.typeDefinitions,
+      phaseTestResults: this.phaseTestResults,
+    };
   }
 
   // ==========================================================================

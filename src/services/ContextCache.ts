@@ -1,6 +1,22 @@
 /**
  * ContextCache - Hash-based caching for code context analysis and selection
  * Provides efficient caching with automatic invalidation
+ *
+ * WARNING: IN-MEMORY STORE
+ * ========================
+ * All cache entries live in Map instances within the Node.js process.
+ * Cache is scoped per CodeContextService instance (one per appId).
+ *
+ * Consequences:
+ * - Full cache loss on process restart / deploy
+ * - No cross-instance sharing (horizontal scaling)
+ * - Memory bound by MAX_CACHE_SIZE * entry size
+ *
+ * Migration path → Redis:
+ *   1. Replace Map<string, CacheEntry<T>> with Redis HSET
+ *   2. Use Redis EXPIRE for TTL instead of manual eviction
+ *   3. Serialize CacheEntry values to JSON (FileAnalysis, CodeContextSnapshot)
+ *   4. Keep hit/miss stats in Redis INCR counters
  */
 
 import { hashSync } from '../utils/hashUtils';

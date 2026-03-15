@@ -6,6 +6,26 @@
  * - Smart context snapshot formatting
  * - Full phase execution prompt assembly
  * - Phase-specific instruction generation
+ *
+ * ## Prompt Composition Pipeline (7 layers)
+ *
+ * The final prompt sent to Claude is assembled in this order:
+ *
+ *   1. **System prompt**        — Role identity + output format (`phaseExecution` system prompt)
+ *   2. **Architecture context** — `phase.architectureContext` from BackendArchitectureAgent
+ *                                (backend routes, DB schema, auth strategy — only if available)
+ *   3. **Layout manifest**      — Design tokens + globals.css via `formatLayoutManifestForPrompt()`
+ *                                (colors, typography, spacing, component styles → CSS variables)
+ *   4. **Smart context**        — `CodeContextSnapshot` via `formatSmartContextForPrompt()`
+ *                                (dependency-ranked file summaries, token-budgeted)
+ *   5. **Phase execution**      — Features, test criteria, completed phases, cumulative files
+ *                                via `buildPhaseExecutionPrompt()` (the main assembly function)
+ *   6. **Quality rules**        — `getPhaseQualityRules()` — severity-tiered linting rules
+ *   7. **Full concept fallback**— `fullConcept` on PhaseExecutionContext — raw AppConcept fields
+ *                                (purpose, targetUsers, workflows — used when no smarter context)
+ *
+ * Layers 2-4 are optional and gracefully degrade (prompt still works without them).
+ * Layer 1 is injected by the API route, not this file.
  */
 
 import type { PhaseExecutionContext, APIContract, AccumulatedFile } from '@/types/dynamicPhases';

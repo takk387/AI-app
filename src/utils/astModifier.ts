@@ -1,3 +1,24 @@
+/**
+ * AST-Based Code Modifier
+ *
+ * Uses Tree-sitter to parse code into an AST and apply surgical modifications
+ * (imports, state variables, JSX insertions, function replacements, etc.)
+ * without destroying formatting or unrelated code.
+ *
+ * ## Position Safety: Reverse-Order Edits
+ *
+ * All modifications are collected as `{ startIndex, endIndex, replacement }` tuples
+ * and then applied in **reverse byte-offset order** (highest startIndex first).
+ * This ensures earlier byte positions remain valid after later splices.
+ *
+ * IMPORTANT:
+ * - Tree-sitter uses **byte offsets**, not character offsets. For ASCII this is
+ *   identical, but multi-byte UTF-8 characters (emoji, CJK) will have
+ *   `node.startIndex` != character index. All splice operations in this file
+ *   use `Buffer.byteLength` / `Buffer` slicing to stay byte-correct.
+ * - Never mix `string.slice()` (character-based) with Tree-sitter byte offsets.
+ *   Use the `spliceByBytes()` helper for safe byte-level string surgery.
+ */
 import Parser from 'tree-sitter';
 import { CodeParser } from './treeSitterParser';
 import type {
