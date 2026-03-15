@@ -86,6 +86,7 @@ tmp/
 
 # Debug sessions (automated nightly test output)
 debug-sessions/findings-puppeteer.md
+debug-sessions/findings-chrome-*.md
 debug-sessions/findings.md
 debug-sessions/db-health.md
 debug-sessions/debate-log.md
