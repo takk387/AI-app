@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Health Check Response Types
@@ -73,10 +74,25 @@ async function checkStorageBuckets(): Promise<CheckResult> {
   const startTime = performance.now();
 
   try {
-    const supabase = await createClient();
+    // Use service role client for listBuckets — anon key lacks permission
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const sbServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // List buckets to verify storage access
-    const { data, error } = await supabase.storage.listBuckets();
+    let data: { name: string }[] | null = null;
+    let error: { message: string } | null = null;
+
+    if (sbUrl && sbServiceKey) {
+      const adminClient = createSupabaseClient(sbUrl, sbServiceKey);
+      const result = await adminClient.storage.listBuckets();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Fallback to anon key (may return empty)
+      const supabase = await createClient();
+      const result = await supabase.storage.listBuckets();
+      data = result.data;
+      error = result.error;
+    }
 
     const latency = Math.round(performance.now() - startTime);
 
@@ -90,6 +106,7 @@ async function checkStorageBuckets(): Promise<CheckResult> {
       details: {
         bucketsCount: data?.length || 0,
         buckets: data?.map((b) => b.name) || [],
+        usingServiceRole: !!(sbUrl && sbServiceKey),
       },
     };
   } catch (err) {

@@ -209,6 +209,14 @@ export async function POST(request: Request) {
       contextSummary,
     } = body;
 
+    // Validate message — reject empty/missing before hitting Anthropic
+    if (!message?.trim()) {
+      return NextResponse.json(
+        { error: 'Message is required and cannot be empty' },
+        { status: 400 }
+      );
+    }
+
     // Null-safe default — covers both undefined (omitted) and explicit null
     const safeState = currentState ?? { features: [], technical: {}, isComplete: false };
 
