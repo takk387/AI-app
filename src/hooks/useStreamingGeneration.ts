@@ -39,6 +39,8 @@ export function useStreamingGeneration(
   const [progress, setProgress] = useState<StreamingProgress>(initialStreamingProgress);
   const abortControllerRef = useRef<AbortController | null>(null);
   const startTimeRef = useRef<number>(0);
+  // Tracks whether abort was user-initiated (vs timeout-initiated)
+  const userAbortedRef = useRef(false);
 
   const updateProgress = useCallback(
     (updates: Partial<StreamingProgress>) => {
@@ -139,12 +141,18 @@ export function useStreamingGeneration(
 
   const generate = useCallback(
     async (requestBody: Record<string, unknown>): Promise<CompleteEvent['data'] | null> => {
+      // Timeouts: 45s between chunks (generous for AI thinking), 5min total
+      const CHUNK_TIMEOUT_MS = 45_000;
+      const TOTAL_TIMEOUT_MS = 300_000;
+
       // Reset progress
       setProgress(initialStreamingProgress);
       startTimeRef.current = 0;
+      userAbortedRef.current = false;
 
       // Create abort controller
       abortControllerRef.current = new AbortController();
+      const totalTimer = setTimeout(() => abortControllerRef.current?.abort(), TOTAL_TIMEOUT_MS);
 
       try {
         const response = await fetch('/api/ai-builder/full-app-stream', {
@@ -168,7 +176,13 @@ export function useStreamingGeneration(
         let result: CompleteEvent['data'] | null = null;
 
         while (true) {
+          // Per-chunk timeout: abort if no data arrives within CHUNK_TIMEOUT_MS
+          const chunkTimer = setTimeout(
+            () => abortControllerRef.current?.abort(),
+            CHUNK_TIMEOUT_MS
+          );
           const { done, value } = await reader.read();
+          clearTimeout(chunkTimer);
 
           if (done) break;
 
@@ -207,11 +221,22 @@ export function useStreamingGeneration(
         return result;
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-          updateProgress({
-            isStreaming: false,
-            phase: 'idle',
-            message: 'Generation cancelled',
-          });
+          if (userAbortedRef.current) {
+            // User clicked cancel
+            updateProgress({
+              isStreaming: false,
+              phase: 'idle',
+              message: 'Generation cancelled',
+            });
+          } else {
+            // Timeout-triggered abort
+            updateProgress({
+              isStreaming: false,
+              phase: 'error',
+              message: 'Generation timed out — the AI took too long to respond. Please retry.',
+            });
+            options.onError?.('Generation timed out', true);
+          }
           return null;
         }
 
@@ -224,6 +249,7 @@ export function useStreamingGeneration(
         options.onError?.(message, false);
         return null;
       } finally {
+        clearTimeout(totalTimer);
         abortControllerRef.current = null;
       }
     },
@@ -232,6 +258,7 @@ export function useStreamingGeneration(
 
   const abort = useCallback(() => {
     if (abortControllerRef.current) {
+      userAbortedRef.current = true;
       abortControllerRef.current.abort();
     }
   }, []);

@@ -345,7 +345,7 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         // 2. Include currentCode if we have previously generated files (enables EDIT)
         const currentCode = extractMainCode(generatedFiles);
 
-        // 3. Update progress to "routing"
+        // 3. Update progress to "routing" with elapsed timer
         progress = {
           ...progress,
           steps: {
@@ -355,26 +355,51 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
         };
         setPipelineProgress(progress);
 
+        const routeStartTime = Date.now();
+        const routingTimer = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - routeStartTime) / 1000);
+          setPipelineProgress((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  steps: {
+                    ...prev.steps,
+                    routing: {
+                      status: 'running',
+                      message: `Analyzing project and generating code... (${elapsed}s)`,
+                    },
+                  },
+                }
+              : prev
+          );
+        }, 3000);
+
         // 4. Call the Titan Pipeline API
-        const response = await fetch('/api/layout/pipeline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            files: fileInputs,
-            currentCode,
-            instructions,
-            appContext,
-          }),
-        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let result: any;
+        try {
+          const response = await fetch('/api/layout/pipeline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              files: fileInputs,
+              currentCode,
+              instructions,
+              appContext,
+            }),
+          });
 
-        if (!response.ok) {
-          const errorData = await response
-            .json()
-            .catch(() => ({ error: `HTTP ${response.status}` }));
-          throw new Error(errorData.error || `Pipeline failed: ${response.status}`);
+          if (!response.ok) {
+            const errorData = await response
+              .json()
+              .catch(() => ({ error: `HTTP ${response.status}` }));
+            throw new Error(errorData.error || `Pipeline failed: ${response.status}`);
+          }
+
+          result = await response.json();
+        } finally {
+          clearInterval(routingTimer);
         }
-
-        const result = await response.json();
 
         // 5. Build final progress (all steps done)
         const hasImages = fileInputs.some((f) => f.mimeType.startsWith('image/'));

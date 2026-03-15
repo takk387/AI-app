@@ -180,7 +180,12 @@ export default function DesignPage() {
       {currentLayoutManifest && (
         <div className="flex-shrink-0 px-4 py-2 border-t border-gray-200 bg-gray-50">
           <p className="text-xs text-gray-500">
-            Layout saved: {currentLayoutManifest.detectedFeatures?.length || 0} features detected
+            Layout saved
+            {(currentLayoutManifest.detectedFeatures?.length ?? 0) > 0
+              ? ` \u00b7 ${currentLayoutManifest.detectedFeatures.length} features detected`
+              : (appConcept?.coreFeatures?.length ?? 0) > 0
+                ? ` \u00b7 ${appConcept?.coreFeatures.length} features planned`
+                : ''}
           </p>
         </div>
       )}

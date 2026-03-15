@@ -391,6 +391,7 @@ export interface AppState
  * via `satisfies`. If you rename or remove a store field, this will fail to compile.
  *
  * Ownership (which slice provides each field):
+ *   ModeSlice:          currentMode
  *   DataSlice:          appConcept, dynamicPhasePlan, currentLayoutManifest,
  *                       currentDesignSpec, isReviewed, buildSettings, layoutThumbnail,
  *                       phasePlanGeneratedAt, layoutBuilderFiles
@@ -399,6 +400,8 @@ export interface AppState
  *   DualPlanningSlice:  dualArchitectureResult, userAISelection, cachedIntelligence
  */
 const PERSISTED_FIELDS = [
+  // ModeSlice — build resumption requires persisted mode
+  'currentMode',
   // DataSlice — workflow-critical
   'appConcept',
   'dynamicPhasePlan',
@@ -742,7 +745,7 @@ export const useAppStore = create<AppState>()(
       })),
       {
         name: 'ai-app-builder-storage',
-        version: 5, // Bumped: now persists cachedIntelligence
+        version: 6, // Bumped: now persists currentMode
 
         /**
          * Migration chain: v0 → v1 → v2 → v3 → v4 → v5
@@ -789,6 +792,13 @@ export const useAppStore = create<AppState>()(
             state = {
               ...state,
               cachedIntelligence: state.cachedIntelligence ?? null,
+            };
+          }
+          if (version < 6) {
+            // v6: persist currentMode so build resumes correctly after page reload
+            state = {
+              ...state,
+              currentMode: state.currentMode ?? 'PLAN',
             };
           }
           return state;

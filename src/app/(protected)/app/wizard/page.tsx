@@ -13,6 +13,9 @@ export default function WizardPage() {
   // Store actions
   const setAppConcept = useAppStore((state) => state.setAppConcept);
   const setCurrentAppId = useAppStore((state) => state.setCurrentAppId);
+  const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
+  const setDualArchitectureResult = useAppStore((state) => state.setDualArchitectureResult);
+  const setCachedIntelligence = useAppStore((state) => state.setCachedIntelligence);
   const currentAppId = useAppStore((state) => state.currentAppId);
 
   const handleComplete = useCallback(
@@ -24,12 +27,26 @@ export default function WizardPage() {
         setCurrentAppId(appId);
       }
 
+      // Clear stale data from previous projects — these will be regenerated
+      // downstream (Design → AI Plan → Review) for the new concept.
+      setDynamicPhasePlan(null);
+      setDualArchitectureResult(null);
+      setCachedIntelligence(null);
+
       // Save to store
       setAppConcept(concept);
       // Navigate to next step: Design
       router.push('/app/design');
     },
-    [router, setAppConcept, setCurrentAppId, currentAppId]
+    [
+      router,
+      setAppConcept,
+      setCurrentAppId,
+      setDynamicPhasePlan,
+      setDualArchitectureResult,
+      setCachedIntelligence,
+      currentAppId,
+    ]
   );
 
   const handleCancel = useCallback(() => {

@@ -255,11 +255,11 @@ describe('useAppStore', () => {
         // Persisted fields should be present
         expect('appConcept' in persistedState).toBe(true);
         expect('isReviewed' in persistedState).toBe(true);
+        expect('currentMode' in persistedState).toBe(true); // v6: persisted for build resumption
 
         // Non-persisted fields should NOT be present
         expect('userInput' in persistedState).toBe(false);
         expect('isGenerating' in persistedState).toBe(false);
-        expect('currentMode' in persistedState).toBe(false);
         expect('activeTab' in persistedState).toBe(false);
       }
     });

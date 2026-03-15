@@ -157,11 +157,37 @@ export function MainBuilderView() {
   // LOCAL STATE
   // ============================================================================
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [wizardState, setWizardState] = useState<WizardState>({
-    features: [],
-    technical: {},
-    isComplete: false,
-    readyForPhases: false,
+  const [wizardState, setWizardState] = useState<WizardState>(() => {
+    // Hydrate from persisted appConcept to prevent empty state on mount.
+    // Without this, switching to PLAN mode would show empty data and
+    // useConceptSync could overwrite the real concept with an empty shell.
+    const stored = useAppStore.getState().appConcept;
+    if (stored?.name && stored.name !== 'Untitled App') {
+      return {
+        name: stored.name,
+        description: stored.description || '',
+        purpose: stored.purpose || stored.description || '',
+        targetUsers: stored.targetUsers,
+        features: (stored.coreFeatures || []).map((f) => ({
+          id: f.id,
+          name: f.name,
+          description: f.description || '',
+          priority: f.priority || 'medium',
+        })),
+        technical: stored.technical || {},
+        uiPreferences: stored.uiPreferences,
+        roles: stored.roles?.map((r) => ({ name: r.name, capabilities: r.capabilities })),
+        workflows: stored.workflows,
+        isComplete: true,
+        readyForPhases: true,
+      };
+    }
+    return {
+      features: [],
+      technical: {},
+      isComplete: false,
+      readyForPhases: false,
+    };
   });
   // Track if user wants to deploy after saving the app
   const [pendingDeployAfterSave, setPendingDeployAfterSave] = useState(false);

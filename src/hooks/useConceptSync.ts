@@ -114,6 +114,15 @@ export function useConceptSync({
   const syncFromWizard = useCallback(() => {
     if (!wizardState || !enabled) return;
 
+    // Guard: don't let empty/uninitialized wizard state overwrite real data.
+    // On mount, MainBuilderView initializes wizardState with no name/description/features.
+    // Without this guard, that empty state would overwrite a valid appConcept from the store.
+    const hasNoMeaningfulData =
+      !wizardState.name && !wizardState.description && wizardState.features.length === 0;
+    if (hasNoMeaningfulData && appConcept?.name && appConcept.name !== 'Untitled App') {
+      return;
+    }
+
     // Create hash to detect changes
     const hash = JSON.stringify({
       name: wizardState.name,
@@ -128,7 +137,7 @@ export function useConceptSync({
 
     const concept = wizardToAppConcept(wizardState);
     setAppConcept(concept);
-  }, [wizardState, enabled, wizardToAppConcept, setAppConcept]);
+  }, [wizardState, enabled, appConcept, wizardToAppConcept, setAppConcept]);
 
   /**
    * Sync app concept changes back to wizard state
