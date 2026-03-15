@@ -204,7 +204,7 @@ export async function POST(request: Request) {
     const {
       message,
       conversationHistory = [],
-      currentState,
+      currentState = { features: [], technical: {}, isComplete: false },
       referenceImages,
       contextSummary,
     } = body;
