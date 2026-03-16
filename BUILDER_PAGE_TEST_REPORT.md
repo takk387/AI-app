@@ -897,3 +897,72 @@ The following items were observed during the audit but not individually clicked/
 | Camera/image upload button in chat      | Chat input area                    | Appeared after "Start New Project" triggered layout injection (confirming Bug 2 investigation), but didn't test uploading an image |
 | Preview toolbar "Con..." button         | Non-fullscreen preview toolbar     | Partially visible button (likely "Console"); only tested Console in fullscreen mode (Bug 16)                                       |
 | Fullscreen exit via click-outside       | Preview fullscreen mode            | Used the exit button to leave fullscreen; didn't test clicking outside the fullscreen area                                         |
+
+---
+
+## Redesign Note: Theme System
+
+**If rebuilding the Builder page, follow the landing page's theming pattern.**
+
+The landing page (`/`) handles light/dark mode correctly. The Builder page and its modals do not. Here's what's different and how to fix it:
+
+### What the Landing Page Does Right
+
+The landing page uses **CSS variables via inline styles** for all colors: `var(--text-primary)`, `var(--bg-secondary)`, `var(--border-color)`, etc. These variables are defined in `globals.css` under `:root` (light) and `[data-theme="dark"]` (dark), so they switch automatically when the theme toggles. The landing page uses **zero** hardcoded Tailwind color classes and **zero** `dark:` prefixed classes. It works perfectly in both themes because the CSS variables do all the work.
+
+### What the Builder Page Does Wrong
+
+The Builder page modals and pop-outs (e.g., Phase Detail modal, Phased Build Panel) use **hardcoded dark Tailwind classes**:
+
+- `bg-slate-900` (hardcoded dark background)
+- `text-white` (hardcoded light text)
+- `border-white/10` (hardcoded light border)
+
+These never change regardless of theme. The modal looks dark even when the app is in light mode. This is the root cause of the light mode issues — not broken CSS variables.
+
+### How to Fix It (When Rebuilding)
+
+Replace all hardcoded Tailwind color classes in Builder components with CSS variable references:
+
+| Instead of (hardcoded) | Use (theme-aware)                                |
+| ---------------------- | ------------------------------------------------ |
+| `bg-slate-900`         | `style={{ background: 'var(--bg-primary)' }}`    |
+| `bg-slate-800`         | `style={{ background: 'var(--bg-secondary)' }}`  |
+| `bg-slate-700`         | `style={{ background: 'var(--bg-tertiary)' }}`   |
+| `text-white`           | `style={{ color: 'var(--text-primary)' }}`       |
+| `text-slate-400`       | `style={{ color: 'var(--text-muted)' }}`         |
+| `text-slate-300`       | `style={{ color: 'var(--text-secondary)' }}`     |
+| `border-white/10`      | `style={{ borderColor: 'var(--border-color)' }}` |
+| `border-slate-700`     | `style={{ borderColor: 'var(--border-light)' }}` |
+
+### Also: Alias the 7 Orphaned Semantic CSS Variables
+
+`globals.css` defines 7 semantic variables in `:root` that have **no dark mode overrides**: `--background`, `--surface`, `--primary`, `--secondary`, `--accent`, `--textMuted`, `--border`. These are leftover from an older naming convention. Alias them to the theme vars so they auto-switch:
+
+```css
+:root {
+  /* ...existing theme vars stay as-is... */
+
+  /* Alias semantic vars to theme vars */
+  --background: var(--bg-primary);
+  --surface: var(--bg-secondary);
+  --primary: var(--accent-primary);
+  --secondary: var(--accent-secondary);
+  --accent: var(--accent-primary);
+  --textMuted: var(--text-muted);
+  --border: var(--border-color);
+}
+```
+
+### Components to Update
+
+At minimum, these Builder components contain hardcoded dark classes that need conversion:
+
+- Phase Detail modal (`PhaseDetailView`)
+- Phased Build Panel (`PhasedBuildPanel`)
+- Any modal in `src/components/modals/`
+- The preview iframe container (`bg-slate-900 rounded-lg shadow-2xl`)
+
+### Rule of Thumb
+
+**If it has a color, it should come from a CSS variable — never a hardcoded Tailwind class.** This is the pattern the landing page follows and why it works flawlessly in both themes.
