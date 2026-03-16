@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Mar 15, 2026 — major refactors: DynamicPhaseGenerator, PhaseExecutionManager, MainBuilderView split/reduced; layoutDesign.ts split into directory)
+> **Status**: VERIFIED (Mar 15, 2026 — 5 builder state bugs fixed, store v6 migration, mode persistence, streaming timeouts, stale session cleanup)
 
 ---
 
@@ -9,12 +9,12 @@
 
 | Metric               | Previous | Verified (Actual) |
 | -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 576      | **608**           |
-| API Route Handlers   | 65       | **66**            |
-| Custom Hooks         | 38       | **43**            |
-| Service Classes      | 77       | **86**            |
-| Type Definitions     | ~13,891  | **~13,930 lines** |
-| Utilities            | ~24,516  | **~25,047 lines** |
+| TypeScript/TSX Files | 608      | **613**           |
+| API Route Handlers   | 66       | **66**            |
+| Custom Hooks         | 43       | **43**            |
+| Service Classes      | 86       | **86**            |
+| Type Definitions     | ~13,930  | **~14,200 lines** |
+| Utilities            | ~25,047  | **~25,068 lines** |
 
 **Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
 
@@ -106,7 +106,7 @@ CREATE mode shortcut: Router → Surveyor → Builder → Healing Loop
 - `src/services/AppImageGenerator.ts` (~277 lines) - Image generation + Supabase upload
 - `src/services/AssetExtractionService.ts` (~276 lines) - Sharp-based image cropping
 - `src/services/VisionLoopEngine.ts` (~504 lines) - Self-healing vision loop
-- `src/services/LayoutAutoFixEngine.ts` (~465 lines) - Auto-fix from AI critique
+- `src/services/LayoutAutoFixEngine.ts` (~576 lines) - Auto-fix from AI critique
 - `src/types/titanPipeline.ts` (~267 lines) - Pipeline types
 - `src/types/layoutAnalysis.ts` (~191 lines) - Critique/healing types
 - `src/utils/layoutValidation.ts` (~1,144 lines) - Zod schema validation
@@ -196,9 +196,9 @@ New animation and visual effects infrastructure.
 | File                                | Lines | Notes                             |
 | ----------------------------------- | ----- | --------------------------------- |
 | `TitanPipelineService.ts`           | 497   | Titan Pipeline orchestrator       |
-| `BackgroundPlanningOrchestrator.ts` | 618   | Dual AI 5-stage pipeline          |
+| `BackgroundPlanningOrchestrator.ts` | 640   | Dual AI 5-stage pipeline          |
 | `LiveIntelligenceGatherer.ts`       | 606   | Web search + AI intelligence      |
-| `ConsensusNegotiator.ts`            | 530   | Claude-Gemini consensus           |
+| `ConsensusNegotiator.ts`            | 571   | Claude-Gemini consensus           |
 | `DualValidationOrchestrator.ts`     | 300   | Cross-validation of architectures |
 | `MotionMapper.ts`                   | 350   | Animation mapping                 |
 | `SourceMergeEngine.ts`              | 322   | Multi-source merging              |
@@ -220,15 +220,15 @@ Lower risk, but still follow patterns.
 
 | File                            | Lines     | Purpose                                      | Risk                 |
 | ------------------------------- | --------- | -------------------------------------------- | -------------------- |
-| `useAppStore.ts`                | **898**   | Centralized Zustand state (10 slices, v5)    | 24+ files break      |
+| `useAppStore.ts`                | **977**   | Centralized Zustand state (10 slices, v6)    | 24+ files break      |
 | `types/layoutDesign/` (dir)     | **3,343** | Design type system (8 files, split from 3k)  | 14+ files break      |
 | `middleware.ts`                 | **87**    | Auth flow for all routes                     | Auth breaks          |
 | `CodeParser.ts`                 | **1,070** | AST parsing engine                           | Code analysis breaks |
-| `MainBuilderView.tsx`           | **872**   | Main orchestrator + Titan Pipeline           | UI breaks            |
-| `PhaseExecutionManager.ts`      | **779**   | Phase execution orchestrator (from 2.1k)     | Build system breaks  |
+| `MainBuilderView.tsx`           | **940**   | Main orchestrator + Titan Pipeline           | UI breaks            |
+| `PhaseExecutionManager.ts`      | **832**   | Phase execution orchestrator (from 2.1k)     | Build system breaks  |
 | `NaturalConversationWizard.tsx` | **751**   | Conversation wizard UI                       | Planning breaks      |
 | `DynamicPhaseGenerator.ts`      | **685**   | Phase planning engine (refactored from 2.7k) | Build system breaks  |
-| `useDynamicBuildPhases.ts`      | **650**   | Phase execution hook                         | Build UI breaks      |
+| `useDynamicBuildPhases.ts`      | **700**   | Phase execution hook                         | Build UI breaks      |
 | `TitanPipelineService.ts`       | **497**   | Titan Pipeline orchestrator                  | Pipeline breaks      |
 
 ---
@@ -276,7 +276,7 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 
 | Pattern           | Implementation                                                                                               |
 | ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| State Management  | Zustand + Immer middleware, 10 slices, v5 migrations                                                         |
+| State Management  | Zustand + Immer middleware, 10 slices, v6 migrations                                                         |
 | Context Selection | `CodeContextService` — smart file selection to reduce tokens                                                 |
 | Live Preview      | Sandpack                                                                                                     |
 | Code Parsing      | Tree-sitter for AST analysis                                                                                 |
@@ -331,8 +331,8 @@ src/
 │   ├── LiveIntelligenceGatherer.ts       # Web search + AI intelligence
 │   ├── LayoutBackendAnalyzer.ts          # Layout-to-backend analysis
 │   └── ...
-├── store/            # Zustand centralized state (10 slices, v5 migrations)
-├── types/            # ~13,930 lines of TypeScript types (48 files)
+├── store/            # Zustand centralized state (10 slices, v6 migrations)
+├── types/            # ~14,200 lines of TypeScript types (48 files)
 │   ├── layoutDesign/      # Design type system (8 files, 3,343 lines — split from single file)
 │   ├── titanPipeline.ts   # Pipeline types (incl. expanded AppContext)
 │   ├── dualPlanning.ts    # Dual AI planning types (stages, SSE, escalation)
@@ -342,7 +342,7 @@ src/
 │   ├── planningSessionStore.ts  # In-memory planning session store (TTL)
 │   ├── getBaseUrl.ts            # Centralized app URL resolution (Railway/dev)
 │   └── createSSEResponse.ts     # SSE response helper with required proxy headers
-├── utils/            # ~25,047 lines of utilities (79 files)
+├── utils/            # ~25,068 lines of utilities (79 files)
 │   ├── astModifier.ts + 5 modules # AST modification (split from single 61KB file)
 │   ├── architectureToPhaseContext.ts # Architecture → phase context converter
 │   ├── snapEngine.ts           # Alignment engine
@@ -371,7 +371,7 @@ src/
 - ~~`DynamicPhaseGenerator.ts` 2.6k lines~~ → **Refactored to 685 lines**
 - ~~`layoutDesign.ts` 3k lines~~ → **Split into `types/layoutDesign/` directory (8 files, 3,343 lines)**
 - ~~`PhaseExecutionManager.ts` 2.1k lines~~ → **Refactored to 779 lines**
-- ~~`MainBuilderView.tsx` 1.6k lines~~ → **Refactored to 872 lines**
+- ~~`MainBuilderView.tsx` 1.6k lines~~ → **Refactored to 872 lines** (now 940 with hydration fix)
 
 ---
 
@@ -391,16 +391,16 @@ Phase-by-phase code generation → quality checks → live preview. Phase plan g
 
 | File                                | Lines | Purpose                                                       |
 | ----------------------------------- | ----- | ------------------------------------------------------------- |
-| `useAppStore.ts`                    | 898   | Centralized state (10 slices, v5 migrations)                  |
-| `MainBuilderView.tsx`               | 872   | Main orchestrator — Titan Pipeline integration, phase control |
+| `useAppStore.ts`                    | 977   | Centralized state (10 slices, v6 migrations)                  |
+| `MainBuilderView.tsx`               | 940   | Main orchestrator — Titan Pipeline integration, phase control |
 | `NaturalConversationWizard.tsx`     | 751   | Conversation wizard UI (AppConcept building)                  |
 | `DynamicPhaseGenerator.ts`          | 685   | Phase planning                                                |
-| `PhaseExecutionManager.ts`          | 779   | Phase execution                                               |
-| `useDynamicBuildPhases.ts`          | 650   | Phase execution hook                                          |
-| `BackgroundPlanningOrchestrator.ts` | 618   | Dual AI 5-stage pipeline orchestrator                         |
-| `useLayoutBuilder.ts`               | 574   | Layout builder state + GENERATE mode                          |
+| `PhaseExecutionManager.ts`          | 832   | Phase execution                                               |
+| `useDynamicBuildPhases.ts`          | 700   | Phase execution hook                                          |
+| `BackgroundPlanningOrchestrator.ts` | 640   | Dual AI 5-stage pipeline orchestrator                         |
+| `useLayoutBuilder.ts`               | 599   | Layout builder state + GENERATE mode                          |
 | `TitanPipelineService.ts`           | 497   | Titan Pipeline orchestrator                                   |
-| `useDualAIPlan.ts`                  | 436   | Dual AI planning hook (SSE, escalation)                       |
+| `useDualAIPlan.ts`                  | 489   | Dual AI planning hook (SSE, escalation)                       |
 | `GeminiLayoutCritique.ts`           | 286   | Vision critique for healing loop (new SDK + code execution)   |
 | `useBackgroundIntelligence.ts`      | 115   | Background intelligence pre-caching                           |
 
@@ -435,11 +435,11 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 
 | File                                | Lines | Purpose                                         |
 | ----------------------------------- | ----- | ----------------------------------------------- |
-| `BackgroundPlanningOrchestrator.ts` | 618   | 5-stage pipeline orchestrator                   |
+| `BackgroundPlanningOrchestrator.ts` | 640   | 5-stage pipeline orchestrator                   |
 | `LiveIntelligenceGatherer.ts`       | 606   | Web search + AI intelligence                    |
-| `ConsensusNegotiator.ts`            | 530   | Claude-Gemini consensus engine                  |
-| `useDualAIPlan.ts`                  | 436   | SSE streaming hook for planning pipeline        |
-| `types/dualPlanning.ts`             | 471   | Planning types (stages, SSE events, escalation) |
+| `ConsensusNegotiator.ts`            | 571   | Claude-Gemini consensus engine                  |
+| `useDualAIPlan.ts`                  | 489   | SSE streaming hook for planning pipeline        |
+| `types/dualPlanning.ts`             | 642   | Planning types (stages, SSE events, escalation) |
 | `architectureToPhaseContext.ts`     | 341   | Architecture → phase context converter          |
 | `DualValidationOrchestrator.ts`     | 300   | Cross-validation of architectures               |
 | `ConsensusEscalationDialog.tsx`     | ~200  | User escalation modal for disagreements         |
@@ -465,7 +465,7 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 
 | File                    | Lines | Purpose                                            |
 | ----------------------- | ----- | -------------------------------------------------- |
-| `useLayoutBuilder.ts`   | 574   | Layout builder hook (expanded for data flow fixes) |
+| `useLayoutBuilder.ts`   | 599   | Layout builder hook (expanded for data flow fixes) |
 | `LayoutBuilderView.tsx` | 374   | Main layout builder view                           |
 | `LayoutCanvas.tsx`      | ~512  | Canvas rendering/interaction (+preflight fix)      |
 
@@ -482,7 +482,21 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 
 ## Recent Changes Log
 
-### Mar 15, 2026 - Major Refactors + Master Context Audit
+### Mar 15, 2026 (PM) - 5 Builder State Management Bug Fixes
+
+- **Fixed**: Mode persistence — `currentMode` (PLAN/ACT) now persisted in Zustand store, store bumped to v6 with migration
+- **Fixed**: Data wipe on navigation — `useConceptSync` now guards against overwriting existing `appConcept` with empty `wizardState`
+- **Fixed**: `MainBuilderView` `wizardState` hydration — lazy `useState` initializer reads from `useAppStore.getState()` instead of starting empty
+- **Fixed**: Streaming timeout — `useStreamingGeneration` now has 45s per-chunk and 5min total timeouts with user-abort vs timeout distinction
+- **Fixed**: Stale sessions — `wizard/page.tsx` clears `dynamicPhasePlan`, `dualArchitectureResult`, `cachedIntelligence` on new concept creation
+- **Fixed**: Design page feature counter — falls back to `appConcept.coreFeatures` when `detectedFeatures` unavailable
+- **Fixed**: Layout builder progress — elapsed-time timer during pipeline API call in `useLayoutBuilder.ts`
+- **Updated**: `useAppStore.ts` 898 → 977 lines (v6 migration, `currentMode` persistence)
+- **Updated**: `MainBuilderView.tsx` 872 → 940 lines (wizardState hydration from store)
+- **Updated**: `useLayoutBuilder.ts` 574 → 599 lines (progress timer)
+- **Updated**: `useStreamingGeneration.ts` +80 lines (timeout logic, abort distinction)
+
+### Mar 15, 2026 (AM) - Major Refactors + Master Context Audit
 
 - **Refactored**: `DynamicPhaseGenerator.ts` 2,718 → 685 lines (massive reduction)
 - **Refactored**: `PhaseExecutionManager.ts` 2,095 → 779 lines (massive reduction)
@@ -492,7 +506,7 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 - **Expanded**: `useAppStore.ts` 804 → 898 lines, `NaturalConversationWizard.tsx` 657 → 751 lines
 - **Expanded**: `ConsensusNegotiator.ts` ~300 → 530 lines, `LiveIntelligenceGatherer.ts` ~400 → 606 lines
 - **Expanded**: `BackgroundPlanningOrchestrator.ts` ~500 → 618 lines, `useLayoutBuilder.ts` 496 → 574 lines
-- **Growth**: +32 TypeScript/TSX files, +1 API route, +5 hooks, +9 services since Feb audit
+- **Growth**: +32 TypeScript/TSX files, +1 API route, +5 hooks, +9 services since Feb audit (total: 608 files)
 - **Resolved**: 3 of 4 CRITICAL/HIGH file-size tech debt items (DynamicPhaseGenerator, PhaseExecutionManager, layoutDesign.ts)
 
 ### Feb 8, 2026 - Wizard Cleanup + CREATE Mode Streamlining
@@ -554,7 +568,7 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 - **Added**: `constants/aiModels.ts` - AI model configuration constants
 - **Fixed**: Layout injection never firing (guard changed from `!currentComponent` to `!hasInjectedCode`)
 - **Refactored**: Extracted `tryStartPhase1` useCallback in MainBuilderView (deduplicated ~70 lines)
-- **Updated**: `useAppStore.ts` - 10 slices (added planning slices), v5 migration chain
+- **Updated**: `useAppStore.ts` - 10 slices (added planning slices), v5 migration chain (now v6)
 - **Updated**: `titanPipeline.ts` - Expanded AppContext with planning fields
 - **Updated**: `dynamicPhases.ts` - Added `hasArchitectureContext` flag
 - **Updated**: `appConcept.ts` - Added dual planning types
