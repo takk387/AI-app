@@ -93,7 +93,11 @@ export function CreateBranchModal({
     >
       <FocusTrap onEscape={onClose}>
         <div
-          className="bg-slate-900 rounded-xl border border-slate-800 max-w-md w-full overflow-hidden shadow-2xl"
+          className="rounded-xl max-w-md w-full overflow-hidden shadow-2xl"
+          style={{
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header */}

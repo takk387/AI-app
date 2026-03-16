@@ -1,4 +1,4 @@
-export { BuilderPage } from './BuilderPage';
+export { default as BuilderPage } from './BuilderPage';
 export { LeftPanel } from './LeftPanel';
 export { PanelHeader } from './PanelHeader';
 export { MessageList } from './MessageList';

@@ -30,7 +30,11 @@ export function DiffPreviewModal({
     >
       <FocusTrap onEscape={onClose}>
         <div
-          className="bg-slate-900 rounded-xl border border-slate-800 max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
+          className="rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
+          style={{
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="px-6 py-4 border-b border-slate-800">

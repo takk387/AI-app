@@ -54,7 +54,11 @@ export function VersionHistoryModal({
     >
       <FocusTrap onEscape={onClose}>
         <div
-          className="bg-slate-900 rounded-xl border border-slate-800 max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
+          className="rounded-xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
+          style={{
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header */}

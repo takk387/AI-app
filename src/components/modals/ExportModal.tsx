@@ -139,7 +139,13 @@ export function ExportModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-700">
+      <div
+        className="relative rounded-xl shadow-2xl w-full max-w-lg mx-4"
+        style={{
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-light)',
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div>

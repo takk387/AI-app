@@ -82,7 +82,13 @@ export default function ShareModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-900 rounded-xl border border-slate-800 w-full max-w-md mx-4 shadow-2xl">
+      <div
+        className="rounded-xl w-full max-w-md mx-4 shadow-2xl"
+        style={{
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-800">
           <h2 className="text-lg font-semibold text-white">Share App</h2>
