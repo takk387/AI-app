@@ -74,6 +74,19 @@ Start the dev server (`npm run dev`) and test each flow manually:
 2. Expected: all Builder components use light theme colors
 3. If any component stays dark: find the hardcoded Tailwind color class and replace with CSS variable
 
+## Step 2b: Fix PreviewPanel → Sandpack+Nodebox
+
+The LivePreview sub-component in `PreviewPanel.tsx` currently uses the old `BrowserPreview` component. It should use Sandpack with Nodebox runtime instead, as specified in the blueprint.
+
+1. Check what Sandpack packages are installed: `grep "sandpack" package.json`
+2. Look at `src/components/FullAppPreview.tsx` and `src/components/layout-builder/LayoutCanvas.tsx` for how Sandpack is already configured in the Design page
+3. Replace the `BrowserPreview` import in `PreviewPanel.tsx` with a `SandpackProvider` + `SandpackPreview` setup (or wrap `FullAppPreview` if it already does what's needed)
+4. Map `currentComponent` files to Sandpack's file format
+5. Enable Nodebox runtime for server-side preview capability
+6. If Sandpack console access is available (`useSandpackConsole`), pipe errors to `consoleErrors` in BuilderContext
+
+If the Sandpack swap causes issues that block other testing, keep `BrowserPreview` as a fallback and flag for Session 8.
+
 ## Step 3: Fix Issues
 
 For each issue found:
