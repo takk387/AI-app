@@ -147,14 +147,22 @@ export function ExportModal({
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+        <div
+          className="flex items-center justify-between p-4 border-b"
+          style={{ borderColor: 'var(--border-light)' }}
+        >
           <div>
-            <h2 className="text-lg font-semibold text-slate-100">Export App</h2>
-            <p className="text-sm text-slate-400 mt-0.5">{appName}</p>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Export App
+            </h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {appName}
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -221,15 +229,23 @@ export function ExportModal({
                 className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-colors text-left ${
                   option.recommended
                     ? 'border-gold-600/50 bg-gold-900/20 hover:bg-gold-900/30'
-                    : 'border-slate-700 bg-slate-800/50 hover:bg-slate-800'
+                    : 'hover:bg-slate-800'
                 } ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={
+                  option.recommended
+                    ? undefined
+                    : { borderColor: 'var(--border-light)', background: 'var(--bg-secondary)' }
+                }
               >
                 <div
                   className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    option.recommended
-                      ? 'bg-gold-600/20 text-gold-400'
-                      : 'bg-slate-700 text-slate-300'
+                    option.recommended ? 'bg-gold-600/20 text-gold-400' : ''
                   }`}
+                  style={
+                    option.recommended
+                      ? undefined
+                      : { background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }
+                  }
                 >
                   {exportingFormat === option.id ? (
                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -253,17 +269,22 @@ export function ExportModal({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-100">{option.name}</span>
+                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {option.name}
+                    </span>
                     {option.recommended && (
                       <span className="px-1.5 py-0.5 text-xs bg-gold-600/30 text-gold-300 rounded">
                         Recommended
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-400 mt-0.5">{option.description}</p>
+                  <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {option.description}
+                  </p>
                 </div>
                 <svg
-                  className="w-5 h-5 text-slate-500"
+                  className="w-5 h-5"
+                  style={{ color: 'var(--text-muted)' }}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -281,8 +302,11 @@ export function ExportModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-700 bg-slate-800/50 rounded-b-xl">
-          <p className="text-xs text-slate-500 text-center">
+        <div
+          className="p-4 border-t rounded-b-xl"
+          style={{ borderColor: 'var(--border-light)', background: 'var(--bg-secondary)' }}
+        >
+          <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
             {files.length} files &bull; {Object.keys(dependencies).length} dependencies
           </p>
         </div>

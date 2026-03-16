@@ -9,9 +9,9 @@
 
 | Metric               | Previous | Verified (Actual) |
 | -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 608      | **613**           |
+| TypeScript/TSX Files | 613      | **621**           |
 | API Route Handlers   | 66       | **66**            |
-| Custom Hooks         | 43       | **43**            |
+| Custom Hooks         | 43       | **42**            |
 | Service Classes      | 86       | **86**            |
 | Type Definitions     | ~13,930  | **~14,200 lines** |
 | Utilities            | ~25,047  | **~25,068 lines** |
@@ -52,13 +52,13 @@ Step 4: /app/review (ReviewPage - 14 components)
     → "Build App" triggers Titan Pipeline
     → Navigates to /app
     ↓
-Step 5: /app (MainBuilderView)
-    → Titan Pipeline: Router → Surveyor → [Photographer] → Builder
-      (CREATE mode skips Photographer — goes Router → Surveyor → Builder directly)
-    → Phase 1 auto-completes by injecting layout code (tryStartPhase1)
-    → Subsequent phases use Claude AI via PhaseExecutionManager
-    → Sandpack preview + self-healing vision loop
-    → Version history and rollback
+Step 5: /app (BuilderPage + BuilderContext)
+    → BuilderContext.tsx: single provider wrapping 16 hooks, intent detection, context assembly
+    → BuilderPage.tsx: CSS grid shell (40/60) with LeftPanel + PreviewPanel
+    → Intent routing: BUILD → full-app-stream, MODIFY → /api/ai-builder/modify (diff preview)
+    → Phase execution via useDynamicBuildPhases + usePhaseExecution
+    → Sandpack + Nodebox preview with error boundary
+    → Version history, undo/redo, ConceptDrawer, ModalManager
 ```
 
 **Key Data Persistence Points (Zustand + localStorage):**
@@ -185,6 +185,7 @@ New animation and visual effects infrastructure.
 
 | File                        | Dependents   | Notes                               |
 | --------------------------- | ------------ | ----------------------------------- |
+| `BuilderContext.tsx`        | **11 files** | Builder provider (wraps 16 hooks)   |
 | `types/codeReview.ts`       | **15 files** | Validation layer types              |
 | `DynamicPhaseGenerator.ts`  | ~8 files     | Core planning engine (685 lines)    |
 | `PhaseExecutionManager.ts`  | ~4 files     | Core execution engine (779 lines)   |
@@ -224,7 +225,8 @@ Lower risk, but still follow patterns.
 | `types/layoutDesign/` (dir)     | **3,343** | Design type system (8 files, split from 3k)  | 14+ files break      |
 | `middleware.ts`                 | **87**    | Auth flow for all routes                     | Auth breaks          |
 | `CodeParser.ts`                 | **1,070** | AST parsing engine                           | Code analysis breaks |
-| `MainBuilderView.tsx`           | **940**   | Main orchestrator + Titan Pipeline           | UI breaks            |
+| `BuilderContext.tsx`            | **977**   | Builder provider — 16 hooks, intent routing  | Builder UI breaks    |
+| `MainBuilderView.tsx`           | **940**   | Legacy orchestrator (kept as reference)      | Unused               |
 | `PhaseExecutionManager.ts`      | **832**   | Phase execution orchestrator (from 2.1k)     | Build system breaks  |
 | `NaturalConversationWizard.tsx` | **751**   | Conversation wizard UI                       | Planning breaks      |
 | `DynamicPhaseGenerator.ts`      | **685**   | Phase planning engine (refactored from 2.7k) | Build system breaks  |

@@ -37,15 +37,19 @@ export function DiffPreviewModal({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-6 py-4 border-b border-slate-800">
+          <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-garden-600/20 flex items-center justify-center">
                   <SearchIcon size={20} className="text-garden-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-100">Review Changes</h3>
-                  <p className="text-sm text-slate-400">Smart targeted modifications</p>
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Review Changes
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    Smart targeted modifications
+                  </p>
                 </div>
               </div>
               <button onClick={onClose} className="btn-icon">

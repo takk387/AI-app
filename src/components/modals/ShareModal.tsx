@@ -90,11 +90,25 @@ export default function ShareModal({
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-800">
-          <h2 className="text-lg font-semibold text-white">Share App</h2>
+        <div
+          className="flex items-center justify-between p-4 border-b"
+          style={{ borderColor: 'var(--border-color)' }}
+        >
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Share App
+          </h2>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="p-1 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.background = 'var(--bg-secondary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -116,12 +130,18 @@ export default function ShareModal({
         {/* Content */}
         <div className="p-4 space-y-4">
           {/* App Title */}
-          <div className="text-sm text-slate-400">
-            Sharing <span className="text-white font-medium">{appTitle}</span>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Sharing{' '}
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+              {appTitle}
+            </span>
           </div>
 
           {/* Toggle */}
-          <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+          <div
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ background: 'var(--bg-secondary)' }}
+          >
             <div className="flex items-center gap-3">
               {isPublic ? (
                 <svg
@@ -151,15 +171,17 @@ export default function ShareModal({
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-slate-400"
+                  style={{ color: 'var(--text-muted)' }}
                 >
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               )}
               <div>
-                <div className="text-white font-medium">{isPublic ? 'Public' : 'Private'}</div>
-                <div className="text-xs text-slate-400">
+                <div className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {isPublic ? 'Public' : 'Private'}
+                </div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   {isPublic ? 'Anyone with the link can view' : 'Only you can access'}
                 </div>
               </div>
@@ -168,8 +190,9 @@ export default function ShareModal({
               onClick={handleToggleShare}
               disabled={isLoading}
               className={`relative w-12 h-6 rounded-full transition-colors ${
-                isPublic ? 'bg-success-600' : 'bg-slate-600'
+                isPublic ? 'bg-success-600' : ''
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={!isPublic ? { background: 'var(--bg-tertiary)' } : undefined}
             >
               <div
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
@@ -182,17 +205,25 @@ export default function ShareModal({
           {/* Share Link */}
           {isPublic && previewUrl && (
             <div className="space-y-2">
-              <label className="text-sm text-slate-400">Share Link</label>
+              <label className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                Share Link
+              </label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={previewUrl}
                   readOnly
-                  className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    borderColor: 'var(--border-light)',
+                    color: 'var(--text-primary)',
+                  }}
                 />
                 <button
                   onClick={handleCopyLink}
-                  className="px-3 py-2 bg-garden-600 hover:bg-garden-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+                  className="px-3 py-2 bg-garden-600 hover:bg-garden-700 rounded-lg flex items-center gap-2 transition-colors"
+                  style={{ color: 'var(--text-primary)' }}
                 >
                   {copied ? (
                     <svg
@@ -239,10 +270,17 @@ export default function ShareModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
           <button
             onClick={onClose}
-            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
+            className="w-full py-2 rounded-lg transition-colors"
+            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-tertiary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--bg-secondary)';
+            }}
           >
             Done
           </button>

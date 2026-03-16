@@ -62,15 +62,17 @@ export function VersionHistoryModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Modal Header */}
-          <div className="px-6 py-4 border-b border-slate-800">
+          <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-garden-600/20 flex items-center justify-center">
                   <HistoryIcon size={20} className="text-garden-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-100">Version History</h3>
-                  <p className="text-sm text-slate-400">
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Version History
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     {currentComponent.name} - {currentComponent.versions.length} versions
                   </p>
                 </div>
@@ -94,18 +96,27 @@ export function VersionHistoryModal({
                     className={`p-4 rounded-lg border transition-colors ${
                       isCurrentVersion
                         ? 'bg-garden-600/10 border-garden-600/30'
-                        : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
+                        : 'hover:bg-slate-800'
                     }`}
+                    style={
+                      isCurrentVersion
+                        ? undefined
+                        : {
+                            background: 'var(--bg-secondary)',
+                            borderColor: 'var(--border-light)',
+                          }
+                    }
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <MapPinIcon
                           size={20}
-                          className={isCurrentVersion ? 'text-garden-400' : 'text-slate-500'}
+                          className={isCurrentVersion ? 'text-garden-400' : undefined}
+                          style={isCurrentVersion ? undefined : { color: 'var(--text-muted)' }}
                         />
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-slate-100 font-medium">
+                            <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>
                               Version {version.versionNumber}
                             </h4>
                             {isCurrentVersion && (
@@ -120,7 +131,7 @@ export function VersionHistoryModal({
                               {version.changeType.replace('_', ' ')}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             {new Date(version.timestamp).toLocaleString()}
                           </p>
                         </div>
@@ -157,7 +168,10 @@ export function VersionHistoryModal({
                       </div>
                     </div>
 
-                    <p className="text-sm text-slate-300 leading-relaxed mb-3">
+                    <p
+                      className="text-sm leading-relaxed mb-3"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       {version.description}
                     </p>
 
@@ -192,9 +206,9 @@ export function VersionHistoryModal({
           </div>
 
           {/* Modal Footer */}
-          <div className="px-6 py-4 border-t border-slate-800">
-            <div className="flex items-center gap-3 text-xs text-slate-400">
-              <InfoIcon size={14} className="text-slate-500" />
+          <div className="px-6 py-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <InfoIcon size={14} style={{ color: 'var(--text-muted)' }} />
               <p>
                 Click &quot;Revert&quot; to restore a previous version. Your current version will be
                 preserved in history.
