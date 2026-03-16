@@ -496,6 +496,16 @@ html {
   }
 }
 
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
 /* Smooth transitions when not dragging */
 .resizable-panel-group:not(.resizable-panel-group-dragging) .resizable-panel-wrapper {
   transition: flex-basis 0.15s ease-out;
