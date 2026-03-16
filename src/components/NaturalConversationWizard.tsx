@@ -153,6 +153,32 @@ What would you like to build?`,
   // Get current layout manifest from store
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
 
+  // Sync wizard concept to Zustand store as it develops — so "Skip to Builder"
+  // has the concept available even if handleComplete/onComplete never fires.
+  useEffect(() => {
+    if (wizardState.name) {
+      useAppStore.getState().setAppConcept({
+        name: wizardState.name,
+        description: wizardState.description || '',
+        purpose: wizardState.purpose || '',
+        targetUsers: wizardState.targetUsers || '',
+        coreFeatures: wizardFeaturesToFeatures(wizardState.features || []),
+        uiPreferences: (wizardState.uiPreferences || {}) as UIPreferences,
+        technical: (wizardState.technical || {}) as TechnicalRequirements,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }, [
+    wizardState.name,
+    wizardState.description,
+    wizardState.features,
+    wizardState.purpose,
+    wizardState.targetUsers,
+    wizardState.technical,
+    wizardState.uiPreferences,
+  ]);
+
   // Message windowing - limit rendered messages for performance
   const MAX_VISIBLE_MESSAGES = 100;
 

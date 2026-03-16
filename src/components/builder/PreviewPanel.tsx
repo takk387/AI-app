@@ -88,6 +88,38 @@ function toSandpackFiles(files: AppFile[]): Record<string, { code: string; hidde
     result['/index.tsx'] = { code: DEFAULT_ENTRY_CODE };
   }
 
+  // Ensure /App.tsx exists — Sandpack's react-ts template provides a default "Hello world"
+  // App if we don't override it. Check common paths where the app component might live.
+  if (!result['/App.tsx'] && !result['/App.ts'] && !result['/App.jsx']) {
+    const appPaths = ['/components/App.tsx', '/components/App.jsx', '/components/app.tsx'];
+    for (const p of appPaths) {
+      if (result[p]) {
+        result['/App.tsx'] = result[p];
+        break;
+      }
+    }
+
+    // If still no App.tsx, find the best candidate .tsx file and re-export it
+    if (!result['/App.tsx']) {
+      const candidates = Object.entries(result)
+        .filter(
+          ([path]) =>
+            path.endsWith('.tsx') &&
+            !path.includes('index') &&
+            !path.includes('ErrorBoundary') &&
+            !path.includes('preflight')
+        )
+        .sort((a, b) => b[1].code.length - a[1].code.length);
+
+      if (candidates.length > 0) {
+        const [bestPath] = candidates[0];
+        result['/App.tsx'] = {
+          code: `export { default } from '${bestPath.replace(/\.(tsx|jsx|ts|js)$/, '')}';`,
+        };
+      }
+    }
+  }
+
   // If the entry file imports preflight-undo or inspector (from LayoutCanvas)
   // but those support files aren't in the bundle, replace with clean entry
   const entryPath = result['/index.tsx'] ? '/index.tsx' : result['/index.ts'] ? '/index.ts' : null;

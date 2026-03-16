@@ -648,6 +648,18 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
                     timestamp: new Date().toISOString(),
                   },
                 ]);
+              } else {
+                // streaming.generate() returned null — timeout, SSE failure, or empty response
+                setChatMessages((prev: ChatMessage[]) => [
+                  ...prev,
+                  {
+                    id: generateId(),
+                    role: 'assistant' as const,
+                    content:
+                      "Generation failed — the AI didn't return a response. Please try again.",
+                    timestamp: new Date().toISOString(),
+                  },
+                ]);
               }
             }
             break;
