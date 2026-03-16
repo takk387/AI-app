@@ -645,51 +645,50 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
               break;
             }
 
-            const modResult = await streaming.generate({
-              prompt: text,
-              ...context,
-              isModification: true,
-              currentAppName: comp.name,
-              currentAppState: safeParseJSON(comp.code),
+            setGenerationProgress('Generating targeted modifications...');
+
+            const modResponse = await fetch('/api/ai-builder/modify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: text,
+                currentAppState: safeParseJSON(comp.code),
+                conversationHistory: chatMessagesRef.current.slice(-20),
+              }),
             });
+            const modData = await modResponse.json();
 
-            if (modResult) {
-              const files = modResult.files as Array<{ path: string; content: string }> | undefined;
-              if (files?.length) {
-                pushToUndoStack({
-                  id: generateId(),
-                  versionNumber: (comp.versions?.length || 0) + 1,
-                  code: comp.code,
-                  description: comp.description,
-                  timestamp: comp.timestamp,
-                  changeType: 'MINOR_CHANGE',
-                });
-                clearRedoStack();
+            if (modData?.error) {
+              throw new Error(modData.error as string);
+            }
 
-                let updated: GeneratedComponent = {
-                  ...comp,
-                  code: JSON.stringify(modResult, null, 2),
-                  description: text,
-                  timestamp: new Date().toISOString(),
-                  conversationHistory: [...chatMessagesRef.current, userMessage],
-                };
-                updated = versionControl.saveVersion(updated, 'MAJOR_CHANGE', text);
-                setCurrentComponent(updated);
-                setComponents((prev: GeneratedComponent[]) =>
-                  prev.map((c) => (c.id === comp.id ? updated : c))
-                );
-                await databaseSync.saveComponent(updated);
-                setActiveTab('preview');
-              }
+            if (modData?.files?.length) {
+              // Show diff preview modal for user approval
+              setPendingDiff({
+                id: generateId(),
+                summary: (modData.summary as string) || text,
+                files: modData.files,
+                timestamp: new Date().toISOString(),
+              });
+              setShowDiffPreview(true);
+              setActiveModal('diff');
 
               setChatMessages((prev: ChatMessage[]) => [
                 ...prev,
                 {
                   id: generateId(),
                   role: 'assistant' as const,
-                  content: modResult.description
-                    ? String(modResult.description)
-                    : 'Changes applied.',
+                  content: `Proposed changes: ${(modData.summary as string) || text}. Review the diff to approve or reject.`,
+                  timestamp: new Date().toISOString(),
+                },
+              ]);
+            } else {
+              setChatMessages((prev: ChatMessage[]) => [
+                ...prev,
+                {
+                  id: generateId(),
+                  role: 'assistant' as const,
+                  content: (modData.summary as string) || 'No changes needed.',
                   timestamp: new Date().toISOString(),
                 },
               ]);
@@ -816,6 +815,8 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       pushToUndoStack,
       clearRedoStack,
       trackDebug,
+      setPendingDiff,
+      setShowDiffPreview,
     ]
   );
 
