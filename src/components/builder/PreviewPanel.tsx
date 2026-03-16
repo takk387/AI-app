@@ -224,7 +224,7 @@ function LivePreview({ component }: { component: GeneratedComponent | null }) {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div className="builder-sandpack-preview" style={{ width: '100%', height: '100%' }}>
       <SandpackErrorBoundary>
         <SandpackProvider
           template="react-ts"

@@ -141,8 +141,8 @@ export function useStreamingGeneration(
 
   const generate = useCallback(
     async (requestBody: Record<string, unknown>): Promise<CompleteEvent['data'] | null> => {
-      // Timeouts: 45s between chunks (generous for AI thinking), 5min total
-      const CHUNK_TIMEOUT_MS = 45_000;
+      // Timeouts: 120s between chunks (allows for extended thinking phase), 5min total
+      const CHUNK_TIMEOUT_MS = 120_000;
       const TOTAL_TIMEOUT_MS = 300_000;
 
       // Reset progress

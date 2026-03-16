@@ -770,3 +770,46 @@ html {
 .layout-canvas-sandpack .sp-preview-actions {
   position: absolute !important;
 }
+
+/* ============================================
+   Builder Preview Panel — Sandpack fill rules
+   Same propagation as layout canvas but for the
+   Builder (Step 5) preview panel.
+   ============================================ */
+
+.builder-sandpack-preview .sp-wrapper {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0% !important;
+}
+
+.builder-sandpack-preview .sp-layout {
+  height: 100% !important;
+  flex: 1 1 0% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.builder-sandpack-preview .sp-stack {
+  height: 100% !important;
+  flex: 1 1 0% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.builder-sandpack-preview .sp-preview-container {
+  height: 100% !important;
+  flex: 1 1 0% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.builder-sandpack-preview .sp-preview-container iframe {
+  height: 100% !important;
+  flex: 1 1 0% !important;
+}
+
+.builder-sandpack-preview .sp-preview-actions {
+  position: absolute !important;
+}

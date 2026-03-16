@@ -257,7 +257,7 @@ function buildBackendPhases(arch: FinalValidatedArchitecture): BackendPhaseSpec[
   // Database setup phase
   if (arch.database?.models?.length) {
     phases.push({
-      name: 'Database Schema Setup',
+      name: 'Database Schema',
       description: `Set up ${arch.database.provider} database with ${arch.database.models.length} models`,
       domain: 'database' as FeatureDomain,
       priority: priority++,
@@ -284,7 +284,7 @@ function buildBackendPhases(arch: FinalValidatedArchitecture): BackendPhaseSpec[
       description: `${arch.auth.provider} authentication with ${arch.auth.strategy} strategy`,
       domain: 'auth' as FeatureDomain,
       priority: priority++,
-      dependencies: ['Database Schema Setup'],
+      dependencies: ['Database Schema'],
       files: [],
       features: arch.auth.flows ?? [],
       testCriteria: ['Login works', 'Session persists', 'Protected routes are guarded'],
@@ -299,7 +299,7 @@ function buildBackendPhases(arch: FinalValidatedArchitecture): BackendPhaseSpec[
       description: `${arch.api.style} API with ${arch.api.routes.length} endpoints`,
       domain: 'feature' as FeatureDomain,
       priority: priority++,
-      dependencies: ['Database Schema Setup'],
+      dependencies: ['Database Schema'],
       files: [],
       features: arch.api.routes.map((r) => `${r.method} ${r.path}`),
       testCriteria: ['All endpoints return correct status codes', 'CRUD operations work'],

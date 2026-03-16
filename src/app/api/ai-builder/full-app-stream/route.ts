@@ -134,6 +134,9 @@ export async function POST(request: Request) {
       abortController.abort('Global timeout exceeded');
     }, GLOBAL_TIMEOUT_MS);
 
+    // Heartbeat timer for keeping client alive during Claude's thinking phase
+    let thinkingHeartbeat: ReturnType<typeof setInterval> | null = null;
+
     try {
       // Check Content-Length header for early rejection
       const contentLength = request.headers.get('content-length');
@@ -813,6 +816,22 @@ MODIFICATION MODE for "${currentAppName}":
       // END AGENTIC MODE - Continue with existing streaming below
       // ========================================================================
 
+      // Keep-alive heartbeat during Claude's thinking phase
+      // Sends a "thinking" SSE event every 10s to prevent client chunk timeout
+      thinkingHeartbeat = setInterval(async () => {
+        if (!writerClosed) {
+          try {
+            await writeEvent({
+              type: 'thinking',
+              timestamp: Date.now(),
+              message: 'AI is still thinking...',
+            });
+          } catch {
+            // Writer closed, will be cleaned up below
+          }
+        }
+      }, 10_000);
+
       // Stream from Claude with abort signal
       const aiStream = await anthropic.messages.stream({
         model: modelName,
@@ -850,6 +869,12 @@ MODIFICATION MODE for "${currentAppName}":
 
       try {
         for await (const chunk of aiStream) {
+          // Stop heartbeat once real chunks arrive
+          if (thinkingHeartbeat) {
+            clearInterval(thinkingHeartbeat);
+            thinkingHeartbeat = null;
+          }
+
           // Check if client disconnected
           if (writerClosed) {
             break;
@@ -1210,6 +1235,10 @@ MODIFICATION MODE for "${currentAppName}":
         recoverable: false,
       });
     } finally {
+      if (thinkingHeartbeat) {
+        clearInterval(thinkingHeartbeat);
+        thinkingHeartbeat = null;
+      }
       clearTimeout(globalTimeoutId);
       await closeWriter();
     }
