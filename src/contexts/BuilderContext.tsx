@@ -577,8 +577,30 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
         switch (intent) {
           case 'BUILD': {
             if (isPhaseReference(text)) {
-              // Phase execution — startPhase triggers the auto-execute effect
-              dynamicPhases.startPhase(extractPhaseNumber(text));
+              const phaseNum = extractPhaseNumber(text);
+              if (dynamicPhases.phases.length === 0) {
+                setChatMessages((prev: ChatMessage[]) => [
+                  ...prev,
+                  {
+                    id: generateId(),
+                    role: 'assistant' as const,
+                    content:
+                      'No build phases available. Go through the Review step first, or click Start in the phase bar.',
+                    timestamp: new Date().toISOString(),
+                  },
+                ]);
+              } else {
+                dynamicPhases.startPhase(phaseNum);
+                setChatMessages((prev: ChatMessage[]) => [
+                  ...prev,
+                  {
+                    id: generateId(),
+                    role: 'assistant' as const,
+                    content: `Starting Phase ${phaseNum}...`,
+                    timestamp: new Date().toISOString(),
+                  },
+                ]);
+              }
             } else {
               const result = await streaming.generate({
                 prompt: text,

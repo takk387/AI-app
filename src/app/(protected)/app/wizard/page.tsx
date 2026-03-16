@@ -16,6 +16,9 @@ export default function WizardPage() {
   const setDynamicPhasePlan = useAppStore((state) => state.setDynamicPhasePlan);
   const setDualArchitectureResult = useAppStore((state) => state.setDualArchitectureResult);
   const setCachedIntelligence = useAppStore((state) => state.setCachedIntelligence);
+  const setCurrentComponent = useAppStore((state) => state.setCurrentComponent);
+  const setLayoutBuilderFiles = useAppStore((state) => state.setLayoutBuilderFiles);
+  const setComponents = useAppStore((state) => state.setComponents);
   const currentAppId = useAppStore((state) => state.currentAppId);
 
   const handleComplete = useCallback(
@@ -32,6 +35,10 @@ export default function WizardPage() {
       setDynamicPhasePlan(null);
       setDualArchitectureResult(null);
       setCachedIntelligence(null);
+      // Also clear builder state so stale data doesn't persist
+      setCurrentComponent(null);
+      setLayoutBuilderFiles(null);
+      setComponents([]);
 
       // Save to store
       setAppConcept(concept);
@@ -45,6 +52,9 @@ export default function WizardPage() {
       setDynamicPhasePlan,
       setDualArchitectureResult,
       setCachedIntelligence,
+      setCurrentComponent,
+      setLayoutBuilderFiles,
+      setComponents,
       currentAppId,
     ]
   );

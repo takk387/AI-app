@@ -194,7 +194,12 @@ export function AppNavigation({
             {/* Skip to Builder - Show on non-builder pages */}
             {pathname !== '/app' && (
               <button
-                onClick={() => router.push('/app')}
+                onClick={() => {
+                  useAppStore.getState().setCurrentComponent(null);
+                  useAppStore.getState().setLayoutBuilderFiles(null);
+                  useAppStore.getState().setComponents([]);
+                  router.push('/app');
+                }}
                 className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors"
               >
                 Skip to Builder →

@@ -88,6 +88,22 @@ function toSandpackFiles(files: AppFile[]): Record<string, { code: string; hidde
     result['/index.tsx'] = { code: DEFAULT_ENTRY_CODE };
   }
 
+  // If the entry file imports preflight-undo or inspector (from LayoutCanvas)
+  // but those support files aren't in the bundle, replace with clean entry
+  const entryPath = result['/index.tsx'] ? '/index.tsx' : result['/index.ts'] ? '/index.ts' : null;
+  if (entryPath) {
+    const entryCode = result[entryPath]!.code;
+    const needsPreflight =
+      entryCode.includes('preflight-undo') &&
+      !result['/preflight-undo.ts'] &&
+      !result['/preflight-undo.js'];
+    const needsInspector =
+      entryCode.includes('./inspector') && !result['/inspector.ts'] && !result['/inspector.js'];
+    if (needsPreflight || needsInspector) {
+      result[entryPath] = { code: DEFAULT_ENTRY_CODE };
+    }
+  }
+
   return result;
 }
 

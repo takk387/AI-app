@@ -12,6 +12,7 @@ export function LeftPanel() {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        minHeight: 0,
         borderRight: '1px solid var(--border-color)',
         background: 'var(--bg-primary)',
       }}

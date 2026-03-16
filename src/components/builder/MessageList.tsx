@@ -148,6 +148,7 @@ export function MessageList() {
         flex: 1,
         overflowY: 'auto',
         padding: '16px',
+        minHeight: 0,
       }}
     >
       <div className="space-y-4">
