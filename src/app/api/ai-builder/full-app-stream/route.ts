@@ -635,10 +635,13 @@ MODIFICATION MODE for "${currentAppName}":
           }
 
           if (files.length === 0) {
+            const responseSnippet = responseText.slice(0, 300).trim();
             await writeEvent({
               type: 'error',
               timestamp: Date.now(),
-              message: 'No files generated in response',
+              message: responseSnippet
+                ? `AI responded but generated no code files. AI said: "${responseSnippet}${responseText.length > 300 ? '...' : ''}"`
+                : 'No files generated in response',
               code: 'NO_FILES',
               recoverable: true,
             });

@@ -13,11 +13,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import type { ChatMessage } from '@/types/aiBuilderTypes';
-import {
-  compressConversation,
-  buildCompressedContext,
-  needsCompression,
-} from '@/utils/contextCompression';
 
 // Re-export types for API compatibility
 export type {
@@ -32,8 +27,6 @@ import type {
   UseSendMessageReturn,
   SuggestedAction,
 } from './useSendMessageTypes';
-import type { WizardState } from '@/types/wizardState';
-
 import {
   generateId,
   handleBuildTrigger,
@@ -95,7 +88,6 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
     setUploadedImage,
     setPendingDiff,
     setShowDiffPreview,
-    setAppConcept,
     setNewAppStagePlan,
   } = useAppStore();
 
@@ -156,74 +148,27 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
 
     try {
       let data: Record<string, unknown> | null = null;
-      let endpoint: string;
       let fetchBody: string;
 
-      if (currentMode === 'PLAN') {
-        // PLAN mode: Use wizard API
-        endpoint = '/api/wizard/chat';
-        const MAX_CONTEXT_TOKENS = 100000;
-        let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
-        let contextSummary: string | undefined;
+      // Builder always uses ACT mode — PLAN mode is handled by NaturalConversationWizard
+      const endpoint = '/api/ai-builder';
+      const compressed = compressForACTMode(chatMessages);
 
-        const filteredMessages = chatMessages
-          .filter((m) => m.role !== 'system')
-          .map((m) => ({
-            id: m.id,
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-            timestamp: m.timestamp,
-          }));
-
-        if (needsCompression(filteredMessages, MAX_CONTEXT_TOKENS)) {
-          const compressed = compressConversation(filteredMessages, {
-            maxTokens: MAX_CONTEXT_TOKENS,
-            preserveLastN: 20,
-          });
-
-          conversationHistory = compressed.recentMessages.map((m) => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          }));
-
-          if (compressed.summary.messageCount > 0) {
-            contextSummary = buildCompressedContext(compressed);
-          }
-        } else {
-          conversationHistory = filteredMessages.map((m) => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          }));
-        }
-
-        fetchBody = JSON.stringify({
-          message: userInput,
-          conversationHistory,
-          contextSummary,
-          currentState: wizardState,
-          referenceImages: uploadedImage ? [uploadedImage] : undefined,
-        });
-      } else {
-        // ACT mode: Use builder expert
-        endpoint = '/api/ai-builder';
-        const compressed = compressForACTMode(chatMessages);
-
-        fetchBody = JSON.stringify({
-          prompt: userInput,
-          conversationHistory: compressed.history,
-          contextSummary: compressed.summary,
-          currentAppState: currentComponent
-            ? {
-                name: currentComponent.name,
-                files: [{ path: 'App.tsx', content: currentComponent.code }],
-              }
-            : undefined,
-          image: uploadedImage || undefined,
-          hasImage: !!uploadedImage,
-          hasAppConcept: !!appConcept,
-          hasPhasePlan: !!dynamicBuildPhases.plan,
-        });
-      }
+      fetchBody = JSON.stringify({
+        prompt: userInput,
+        conversationHistory: compressed.history,
+        contextSummary: compressed.summary,
+        currentAppState: currentComponent
+          ? {
+              name: currentComponent.name,
+              files: [{ path: 'App.tsx', content: currentComponent.code }],
+            }
+          : undefined,
+        image: uploadedImage || undefined,
+        hasImage: !!uploadedImage,
+        hasAppConcept: !!appConcept,
+        hasPhasePlan: !!dynamicBuildPhases.plan,
+      });
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -243,30 +188,20 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
         throw new Error(data.error as string);
       }
 
-      // Update wizard state from PLAN mode response
-      if (currentMode === 'PLAN' && data?.updatedState) {
-        onWizardStateUpdate(data.updatedState as WizardState);
-      }
-
-      // Store suggested actions from PLAN mode response
-      if (currentMode === 'PLAN' && data?.suggestedActions) {
-        setSuggestedActions(data.suggestedActions as SuggestedAction[]);
-      }
-
-      // Handle ACT mode build trigger
-      if (currentMode === 'ACT' && data?.shouldTriggerBuild) {
+      // Handle build trigger
+      if (data?.shouldTriggerBuild) {
         await handleBuildTrigger(ctx, userInput, userMessage);
         return;
       }
 
-      // Handle ACT mode modify trigger
-      if (currentMode === 'ACT' && data?.shouldTriggerModify && currentComponent) {
+      // Handle modify trigger
+      if (data?.shouldTriggerModify && currentComponent) {
         await handleModifyTrigger(ctx, userInput, userMessage);
         return;
       }
 
-      // Handle ACT mode design trigger
-      if (currentMode === 'ACT' && data?.shouldTriggerDesign && currentComponent) {
+      // Handle design trigger
+      if (data?.shouldTriggerDesign && currentComponent) {
         await handleDesignTrigger(ctx, userInput);
         return;
       }
@@ -292,10 +227,8 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
       }
 
       // Handle chat response
-      const isBuilderResponse = currentMode === 'ACT' && data?.message && data?.responseType;
-      const isWizardResponse = currentMode === 'PLAN' && data?.message;
-      const isChatResponse =
-        isQuestion || data?.type === 'chat' || isWizardResponse || isBuilderResponse;
+      const isBuilderResponse = data?.message && data?.responseType;
+      const isChatResponse = isQuestion || data?.type === 'chat' || isBuilderResponse;
 
       if (isChatResponse) {
         const chatResponse: ChatMessage = {
