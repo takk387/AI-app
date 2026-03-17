@@ -23,6 +23,29 @@ Tracked items that need to come back to. Check items off as they're completed.
 
 ---
 
+## Active Bugs (Round 4)
+
+- [ ] **Issue 12 — Phase plan includes irrelevant phases for simple apps** (HIGH)
+  - ClickCount counter gets "Authentication System" as Phase 2
+  - `featureClassifier.ts:getImplicitFeatures()` blindly trusts `tech.needsAuth`
+  - Fix: require evidence of multi-user features before adding implicit auth
+  - See `docs/rebuild/BUGFIX_ROUND4.md`
+
+- [ ] **Issue 13 — "No response from AI" hides real Claude response** (MEDIUM)
+  - Claude responds with text but no `===FILE:===` markers → parser says "no response"
+  - Each retry wastes ~3 minutes
+  - Fix: include Claude's actual response snippet in the error message
+  - See `docs/rebuild/BUGFIX_ROUND4.md`
+
+- [ ] **Issue 14 — Dead PLAN/ACT mode code breaks chat history** (CRITICAL)
+  - Rebuild blueprint said to remove PLAN/ACT toggle — never done (79 refs, 18 files)
+  - Consecutive same-role messages violate Anthropic API alternation requirement
+  - Phase execution sends no `conversationHistory` to Claude
+  - Fix: remove dead PLAN branches, add `sanitizeMessagesForAPI()`, fix phase execution
+  - See `docs/rebuild/BUGFIX_ROUND4.md`
+
+---
+
 ## Upcoming — Nodebox Runtime Migration
 
 - [ ] **Switch Sandpack preview from browser bundler to Nodebox runtime**
@@ -49,6 +72,15 @@ Tracked items that need to come back to. Check items off as they're completed.
 - [ ] **Add shell output panel to Builder**
   - Once Nodebox is active, capture stdout/stderr with `useSandpackShellStdout()`
   - Display console output in a collapsible panel below the preview
+
+---
+
+## Deferred Features
+
+- [ ] **Wire up useCodeReview hook**
+  - File exists (`src/hooks/useCodeReview.ts`) but was intentionally left unwired during rebuild
+  - Useful code review feature — wire into phase completion flow after core is stable
+  - Ref: `BUILDER_PAGE_REDESIGN_BLUEPRINT.md` (hook disposition table), `SESSION_0.md`
 
 ---
 
