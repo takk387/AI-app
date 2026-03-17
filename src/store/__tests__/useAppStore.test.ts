@@ -54,7 +54,7 @@ describe('useAppStore', () => {
       expect(state.isGenerating).toBe(false);
 
       // Mode slice
-      expect(state.currentMode).toBe('PLAN');
+      expect(state.currentMode).toBe('ACT');
 
       // Components slice
       expect(state.components).toEqual([]);

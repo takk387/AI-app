@@ -173,6 +173,23 @@ export const PRODUCTION_STANDARDS_MINIMAL = `
 `.trim();
 
 /**
+ * Compressed performance checklist — replaces 112-line PERFORMANCE_RESILIENCE_STANDARDS for simple apps.
+ */
+export const PERFORMANCE_CHECKLIST = `
+## PERFORMANCE & RESILIENCE CHECKLIST
+
+Every generated app must include:
+- Loading skeletons or spinners for all async operations
+- Error boundaries wrapping the main App component with fallback UI and retry
+- Retry with exponential backoff for failed API calls (max 3 attempts)
+- Empty state UI when data arrays are empty (not just blank screen)
+- Debounced search inputs (300ms) when search triggers API calls
+- React.lazy + Suspense for route-level code splitting in apps with 3+ routes
+- Memoized expensive computations (useMemo) and stable callbacks (useCallback)
+- Graceful offline handling: detect navigator.onLine, show banner, queue actions
+`.trim();
+
+/**
  * Performance and resilience standards for generated apps.
  * Ensures apps are fast, handle network issues gracefully, and work offline.
  */

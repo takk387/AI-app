@@ -167,17 +167,21 @@ MODIFICATION MODE for "${currentAppName}":
     : ''
 }${currentAppContext}`;
 
-    // Build compressed prompt using modular sections from src/prompts/
-    // Pass architectureSpec to inject AI-generated backend architecture
-    // Note: layoutManifest design token injection is pending migration to new type
-    const systemPrompt = buildFullAppPrompt(
+    // Build compressed prompt using config-driven section selector
+    const detectedAppType: 'FRONTEND_ONLY' | 'FULL_STACK' =
+      currentAppState?.appType === 'FRONTEND_ONLY' ? 'FRONTEND_ONLY' : 'FULL_STACK';
+    const detectedFeatures = new Set<string>();
+    if (architectureSpec?.auth) detectedFeatures.add('auth');
+    if (architectureSpec?.database) detectedFeatures.add('database');
+
+    const systemPrompt = buildFullAppPrompt({
       baseInstructions,
-      hasImage,
+      appType: detectedAppType,
+      features: detectedFeatures,
+      includeImageContext: hasImage,
       isModification,
-      undefined, // layoutDesign - pending migration to LayoutManifest
-      undefined, // techStack - not used directly, architecture spec is preferred
-      architectureSpec
-    );
+      architectureSpec,
+    });
     const estimatedPromptTokens = Math.round(systemPrompt.length / 4);
 
     perfTracker.checkpoint('prompt_built');

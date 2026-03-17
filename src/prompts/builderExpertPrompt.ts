@@ -196,7 +196,7 @@ No app is currently loaded. If the user asks questions, answer them. If they wan
   // Truncate file contents to avoid context overflow
   const truncatedFiles = currentAppState.files.map((f) => ({
     path: f.path,
-    content: f.content.length > 2000 ? f.content.slice(0, 2000) + '\n... (truncated)' : f.content,
+    content: f.content.length > 6000 ? f.content.slice(0, 6000) + '\n... (truncated)' : f.content,
   }));
 
   return `

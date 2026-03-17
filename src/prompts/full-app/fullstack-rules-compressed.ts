@@ -81,8 +81,8 @@ export function getFullstackRules(appType: AppType = 'FRONTEND_ONLY'): string {
     return `${BASE_RULES}\n\n${FULLSTACK_PRODUCTION_RULES}`;
   }
 
-  // FRONTEND_ONLY keeps sandbox-compatible rules only
-  return BASE_RULES;
+  // FRONTEND_ONLY — no fullstack rules needed
+  return '';
 }
 
 /**

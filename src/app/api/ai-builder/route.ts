@@ -8,6 +8,7 @@ import {
   PerformanceTracker,
 } from '@/utils/analytics';
 import { isMockAIEnabled, mockComponentResponse } from '@/utils/mockAI';
+import { sanitizeMessagesForAPI } from '@/utils/messageUtils';
 import { logAPI } from '@/utils/debug';
 import {
   BUILDER_EXPERT_PROMPT,
@@ -132,6 +133,11 @@ DETECTION RULES:
         }
       });
     }
+
+    // Sanitize to ensure user/assistant alternation (merges consecutive same-role messages)
+    const sanitized = sanitizeMessagesForAPI(messages);
+    messages.length = 0;
+    messages.push(...sanitized);
 
     // Add current user prompt
     messages.push({ role: 'user', content: prompt });

@@ -38,6 +38,7 @@ export interface UsePhaseExecutionOptions {
   streaming: {
     isStreaming: boolean;
     generate: (body: Record<string, unknown>) => Promise<any>;
+    progress: { phase: string; message: string };
   };
   currentComponent: GeneratedComponent | null;
   layoutBuilderFiles: Array<{ path: string; content: string }> | null;
@@ -344,7 +345,9 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
             executingPhaseRef.current = null;
           }
         } else {
-          // Streaming returned null
+          // Streaming returned null — get error details from progress
+          const lastErrorMessage =
+            streaming.progress.phase === 'error' ? streaming.progress.message : '';
           const retries = (phaseRetryCountRef.current.get(phaseNumber) ?? 0) + 1;
           phaseRetryCountRef.current.set(phaseNumber, retries);
           const failMsg: ChatMessage = {
@@ -352,8 +355,8 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
             role: 'system',
             content:
               retries >= MAX_PHASE_RETRIES
-                ? `**Phase ${phaseNumber} Failed Permanently:** No response from AI after ${retries} attempts.`
-                : `**Phase ${phaseNumber} Failed:** No response from AI. (Attempt ${retries}/${MAX_PHASE_RETRIES})`,
+                ? `**Phase ${phaseNumber} Failed Permanently:** Could not generate code after ${retries} attempts.${lastErrorMessage ? `\n\n${lastErrorMessage}` : ''}`
+                : `**Phase ${phaseNumber} Failed:** Could not generate code. (Attempt ${retries}/${MAX_PHASE_RETRIES})${lastErrorMessage ? `\n\n${lastErrorMessage}` : ''}`,
             timestamp: new Date().toISOString(),
           };
           setChatMessages((prev) => [...prev, failMsg]);

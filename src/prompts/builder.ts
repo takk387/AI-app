@@ -9,17 +9,19 @@ import { AST_OPERATIONS_COMPRESSED } from './modify/ast-operations-compressed';
 import { MODIFICATION_EXAMPLES } from './modify/examples-compressed';
 import { FRONTEND_RULES_COMPRESSED } from './full-app/frontend-rules-compressed';
 import { getFullstackRules, type AppType } from './full-app/fullstack-rules-compressed';
-import { FULLAPP_EXAMPLES_COMPRESSED } from './full-app/examples-compressed';
+import { FULLAPP_EXAMPLES_COMPRESSED, SKELETON_EXAMPLE } from './full-app/examples-compressed';
 // TODO: Migrate buildDesignTokenPrompt to LayoutManifest
 // import { buildDesignTokenPrompt } from './designTokenPrompt';
 import {
   CODE_QUALITY_STANDARDS,
+  CODE_QUALITY_STANDARDS_CORE,
   FORM_UX_STANDARDS,
   SECURITY_HARDENING_STANDARDS,
 } from './quality-standards';
 import {
   PRODUCTION_STANDARDS_COMPRESSED,
   PERFORMANCE_RESILIENCE_STANDARDS,
+  PERFORMANCE_CHECKLIST,
 } from './production-standards';
 import { getBackendTemplates, formatArchitectureSpec } from './full-app/backend-templates';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
@@ -27,6 +29,22 @@ import type { LayoutManifest } from '@/types/schema';
 import type { TechnicalRequirements } from '@/types/appConcept';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
 import { NEUTRAL_PALETTE } from '@/constants/themeDefaults';
+
+// ============================================================================
+// CONFIG-DRIVEN PROMPT BUILDER
+// ============================================================================
+
+export interface PromptBuildConfig {
+  baseInstructions: string;
+  appType: 'FRONTEND_ONLY' | 'FULL_STACK';
+  features: Set<string>;
+  phaseDomain?: string;
+  includeImageContext?: boolean;
+  isModification?: boolean;
+  layoutManifest?: LayoutManifest;
+  techStack?: TechnicalRequirements;
+  architectureSpec?: ArchitectureSpec;
+}
 
 /**
  * Accuracy guidelines included in all builder prompts
@@ -100,47 +118,111 @@ CRITICAL REMINDERS:
 }
 
 /**
- * Build system prompt for full-app route
- * Combines: base rules + frontend + fullstack + examples + design tokens
- *
- * @param baseInstructions - Base system instructions
- * @param includeImageContext - Whether to include image analysis context
- * @param isModification - Whether this is a modification of existing code
- * @param layoutManifest - Optional layout manifest for design token instructions (TODO: migrate buildDesignTokenPrompt)
- * @param techStack - Optional technical requirements (fallback if no architectureSpec)
- * @param architectureSpec - Optional AI-generated architecture specification (preferred)
+ * Build system prompt for full-app route — config-driven version.
+ * Only includes sections relevant to the app type, features, and phase domain.
+ * Accepts either a PromptBuildConfig or legacy positional arguments.
  */
 export function buildFullAppPrompt(
-  baseInstructions: string,
+  configOrBaseInstructions: PromptBuildConfig | string,
   includeImageContext: boolean = false,
   isModification: boolean = false,
   layoutManifest?: LayoutManifest,
   techStack?: TechnicalRequirements,
   architectureSpec?: ArchitectureSpec
 ): string {
-  const imageContext = includeImageContext
-    ? `
-🎨 IMAGE-INSPIRED DESIGN:
-Analyze uploaded image for colors, style, patterns. Apply aesthetic to app design using Tailwind CSS.
-`
-    : '';
+  // Support both new config object and legacy positional args
+  if (typeof configOrBaseInstructions === 'object') {
+    return buildFullAppPromptFromConfig(configOrBaseInstructions);
+  }
 
-  const modificationContext = isModification
-    ? `
-MODIFICATION MODE:
+  // Legacy path — convert positional args to config
+  const appType: AppType =
+    techStack?.needsAuth || techStack?.needsDatabase || techStack?.needsAPI
+      ? 'FULL_STACK'
+      : 'FRONTEND_ONLY';
+
+  return buildFullAppPromptFromConfig({
+    baseInstructions: configOrBaseInstructions,
+    appType,
+    features: new Set<string>(),
+    includeImageContext,
+    isModification,
+    layoutManifest,
+    techStack,
+    architectureSpec,
+  });
+}
+
+function buildFullAppPromptFromConfig(config: PromptBuildConfig): string {
+  const sections: string[] = [config.baseInstructions];
+
+  // --- Always included (small, high-value) ---
+  sections.push(ACCURACY_GUIDELINES);
+  sections.push(COMPONENT_SYNTAX_RULES);
+  sections.push(DELIMITER_FORMAT);
+  sections.push(VERSION_INSTRUCTIONS);
+  sections.push(SKELETON_EXAMPLE);
+
+  // --- Conditional on context ---
+  if (config.includeImageContext) {
+    sections.push(
+      `🎨 IMAGE-INSPIRED DESIGN:\nAnalyze uploaded image for colors, style, patterns. Apply aesthetic to app design using Tailwind CSS.`
+    );
+  }
+  if (config.isModification) {
+    sections.push(`MODIFICATION MODE:
 - Check conversation history for ===INTERNAL_PLAN===
 - Maintain consistency with existing architecture
 - Classify as MAJOR_CHANGE or MINOR_CHANGE
 - Update INTERNAL_PLAN with completed features
-- Use exact same delimiter format as new apps
-`.trim()
-    : '';
+- Use exact same delimiter format as new apps`);
+  }
+  if (config.layoutManifest) {
+    sections.push(buildDesignTokenContext(config.layoutManifest));
+  }
 
-  // Build design token instructions if layoutManifest is provided
-  // TODO: Migrate buildDesignTokenPrompt to use LayoutManifest structure
-  const designTokenContext = layoutManifest
-    ? `
-⚠️ DESIGN SYSTEM ENFORCEMENT:
+  // --- Core quality (always, but deduplicated) ---
+  sections.push(CODE_QUALITY_STANDARDS_CORE);
+  sections.push(PRODUCTION_STANDARDS_COMPRESSED);
+  sections.push(PERFORMANCE_CHECKLIST);
+  sections.push(FRONTEND_RULES_COMPRESSED);
+
+  // --- Conditional on app type ---
+  if (config.appType === 'FULL_STACK') {
+    sections.push(getFullstackRules('FULL_STACK'));
+    sections.push(SECURITY_HARDENING_STANDARDS);
+
+    if (config.architectureSpec) {
+      sections.push(formatArchitectureSpec(config.architectureSpec));
+    } else if (config.techStack) {
+      sections.push(getBackendTemplates(config.techStack));
+    }
+  }
+
+  // --- Conditional on detected features ---
+  if (config.features.has('forms') || config.features.has('crud')) {
+    sections.push(FORM_UX_STANDARDS);
+  }
+
+  // --- Conditional on phase domain ---
+  if (config.phaseDomain === 'testing') {
+    sections.push(TEST_GENERATION_GUIDELINES);
+  }
+
+  sections.push(`APPLICATION TYPE DETECTION:
+- FRONTEND_ONLY: UI components, calculators, games, dashboards (preview sandbox)
+- FULL_STACK: Database, auth, API routes, file uploads (local dev required)
+
+REMEMBER:
+- Complete code (never truncate mid-line/tag/string)
+- ${config.layoutManifest ? 'Use CSS variables from design system (var(--color-*), etc.)' : 'Tailwind CSS for styling'}
+- Include setup instructions`);
+
+  return sections.filter(Boolean).join('\n\n').trim();
+}
+
+function buildDesignTokenContext(layoutManifest: LayoutManifest): string {
+  return `⚠️ DESIGN SYSTEM ENFORCEMENT:
 - Use the design system colors from the layout manifest
 - Primary: ${layoutManifest.designSystem?.colors?.primary || NEUTRAL_PALETTE.gray500}
 - Background: ${layoutManifest.designSystem?.colors?.background || NEUTRAL_PALETTE.gray50}
@@ -148,66 +230,7 @@ MODIFICATION MODE:
 - Heading Font: ${layoutManifest.designSystem?.fonts?.heading || 'Inter'}
 - Body Font: ${layoutManifest.designSystem?.fonts?.body || 'Inter'}
 - Use var(--color-*), var(--border-radius), var(--shadow) in ALL components
-- Do NOT use hardcoded Tailwind colors like bg-blue-500 or text-gray-900
-`
-    : '';
-
-  // Build backend context - prefer architectureSpec (AI-generated) over techStack (static templates)
-  let backendContext = '';
-  if (architectureSpec) {
-    // Use AI-generated architecture specification (custom for this app)
-    backendContext = formatArchitectureSpec(architectureSpec);
-  } else if (techStack) {
-    // Fallback to static templates if no architecture spec
-    backendContext = getBackendTemplates(techStack);
-  }
-
-  // Fix 4: Determine app type for conditional rules
-  const appType: AppType =
-    techStack?.needsAuth || techStack?.needsDatabase || techStack?.needsAPI
-      ? 'FULL_STACK'
-      : 'FRONTEND_ONLY';
-
-  return `${baseInstructions}
-${imageContext}
-${modificationContext ? '\n' + modificationContext + '\n' : ''}
-${designTokenContext}
-
-${CODE_QUALITY_STANDARDS}
-
-${FORM_UX_STANDARDS}
-
-${SECURITY_HARDENING_STANDARDS}
-
-${PRODUCTION_STANDARDS_COMPRESSED}
-
-${PERFORMANCE_RESILIENCE_STANDARDS}
-${backendContext ? '\n' + backendContext + '\n' : ''}
-${ACCURACY_GUIDELINES}
-
-${COMPONENT_SYNTAX_RULES}
-
-${DELIMITER_FORMAT}
-
-${TEST_GENERATION_GUIDELINES}
-
-APPLICATION TYPE DETECTION:
-- FRONTEND_ONLY: UI components, calculators, games, dashboards (preview sandbox)
-- FULL_STACK: Database, auth, API routes, file uploads (local dev required)
-
-${VERSION_INSTRUCTIONS}
-
-${FRONTEND_RULES_COMPRESSED}
-
-${getFullstackRules(appType)}
-
-${FULLAPP_EXAMPLES_COMPRESSED}
-
-REMEMBER:
-- Complete code (never truncate mid-line/tag/string)
-- ${layoutManifest ? 'Use CSS variables from design system (var(--color-*), etc.)' : 'Tailwind CSS for styling'}
-- Include setup instructions
-`.trim();
+- Do NOT use hardcoded Tailwind colors like bg-blue-500 or text-gray-900`;
 }
 
 /**

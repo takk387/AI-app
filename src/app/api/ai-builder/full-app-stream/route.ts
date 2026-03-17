@@ -9,6 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createSSEResponse } from '@/lib/createSSEResponse';
 import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
 import { buildFullAppPrompt } from '@/prompts/builder';
+import { sanitizeMessagesForAPI } from '@/utils/messageUtils';
 import {
   analytics,
   generateRequestId,
@@ -391,14 +392,29 @@ MODIFICATION MODE for "${currentAppName}":
     : ''
 }${currentAppContext}${phaseContextsSection}`;
 
-      const systemPrompt = buildFullAppPrompt(
+      // Determine app type from request context
+      const detectedAppType: 'FRONTEND_ONLY' | 'FULL_STACK' =
+        currentAppState?.appType === 'FRONTEND_ONLY' ? 'FRONTEND_ONLY' : 'FULL_STACK';
+
+      // Extract detected features from architecture spec
+      const detectedFeatures = new Set<string>();
+      if (architectureSpec?.auth) detectedFeatures.add('auth');
+      if (architectureSpec?.database) detectedFeatures.add('database');
+      if (architectureSpec?.storage) detectedFeatures.add('storage');
+      if (architectureSpec?.realtime) detectedFeatures.add('realtime');
+      const phaseName = rawPhaseContext?.phaseName?.toLowerCase() ?? '';
+      if (phaseName.includes('form') || phaseName.includes('crud')) detectedFeatures.add('forms');
+
+      const systemPrompt = buildFullAppPrompt({
         baseInstructions,
-        hasImage,
+        appType: detectedAppType,
+        features: detectedFeatures,
+        phaseDomain: phaseName.includes('test') ? 'testing' : undefined,
+        includeImageContext: hasImage,
         isModification,
         layoutManifest,
-        undefined, // techStack - not used directly, architecture spec is preferred
-        architectureSpec
-      );
+        architectureSpec,
+      });
       perfTracker.checkpoint('prompt_built');
 
       // Build conversation context
@@ -425,6 +441,14 @@ MODIFICATION MODE for "${currentAppName}":
           }
         });
       }
+
+      // Sanitize to ensure user/assistant alternation (merges consecutive same-role messages)
+      // Cast needed because messages array is typed as MessageParam[] but only contains string-content entries at this point
+      const sanitizedHistory = sanitizeMessagesForAPI(
+        messages as Array<{ role: string; content: string }>
+      );
+      messages.length = 0;
+      messages.push(...sanitizedHistory);
 
       // Add user message with optional image
       if (hasImage && image) {
@@ -1034,10 +1058,13 @@ MODIFICATION MODE for "${currentAppName}":
       }
 
       if (files.length === 0) {
+        const responseSnippet = responseText.slice(0, 300).trim();
         await writeEvent({
           type: 'error',
           timestamp: Date.now(),
-          message: 'No files generated in response',
+          message: responseSnippet
+            ? `AI responded but generated no code files. AI said: "${responseSnippet}${responseText.length > 300 ? '...' : ''}"`
+            : 'No files generated in response',
           code: 'NO_FILES',
           recoverable: true,
         });

@@ -98,10 +98,40 @@ export function classifyFeatures(
 /**
  * Get implicit features from technical requirements
  */
-export function getImplicitFeatures(tech: TechnicalRequirements): FeatureClassification[] {
+export function getImplicitFeatures(
+  tech: TechnicalRequirements,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  concept?: {
+    roles?: Array<{ name: string }>;
+    coreFeatures?: Array<{ name: string; description?: string }>;
+    appType?: string;
+    technical?: any;
+  }
+): FeatureClassification[] {
   const implicit: FeatureClassification[] = [];
 
-  if (tech.needsAuth) {
+  // Only add auth if the app genuinely needs it — evidence-based check
+  // FRONTEND_ONLY apps never need auth phases
+  const isFrontendOnly =
+    concept?.appType === 'FRONTEND_ONLY' ||
+    (concept?.technical?.appType as string) === 'FRONTEND_ONLY';
+  const hasUserRoles = concept?.roles && concept.roles.length > 0;
+  const hasMultiUserFeatures =
+    concept?.coreFeatures?.some((f) => {
+      const lower = (f.name + ' ' + (f.description || '')).toLowerCase();
+      return (
+        lower.includes('login') ||
+        lower.includes('signup') ||
+        lower.includes('sign up') ||
+        lower.includes('auth') ||
+        lower.includes('account') ||
+        lower.includes('user profile') ||
+        lower.includes('permission') ||
+        lower.includes('role')
+      );
+    }) ?? false;
+
+  if (tech.needsAuth && !isFrontendOnly && (hasUserRoles || hasMultiUserFeatures)) {
     const authType = tech.authType || 'email';
     implicit.push({
       originalFeature: {

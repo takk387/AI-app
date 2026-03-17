@@ -6,6 +6,44 @@
  */
 
 /**
+ * Core quality standards with production subsection removed (covered by PRODUCTION_STANDARDS_COMPRESSED).
+ * Used by the config-driven prompt builder for all app types.
+ */
+export const CODE_QUALITY_STANDARDS_CORE = `
+## MANDATORY CODE QUALITY STANDARDS
+
+### React Best Practices (CRITICAL)
+- NEVER call hooks inside conditions, loops, or nested functions
+- ALWAYS add key prop to elements rendered in .map() - use item.id, NOT array index
+- ALWAYS include ALL dependencies in useEffect/useCallback/useMemo dependency arrays
+
+### Performance
+- MEMOIZE expensive operations with useMemo; stable callbacks with useCallback
+- USE React.memo for pure components receiving props from frequently re-rendering parents
+
+### Security (CRITICAL)
+- NEVER use dangerouslySetInnerHTML without sanitization
+- NEVER use eval(), new Function(), or setTimeout with string arguments
+- ESCAPE all user-generated content before display
+
+### Code Completeness
+- NO console.log or debugger statements
+- ALL async operations MUST handle loading and error states
+- ALL forms MUST have validation with clear error messages
+- ALL functions that can fail MUST have try/catch with user feedback
+
+### TypeScript
+- NO \`any\` types - use proper typing or \`unknown\` with type guards
+- DEFINE interfaces for ALL component props
+- HANDLE undefined/null explicitly with ?. or ??
+
+### State Management
+- INITIALIZE all state with appropriate defaults
+- AVOID redundant state - derive values when possible
+- CLEAN UP side effects in useEffect return functions
+`.trim();
+
+/**
  * Comprehensive quality standards included in all full-app generation prompts.
  * Ensures Claude generates production-ready code without requiring follow-up fixes.
  */

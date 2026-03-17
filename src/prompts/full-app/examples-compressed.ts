@@ -7,6 +7,45 @@
 
 import { VERSIONS } from '@/config/versions';
 
+/**
+ * Skeleton example — shows delimiter format only.
+ * Replaces 277-line FULLAPP_EXAMPLES_COMPRESSED for simple apps.
+ */
+export const SKELETON_EXAMPLE = `
+## OUTPUT FORMAT EXAMPLE
+
+Use this exact delimiter format for all generated files:
+
+===NAME===
+My App
+
+===EXPLANATION===
+Brief description of the app and its features.
+
+===FILE:app/page.tsx===
+'use client';
+import { useState } from 'react';
+
+export default function Home() {
+  return (
+    <main className="min-h-screen p-8">
+      <h1 className="text-3xl font-bold">My App</h1>
+    </main>
+  );
+}
+
+===FILE:app/layout.tsx===
+// ... layout with metadata, fonts, ErrorBoundary wrapper
+
+===DEPENDENCIES===
+react,react-dom
+
+===SETUP===
+npm install && npm run dev
+
+===END===
+`.trim();
+
 export const FULLAPP_EXAMPLES_COMPRESSED = `
 EXAMPLES:
 

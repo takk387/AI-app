@@ -462,7 +462,7 @@ export const useAppStore = create<AppState>()(
         // ========================================================================
         // MODE SLICE
         // ========================================================================
-        currentMode: 'PLAN',
+        currentMode: 'ACT',
         lastUserRequest: '',
 
         setCurrentMode: (mode) => set({ currentMode: mode }),
@@ -798,7 +798,7 @@ export const useAppStore = create<AppState>()(
             // v6: persist currentMode so build resumes correctly after page reload
             state = {
               ...state,
-              currentMode: state.currentMode ?? 'PLAN',
+              currentMode: state.currentMode ?? 'ACT',
             };
           }
           return state;
