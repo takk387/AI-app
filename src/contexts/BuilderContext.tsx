@@ -295,6 +295,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const implementationPlan = useAppStore((s) => s.implementationPlan);
   const phasePlanGeneratedAt = useAppStore((s) => s.phasePlanGeneratedAt);
   const setPhasePlanGeneratedAt = useAppStore((s) => s.setPhasePlanGeneratedAt);
+  const buildSettings = useAppStore((s) => s.buildSettings);
   // Version control (store-level for direct push/clear)
   const pushToUndoStack = useAppStore((s) => s.pushToUndoStack);
   const clearRedoStack = useAppStore((s) => s.clearRedoStack);
@@ -304,8 +305,10 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // 1. Streaming generation (no hook deps)
   const streaming = useStreamingGeneration();
 
-  // 2. Dynamic build phases (no hook deps)
-  const dynamicPhases = useDynamicBuildPhases();
+  // 2. Dynamic build phases
+  const dynamicPhases = useDynamicBuildPhases({
+    autoAdvance: buildSettings.autoAdvance,
+  });
 
   // 3. Database sync (needs userId)
   const databaseSync = useDatabaseSync({ userId });

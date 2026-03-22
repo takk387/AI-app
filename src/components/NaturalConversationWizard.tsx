@@ -432,7 +432,8 @@ What would you like to build?`,
               })),
               conversationContext: messages
                 .slice(-10)
-                .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+                .filter((m) => m.role === 'user')
+                .map((m) => m.content)
                 .join('\n\n'),
               layoutManifest: importedLayoutManifest || currentLayoutManifest || undefined,
               architectureSpec: architectureSpec || undefined,
