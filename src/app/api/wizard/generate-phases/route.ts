@@ -158,7 +158,8 @@ export async function POST(request: Request) {
       try {
         architectureSpec = convertToArchitectureSpec(
           dualArchitectureResult,
-          normalizedConcept.name
+          normalizedConcept.name,
+          normalizedConcept.technical
         );
         console.log(
           '[generate-phases] Using dual AI architecture result (converted to ArchitectureSpec)'
@@ -174,7 +175,8 @@ export async function POST(request: Request) {
       try {
         architectureSpec = convertToArchitectureSpec(
           normalizedConcept.dualArchitectureResult,
-          normalizedConcept.name
+          normalizedConcept.name,
+          normalizedConcept.technical
         );
         console.log('[generate-phases] Using embedded dual AI architecture from concept');
       } catch (convertError) {

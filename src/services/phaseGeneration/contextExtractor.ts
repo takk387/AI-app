@@ -211,7 +211,13 @@ export function escapeRegex(str: string): string {
  */
 export function enhancePhaseWithContext(phase: DynamicPhase, concept: AppConcept): DynamicPhase {
   const domain = phase.domain;
-  const conversationContext = concept.conversationContext || '';
+  // Strip AI assistant messages and USER: prefixes from conversation context
+  const rawContext = concept.conversationContext || '';
+  const conversationContext = rawContext
+    .split(/\n/)
+    .filter((line) => !line.match(/^(ASSISTANT|AI|Claude|Gemini):/i))
+    .map((line) => line.replace(/^USER:\s*/i, ''))
+    .join('\n');
 
   // Extract relevant context for this phase
   const relevantContext = extractRelevantContext(conversationContext, domain);

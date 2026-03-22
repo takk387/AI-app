@@ -30,7 +30,8 @@ import type { FeatureDomain } from '@/types/dynamicPhases';
  */
 export function convertToArchitectureSpec(
   arch: FinalValidatedArchitecture,
-  appName: string
+  appName: string,
+  userIntent?: { needsAuth?: boolean | null; needsDatabase?: boolean | null }
 ): ArchitectureSpec {
   return {
     id: `dual-ai-${Date.now()}`,
@@ -42,7 +43,7 @@ export function convertToArchitectureSpec(
     api: convertAPI(arch),
     auth: arch.auth ? convertAuth(arch) : undefined,
     realtime: arch.realtime?.enabled ? convertRealtime(arch) : undefined,
-    backendPhases: buildBackendPhases(arch),
+    backendPhases: buildBackendPhases(arch, userIntent),
     tokenUsage: { input: 0, output: 0 },
   };
 }
@@ -250,7 +251,10 @@ function convertRealtime(arch: FinalValidatedArchitecture): ArchSpecRealtime | u
 // BACKEND PHASES
 // ============================================================================
 
-function buildBackendPhases(arch: FinalValidatedArchitecture): BackendPhaseSpec[] {
+function buildBackendPhases(
+  arch: FinalValidatedArchitecture,
+  userIntent?: { needsAuth?: boolean | null; needsDatabase?: boolean | null }
+): BackendPhaseSpec[] {
   const phases: BackendPhaseSpec[] = [];
   let priority = 10;
 
@@ -277,8 +281,8 @@ function buildBackendPhases(arch: FinalValidatedArchitecture): BackendPhaseSpec[
     });
   }
 
-  // Auth phase
-  if (arch.auth) {
+  // Auth phase — skip if user explicitly said no auth
+  if (arch.auth && userIntent?.needsAuth !== false) {
     phases.push({
       name: 'Authentication System',
       description: `${arch.auth.provider} authentication with ${arch.auth.strategy} strategy`,

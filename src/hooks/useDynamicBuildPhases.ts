@@ -322,7 +322,11 @@ export function useDynamicBuildPhases(
                 startPhase(nextPhaseNumber);
               }
             }, 1500);
+          } else {
+            setIsBuilding(false);
           }
+        } else {
+          setIsBuilding(false);
         }
       } catch (error) {
         onError?.(error as Error);

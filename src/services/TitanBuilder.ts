@@ -312,6 +312,7 @@ Return TWO files separated by markers:
 
 Rules:
 - App.tsx MUST include: import './styles.css';
+- App.tsx MUST use default export: export default function App() or end with export default App;
 - Define CSS custom properties in :root for all theme colors.
 - Use inline styles for component-specific properties, CSS classes for shared styles.
 - No markdown fences. Just the raw code.
@@ -376,6 +377,11 @@ ${instructions}`
         '[TitanPipeline] Builder output missing file markers and does not appear to be React code'
       );
     }
+  }
+
+  // Auto-repair: ensure App.tsx has a default export for index.tsx compatibility
+  if (!appContent.includes('export default')) {
+    appContent += '\nexport default App;\n';
   }
 
   files.push({

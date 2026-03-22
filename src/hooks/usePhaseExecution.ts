@@ -85,6 +85,8 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
   // Retry counter per phase — prevents infinite retry loops on persistent errors
   const phaseRetryCountRef = useRef<Map<number, number>>(new Map());
   const MAX_PHASE_RETRIES = 3;
+  // Ref to hold injected layout data — survives React state batching
+  const injectedAppDataRef = useRef<Record<string, unknown> | null>(null);
 
   // Sync global dynamic phase plan to local hook manager
   useEffect(() => {
@@ -126,6 +128,9 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
         dependencies: {},
         setupInstructions: '',
       };
+
+      // Store in ref so Phase 2+ can access immediately (bypasses React state batching)
+      injectedAppDataRef.current = appData;
 
       setCurrentComponent({
         id: generateId(),
@@ -226,9 +231,12 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
       setChatMessages((prev) => [...prev, buildingMsg]);
 
       try {
-        // Parse current app state from existing component code
+        // Parse current app state — prefer ref (set during layout injection) over React state
         let currentAppState: Record<string, unknown> | undefined;
-        if (currentComponent?.code) {
+        if (injectedAppDataRef.current) {
+          currentAppState = injectedAppDataRef.current;
+          injectedAppDataRef.current = null;
+        } else if (currentComponent?.code) {
           try {
             currentAppState = JSON.parse(currentComponent.code);
           } catch {
