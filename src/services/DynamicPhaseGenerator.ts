@@ -21,6 +21,7 @@ import type {
   FeaturesByDomain,
 } from '@/types/dynamicPhases';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
+import { logger } from '@/utils/logger';
 
 import { DEFAULT_PHASE_GENERATOR_CONFIG as defaultConfig } from '@/types/dynamicPhases';
 
@@ -246,18 +247,49 @@ export class DynamicPhaseGenerator {
     existingPhases: DynamicPhase[],
     insertAfter: number
   ): number[] {
+    // Domain aliases for fallback resolution when exact name match fails
+    const DOMAIN_ALIASES: Record<string, string> = {
+      authentication: 'auth',
+      'authentication system': 'auth',
+      auth: 'auth',
+      database: 'database',
+      'database schema': 'database',
+      'database schema setup': 'database',
+      'project setup': 'setup',
+      setup: 'setup',
+      storage: 'storage',
+    };
+
     const resolved: number[] = [];
     const missing: string[] = [];
 
     for (const depName of dependencies) {
-      const found = existingPhases.find((p) => p.name.toLowerCase() === depName.toLowerCase());
+      // 1. Try exact name match (case-insensitive)
+      let found = existingPhases.find((p) => p.name.toLowerCase() === depName.toLowerCase());
+
+      // 2. Fallback: match by domain if name not found
+      if (!found) {
+        const domain = DOMAIN_ALIASES[depName.toLowerCase()];
+        if (domain) {
+          found = existingPhases.find((p) => p.domain === domain && p.number <= insertAfter + 1);
+        }
+      }
+
+      // 3. Fallback: fuzzy match (name contains dependency name)
+      if (!found) {
+        found = existingPhases.find(
+          (p) =>
+            p.name.toLowerCase().includes(depName.toLowerCase()) ||
+            depName.toLowerCase().includes(p.name.toLowerCase())
+        );
+      }
+
       if (found) {
         if (found.number <= insertAfter + 1) {
           resolved.push(found.number);
         } else {
-          // Dependency exists but runs AFTER current phase - this is a scheduling error
-          console.warn(
-            `Dependency ${depName} (phase ${found.number}) scheduled after current phase (inserting at ${insertAfter + 1})`
+          logger.warn(
+            `Phase dependency ordering issue: ${depName} (phase ${found.number}) scheduled after insertion point ${insertAfter + 1}`
           );
         }
       } else {
@@ -266,7 +298,7 @@ export class DynamicPhaseGenerator {
     }
 
     if (missing.length > 0) {
-      console.warn(`Missing backend dependencies: ${missing.join(', ')}`);
+      logger.warn(`Unresolved phase dependencies (continuing without them): ${missing.join(', ')}`);
     }
 
     return resolved;

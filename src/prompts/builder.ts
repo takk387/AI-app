@@ -17,7 +17,7 @@ import {
   FORM_UX_STANDARDS,
   SECURITY_HARDENING_STANDARDS,
 } from './quality-standards';
-import { PRODUCTION_STANDARDS_COMPRESSED, PERFORMANCE_CHECKLIST } from './production-standards';
+import { PRODUCTION_STANDARDS_MINIMAL } from './production-standards';
 import { getBackendTemplates, formatArchitectureSpec } from './full-app/backend-templates';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
 import type { LayoutManifest } from '@/types/schema';
@@ -176,10 +176,9 @@ function buildFullAppPromptFromConfig(config: PromptBuildConfig): string {
     sections.push(buildDesignTokenContext(config.layoutManifest));
   }
 
-  // --- Core quality (always, but deduplicated) ---
+  // --- Core quality (concise, deduplicated) ---
+  sections.push(PRODUCTION_STANDARDS_MINIMAL);
   sections.push(CODE_QUALITY_STANDARDS_CORE);
-  sections.push(PRODUCTION_STANDARDS_COMPRESSED);
-  sections.push(PERFORMANCE_CHECKLIST);
   sections.push(FRONTEND_RULES_COMPRESSED);
 
   // --- Conditional on app type ---
