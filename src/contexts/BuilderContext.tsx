@@ -293,7 +293,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const setNewAppStagePlan = useAppStore((s) => s.setNewAppStagePlan);
   const newAppStagePlan = useAppStore((s) => s.newAppStagePlan);
   const implementationPlan = useAppStore((s) => s.implementationPlan);
-  const phasePlanGeneratedAt = useAppStore((s) => s.phasePlanGeneratedAt);
+  const _phasePlanGeneratedAt = useAppStore((s) => s.phasePlanGeneratedAt);
   const setPhasePlanGeneratedAt = useAppStore((s) => s.setPhasePlanGeneratedAt);
   const buildSettings = useAppStore((s) => s.buildSettings);
   // Version control (store-level for direct push/clear)
@@ -320,7 +320,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   });
 
   // 5. Branch management (needs currentComponent, versionControl for clear)
-  const branchMgmt = useBranchManagement({
+  const _branchMgmt = useBranchManagement({
     currentComponent,
     onComponentUpdate: (comp: GeneratedComponent) => setCurrentComponent(comp),
     onClearUndoRedo: () => {
@@ -330,13 +330,13 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   });
 
   // 6. Project documentation (needs userId, appId)
-  const projectDocs = useProjectDocumentation({
+  const _projectDocs = useProjectDocumentation({
     userId,
     appId: currentAppId,
   });
 
   // 7. Message sender utility (isQuestion, getProgressMessages)
-  const messageSender = useMessageSender({
+  const _messageSender = useMessageSender({
     chatMessages,
     setChatMessages,
     currentComponent,
@@ -370,13 +370,13 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   });
 
   // 9. Concept sync (optional wizard state)
-  const conceptSync = useConceptSync({
+  const _conceptSync = useConceptSync({
     wizardState,
     onWizardStateUpdate: (updates) => setWizardState((prev) => ({ ...prev, ...updates })),
   });
 
   // 10. Concept updates
-  const conceptUpdates = useConceptUpdates({
+  const _conceptUpdates = useConceptUpdates({
     currentMode,
     appConcept,
     dynamicPhasePlan,
@@ -394,7 +394,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const appBuilderSync = useAppBuilderSync(currentLayoutManifest);
 
   // 12. File storage (needs userId + StorageService)
-  const fileStorage = useFileStorage({
+  const _fileStorage = useFileStorage({
     userId,
     storageService,
   });
@@ -489,7 +489,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
 
   // ---- Context assembly (focused per intent) ----
   const assembleContext = useCallback(
-    (intent: IntentType, text: string) => {
+    (intent: IntentType, _text: string) => {
       const base = { projectSummary: buildProjectSummary(appConcept) };
 
       const getCurrentFiles = (): Array<{ path: string; content: string }> => {

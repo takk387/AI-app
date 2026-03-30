@@ -6,7 +6,7 @@
  * Shows appropriate message and action based on what's missing.
  */
 
-import { FileQuestion, Layers } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { RocketIcon, WandIcon } from '@/components/ui/Icons';
 
 type EmptyStateType = 'no-concept' | 'no-phases';

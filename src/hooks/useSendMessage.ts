@@ -148,13 +148,12 @@ export function useSendMessage(options: UseSendMessageOptions): UseSendMessageRe
 
     try {
       let data: Record<string, unknown> | null = null;
-      let fetchBody: string;
 
       // Builder always uses ACT mode — PLAN mode is handled by NaturalConversationWizard
       const endpoint = '/api/ai-builder';
       const compressed = compressForACTMode(chatMessages);
 
-      fetchBody = JSON.stringify({
+      const fetchBody = JSON.stringify({
         prompt: userInput,
         conversationHistory: compressed.history,
         contextSummary: compressed.summary,

@@ -22,7 +22,6 @@ import type {
   StreamingGenerationReturn,
   VersionControlReturn,
   DynamicBuildPhasesReturn,
-  SuggestedAction,
 } from './useSendMessageTypes';
 import type { AppConcept } from '@/types/appConcept';
 

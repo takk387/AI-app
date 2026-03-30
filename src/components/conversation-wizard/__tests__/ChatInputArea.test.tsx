@@ -4,8 +4,6 @@
  * Tests the chat input component interfaces and behavior logic.
  */
 
-import React from 'react';
-
 // ============================================================================
 // INTERFACE TESTS
 // ============================================================================

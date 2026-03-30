@@ -204,7 +204,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser.
       }
 
       // Encode files as base64 for URL
-      const encodedFiles = btoa(JSON.stringify(files));
+      const _encodedFiles = btoa(JSON.stringify(files));
 
       // Vercel deploy URL with repository
       // Note: This requires a GitHub repository. For direct deployment,
@@ -232,7 +232,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser.
   /**
    * Export to Netlify (opens deployment page)
    */
-  private async exportToNetlify(options: ExportOptions): Promise<ExportResult> {
+  private async exportToNetlify(_options: ExportOptions): Promise<ExportResult> {
     try {
       // Netlify drop URL
       const netlifyUrl = 'https://app.netlify.com/drop';

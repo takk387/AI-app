@@ -10,7 +10,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient, isSupabaseConfigured } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import type { GeneratedComponent } from '@/types/aiBuilderTypes';
 import type { Database } from '@/types/supabase';
 import type { AppConcept } from '@/types/appConcept';
 import type { LayoutManifest } from '@/types/schema';

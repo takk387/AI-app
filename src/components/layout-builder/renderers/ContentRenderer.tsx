@@ -8,8 +8,6 @@
 import React from 'react';
 import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 
-type Content = DetectedComponentEnhanced['content'];
-
 interface ContentRendererProps {
   component: DetectedComponentEnhanced;
   /** Pre-rendered icon element to avoid duplicating render logic */

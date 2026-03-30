@@ -8,7 +8,7 @@
  * - State management
  */
 
-import { CodeContextService, type UpdateContextResult } from '../CodeContextService';
+import { CodeContextService } from '../CodeContextService';
 import type { FileContent, CodeContextSnapshot } from '@/types/codeContext';
 
 // Mock dependencies

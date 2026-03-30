@@ -560,7 +560,7 @@ function generateStyleDictionary(
  * Generate documentation for the design system
  */
 function generateDocumentation(
-  tokens: GeneratedDesignSystem['tokens']
+  _tokens: GeneratedDesignSystem['tokens']
 ): GeneratedDesignSystem['documentation'] {
   return {
     colorUsage: `# Color Usage

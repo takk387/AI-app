@@ -122,7 +122,7 @@ export function useConceptUpdates(options: UseConceptUpdatesOptions): UseConcept
     ]);
 
     // Snapshot current state for rollback
-    const previousConcept = appConcept;
+    const _previousConcept = appConcept;
 
     try {
       // Add loading message

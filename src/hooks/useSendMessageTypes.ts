@@ -5,12 +5,7 @@
  * Extracted for modularity.
  */
 
-import type {
-  ChatMessage,
-  GeneratedComponent,
-  PendingDiff,
-  AppVersion,
-} from '@/types/aiBuilderTypes';
+import type { GeneratedComponent, AppVersion } from '@/types/aiBuilderTypes';
 import type { AppConcept } from '@/types/appConcept';
 import type { PhaseExecutionResult, DynamicPhasePlan } from '@/types/dynamicPhases';
 

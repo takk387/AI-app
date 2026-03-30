@@ -102,7 +102,7 @@ export interface ColorContext {
 /**
  * Component types that should preserve transparency
  */
-const TRANSPARENT_COMPONENT_TYPES = [
+const _TRANSPARENT_COMPONENT_TYPES = [
   'overlay',
   'modal-backdrop',
   'glassmorphism',
@@ -136,7 +136,7 @@ export function isDark(color: string | undefined): boolean {
  * @param color - The color to check
  * @param context - Optional context (mostly unused now, kept for API compatibility)
  */
-export function getVisibleFallback(color: string | undefined, context?: ColorContext): string {
+export function getVisibleFallback(color: string | undefined, _context?: ColorContext): string {
   // If color is defined, return it directly - trust the source
   if (color !== undefined && color !== null && color !== '') {
     return color;

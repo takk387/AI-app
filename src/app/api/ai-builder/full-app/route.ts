@@ -18,7 +18,6 @@ import { isMockAIEnabled, mockFullAppResponse } from '@/utils/mockAI';
 import { logAPI } from '@/utils/debug';
 // TODO: Migrate generateDesignFilesArray to LayoutManifest
 // import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
-import type { ArchitectureSpec } from '@/types/architectureSpec';
 
 // Next.js Route Segment Config
 export const maxDuration = 300; // 5 minutes max

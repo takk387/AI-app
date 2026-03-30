@@ -250,7 +250,7 @@ export function canGenerateImages(): {
  * Estimate cost for generating images (Gemini pricing TBD)
  */
 export function estimateImageGenerationCost(
-  options: AppImageGenerationOptions = DEFAULT_OPTIONS
+  _options: AppImageGenerationOptions = DEFAULT_OPTIONS
 ): number {
   // Gemini Imagen pricing is different from DALL-E
   // For now, return 0 until proper pricing is implemented

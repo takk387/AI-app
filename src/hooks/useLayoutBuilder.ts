@@ -16,7 +16,6 @@ import { useState, useCallback } from 'react';
 import type { AppFile } from '@/types/railway';
 import type {
   PipelineProgress,
-  PipelineStepName,
   AppContext,
   FileInput,
   VisualManifest,

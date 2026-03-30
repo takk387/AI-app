@@ -12,13 +12,7 @@
 
 import { useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import type {
-  GeneratedComponent,
-  ChatMessage,
-  AppVersion,
-  PendingChange,
-  PendingDiff,
-} from '@/types/aiBuilderTypes';
+import type { GeneratedComponent, ChatMessage, AppVersion } from '@/types/aiBuilderTypes';
 
 // ============================================================================
 // TYPES

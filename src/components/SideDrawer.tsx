@@ -52,10 +52,10 @@ export function SideDrawer({
   onClose,
   onShowSettings,
   onShowHistory,
-  onShowLibrary,
+  onShowLibrary: _onShowLibrary,
   onExport,
   versionCount = 0,
-  appCount = 0,
+  appCount: _appCount = 0,
 }: SideDrawerProps) {
   const router = useRouter();
   const { user, signOut } = useAuth();

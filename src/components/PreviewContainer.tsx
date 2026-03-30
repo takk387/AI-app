@@ -154,7 +154,7 @@ export function PreviewContainer({
   appDataJson,
   appType: explicitAppType,
   // Preview settings for responsive device preview
-  isFullscreen = false,
+  isFullscreen: _isFullscreen = false,
   onCaptureReady: _onCaptureReady,
   devicePreset = 'desktop',
   orientation = 'landscape',

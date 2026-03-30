@@ -105,7 +105,7 @@ export class MobileDeployService {
       this.reportProgress(onProgress, 'preparing', 'in_progress', 'Preparing mobile build...');
 
       // Generate Capacitor config
-      const capacitorConfig = this.generateCapacitorConfig(config);
+      const _capacitorConfig = this.generateCapacitorConfig(config);
 
       this.reportProgress(onProgress, 'preparing', 'completed', 'Build configuration ready');
 

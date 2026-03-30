@@ -144,7 +144,7 @@ export function useAutoSaveOnNavigation(options: UseAutoSaveOnNavigationOptions 
   useEffect(() => {
     if (!enabled) return;
 
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (_event: BeforeUnloadEvent) => {
       const state = useAppStore.getState();
       const { currentComponent } = state;
 

@@ -10,7 +10,7 @@
  * and file analysis are delegated to focused sub-modules in ./phaseGeneration/.
  */
 
-import type { AppConcept, Feature } from '@/types/appConcept';
+import type { AppConcept } from '@/types/appConcept';
 import type {
   FeatureDomain,
   FeatureClassification,

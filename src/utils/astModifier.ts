@@ -47,7 +47,6 @@ import type {
 // Extracted sub-modules
 import {
   extractExistingImports,
-  generateImportCode,
   buildImportInsertionMod,
   buildImportUpdateMod,
   findImportsForSource,

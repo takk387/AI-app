@@ -17,7 +17,6 @@ import type {
   PipelineInput,
   MergeStrategy,
   VisualManifest,
-  ComponentStructure,
   MotionPhysics,
   PipelineResult,
   LiveEditResult,

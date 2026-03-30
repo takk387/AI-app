@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/contexts/AuthContext';
-import { RocketIcon, WandIcon, LayoutIcon, SaveIcon, MenuIcon, CheckIcon } from './ui/Icons';
+import { RocketIcon, SaveIcon, MenuIcon, CheckIcon } from './ui/Icons';
 
 // Navigation items in guided flow order
 const navItems = [
@@ -107,7 +105,7 @@ export function AppNavigation({
 }: AppNavigationProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
 
   // Get completed steps from store
   const appConcept = useAppStore((state) => state.appConcept);
@@ -146,7 +144,7 @@ export function AppNavigation({
 
           {/* Navigation Steps */}
           <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item, index) => {
+            {navItems.map((item, _index) => {
               const isActive = pathname === item.href;
               const isCompleted = completedSteps[item.step as keyof typeof completedSteps];
 

@@ -182,7 +182,7 @@ export async function getIcon(
 
     // Parse viewBox
     const viewBoxMatch = svg.match(/viewBox="([^"]*)"/);
-    const viewBox = viewBoxMatch ? viewBoxMatch[1] : `0 0 ${size} ${size}`;
+    const _viewBox = viewBoxMatch ? viewBoxMatch[1] : `0 0 ${size} ${size}`;
 
     // Generate data URI
     const svgBase64 = Buffer.from(svg).toString('base64');

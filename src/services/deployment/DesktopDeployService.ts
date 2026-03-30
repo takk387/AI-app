@@ -65,7 +65,7 @@ export class DesktopDeployService {
       this.reportProgress(onProgress, 'preparing', 'in_progress', 'Preparing desktop build...');
 
       // Generate Tauri config
-      const tauriConfig = this.generateTauriConfig(config);
+      const _tauriConfig = this.generateTauriConfig(config);
 
       this.reportProgress(onProgress, 'preparing', 'completed', 'Tauri configuration ready');
 

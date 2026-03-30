@@ -6,8 +6,6 @@
  * on testing interfaces rather than full component rendering.
  */
 
-import React from 'react';
-
 // ============================================================================
 // INTERFACE TESTS
 // ============================================================================

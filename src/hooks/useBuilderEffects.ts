@@ -109,7 +109,7 @@ export function useBuilderEffects(options: UseBuilderEffectsOptions): void {
   } | null>(null);
 
   // Track if there are unsaved changes for beforeunload protection
-  const hasUnsavedChangesRef = useRef(false);
+  const _hasUnsavedChangesRef = useRef(false);
 
   // Clear suggested actions when switching to ACT mode
   useEffect(() => {

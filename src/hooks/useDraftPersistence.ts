@@ -26,7 +26,7 @@ interface DraftKeys {
   plan: string;
 }
 
-interface UseDraftPersistenceOptions<TState, TPlan> {
+interface UseDraftPersistenceOptions<TState> {
   draftKeys: DraftKeys;
   initialState: TState;
   createGreeting: () => Message;
@@ -58,7 +58,7 @@ export function useDraftPersistence<TState, TPlan>({
   initialState,
   createGreeting,
   onShowToast,
-}: UseDraftPersistenceOptions<TState, TPlan>): UseDraftPersistenceReturn<TState, TPlan> {
+}: UseDraftPersistenceOptions<TState>): UseDraftPersistenceReturn<TState, TPlan> {
   // Core state
   const [messages, setMessages] = useState<Message[]>([]);
   const [wizardState, setWizardState] = useState<TState>(initialState);

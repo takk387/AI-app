@@ -133,7 +133,7 @@ export function useUnifiedDeployment(_projectId: string): UseUnifiedDeploymentRe
   );
 
   // Update a step's status
-  const updateStepStatus = useCallback(
+  const _updateStepStatus = useCallback(
     (stepId: string, status: DeploymentStep['status'], message?: string, stepError?: string) => {
       setProgress((prev) => {
         return {
@@ -160,7 +160,7 @@ export function useUnifiedDeployment(_projectId: string): UseUnifiedDeploymentRe
   );
 
   // Calculate overall progress
-  const calculateProgress = useCallback((steps: DeploymentStep[]): number => {
+  const _calculateProgress = useCallback((steps: DeploymentStep[]): number => {
     if (steps.length === 0) return 0;
     const completed = steps.filter(
       (s) => s.status === 'completed' || s.status === 'skipped'

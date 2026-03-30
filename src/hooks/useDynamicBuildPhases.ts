@@ -154,7 +154,7 @@ export function useDynamicBuildPhases(
     onPhaseStart,
     onPhaseComplete,
     onBuildComplete,
-    onBuildFailed,
+    onBuildFailed: _onBuildFailed,
     onPlanInitialized,
     onError,
     autoAdvance = false,

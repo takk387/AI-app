@@ -73,7 +73,7 @@ export function useConceptSync({
       description: state.description || '',
       purpose: state.purpose || state.description || '',
       targetUsers: state.targetUsers || 'General users',
-      coreFeatures: state.features.map((f, i) => ({
+      coreFeatures: state.features.map((f, _i) => ({
         id: f.id || generateFeatureId(),
         name: f.name,
         description: f.description || '',

@@ -167,7 +167,7 @@ describe('TitanPipelineService', () => {
       });
 
       const { runPipeline } = require('@/services/TitanPipelineService');
-      const result = await runPipeline(input);
+      const _result = await runPipeline(input);
 
       expect(mockSurveyLayout).toHaveBeenCalled();
       expect(mockExtractImageMetadata).toHaveBeenCalled();

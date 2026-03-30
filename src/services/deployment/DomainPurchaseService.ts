@@ -240,7 +240,7 @@ export class DomainPurchaseService {
         throw new Error(`Cloudflare API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const _data = await response.json();
 
       // Domain exists in account - check its status
       return {

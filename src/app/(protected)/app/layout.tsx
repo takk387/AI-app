@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const currentLayoutManifest = useAppStore((state) => state.currentLayoutManifest);
   const layoutThumbnail = useAppStore((state) => state.layoutThumbnail);
   const dynamicPhasePlan = useAppStore((state) => state.dynamicPhasePlan);
-  const layoutBuilderFiles = useAppStore((state) => state.layoutBuilderFiles);
+  const _layoutBuilderFiles = useAppStore((state) => state.layoutBuilderFiles);
 
   // Database sync
   const { saveComponent, isLoading: isSyncing } = useDatabaseSync({

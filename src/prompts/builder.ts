@@ -9,20 +9,15 @@ import { AST_OPERATIONS_COMPRESSED } from './modify/ast-operations-compressed';
 import { MODIFICATION_EXAMPLES } from './modify/examples-compressed';
 import { FRONTEND_RULES_COMPRESSED } from './full-app/frontend-rules-compressed';
 import { getFullstackRules, type AppType } from './full-app/fullstack-rules-compressed';
-import { FULLAPP_EXAMPLES_COMPRESSED, SKELETON_EXAMPLE } from './full-app/examples-compressed';
+import { SKELETON_EXAMPLE } from './full-app/examples-compressed';
 // TODO: Migrate buildDesignTokenPrompt to LayoutManifest
 // import { buildDesignTokenPrompt } from './designTokenPrompt';
 import {
-  CODE_QUALITY_STANDARDS,
   CODE_QUALITY_STANDARDS_CORE,
   FORM_UX_STANDARDS,
   SECURITY_HARDENING_STANDARDS,
 } from './quality-standards';
-import {
-  PRODUCTION_STANDARDS_COMPRESSED,
-  PERFORMANCE_RESILIENCE_STANDARDS,
-  PERFORMANCE_CHECKLIST,
-} from './production-standards';
+import { PRODUCTION_STANDARDS_COMPRESSED, PERFORMANCE_CHECKLIST } from './production-standards';
 import { getBackendTemplates, formatArchitectureSpec } from './full-app/backend-templates';
 import { VERSION_INSTRUCTIONS } from '@/config/versions';
 import type { LayoutManifest } from '@/types/schema';
