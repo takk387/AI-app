@@ -630,7 +630,7 @@ html {
 
 /* Primary button - main actions (green) */
 .btn-primary {
-  @apply btn px-4 py-2 text-white text-sm;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-white text-sm;
   background: var(--accent-primary);
 }
 
@@ -640,7 +640,7 @@ html {
 
 /* Secondary button - secondary actions (gold) */
 .btn-secondary {
-  @apply btn px-4 py-2 text-sm;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm;
   background: var(--bg-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
@@ -652,7 +652,7 @@ html {
 
 /* Ghost button - minimal style */
 .btn-ghost {
-  @apply btn px-3 py-2 text-sm;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-3 py-2 text-sm;
   color: var(--text-secondary);
 }
 
@@ -663,7 +663,7 @@ html {
 
 /* Danger button - destructive actions */
 .btn-danger {
-  @apply btn px-4 py-2 text-sm;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm;
   background: var(--blossom-text);
   color: white;
 }
@@ -674,7 +674,7 @@ html {
 
 /* Icon-only button */
 .btn-icon {
-  @apply btn p-2 rounded-xl;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 p-2;
   color: var(--text-secondary);
 }
 
@@ -695,7 +695,7 @@ html {
 
 /* Gold button variant - for premium/secondary emphasis */
 .btn-gold {
-  @apply btn px-4 py-2 text-sm;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm;
   background: var(--gold-primary);
   color: white;
 }
@@ -707,7 +707,7 @@ html {
 
 /* Blossom button variant - for accent actions */
 .btn-blossom {
-  @apply btn px-4 py-2 text-sm;
+  @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 px-4 py-2 text-sm;
   background: var(--blossom-bg);
   color: var(--blossom-text);
 }
