@@ -450,8 +450,9 @@ export function getAvailableRules(): Array<{
   }));
 }
 
-export default {
+const accessibilityAuditService = {
   auditAccessibility,
   checkColorContrast,
   getAvailableRules,
 };
+export default accessibilityAuditService;

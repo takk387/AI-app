@@ -353,7 +353,7 @@ export function getInlineSvg(svg: string, color?: string): string {
   return svg;
 }
 
-export default {
+const iconifyService = {
   searchIcons,
   getIcon,
   getSuggestedIcons,
@@ -361,3 +361,4 @@ export default {
   getInlineSvg,
   ICON_SETS,
 };
+export default iconifyService;

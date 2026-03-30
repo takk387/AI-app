@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import type { FileMetadata } from '@/types/storage';
 
 interface FileCardProps {
@@ -116,13 +117,15 @@ export function FileCard({
       )}
 
       {/* File Preview */}
-      <div className="aspect-square rounded-t-xl bg-slate-800/50 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-square rounded-t-xl bg-slate-800/50 flex items-center justify-center overflow-hidden">
         {isImage && file.publicUrl ? (
-          <img
+          <Image
             src={file.publicUrl}
             alt={file.name}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
             loading="lazy"
+            unoptimized
           />
         ) : (
           <div className="text-6xl">{getFileIcon()}</div>

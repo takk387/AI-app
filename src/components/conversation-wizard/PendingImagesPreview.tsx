@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { XIcon } from '@/components/ui/Icons';
 
 interface PendingImagesPreviewProps {
@@ -17,11 +18,14 @@ export function PendingImagesPreview({ images, onRemove }: PendingImagesPreviewP
     <div className="px-6 py-2 flex gap-2">
       {images.map((img, i) => (
         <div key={`pending-${img.slice(-20)}`} className="relative">
-          <img
+          <Image
             src={img}
             alt={`Upload ${i + 1}`}
+            width={64}
+            height={64}
             className="w-16 h-16 object-cover rounded-lg"
             style={{ border: '1px solid var(--border-color)' }}
+            unoptimized
           />
           <button
             onClick={() => onRemove(i)}

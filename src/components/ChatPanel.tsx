@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import Image from 'next/image';
 import type { ChatMessage, StagePlan, Phase } from '../types/aiBuilderTypes';
 import type { StreamingProgress as StreamingProgressType } from '../types/streaming';
 import { InlineStreamingProgress } from './StreamingProgress';
@@ -433,11 +434,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = React.memo(function ChatPanel
         {/* Image Preview */}
         {uploadedImage && (
           <div className="mb-3 relative inline-block">
-            <img
+            <Image
               src={uploadedImage}
               alt="Uploaded inspiration"
+              width={80}
+              height={80}
               className="h-20 w-20 object-cover rounded-lg"
               style={{ border: '1px solid var(--border-color)' }}
+              unoptimized
             />
             <button
               onClick={onRemoveImage}

@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -47,11 +49,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {message.attachments && message.attachments.length > 0 && (
           <div className="flex gap-2 mb-2">
             {message.attachments.map((img, i) => (
-              <img
+              <Image
                 key={`${message.id}-attachment-${i}`}
                 src={img}
                 alt={`Attachment ${i + 1}`}
+                width={80}
+                height={80}
                 className="w-20 h-20 object-cover rounded-lg"
+                unoptimized
               />
             ))}
           </div>

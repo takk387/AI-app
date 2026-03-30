@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import {
@@ -103,7 +104,14 @@ export function DesignTab({ snapshot, onUpdateScreenshot }: DesignTabProps) {
         </div>
         {snapshot.previewImageUrl ? (
           <div className="relative rounded-lg overflow-hidden border border-slate-800">
-            <img src={snapshot.previewImageUrl} alt="Layout preview" className="w-full h-auto" />
+            <Image
+              src={snapshot.previewImageUrl}
+              alt="Layout preview"
+              width={800}
+              height={450}
+              className="w-full h-auto"
+              unoptimized
+            />
           </div>
         ) : (
           <div className="flex items-center justify-center h-40 bg-slate-800/50 rounded-lg border border-slate-700 border-dashed">

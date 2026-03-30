@@ -606,7 +606,7 @@ export function normalizeKeyframeTimes(keyframes: Keyframe[]): Keyframe[] {
   }));
 }
 
-export default {
+const keyframeUtils = {
   interpolateKeyframes,
   generateKeyframesCSS,
   generateAnimationCSS,
@@ -616,3 +616,4 @@ export default {
   EASING_PRESETS,
   PROPERTY_TRACKS,
 };
+export default keyframeUtils;

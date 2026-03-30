@@ -7,6 +7,7 @@
  * Includes edit link to navigate back to Design page.
  */
 
+import Image from 'next/image';
 import { ArrowRight, Image as ImageIcon, FileCode, Palette } from 'lucide-react';
 import type { LayoutThumbnail } from '@/types/reviewTypes';
 import type { LayoutManifest } from '@/types/schema';
@@ -43,11 +44,14 @@ export function LayoutCard({ thumbnail, layoutManifest, fileCount = 0, onEdit }:
 
       {thumbnail ? (
         <div className="relative">
-          <img
+          <Image
             src={thumbnail.dataUrl}
             alt="Layout preview"
+            width={400}
+            height={192}
             className="rounded-lg w-full max-h-48 object-contain"
             style={{ background: 'var(--bg-tertiary)' }}
+            unoptimized
           />
           <div
             className="absolute bottom-2 right-2 px-2 py-1 rounded text-xs"

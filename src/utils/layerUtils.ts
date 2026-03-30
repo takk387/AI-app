@@ -417,7 +417,7 @@ export function autoFixZIndexConflicts(layers: LayerDefinition[]): LayerDefiniti
 // EXPORTS
 // ============================================================================
 
-export default {
+const layerUtils = {
   sortLayersByZIndex,
   sortLayersByZIndexAsc,
   groupLayers,
@@ -434,3 +434,4 @@ export default {
   findZIndexConflicts,
   autoFixZIndexConflicts,
 };
+export default layerUtils;

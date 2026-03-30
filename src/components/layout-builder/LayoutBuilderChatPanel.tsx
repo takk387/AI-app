@@ -13,6 +13,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { PipelineProgress, PipelineStepName, PipelineStepStatus } from '@/types/titanPipeline';
 import { PIPELINE_STEP_LABELS } from '@/types/titanPipeline';
@@ -287,11 +288,14 @@ export const LayoutBuilderChatPanel: React.FC<LayoutBuilderChatPanelProps> = ({
               {message.mediaUrls && message.mediaUrls.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {message.mediaUrls.map((url, idx) => (
-                    <img
+                    <Image
                       key={idx}
                       src={url}
                       alt="Uploaded media"
+                      width={64}
+                      height={64}
                       className="w-16 h-16 object-cover rounded"
+                      unoptimized
                     />
                   ))}
                 </div>
@@ -364,10 +368,13 @@ export const LayoutBuilderChatPanel: React.FC<LayoutBuilderChatPanelProps> = ({
             {uploadedMedia.map((media) => (
               <div key={media.id} className="relative group">
                 {media.type === 'image' ? (
-                  <img
+                  <Image
                     src={media.previewUrl}
                     alt="Upload preview"
+                    width={80}
+                    height={80}
                     className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-20 h-20 bg-gray-200 rounded-lg border border-gray-200 flex items-center justify-center">
