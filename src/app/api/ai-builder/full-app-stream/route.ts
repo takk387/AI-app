@@ -7,28 +7,19 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { createSSEResponse } from '@/lib/createSSEResponse';
-import { validateGeneratedCode, autoFixCode, type ValidationError } from '@/utils/codeValidator';
-import { buildFullAppPrompt } from '@/prompts/builder';
-import { sanitizeMessagesForAPI } from '@/utils/messageUtils';
 import {
   analytics,
   generateRequestId,
   categorizeError,
   PerformanceTracker,
 } from '@/utils/analytics';
-import { type StreamEvent, formatSSE, type CompleteEvent } from '@/types/streaming';
-import {
-  detectTruncation,
-  getTokenBudget,
-  type PhaseContext,
-  type Phase,
-} from '../full-app/generation-logic';
-// TODO: Migrate generateDesignFilesArray to LayoutManifest
-// import { generateDesignFilesArray } from '@/utils/designSystemGenerator';
-import type { LayoutManifest } from '@/types/schema';
-import type { ArchitectureSpec } from '@/types/architectureSpec';
-import type { SerializedPhaseContext } from '@/types/dynamicPhases';
-import { runAgenticGeneration } from '@/utils/agenticCodeGeneration';
+import { type StreamEvent, formatSSE } from '@/types/streaming';
+import type { SSEWriter } from './types';
+import { validateRequest } from './requestValidator';
+import { assemblePrompt } from './promptAssembler';
+import { parseResponse, validateFiles, buildCompleteEvent } from './responseParser';
+import { processStream } from './streamProcessor';
+import { processAgentic } from './agenticProcessor';
 
 // Next.js Route Segment Config
 export const maxDuration = 300;
@@ -36,50 +27,6 @@ export const dynamic = 'force-dynamic';
 
 // Global timeout for entire SSE operation (10 minutes for large apps)
 const GLOBAL_TIMEOUT_MS = 10 * 60 * 1000;
-
-// Request size limits (defense-in-depth)
-const MAX_REQUEST_SIZE_BYTES = 10 * 1024 * 1024; // 10MB max request
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB max image (before base64 encoding)
-const MAX_PROMPT_LENGTH = 100_000; // 100k chars max prompt
-const MAX_CONVERSATION_HISTORY_ITEMS = 50; // Max messages in history
-
-/**
- * Validate base64 image data
- * Returns decoded size or null if invalid
- */
-function validateBase64Image(
-  base64: string
-): { valid: true; size: number } | { valid: false; error: string } {
-  // Check if it looks like base64 (data URL or raw)
-  let base64Data = base64;
-
-  // Handle data URL format: data:image/...;base64,<data>
-  const dataUrlMatch = base64.match(/^data:image\/[^;]+;base64,(.+)$/);
-  if (dataUrlMatch) {
-    base64Data = dataUrlMatch[1];
-  }
-
-  // Check for valid base64 characters
-  if (!/^[A-Za-z0-9+/=]+$/.test(base64Data)) {
-    return { valid: false, error: 'Invalid base64 characters detected' };
-  }
-
-  // Calculate decoded size (base64 is ~4/3 the size of original)
-  const decodedSize = Math.floor((base64Data.length * 3) / 4);
-
-  // Adjust for padding
-  const paddingCount = (base64Data.match(/=+$/) || [''])[0].length;
-  const actualSize = decodedSize - paddingCount;
-
-  if (actualSize > MAX_IMAGE_SIZE_BYTES) {
-    return {
-      valid: false,
-      error: `Image size ${(actualSize / 1024 / 1024).toFixed(1)}MB exceeds limit of ${MAX_IMAGE_SIZE_BYTES / 1024 / 1024}MB`,
-    };
-  }
-
-  return { valid: true, size: actualSize };
-}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -125,134 +72,23 @@ export async function POST(request: Request) {
     }
   };
 
+  const sse: SSEWriter = {
+    writeEvent,
+    closeWriter,
+    isWriterClosed: () => writerClosed,
+  };
+
   // Start the generation in the background
   (async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let requestBody: any;
-
     // Global timeout - abort if entire operation takes too long
     const globalTimeoutId = setTimeout(() => {
       abortController.abort('Global timeout exceeded');
     }, GLOBAL_TIMEOUT_MS);
 
-    // Heartbeat timer for keeping client alive during Claude's thinking phase
-    let thinkingHeartbeat: ReturnType<typeof setInterval> | null = null;
-
     try {
-      // Check Content-Length header for early rejection
-      const contentLength = request.headers.get('content-length');
-      if (contentLength && parseInt(contentLength, 10) > MAX_REQUEST_SIZE_BYTES) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: `Request size ${(parseInt(contentLength, 10) / 1024 / 1024).toFixed(1)}MB exceeds limit of ${MAX_REQUEST_SIZE_BYTES / 1024 / 1024}MB`,
-          code: 'REQUEST_TOO_LARGE',
-          recoverable: false,
-        });
-        await closeWriter();
-        return;
-      }
-
-      // Parse request body with error handling
-      try {
-        requestBody = await request.json();
-      } catch (parseError) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message:
-            'Invalid request: ' +
-            (parseError instanceof Error ? parseError.message : 'Failed to parse JSON'),
-          code: 'INVALID_REQUEST',
-          recoverable: false,
-        });
-        await closeWriter();
-        return;
-      }
-
-      const {
-        prompt,
-        conversationHistory,
-        contextSummary,
-        isModification,
-        currentAppName,
-        image,
-        hasImage,
-        isPhaseBuilding,
-        phaseContext: rawPhaseContext,
-        currentAppState,
-        layoutManifest,
-        architectureSpec,
-        phaseContexts,
-        useAgenticValidation, // Option A: Enable tool-based validation during generation
-      } = requestBody as {
-        prompt: string;
-        conversationHistory?: Array<{ role: string; content: string }>;
-        contextSummary?: string; // Compressed context from older messages
-        isModification?: boolean;
-        currentAppName?: string;
-        image?: string;
-        hasImage?: boolean;
-        isPhaseBuilding?: boolean;
-        phaseContext?: {
-          phaseNumber?: number;
-          phaseName?: string;
-          previousPhaseCode?: string | null;
-          allPhases?: Phase[];
-          completedPhases?: number[];
-          cumulativeFeatures?: string[];
-        };
-        currentAppState?: {
-          name?: string;
-          appType?: string;
-          files?: Array<{ path: string; content: string }>;
-        };
-        layoutManifest?: LayoutManifest;
-        architectureSpec?: ArchitectureSpec;
-        phaseContexts?: Record<string, SerializedPhaseContext>;
-        useAgenticValidation?: boolean; // Option A: Enable tool-based validation during generation
-      };
-
-      // Validate request content limits
-      if (prompt && prompt.length > MAX_PROMPT_LENGTH) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: `Prompt length ${prompt.length.toLocaleString()} chars exceeds limit of ${MAX_PROMPT_LENGTH.toLocaleString()} chars`,
-          code: 'PROMPT_TOO_LARGE',
-          recoverable: false,
-        });
-        await closeWriter();
-        return;
-      }
-
-      if (conversationHistory && conversationHistory.length > MAX_CONVERSATION_HISTORY_ITEMS) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: `Conversation history has ${conversationHistory.length} items, limit is ${MAX_CONVERSATION_HISTORY_ITEMS}`,
-          code: 'HISTORY_TOO_LARGE',
-          recoverable: false,
-        });
-        await closeWriter();
-        return;
-      }
-
-      // Validate base64 image if present
-      if (image && hasImage) {
-        const imageValidation = validateBase64Image(image);
-        if (!imageValidation.valid) {
-          await writeEvent({
-            type: 'error',
-            timestamp: Date.now(),
-            message: `Invalid image: ${imageValidation.error}`,
-            code: 'INVALID_IMAGE',
-            recoverable: false,
-          });
-          await closeWriter();
-          return;
-        }
-      }
+      // Step 1: Validate request
+      const validatedRequest = await validateRequest(request, sse);
+      if (!validatedRequest) return;
 
       perfTracker.checkpoint('request_parsed');
 
@@ -261,8 +97,8 @@ export async function POST(request: Request) {
         type: 'start',
         timestamp: Date.now(),
         message: 'Starting app generation...',
-        phaseNumber: rawPhaseContext?.phaseNumber,
-        phaseName: rawPhaseContext?.phaseName,
+        phaseNumber: validatedRequest.rawPhaseContext?.phaseNumber,
+        phaseName: validatedRequest.rawPhaseContext?.phaseName,
       });
 
       if (!process.env.ANTHROPIC_API_KEY) {
@@ -279,233 +115,22 @@ export async function POST(request: Request) {
 
       // Log request start
       analytics.logRequestStart('ai-builder/full-app-stream', requestId, {
-        hasConversationHistory: !!conversationHistory,
-        isModification: !!isModification,
-        hasImage: !!hasImage,
-        isPhaseBuilding: !!isPhaseBuilding,
-        phaseNumber: rawPhaseContext?.phaseNumber,
+        hasConversationHistory: !!validatedRequest.conversationHistory,
+        isModification: !!validatedRequest.isModification,
+        hasImage: !!validatedRequest.hasImage,
+        isPhaseBuilding: !!validatedRequest.isPhaseBuilding,
+        phaseNumber: validatedRequest.rawPhaseContext?.phaseNumber,
       });
 
-      // Build current app context
-      let currentAppContext = '';
-      if (currentAppState && currentAppState.files && Array.isArray(currentAppState.files)) {
-        currentAppContext = `
-
-===CURRENT APP CONTEXT===
-The user has an existing app loaded. Here is the current state:
-
-App Name: ${currentAppState.name || 'Unnamed App'}
-App Type: ${currentAppState.appType || 'Unknown'}
-Files in the app:
-${currentAppState.files.map((f: { path: string }) => `- ${f.path}`).join('\n')}
-
-FILE CONTENTS:
-${currentAppState.files
-  .map(
-    (f: { path: string; content: string }) => `
---- ${f.path} ---
-${f.content}
---- END ${f.path} ---
-`
-  )
-  .join('\n')}
-===END CURRENT APP CONTEXT===
-
-When building new features or making changes, reference the actual code above. Preserve existing functionality unless explicitly asked to change it.`;
-      }
-
-      // Build phase contexts section if available (domain-specific extracted context)
-      let phaseContextsSection = '';
-      if (phaseContexts && Object.keys(phaseContexts).length > 0) {
-        phaseContextsSection = '\n\n===PHASE-SPECIFIC CONTEXT===\n';
-        for (const [domain, ctx] of Object.entries(phaseContexts)) {
-          if (!ctx) continue;
-          phaseContextsSection += `\n## ${domain.charAt(0).toUpperCase() + domain.slice(1)} Domain Context\n`;
-          if (ctx.extractedRequirements && ctx.extractedRequirements.length > 0) {
-            phaseContextsSection += `**Requirements:**\n${ctx.extractedRequirements.map((s) => `- ${s}`).join('\n')}\n`;
-          }
-          if (ctx.validationRules && ctx.validationRules.length > 0) {
-            phaseContextsSection += `**Validation Rules:**\n${ctx.validationRules.map((r) => `- ${r}`).join('\n')}\n`;
-          }
-          if (ctx.uiPatterns && ctx.uiPatterns.length > 0) {
-            phaseContextsSection += `**UI Patterns:**\n${ctx.uiPatterns.map((p) => `- ${p}`).join('\n')}\n`;
-          }
-          if (ctx.userDecisions && ctx.userDecisions.length > 0) {
-            phaseContextsSection += `**User Decisions:**\n${ctx.userDecisions.map((d) => `- ${d}`).join('\n')}\n`;
-          }
-          if (ctx.technicalNotes && ctx.technicalNotes.length > 0) {
-            phaseContextsSection += `**Technical Notes:**\n${ctx.technicalNotes.map((n) => `- ${n}`).join('\n')}\n`;
-          }
-          if (ctx.contextSummary) {
-            phaseContextsSection += `**Summary:** ${ctx.contextSummary}\n`;
-          }
-        }
-        phaseContextsSection += '\n===END PHASE-SPECIFIC CONTEXT===\n';
-      }
-
-      const baseInstructions = `You are an expert FULL-STACK Next.js application architect. Generate complete, production-ready applications with both frontend AND backend capabilities.
-
-## QUALITY-FIRST REQUIREMENT
-Generate production-ready code that passes quality review on FIRST generation.
-Your code will be automatically reviewed for:
-- React hooks violations (CRITICAL - blocks build)
-- Missing key props in lists (HIGH)
-- Security vulnerabilities (CRITICAL - blocks build)
-- Performance anti-patterns (MEDIUM)
-- Incomplete error handling (MEDIUM)
-
-Generate code that passes ALL checks. Do NOT rely on post-generation fixes.
-
-## PRODUCTION FEATURES (REQUIRED IN ALL APPS)
-1. ErrorBoundary: Wrap main App component in ErrorBoundary with fallback UI and retry button
-2. Accessibility: Semantic HTML (nav, main, section, footer), ARIA labels, keyboard navigation
-3. SEO: Include <title> and <meta name="description"> tags
-4. Loading States: Show spinner or skeleton while fetching data
-5. Error States: Handle errors gracefully with user-friendly messages and retry options
-${currentAppContext ? '\nIMPORTANT: The user has an existing app loaded. See CURRENT APP CONTEXT at the end of this prompt. When adding features, integrate with the existing code structure.' : ''}
-
-APPLICATION TYPE DETECTION:
-- FRONTEND_ONLY: UI components, calculators, games (preview sandbox)
-- FULL_STACK: Database, auth, API routes (local dev required)
-
-COMPLEX APPS - STAGING STRATEGY:
-- Target 8K-10K tokens for Stage 1 (core architecture + 2-3 features)
-- Build complete apps through conversation, not simplified versions
-- NEVER truncate code mid-line/tag/string/function
-- Stage 1: Solid foundation, invite extensions
-- Conversational descriptions: "I've created your [app]! Want to add [X], [Y], [Z]?"
-
-${
-  isModification
-    ? `
-MODIFICATION MODE for "${currentAppName}":
-- Classify: MAJOR_CHANGE (new features, redesigns) or MINOR_CHANGE (bug fixes, tweaks)
-- PRESERVE all existing UI, styling, components, and functionality NOT mentioned in the user's request
-- Only modify the specific elements the user asked about
-- Do NOT reorganize, restructure, or "clean up" code the user didn't mention
-- Do NOT change colors, fonts, layouts, or spacing unless explicitly requested
-- Do NOT remove components, features, or sections unless explicitly asked
-- If adding a new feature, integrate it INTO the existing structure — do not rebuild from scratch
-- The output must include ALL existing code with the targeted changes applied, not just the changed parts
-- Use EXACT delimiter format (===NAME===, ===FILE:===, etc.)
-`
-    : ''
-}${currentAppContext}${phaseContextsSection}`;
-
-      // Determine app type from request context
-      const detectedAppType: 'FRONTEND_ONLY' | 'FULL_STACK' =
-        currentAppState?.appType === 'FRONTEND_ONLY' ? 'FRONTEND_ONLY' : 'FULL_STACK';
-
-      // Extract detected features from architecture spec
-      const detectedFeatures = new Set<string>();
-      if (architectureSpec?.auth) detectedFeatures.add('auth');
-      if (architectureSpec?.database) detectedFeatures.add('database');
-      if (architectureSpec?.storage) detectedFeatures.add('storage');
-      if (architectureSpec?.realtime) detectedFeatures.add('realtime');
-      const phaseName = rawPhaseContext?.phaseName?.toLowerCase() ?? '';
-      if (phaseName.includes('form') || phaseName.includes('crud')) detectedFeatures.add('forms');
-
-      const systemPrompt = buildFullAppPrompt({
-        baseInstructions,
-        appType: detectedAppType,
-        features: detectedFeatures,
-        phaseDomain: phaseName.includes('test') ? 'testing' : undefined,
-        includeImageContext: hasImage,
-        isModification,
-        layoutManifest,
-        architectureSpec,
-      });
+      // Step 2: Assemble prompt
+      const assembled = assemblePrompt(validatedRequest);
       perfTracker.checkpoint('prompt_built');
-
-      // Build conversation context
-      const messages: Anthropic.MessageParam[] = [];
-
-      // Add compressed context summary if available (provides context from older messages)
-      if (contextSummary) {
-        messages.push({
-          role: 'user',
-          content: `[Context from earlier conversation]\n${contextSummary}`,
-        });
-        messages.push({
-          role: 'assistant',
-          content: 'I understand the context. Proceeding with the request.',
-        });
-      }
-
-      if (conversationHistory && Array.isArray(conversationHistory)) {
-        conversationHistory.forEach((msg: { role: string; content: string }) => {
-          if (msg.role === 'user') {
-            messages.push({ role: 'user', content: msg.content });
-          } else if (msg.role === 'assistant') {
-            messages.push({ role: 'assistant', content: msg.content });
-          }
-        });
-      }
-
-      // Sanitize to ensure user/assistant alternation (merges consecutive same-role messages)
-      // Cast needed because messages array is typed as MessageParam[] but only contains string-content entries at this point
-      const sanitizedHistory = sanitizeMessagesForAPI(
-        messages as Array<{ role: string; content: string }>
-      );
-      messages.length = 0;
-      messages.push(...sanitizedHistory);
-
-      // Add user message with optional image
-      if (hasImage && image) {
-        const imageMatch = image.match(/^data:(image\/[^;]+);base64,(.+)$/);
-        if (imageMatch) {
-          const mediaType = imageMatch[1] as
-            | 'image/jpeg'
-            | 'image/png'
-            | 'image/gif'
-            | 'image/webp';
-          const base64Data = imageMatch[2];
-
-          messages.push({
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: mediaType,
-                  data: base64Data,
-                },
-              },
-              {
-                type: 'text',
-                text: prompt,
-              },
-            ],
-          });
-        } else {
-          messages.push({ role: 'user', content: prompt });
-        }
-      } else {
-        messages.push({ role: 'user', content: prompt });
-      }
-
-      // Build phase context
-      const phaseContext: PhaseContext | undefined =
-        isPhaseBuilding && rawPhaseContext
-          ? {
-              phaseNumber: rawPhaseContext.phaseNumber || 1,
-              previousPhaseCode: rawPhaseContext.previousPhaseCode || null,
-              allPhases: rawPhaseContext.allPhases || [],
-              completedPhases: rawPhaseContext.completedPhases || [],
-              cumulativeFeatures: rawPhaseContext.cumulativeFeatures || [],
-            }
-          : undefined;
-
-      const modelName = 'claude-sonnet-4-6';
-      const phaseNumber = phaseContext?.phaseNumber || 1;
-      const tokenBudget = getTokenBudget(phaseNumber);
 
       // Send thinking event
       await writeEvent({
         type: 'thinking',
         timestamp: Date.now(),
-        message: useAgenticValidation
+        message: validatedRequest.useAgenticValidation
           ? 'AI is analyzing your request with real-time validation...'
           : 'AI is analyzing your request and planning the app structure...',
       });
@@ -513,642 +138,73 @@ MODIFICATION MODE for "${currentAppName}":
       perfTracker.checkpoint('ai_request_sent');
 
       // Check if client disconnected before starting expensive AI call
-      if (writerClosed) {
-        return;
-      }
+      if (writerClosed) return;
 
-      // ========================================================================
-      // OPTION A: AGENTIC VALIDATION MODE
-      // When enabled, Claude can use validation tools during generation
-      // This runs INSTEAD of streaming, but post-hoc validation still runs after
-      // ========================================================================
-      if (useAgenticValidation) {
-        await writeEvent({
-          type: 'thinking',
-          timestamp: Date.now(),
-          message: 'Using agentic validation mode - AI will validate code during generation...',
+      // Step 3: Generate response (agentic or streaming path)
+      let streamResult;
+
+      if (validatedRequest.useAgenticValidation) {
+        streamResult = await processAgentic({
+          anthropic,
+          modelName: assembled.modelName,
+          systemPrompt: assembled.systemPrompt,
+          messages: assembled.messages,
+          tokenBudget: assembled.tokenBudget,
+          sse,
         });
 
-        try {
-          const agenticResult = await runAgenticGeneration(anthropic, {
-            maxToolIterations: 3,
-            systemPrompt,
-            messages,
-            model: modelName,
-            maxTokens: tokenBudget.max_tokens,
-            thinkingBudget: tokenBudget.thinking_budget,
-            onProgress: async (message) => {
-              await writeEvent({
-                type: 'thinking',
-                timestamp: Date.now(),
-                message,
-              });
-            },
-          });
-
-          if (!agenticResult.success) {
-            await writeEvent({
-              type: 'error',
-              timestamp: Date.now(),
-              message: agenticResult.error || 'Agentic generation failed',
-              code: 'AGENTIC_ERROR',
-              recoverable: true,
-            });
-            clearTimeout(globalTimeoutId);
-            await closeWriter();
-            return;
-          }
-
-          // Use agentic result as responseText - continue to existing validation flow
-          const responseText = agenticResult.responseText;
-          const inputTokens = agenticResult.inputTokens;
-          const outputTokens = agenticResult.outputTokens;
-          const cachedTokens = agenticResult.cachedTokens;
-
-          perfTracker.checkpoint('ai_response_received');
-
-          if (!responseText) {
-            await writeEvent({
-              type: 'error',
-              timestamp: Date.now(),
-              message: 'No response from Claude',
-              code: 'EMPTY_RESPONSE',
-              recoverable: true,
-            });
-            clearTimeout(globalTimeoutId);
-            await closeWriter();
-            return;
-          }
-
-          // Parse response (same as streaming path)
-          const nameMatch = responseText.match(/===NAME===\s*([\s\S]*?)\s*===/);
-          const descriptionMatch = responseText.match(/===DESCRIPTION===\s*([\s\S]*?)\s*===/);
-          const appTypeMatch = responseText.match(/===APP_TYPE===\s*([\s\S]*?)\s*===/);
-          const changeTypeMatch = responseText.match(/===CHANGE_TYPE===\s*([\s\S]*?)\s*===/);
-          const changeSummaryMatch = responseText.match(/===CHANGE_SUMMARY===\s*([\s\S]*?)\s*===/);
-          const dependenciesMatch = responseText.match(/===DEPENDENCIES===\s*([\s\S]*?)\s*===/);
-          const setupMatch = responseText.match(/===SETUP===\s*([\s\S]*?)===END===/);
-
-          if (!nameMatch || !descriptionMatch) {
-            await writeEvent({
-              type: 'error',
-              timestamp: Date.now(),
-              message: 'Invalid response format - missing required delimiters',
-              code: 'PARSE_ERROR',
-              recoverable: true,
-            });
-            clearTimeout(globalTimeoutId);
-            await closeWriter();
-            return;
-          }
-
-          const name = nameMatch[1].trim().split('\n')[0].trim();
-          const descriptionText = descriptionMatch[1].trim().split('\n')[0].trim();
-          const appType = appTypeMatch
-            ? appTypeMatch[1].trim().split('\n')[0].trim()
-            : 'FRONTEND_ONLY';
-
-          // Extract files
-          const fileMatches = responseText.matchAll(
-            /===FILE:([\s\S]*?)===\s*([\s\S]*?)(?====FILE:|===DEPENDENCIES===|===SETUP===|===END===|$)/g
-          );
-          const files: Array<{ path: string; content: string; description: string }> = [];
-
-          for (const match of fileMatches) {
-            const path = match[1].trim();
-            const content = match[2].trim();
-            files.push({
-              path,
-              content,
-              description: `${path.split('/').pop()} file`,
-            });
-
-            // Send file events for UI feedback
-            await writeEvent({
-              type: 'file_complete',
-              timestamp: Date.now(),
-              filePath: path,
-              fileIndex: files.length,
-              totalFiles: files.length,
-              charCount: content.length,
-            });
-          }
-
-          if (files.length === 0) {
-            const responseSnippet = responseText.slice(0, 300).trim();
-            await writeEvent({
-              type: 'error',
-              timestamp: Date.now(),
-              message: responseSnippet
-                ? `AI responded but generated no code files. AI said: "${responseSnippet}${responseText.length > 300 ? '...' : ''}"`
-                : 'No files generated in response',
-              code: 'NO_FILES',
-              recoverable: true,
-            });
-            clearTimeout(globalTimeoutId);
-            await closeWriter();
-            return;
-          }
-
-          // Check for truncation
-          const truncationInfo = detectTruncation(responseText, files);
-          if (truncationInfo.isTruncated && truncationInfo.salvageableFiles > 0) {
-            const completeFiles = files.slice(0, truncationInfo.salvageableFiles);
-            files.length = 0;
-            files.push(...completeFiles);
-          }
-
-          // POST-HOC VALIDATION (still runs even with agentic mode as safety net)
-          await writeEvent({
-            type: 'validation',
-            timestamp: Date.now(),
-            message: 'Running post-generation validation (safety net)...',
-            filesValidated: 0,
-            totalFiles: files.length,
-            errorsFound: 0,
-            autoFixed: 0,
-          });
-
-          const validationErrors: Array<{ file: string; errors: ValidationError[] }> = [];
-          let totalErrors = 0;
-          let autoFixedCount = 0;
-
-          for (let i = 0; i < files.length; i++) {
-            if (writerClosed) break;
-
-            const file = files[i];
-            if (
-              file.path.endsWith('.tsx') ||
-              file.path.endsWith('.ts') ||
-              file.path.endsWith('.jsx') ||
-              file.path.endsWith('.js')
-            ) {
-              try {
-                const validation = await validateGeneratedCode(file.content, file.path);
-
-                if (!validation.valid) {
-                  totalErrors += validation.errors.length;
-
-                  const fixedCode = autoFixCode(file.content, validation.errors);
-                  if (fixedCode !== file.content) {
-                    file.content = fixedCode;
-                    autoFixedCount += validation.errors.filter(
-                      (e) => e.type === 'UNCLOSED_STRING'
-                    ).length;
-
-                    const revalidation = await validateGeneratedCode(fixedCode, file.path);
-                    if (!revalidation.valid) {
-                      validationErrors.push({ file: file.path, errors: revalidation.errors });
-                    }
-                  } else {
-                    validationErrors.push({ file: file.path, errors: validation.errors });
-                  }
-                }
-              } catch (validationError) {
-                console.error(`Validation error for ${file.path}:`, validationError);
-              }
-            }
-
-            await writeEvent({
-              type: 'validation',
-              timestamp: Date.now(),
-              message: `Validated ${file.path}`,
-              filesValidated: i + 1,
-              totalFiles: files.length,
-              errorsFound: totalErrors,
-              autoFixed: autoFixedCount,
-            });
-          }
-
-          perfTracker.checkpoint('validation_complete');
-
-          // TODO: Design system file injection pending migration to LayoutManifest
-          // if (layoutManifest) {
-          //   const designFiles = generateDesignFilesArray(layoutManifest);
-          //   ... (disabled until generateDesignFilesArray is migrated)
-          // }
-
-          // Parse dependencies
-          const dependencies: Record<string, string> = {};
-          if (dependenciesMatch) {
-            const depsText = dependenciesMatch[1].trim();
-            const depsLines = depsText.split('\n');
-            for (const line of depsLines) {
-              const [pkg, version] = line.split(':').map((s) => s.trim());
-              if (pkg && version) {
-                dependencies[pkg] = version;
-              }
-            }
-          }
-
-          const changeType = changeTypeMatch
-            ? changeTypeMatch[1].trim().split('\n')[0].trim()
-            : 'NEW_APP';
-          const changeSummary = changeSummaryMatch ? changeSummaryMatch[1].trim() : '';
-          const setupInstructions = setupMatch
-            ? setupMatch[1].trim()
-            : 'Run npm install && npm run dev';
-
-          const validationWarnings =
-            validationErrors.length > 0
-              ? {
-                  hasWarnings: true,
-                  message: `Code validation detected ${totalErrors - autoFixedCount} potential issue(s).`,
-                  details: validationErrors,
-                }
-              : undefined;
-
-          // Send complete event
-          const completeEvent: CompleteEvent = {
-            type: 'complete',
-            timestamp: Date.now(),
-            success: true,
-            data: {
-              name,
-              description: descriptionText,
-              appType,
-              changeType,
-              changeSummary,
-              files,
-              dependencies,
-              setupInstructions,
-              validationWarnings,
-            },
-            stats: {
-              totalTime: Date.now() - startTime,
-              filesGenerated: files.length,
-              inputTokens,
-              outputTokens,
-              cachedTokens,
-              agenticToolCalls: agenticResult.toolCallsMade, // Track agentic tool usage
-            },
-          };
-
-          await writeEvent(completeEvent);
-
-          // Log successful completion
-          try {
-            analytics.logRequestComplete(requestId, {
-              modelUsed: modelName,
-              promptLength: Math.round(systemPrompt.length / 4),
-              responseLength: responseText.length,
-              validationRan: true,
-              validationIssuesFound: totalErrors,
-              validationIssuesFixed: autoFixedCount,
-              metadata: {
-                appName: name,
-                appType: appType,
-                changeType: changeType,
-                isModification: isModification,
-                hasImage: hasImage,
-                filesGenerated: files.length,
-                hasDependencies: Object.keys(dependencies).length > 0,
-                streaming: false, // Agentic mode is non-streaming
-                agenticMode: true,
-                agenticToolCalls: agenticResult.toolCallsMade,
-              },
-            });
-          } catch (analyticsError) {
-            console.error('Analytics logging failed:', analyticsError);
-          }
-
-          if (process.env.NODE_ENV === 'development') {
-            try {
-              perfTracker.log('Full-App-Stream Route (Agentic)');
-            } catch (perfError) {
-              console.error('Performance tracking failed:', perfError);
-            }
-          }
-
-          // Close and return - agentic path complete
-          clearTimeout(globalTimeoutId);
-          await closeWriter();
-          return;
-        } catch (agenticError) {
-          console.error('Agentic generation error:', agenticError);
-          await writeEvent({
-            type: 'error',
-            timestamp: Date.now(),
-            message:
-              agenticError instanceof Error ? agenticError.message : 'Agentic generation failed',
-            code: 'AGENTIC_ERROR',
-            recoverable: false,
-          });
+        if (!streamResult) {
           clearTimeout(globalTimeoutId);
           await closeWriter();
           return;
         }
-      }
-      // ========================================================================
-      // END AGENTIC MODE - Continue with existing streaming below
-      // ========================================================================
 
-      // Keep-alive heartbeat during Claude's thinking phase
-      // Sends a "thinking" SSE event every 10s to prevent client chunk timeout
-      thinkingHeartbeat = setInterval(async () => {
-        if (!writerClosed) {
-          try {
-            await writeEvent({
-              type: 'thinking',
-              timestamp: Date.now(),
-              message: 'AI is still thinking...',
-            });
-          } catch {
-            // Writer closed, will be cleaned up below
-          }
-        }
-      }, 10_000);
-
-      // Stream from Claude with abort signal
-      const aiStream = await anthropic.messages.stream({
-        model: modelName,
-        max_tokens: tokenBudget.max_tokens,
-        temperature: 1,
-        thinking: {
-          type: 'enabled',
-          budget_tokens: tokenBudget.thinking_budget,
-        },
-        system: [
-          {
-            type: 'text',
-            text: systemPrompt,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
-        messages,
-      });
-
-      // Monitor abort signal and cancel AI stream if needed
-      abortController.signal.addEventListener('abort', () => {
-        aiStream.abort();
-      });
-
-      // Collect response with real-time progress
-      let responseText = '';
-      let inputTokens = 0;
-      let outputTokens = 0;
-      let cachedTokens = 0;
-      let currentFilePath: string | null = null;
-      let fileCount = 0;
-      let lastProgressUpdate = Date.now();
-      let lastFileCheckPosition = 0; // Track where we've checked for file markers
-      const timeout = tokenBudget.timeout;
-
-      try {
-        for await (const chunk of aiStream) {
-          // Stop heartbeat once real chunks arrive
-          if (thinkingHeartbeat) {
-            clearInterval(thinkingHeartbeat);
-            thinkingHeartbeat = null;
-          }
-
-          // Check if client disconnected
-          if (writerClosed) {
-            break;
-          }
-
-          // Check timeout
-          if (Date.now() - startTime > timeout) {
-            throw new Error(`AI response timeout after ${timeout / 1000}s`);
-          }
-
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            const text = chunk.delta.text;
-            responseText += text;
-
-            // Check for file markers in the accumulated response (handles markers spanning chunks)
-            // Only check the new portion plus some overlap for partial markers
-            const searchStart = Math.max(0, lastFileCheckPosition - 50);
-            const searchText = responseText.slice(searchStart);
-
-            // Use a safe regex match with bounds checking
-            let match;
-            const fileRegex = /===FILE:(.*?)===/g;
-            fileRegex.lastIndex = 0;
-
-            while ((match = fileRegex.exec(searchText)) !== null) {
-              const matchPosition = searchStart + match.index;
-
-              // Only process if this is a new match we haven't seen
-              if (matchPosition >= lastFileCheckPosition) {
-                const newFilePath = match[1].trim();
-
-                // If we were working on a file, mark it complete
-                if (currentFilePath && currentFilePath !== newFilePath) {
-                  await writeEvent({
-                    type: 'file_complete',
-                    timestamp: Date.now(),
-                    filePath: currentFilePath,
-                    fileIndex: fileCount,
-                    totalFiles: fileCount + 1,
-                    charCount: 0,
-                  });
-                }
-
-                if (currentFilePath !== newFilePath) {
-                  fileCount++;
-                  currentFilePath = newFilePath;
-
-                  await writeEvent({
-                    type: 'file_start',
-                    timestamp: Date.now(),
-                    filePath: newFilePath,
-                    fileIndex: fileCount,
-                    totalFiles: fileCount,
-                  });
-                }
-              }
-            }
-            lastFileCheckPosition = responseText.length;
-
-            // Send progress updates every 500ms during generation
-            if (Date.now() - lastProgressUpdate > 500 && currentFilePath) {
-              await writeEvent({
-                type: 'file_progress',
-                timestamp: Date.now(),
-                filePath: currentFilePath,
-                chunkSize: text.length,
-                totalChars: responseText.length,
-              });
-              lastProgressUpdate = Date.now();
-            }
-          }
-
-          // Capture token usage from final message
-          if (chunk.type === 'message_stop') {
-            const finalMessage = await aiStream.finalMessage();
-            inputTokens = finalMessage.usage.input_tokens || 0;
-            outputTokens = finalMessage.usage.output_tokens || 0;
-            cachedTokens = finalMessage.usage.cache_read_input_tokens || 0;
-          }
-        }
-
-        // Mark last file complete
-        if (currentFilePath) {
+        // Send file events for agentic response (parsed after the fact)
+        const fileMatches = streamResult.responseText.matchAll(/===FILE:([\s\S]*?)===\s*/g);
+        let fileIdx = 0;
+        for (const match of fileMatches) {
+          fileIdx++;
           await writeEvent({
             type: 'file_complete',
             timestamp: Date.now(),
-            filePath: currentFilePath,
-            fileIndex: fileCount,
-            totalFiles: fileCount,
+            filePath: match[1].trim(),
+            fileIndex: fileIdx,
+            totalFiles: fileIdx,
             charCount: 0,
           });
         }
-      } catch (streamError) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: streamError instanceof Error ? streamError.message : 'Stream failed',
-          recoverable: false,
+      } else {
+        streamResult = await processStream({
+          anthropic,
+          modelName: assembled.modelName,
+          systemPrompt: assembled.systemPrompt,
+          messages: assembled.messages,
+          tokenBudget: assembled.tokenBudget,
+          abortController,
+          startTime,
+          sse,
         });
-        await closeWriter();
-        return;
+
+        if (!streamResult) {
+          clearTimeout(globalTimeoutId);
+          return; // streamProcessor already closed the writer
+        }
       }
 
       perfTracker.checkpoint('ai_response_received');
 
-      if (!responseText) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: 'No response from Claude',
-          code: 'EMPTY_RESPONSE',
-          recoverable: true,
-        });
-        await closeWriter();
-        return;
+      // Step 4: Parse response
+      const parsed = await parseResponse(streamResult.responseText, sse);
+      if (!parsed) {
+        clearTimeout(globalTimeoutId);
+        return; // parseResponse already closed the writer
       }
 
-      // Parse response
-      const nameMatch = responseText.match(/===NAME===\s*([\s\S]*?)\s*===/);
-      const descriptionMatch = responseText.match(/===DESCRIPTION===\s*([\s\S]*?)\s*===/);
-      const appTypeMatch = responseText.match(/===APP_TYPE===\s*([\s\S]*?)\s*===/);
-      const changeTypeMatch = responseText.match(/===CHANGE_TYPE===\s*([\s\S]*?)\s*===/);
-      const changeSummaryMatch = responseText.match(/===CHANGE_SUMMARY===\s*([\s\S]*?)\s*===/);
-      const dependenciesMatch = responseText.match(/===DEPENDENCIES===\s*([\s\S]*?)\s*===/);
-      const setupMatch = responseText.match(/===SETUP===\s*([\s\S]*?)===END===/);
-
-      if (!nameMatch || !descriptionMatch) {
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: 'Invalid response format - missing required delimiters',
-          code: 'PARSE_ERROR',
-          recoverable: true,
-        });
-        await closeWriter();
-        return;
-      }
-
-      const name = nameMatch[1].trim().split('\n')[0].trim();
-      const descriptionText = descriptionMatch[1].trim().split('\n')[0].trim();
-      const appType = appTypeMatch ? appTypeMatch[1].trim().split('\n')[0].trim() : 'FRONTEND_ONLY';
-
-      // Extract files
-      const fileMatches = responseText.matchAll(
-        /===FILE:([\s\S]*?)===\s*([\s\S]*?)(?====FILE:|===DEPENDENCIES===|===SETUP===|===END===|$)/g
-      );
-      const files: Array<{ path: string; content: string; description: string }> = [];
-
-      for (const match of fileMatches) {
-        const path = match[1].trim();
-        const content = match[2].trim();
-        files.push({
-          path,
-          content,
-          description: `${path.split('/').pop()} file`,
-        });
-      }
-
-      if (files.length === 0) {
-        const responseSnippet = responseText.slice(0, 300).trim();
-        await writeEvent({
-          type: 'error',
-          timestamp: Date.now(),
-          message: responseSnippet
-            ? `AI responded but generated no code files. AI said: "${responseSnippet}${responseText.length > 300 ? '...' : ''}"`
-            : 'No files generated in response',
-          code: 'NO_FILES',
-          recoverable: true,
-        });
-        await closeWriter();
-        return;
-      }
-
-      // Check for truncation
-      const truncationInfo = detectTruncation(responseText, files);
-      if (truncationInfo.isTruncated && truncationInfo.salvageableFiles > 0) {
-        const completeFiles = files.slice(0, truncationInfo.salvageableFiles);
-        files.length = 0;
-        files.push(...completeFiles);
-      }
-
-      // Validation
-      await writeEvent({
-        type: 'validation',
-        timestamp: Date.now(),
-        message: 'Validating generated code...',
-        filesValidated: 0,
-        totalFiles: files.length,
-        errorsFound: 0,
-        autoFixed: 0,
-      });
-
-      const validationErrors: Array<{ file: string; errors: ValidationError[] }> = [];
-      let totalErrors = 0;
-      let autoFixedCount = 0;
-
-      for (let i = 0; i < files.length; i++) {
-        // Check if client disconnected
-        if (writerClosed) {
-          break;
-        }
-
-        const file = files[i];
-        if (
-          file.path.endsWith('.tsx') ||
-          file.path.endsWith('.ts') ||
-          file.path.endsWith('.jsx') ||
-          file.path.endsWith('.js')
-        ) {
-          try {
-            const validation = await validateGeneratedCode(file.content, file.path);
-
-            if (!validation.valid) {
-              totalErrors += validation.errors.length;
-
-              const fixedCode = autoFixCode(file.content, validation.errors);
-              if (fixedCode !== file.content) {
-                file.content = fixedCode;
-                autoFixedCount += validation.errors.filter(
-                  (e) => e.type === 'UNCLOSED_STRING'
-                ).length;
-
-                const revalidation = await validateGeneratedCode(fixedCode, file.path);
-                if (!revalidation.valid) {
-                  validationErrors.push({ file: file.path, errors: revalidation.errors });
-                }
-              } else {
-                validationErrors.push({ file: file.path, errors: validation.errors });
-              }
-            }
-          } catch (validationError) {
-            console.error(`Validation error for ${file.path}:`, validationError);
-            // Continue with other files even if one fails validation
-          }
-        }
-
-        // Update validation progress
-        await writeEvent({
-          type: 'validation',
-          timestamp: Date.now(),
-          message: `Validated ${file.path}`,
-          filesValidated: i + 1,
-          totalFiles: files.length,
-          errorsFound: totalErrors,
-          autoFixed: autoFixedCount,
-        });
-      }
+      // Step 5: Validate generated code
+      const validationMessage = validatedRequest.useAgenticValidation
+        ? 'Running post-generation validation (safety net)...'
+        : 'Validating generated code...';
+      const validationResults = await validateFiles(parsed.files, sse, validationMessage);
 
       perfTracker.checkpoint('validation_complete');
 
@@ -1158,91 +214,44 @@ MODIFICATION MODE for "${currentAppName}":
       //   ... (disabled until generateDesignFilesArray is migrated)
       // }
 
-      // Parse dependencies
-      const dependencies: Record<string, string> = {};
-      if (dependenciesMatch) {
-        const depsText = dependenciesMatch[1].trim();
-        const depsLines = depsText.split('\n');
-        for (const line of depsLines) {
-          const [pkg, version] = line.split(':').map((s) => s.trim());
-          if (pkg && version) {
-            dependencies[pkg] = version;
-          }
-        }
-      }
-
-      const changeType = changeTypeMatch
-        ? changeTypeMatch[1].trim().split('\n')[0].trim()
-        : 'NEW_APP';
-      const changeSummary = changeSummaryMatch ? changeSummaryMatch[1].trim() : '';
-      const setupInstructions = setupMatch
-        ? setupMatch[1].trim()
-        : 'Run npm install && npm run dev';
-
-      const validationWarnings =
-        validationErrors.length > 0
-          ? {
-              hasWarnings: true,
-              message: `Code validation detected ${totalErrors - autoFixedCount} potential issue(s).`,
-              details: validationErrors,
-            }
-          : undefined;
-
-      // Send complete event with all data
-      const completeEvent: CompleteEvent = {
-        type: 'complete',
-        timestamp: Date.now(),
-        success: true,
-        data: {
-          name,
-          description: descriptionText,
-          appType,
-          changeType,
-          changeSummary,
-          files,
-          dependencies,
-          setupInstructions,
-          validationWarnings,
-        },
-        stats: {
-          totalTime: Date.now() - startTime,
-          filesGenerated: files.length,
-          inputTokens,
-          outputTokens,
-          cachedTokens,
-        },
-      };
-
+      // Step 6: Build and send complete event
+      const completeEvent = buildCompleteEvent(parsed, streamResult, startTime, validationResults);
       await writeEvent(completeEvent);
 
       // Log successful completion (wrapped in try-catch to avoid masking errors)
       try {
         analytics.logRequestComplete(requestId, {
-          modelUsed: modelName,
-          promptLength: Math.round(systemPrompt.length / 4),
-          responseLength: responseText.length,
+          modelUsed: assembled.modelName,
+          promptLength: Math.round(assembled.systemPrompt.length / 4),
+          responseLength: streamResult.responseText.length,
           validationRan: true,
-          validationIssuesFound: totalErrors,
-          validationIssuesFixed: autoFixedCount,
+          validationIssuesFound: validationResults.totalErrors,
+          validationIssuesFixed: validationResults.autoFixedCount,
           metadata: {
-            appName: name,
-            appType: appType,
-            changeType: changeType,
-            isModification: isModification,
-            hasImage: hasImage,
-            filesGenerated: files.length,
-            hasDependencies: Object.keys(dependencies).length > 0,
-            streaming: true,
+            appName: parsed.name,
+            appType: parsed.appType,
+            changeType: parsed.changeType,
+            isModification: validatedRequest.isModification,
+            hasImage: validatedRequest.hasImage,
+            filesGenerated: parsed.files.length,
+            hasDependencies: Object.keys(parsed.dependencies).length > 0,
+            streaming: !validatedRequest.useAgenticValidation,
+            ...(validatedRequest.useAgenticValidation && {
+              agenticMode: true,
+              agenticToolCalls: streamResult.agenticToolCalls,
+            }),
           },
         });
       } catch (analyticsError) {
         console.error('Analytics logging failed:', analyticsError);
-        // Don't fail the request due to analytics
       }
 
       if (process.env.NODE_ENV === 'development') {
         try {
-          perfTracker.log('Full-App-Stream Route');
+          const label = validatedRequest.useAgenticValidation
+            ? 'Full-App-Stream Route (Agentic)'
+            : 'Full-App-Stream Route';
+          perfTracker.log(label);
         } catch (perfError) {
           console.error('Performance tracking failed:', perfError);
         }
@@ -1265,10 +274,6 @@ MODIFICATION MODE for "${currentAppName}":
         recoverable: false,
       });
     } finally {
-      if (thinkingHeartbeat) {
-        clearInterval(thinkingHeartbeat);
-        thinkingHeartbeat = null;
-      }
       clearTimeout(globalTimeoutId);
       await closeWriter();
     }
