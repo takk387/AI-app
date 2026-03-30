@@ -347,9 +347,9 @@ export class StorageService {
         bucket,
         owner: userId as UserId,
         path: `${userId}/${file.name}` as FilePath,
-        createdAt: file.created_at,
-        updatedAt: file.updated_at,
-        lastAccessedAt: file.last_accessed_at,
+        createdAt: file.created_at ?? new Date().toISOString(),
+        updatedAt: file.updated_at ?? new Date().toISOString(),
+        lastAccessedAt: file.last_accessed_at ?? undefined,
         metadata: file.metadata as Record<string, string | number | boolean> | undefined,
         cacheControl: file.metadata?.cacheControl,
       }));
