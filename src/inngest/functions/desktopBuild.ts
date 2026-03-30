@@ -25,6 +25,7 @@ export const desktopBuild = inngest.createFunction(
   {
     id: 'desktop-build',
     retries: 2,
+    triggers: [{ event: 'deploy/desktop.requested' }],
     cancelOn: [
       {
         event: 'deploy/desktop.cancelled',
@@ -32,8 +33,8 @@ export const desktopBuild = inngest.createFunction(
       },
     ],
   },
-  { event: 'deploy/desktop.requested' },
-  async ({ event, step }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async ({ event, step }: any) => {
     // Note: transformedCode will be used in production to write the app files
     const {
       projectId,
@@ -111,11 +112,13 @@ export const desktopBuild = inngest.createFunction(
       );
 
       // In production, upload to storage (S3/R2)
-      return buildResult.artifacts.map((artifact) => ({
-        name: artifact.name,
-        url: `https://storage.example.com/builds/${projectId}/${artifact.name}`,
-        size: artifact.size,
-      }));
+      return buildResult.artifacts.map(
+        (artifact: { name: string; path: string; size: number }) => ({
+          name: artifact.name,
+          url: `https://storage.example.com/builds/${projectId}/${artifact.name}`,
+          size: artifact.size,
+        })
+      );
     });
 
     // Step 5: Finalize

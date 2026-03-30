@@ -59,6 +59,7 @@ export const databaseMigration = inngest.createFunction(
   {
     id: 'database-migration',
     retries: 3,
+    triggers: [{ event: 'deploy/database.migrate' }],
     cancelOn: [
       {
         event: 'deploy/database.cancelled',
@@ -66,8 +67,8 @@ export const databaseMigration = inngest.createFunction(
       },
     ],
   },
-  { event: 'deploy/database.migrate' },
-  async ({ event, step }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async ({ event, step }: any) => {
     const { projectId, userId, sourceData, targetProvider, targetConnectionUrl } = event.data;
 
     // Step 1: Parse and validate source data

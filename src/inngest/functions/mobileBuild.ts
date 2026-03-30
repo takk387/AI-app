@@ -30,9 +30,10 @@ export const mobileBuild = inngest.createFunction(
         match: 'data.projectId',
       },
     ],
+    triggers: [{ event: 'deploy/mobile.requested' }],
   },
-  { event: 'deploy/mobile.requested' },
-  async ({ event, step }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async ({ event, step }: any) => {
     // Note: easProfile will be used in production when triggering EAS Build
     const {
       projectId,
