@@ -13,6 +13,7 @@ import type {
   AIModelPricing,
 } from '@/types/api-gateway';
 import { getUsageTrackingService } from './UsageTrackingService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -280,7 +281,7 @@ export class AnthropicProxyService implements IProxyService<AnthropicMessageRequ
    */
   private async getUserApiKey(userId: string): Promise<string | null> {
     // In production, query from app_api_config table
-    console.log(`[AnthropicProxyService] Getting user API key for ${userId}`);
+    logger.info(`[AnthropicProxyService] Getting user API key for ${userId}`);
     return null;
   }
 }

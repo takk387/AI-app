@@ -10,6 +10,7 @@
  */
 
 import { inngest, sendStatusUpdate } from '../client';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -212,12 +213,12 @@ async function executeMigration(
   // - @libsql/client for Turso
   // - @neondatabase/serverless for Neon
 
-  console.log(`[databaseMigration] Starting migration to ${provider}`);
+  logger.info(`[databaseMigration] Starting migration to ${provider}`);
 
   try {
     // Simulate connection
     await onProgress('migrating', 'Creating database schema...', 30);
-    console.log(
+    logger.info(
       `[databaseMigration] Connected to ${provider}: ${connectionUrl.substring(0, 30)}...`
     );
 
@@ -225,7 +226,7 @@ async function executeMigration(
     const schema = parsedData.schema || [];
     for (const table of schema) {
       const sql = generateCreateTableSQL(table, provider);
-      console.log(`[databaseMigration] Creating table: ${sql.substring(0, 60)}...`);
+      logger.info(`[databaseMigration] Creating table: ${sql.substring(0, 60)}...`);
     }
 
     // Migrate data
@@ -243,7 +244,7 @@ async function executeMigration(
 
       // Simulate migration
       totalRows += table.rows.length;
-      console.log(`[databaseMigration] Migrated ${table.rows.length} rows to ${table.name}`);
+      logger.info(`[databaseMigration] Migrated ${table.rows.length} rows to ${table.name}`);
     }
 
     // Verify

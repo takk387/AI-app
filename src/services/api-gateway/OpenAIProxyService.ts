@@ -13,6 +13,7 @@ import type {
   AIModelPricing,
 } from '@/types/api-gateway';
 import { getUsageTrackingService } from './UsageTrackingService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -258,7 +259,7 @@ export class OpenAIProxyService implements IProxyService<OpenAIChatRequest, unkn
    */
   private async getUserApiKey(userId: string): Promise<string | null> {
     // In production, query from app_api_config table
-    console.log(`[OpenAIProxyService] Getting user API key for ${userId}`);
+    logger.info(`[OpenAIProxyService] Getting user API key for ${userId}`);
     return null;
   }
 }

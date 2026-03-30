@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 /**
  * DeploymentRetryService
  *
@@ -309,7 +310,7 @@ export class DeploymentRetryService {
     this.retryQueue.set(deploymentId, record);
     this.saveToStorage();
 
-    console.log(`[DeploymentRetryService] Added to retry queue:`, {
+    logger.info(`[DeploymentRetryService] Added to retry queue:`, {
       deploymentId,
       errorType,
       nextRetryAt: record.retryState.nextRetryAt,
@@ -361,7 +362,7 @@ export class DeploymentRetryService {
     const deleted = this.retryQueue.delete(deploymentId);
     if (deleted) {
       this.saveToStorage();
-      console.log(`[DeploymentRetryService] Removed from retry queue: ${deploymentId}`);
+      logger.info(`[DeploymentRetryService] Removed from retry queue: ${deploymentId}`);
     }
     return deleted;
   }
@@ -431,7 +432,7 @@ export class DeploymentRetryService {
 
     if (removed > 0) {
       this.saveToStorage();
-      console.log(`[DeploymentRetryService] Cleaned up ${removed} stale records`);
+      logger.info(`[DeploymentRetryService] Cleaned up ${removed} stale records`);
     }
 
     return removed;
@@ -466,7 +467,7 @@ export class DeploymentRetryService {
           throw lastError;
         }
 
-        console.log(`[DeploymentRetryService] ${retryResult.reason}`);
+        logger.info(`[DeploymentRetryService] ${retryResult.reason}`);
 
         if (onRetry) {
           onRetry(attempt + 1, lastError, retryResult.delayMs);
@@ -500,7 +501,7 @@ export class DeploymentRetryService {
       const records = Array.from(this.retryQueue.entries());
       localStorage.setItem(RETRY_STORAGE_KEY, JSON.stringify(records));
     } catch (error) {
-      console.warn('[DeploymentRetryService] Failed to save to storage:', error);
+      logger.warn('[DeploymentRetryService] Failed to save to storage', { error });
     }
   }
 
@@ -512,10 +513,10 @@ export class DeploymentRetryService {
       if (stored) {
         const records: [string, DeploymentRetryRecord][] = JSON.parse(stored);
         this.retryQueue = new Map(records);
-        console.log(`[DeploymentRetryService] Loaded ${this.retryQueue.size} records from storage`);
+        logger.info(`[DeploymentRetryService] Loaded ${this.retryQueue.size} records from storage`);
       }
     } catch (error) {
-      console.warn('[DeploymentRetryService] Failed to load from storage:', error);
+      logger.warn('[DeploymentRetryService] Failed to load from storage', { error });
     }
   }
 }

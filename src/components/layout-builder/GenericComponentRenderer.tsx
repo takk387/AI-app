@@ -24,6 +24,7 @@ import { IconRenderer } from './renderers/IconRenderer';
 import { ContentRenderer } from './renderers/ContentRenderer';
 import { FormRenderer } from './renderers/FormRenderer';
 import { MediaRenderer } from './renderers/MediaRenderer';
+import { logger } from '@/utils/logger';
 
 interface GenericComponentRendererProps {
   component: DetectedComponentEnhanced;
@@ -70,7 +71,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 }) => {
   // Prevent infinite recursion with depth limit
   if (depth >= MAX_DEPTH) {
-    console.warn(
+    logger.warn(
       `[GenericComponentRenderer] MAX_DEPTH (${MAX_DEPTH}) reached for component "${component.id}". ` +
         `This may indicate a circular reference or excessively nested layout.`
     );
@@ -106,7 +107,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
 
   // DEBUG: Log component bounds to diagnose visibility issues (dev only)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[GenericComponentRenderer] Rendering:', id, 'type:', type, 'bounds:', bounds);
+    logger.debug('[GenericComponentRenderer] Rendering', { id, type, bounds });
   }
 
   // Helper function for smart z-index based on component type
@@ -463,7 +464,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
   const renderChildren = () => {
     // Check depth limit to prevent infinite recursion
     if (depth >= MAX_DEPTH) {
-      console.warn(
+      logger.warn(
         `[GenericComponentRenderer] Max depth (${MAX_DEPTH}) reached for component ${id}`
       );
       return null;
@@ -477,7 +478,7 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     return children.map((childId) => {
       const childComponent = componentMap.get(childId);
       if (!childComponent) {
-        console.warn(`[GenericComponentRenderer] Child component "${childId}" not found in map`);
+        logger.warn(`[GenericComponentRenderer] Child component "${childId}" not found in map`);
         return null;
       }
 

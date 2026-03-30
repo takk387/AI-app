@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -56,7 +57,7 @@ async function initiateTransferToCloudflare(
   //   body: JSON.stringify({ auth_code: authCode })
   // });
 
-  console.log(`[Domain Transfer] Initiating transfer for ${domain} to Cloudflare`);
+  logger.info(`[Domain Transfer] Initiating transfer for ${domain} to Cloudflare`);
 
   // Simulate transfer initiation - in production, this would be a real API call
   const transferId = `transfer-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -80,7 +81,7 @@ async function getTransferStatusFromCloudflare(domain: string): Promise<{
   //   headers: { 'Authorization': `Bearer ${apiToken}` }
   // });
 
-  console.log(`[Domain Transfer] Getting transfer status for ${domain}`);
+  logger.info(`[Domain Transfer] Getting transfer status for ${domain}`);
 
   // Simulate status check - in production, this would be a real API call
   return {
@@ -198,7 +199,7 @@ export async function POST(request: Request) {
       .single();
 
     if (upsertError) {
-      console.error('Failed to create domain transfer record:', upsertError);
+      logger.error('Failed to create domain transfer record', upsertError);
       return NextResponse.json(
         { success: false, error: 'Failed to record transfer' },
         { status: 500 }
@@ -216,7 +217,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error('Domain transfer error:', error);
+    logger.error('Domain transfer error', error);
     return NextResponse.json({ success: false, error: 'Domain transfer failed' }, { status: 500 });
   }
 }
@@ -290,7 +291,7 @@ export async function GET(request: Request) {
       message,
     });
   } catch (error) {
-    console.error('Transfer status check error:', error);
+    logger.error('Transfer status check error', error);
     return NextResponse.json(
       { success: false, error: 'Failed to get transfer status' },
       { status: 500 }

@@ -16,6 +16,7 @@ import {
   LoaderIcon,
   RocketIcon,
 } from './ui/Icons';
+import { logger } from '@/utils/logger';
 
 /**
  * Check if a component has valid JSON code to preview
@@ -23,13 +24,13 @@ import {
 function hasValidCode(component: GeneratedComponent | null): boolean {
   if (!component) {
     if (process.env.NODE_ENV === 'development') {
-      console.debug('[PreviewPanel] hasValidCode: no component');
+      logger.debug('[PreviewPanel] hasValidCode: no component');
     }
     return false;
   }
   if (!component.code || component.code.trim() === '') {
     if (process.env.NODE_ENV === 'development') {
-      console.debug('[PreviewPanel] hasValidCode: component has no code', {
+      logger.debug('[PreviewPanel] hasValidCode: component has no code', {
         id: component.id,
         name: component.name,
       });
@@ -41,7 +42,7 @@ function hasValidCode(component: GeneratedComponent | null): boolean {
     const isValid =
       parsed && parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0;
     if (!isValid && process.env.NODE_ENV === 'development') {
-      console.debug('[PreviewPanel] hasValidCode: parsed but invalid structure', {
+      logger.debug('[PreviewPanel] hasValidCode: parsed but invalid structure', {
         id: component.id,
         name: component.name,
         hasFiles: !!parsed?.files,
@@ -52,7 +53,7 @@ function hasValidCode(component: GeneratedComponent | null): boolean {
     return isValid;
   } catch (e) {
     if (process.env.NODE_ENV === 'development') {
-      console.debug('[PreviewPanel] hasValidCode: JSON parse failed', {
+      logger.debug('[PreviewPanel] hasValidCode: JSON parse failed', {
         id: component.id,
         name: component.name,
         error: e instanceof Error ? e.message : 'Unknown error',

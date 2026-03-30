@@ -15,6 +15,7 @@ import type {
   APIService,
   UsageUnitType,
 } from '@/types/api-gateway';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -42,7 +43,7 @@ export class UsageTrackingService implements IUsageTrackingService {
 
     // In production, this would insert into the api_usage table
     // For now, log the usage
-    console.log('[UsageTrackingService] Recording usage:', {
+    logger.info('[UsageTrackingService] Recording usage', {
       userId: usageRecord.userId,
       appId: usageRecord.appId,
       service: usageRecord.service,
@@ -128,7 +129,7 @@ export class UsageTrackingService implements IUsageTrackingService {
         .lte('created_at', periodEnd.toISOString());
 
       if (error) {
-        console.error('[UsageTrackingService] Error fetching app usage:', error);
+        logger.error('[UsageTrackingService] Error fetching app usage', error);
         throw error;
       }
 
@@ -172,7 +173,7 @@ export class UsageTrackingService implements IUsageTrackingService {
 
       return Array.from(serviceMap.values());
     } catch (error) {
-      console.error('[UsageTrackingService] Error in getUsageByApp:', error);
+      logger.error('[UsageTrackingService] Error in getUsageByApp', error);
 
       // Return empty aggregations on error
       const services: APIService[] = [
@@ -234,13 +235,13 @@ export class UsageTrackingService implements IUsageTrackingService {
       });
 
       if (error) {
-        console.error('[UsageTrackingService] Failed to store usage record:', error);
+        logger.error('[UsageTrackingService] Failed to store usage record', error);
         throw error;
       }
 
-      console.log(`[UsageTrackingService] Stored usage record for ${record.service}`);
+      logger.info(`[UsageTrackingService] Stored usage record for ${record.service}`);
     } catch (error) {
-      console.error('[UsageTrackingService] Error storing usage record:', error);
+      logger.error('[UsageTrackingService] Error storing usage record', error);
       // Don't throw - usage tracking failures shouldn't break API calls
     }
   }
@@ -257,7 +258,7 @@ export class UsageTrackingService implements IUsageTrackingService {
     const month = date.getMonth() + 1;
 
     // Aggregation is handled by database trigger on api_usage insert
-    console.log(
+    logger.info(
       `[UsageTrackingService] Monthly aggregation updated via trigger for ${year}-${String(month).padStart(2, '0')}`
     );
   }
@@ -283,7 +284,7 @@ export class UsageTrackingService implements IUsageTrackingService {
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows returned, which is fine for a new user/month
-        console.error('[UsageTrackingService] Error fetching monthly usage:', error);
+        logger.error('[UsageTrackingService] Error fetching monthly usage', error);
       }
 
       if (data) {
@@ -323,7 +324,7 @@ export class UsageTrackingService implements IUsageTrackingService {
         totalCostCents: 0,
       };
     } catch (error) {
-      console.error('[UsageTrackingService] Error in getMonthlyUsage:', error);
+      logger.error('[UsageTrackingService] Error in getMonthlyUsage', error);
       // Return empty summary on error
       return {
         userId,
@@ -360,7 +361,7 @@ export class UsageTrackingService implements IUsageTrackingService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[UsageTrackingService] Error fetching spend limit:', error);
+        logger.error('[UsageTrackingService] Error fetching spend limit', error);
       }
 
       if (data?.api_spend_limit_cents) {
@@ -370,7 +371,7 @@ export class UsageTrackingService implements IUsageTrackingService {
       // Fall back to default limit
       return DEFAULT_SPEND_LIMIT_CENTS;
     } catch (error) {
-      console.error('[UsageTrackingService] Error in getUserSpendLimit:', error);
+      logger.error('[UsageTrackingService] Error in getUserSpendLimit', error);
       return DEFAULT_SPEND_LIMIT_CENTS;
     }
   }

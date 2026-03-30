@@ -6,6 +6,7 @@
  */
 
 import Stripe from 'stripe';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -128,7 +129,7 @@ export class StripeConnectService {
         },
       });
 
-      console.log(
+      logger.info(
         `[StripeConnectService] Created Connect account ${stripeAccount.id} for app ${appId}`
       );
 
@@ -147,7 +148,7 @@ export class StripeConnectService {
 
       return { success: true, account };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to create Connect account:', error);
+      logger.error('[StripeConnectService] Failed to create Connect account', error);
       return {
         success: false,
         error: `Failed to create Connect account: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -194,10 +195,10 @@ export class StripeConnectService {
         type: 'account_onboarding',
       });
 
-      console.log(`[StripeConnectService] Created onboarding link for ${stripeAccountId}`);
+      logger.info(`[StripeConnectService] Created onboarding link for ${stripeAccountId}`);
       return { success: true, url: accountLink.url };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to create onboarding link:', error);
+      logger.error('[StripeConnectService] Failed to create onboarding link', error);
       return {
         success: false,
         error: `Failed to create onboarding link: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -235,7 +236,7 @@ export class StripeConnectService {
 
       return { success: true, account };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to get account status:', error);
+      logger.error('[StripeConnectService] Failed to get account status', error);
       return {
         success: false,
         error: `Failed to get account status: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -275,7 +276,7 @@ export class StripeConnectService {
         }
       );
 
-      console.log(
+      logger.info(
         `[StripeConnectService] Created payment intent ${paymentIntent.id} for ${stripeAccountId}`
       );
 
@@ -285,7 +286,7 @@ export class StripeConnectService {
         clientSecret: paymentIntent.client_secret || undefined,
       };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to create payment intent:', error);
+      logger.error('[StripeConnectService] Failed to create payment intent', error);
       return {
         success: false,
         error: `Failed to create payment intent: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -313,7 +314,7 @@ export class StripeConnectService {
         }
       );
 
-      console.log(`[StripeConnectService] Created payout ${payout.id} for ${stripeAccountId}`);
+      logger.info(`[StripeConnectService] Created payout ${payout.id} for ${stripeAccountId}`);
 
       return {
         success: true,
@@ -324,7 +325,7 @@ export class StripeConnectService {
           : undefined,
       };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to create payout:', error);
+      logger.error('[StripeConnectService] Failed to create payout', error);
       return {
         success: false,
         error: `Failed to create payout: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -361,7 +362,7 @@ export class StripeConnectService {
 
       return { success: true, balance: formattedBalance };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to get balance:', error);
+      logger.error('[StripeConnectService] Failed to get balance', error);
       return {
         success: false,
         error: `Failed to get balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -382,10 +383,10 @@ export class StripeConnectService {
 
     try {
       await this.stripe.accounts.del(stripeAccountId);
-      console.log(`[StripeConnectService] Deleted Connect account ${stripeAccountId}`);
+      logger.info(`[StripeConnectService] Deleted Connect account ${stripeAccountId}`);
       return { success: true };
     } catch (error) {
-      console.error('[StripeConnectService] Failed to delete account:', error);
+      logger.error('[StripeConnectService] Failed to delete account', error);
       return {
         success: false,
         error: `Failed to delete account: ${error instanceof Error ? error.message : 'Unknown error'}`,

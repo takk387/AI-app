@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getSubscriptionService } from '@/services/deployment/SubscriptionService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
 
     // Log cancellation reason/feedback (in production, store this)
     if (reason || feedback) {
-      console.log(
+      logger.info(
         `[CancelSubscription] User ${user.id} cancellation - Reason: ${reason}, Feedback: ${feedback}`
       );
     }
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       subscription: result.subscription,
     });
   } catch (error) {
-    console.error('Failed to cancel subscription:', error);
+    logger.error('Failed to cancel subscription', error);
     return NextResponse.json(
       { success: false, error: 'Failed to cancel subscription' },
       { status: 500 }

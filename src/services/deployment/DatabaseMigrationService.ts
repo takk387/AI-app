@@ -6,6 +6,7 @@
  */
 
 import type { DatabaseProvider } from '@/types/deployment/unified';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -464,10 +465,9 @@ export class DatabaseMigrationService {
 
     // Log the generated SQL for review
     const sql = this.generateSQL(schema, _targetProvider);
-    console.log(
-      `[Migration] SQL to be executed (${schema.length} tables):`,
-      sql.substring(0, 200) + '...'
-    );
+    logger.info(`[Migration] SQL to be executed (${schema.length} tables)`, {
+      sqlPreview: sql.substring(0, 200),
+    });
 
     // Simulate migration execution
     // In a real environment, this would use 'pg' or '@libsql/client' to execute the SQL

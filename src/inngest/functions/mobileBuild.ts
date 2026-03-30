@@ -11,6 +11,7 @@
  */
 
 import { inngest, sendStatusUpdate } from '../client';
+import { logger } from '@/utils/logger';
 
 /**
  * Mobile build background job
@@ -213,7 +214,7 @@ async function prepareNativeProject(params: NativeProjectParams): Promise<{
   // 3. Run `npx cap sync`
   // 4. Package for EAS Build
 
-  console.log(`[mobileBuild] Preparing ${params.platform} project`);
+  logger.info(`[mobileBuild] Preparing ${params.platform} project`);
 
   return {
     ready: true,
@@ -234,5 +235,5 @@ async function updateDeployedApp(
   }
 ): Promise<void> {
   // In production, this would update the deployed_apps table
-  console.log(`[mobileBuild] Updating deployed_apps for ${projectId}/${platform}:`, data);
+  logger.info(`[mobileBuild] Updating deployed_apps for ${projectId}/${platform}`, { data });
 }

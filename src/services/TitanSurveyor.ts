@@ -12,6 +12,7 @@ import sharp from 'sharp';
 import type { VisualManifest, FileInput, CanvasConfig, ImageMetadata } from '@/types/titanPipeline';
 import { FALLBACK_CANVAS } from '@/types/titanPipeline';
 import { isUIChromeIcon } from './iconConstants';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONFIGURATION
@@ -45,12 +46,12 @@ export async function extractImageMetadata(file: FileInput): Promise<ImageMetada
       format: metadata.format || 'unknown',
     };
 
-    console.log(
+    logger.info(
       `[TitanSurveyor] Image metadata: ${result.width}x${result.height} (${result.format})`
     );
     return result;
   } catch (error) {
-    console.warn('[TitanSurveyor] Metadata extraction failed:', error);
+    logger.warn('[TitanSurveyor] Metadata extraction failed', { error });
     return { width: 0, height: 0, format: 'unknown' };
   }
 }
@@ -69,7 +70,7 @@ export function buildCanvasConfig(metadata: ImageMetadata): CanvasConfig {
     };
   }
 
-  console.warn('[TitanSurveyor] Invalid metadata dimensions, using fallback canvas');
+  logger.warn('[TitanSurveyor] Invalid metadata dimensions, using fallback canvas');
   return { ...FALLBACK_CANVAS };
 }
 
@@ -98,7 +99,7 @@ export async function enhanceImageQuality(file: FileInput): Promise<FileInput> {
 
     // Skip if image is already high resolution
     if (maxDim >= MIN_DIMENSION) {
-      console.log(`[TitanSurveyor] Image already ${maxDim}px, skipping enhancement`);
+      logger.info(`[TitanSurveyor] Image already ${maxDim}px, skipping enhancement`);
       return file;
     }
 
@@ -111,7 +112,7 @@ export async function enhanceImageQuality(file: FileInput): Promise<FileInput> {
       height: Math.round(height * scale),
       kernel: 'lanczos3',
     });
-    console.log(`[TitanSurveyor] Upscaling image ${maxDim}px → ${MIN_DIMENSION}px`);
+    logger.info(`[TitanSurveyor] Upscaling image ${maxDim}px → ${MIN_DIMENSION}px`);
 
     // Apply subtle sharpening to combat blur
     processed = processed.sharpen({ sigma: 0.8 });
@@ -125,7 +126,7 @@ export async function enhanceImageQuality(file: FileInput): Promise<FileInput> {
       mimeType: 'image/png',
     };
   } catch (error) {
-    console.warn('[TitanSurveyor] Image enhancement failed, using original:', error);
+    logger.warn('[TitanSurveyor] Image enhancement failed, using original', { error });
     return file; // Fallback to original on error
   }
 }
@@ -325,7 +326,7 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
   const hasIconSvgPath = !!node.iconSvgPath || !!node.svgPath;
 
   if (iconName && !hasIconSvgPath && !alreadyCustomVisual && !isUIChromeIcon(iconName)) {
-    console.log(
+    logger.info(
       `[Surveyor:VisualFix] Icon "${iconName}" has no svgPath — keeping iconName for Builder (node: ${node.id})`
     );
   }
@@ -349,7 +350,7 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
         width: extractionSource.width,
         height: extractionSource.height,
       };
-      console.log(
+      logger.info(
         `[Surveyor:VisualFix] visualCategory="${visualCategory}" → hasCustomVisual (node: ${node.id})`
       );
     }
@@ -378,7 +379,7 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
         width: extractionSource.width,
         height: extractionSource.height,
       };
-      console.log(
+      logger.info(
         `[Surveyor:VisualFix] Icon "${iconName}" has invalid/missing svgPath AND is ≥4% canvas → forcing extraction (node: ${node.id})`
       );
     }
@@ -396,9 +397,9 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
         height: extractionSource.height,
       };
 
-      console.log(`[Surveyor:VisualFix] Image node → hasCustomVisual (node: ${node.id})`);
+      logger.info(`[Surveyor:VisualFix] Image node → hasCustomVisual (node: ${node.id})`);
     } else {
-      console.warn(
+      logger.warn(
         `[Surveyor:VisualFix] Image node has no bounds or extractionBounds for extraction (node: ${node.id}). Cannot crop.`
       );
     }
@@ -416,9 +417,9 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
         height: extractionSource.height,
       };
 
-      console.log(`[Surveyor:VisualFix] hasImage node → hasCustomVisual (node: ${node.id})`);
+      logger.info(`[Surveyor:VisualFix] hasImage node → hasCustomVisual (node: ${node.id})`);
     } else {
-      console.warn(
+      logger.warn(
         `[Surveyor:VisualFix] hasImage node has no bounds or extractionBounds for extraction (node: ${node.id}). Cannot crop.`
       );
     }
@@ -436,7 +437,7 @@ function autoFixIconDecisions(node: Record<string, unknown>): void {
       width: extractionSource.width,
       height: extractionSource.height,
     };
-    console.log(`[Surveyor:VisualFix] backgroundImage URL → hasCustomVisual (node: ${node.id})`);
+    logger.info(`[Surveyor:VisualFix] backgroundImage URL → hasCustomVisual (node: ${node.id})`);
   }
 
   // Recurse through children
@@ -510,7 +511,7 @@ export async function surveyLayout(
       measured_components: [],
     };
   } catch (e) {
-    console.error('[TitanPipeline] Surveyor failed:', e);
+    logger.error('[TitanPipeline] Surveyor failed', e);
     return {
       file_index: fileIndex,
       originalImageRef: fileState?.uri

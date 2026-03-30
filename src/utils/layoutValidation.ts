@@ -12,6 +12,7 @@
 
 import { z } from 'zod';
 import type { DetectedComponentEnhanced } from '@/types/layoutDesign';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -549,7 +550,7 @@ export function sanitizeComponents(data: unknown): SanitizationResult {
 
   // Log sanitization results in development
   if ((sanitized > 0 || errors.length > 0) && process.env.NODE_ENV !== 'production') {
-    console.warn('[layoutValidation] Sanitization results:', {
+    logger.warn('[layoutValidation] Sanitization results', {
       total: (data as unknown[]).length,
       valid: components.length,
       sanitized,
@@ -964,7 +965,7 @@ export function inferContainerLayouts(
           align: 'stretch',
           justify: 'start',
         };
-        console.log(
+        logger.info(
           `[inferContainerLayouts] ${component.id}: column layout with gap ${calculatedGap}${existingGap ? ' (preserved)' : ' (calculated)'}`
         );
       } else if (isHorizontal) {
@@ -977,7 +978,7 @@ export function inferContainerLayouts(
           justify: 'start',
           wrap: true,
         };
-        console.log(
+        logger.info(
           `[inferContainerLayouts] ${component.id}: row layout with gap ${calculatedGap}${existingGap ? ' (preserved)' : ' (calculated)'}`
         );
       } else {
@@ -1125,14 +1126,14 @@ export function resolveRootOverlaps(
 
         // Log for debugging
         if (process.env.NODE_ENV === 'development') {
-          console.log(
+          logger.info(
             `[resolveRootOverlaps] Fixing ${Math.round(overlapPercent * 100)}% overlap: pushing ${next.id} down from ${next.bounds.top} to ${newTop} (overlaps ${current.id})`
           );
         }
 
         next.bounds.top = newTop;
       } else if (process.env.NODE_ENV === 'development') {
-        console.log(
+        logger.info(
           `[resolveRootOverlaps] Preserving intentional ${Math.round(overlapPercent * 100)}% overlap between ${current.id} and ${next.id}`
         );
       }

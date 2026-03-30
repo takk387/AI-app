@@ -11,6 +11,7 @@ import {
   geminiImageService,
   type BackgroundGenerationRequest,
 } from '@/services/GeminiImageService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // Request Validation
@@ -66,13 +67,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedRequest = GenerateBackgroundSchema.parse(body);
 
-    console.log('[generate-background] Starting generation...');
-    console.log(
-      '[generate-background] Colors:',
-      validatedRequest.colorPalette.primary,
-      validatedRequest.colorPalette.secondary
-    );
-    console.log('[generate-background] Vibe:', validatedRequest.vibe);
+    logger.info('[generate-background] Starting generation', {
+      primary: validatedRequest.colorPalette.primary,
+      secondary: validatedRequest.colorPalette.secondary,
+      vibe: validatedRequest.vibe,
+    });
 
     // Generate the background
     const result = await geminiImageService.generateBackgroundFromReference(
@@ -80,7 +79,7 @@ export async function POST(request: Request) {
     );
 
     const duration = Date.now() - startTime;
-    console.log(`[generate-background] Completed in ${duration}ms`);
+    logger.info(`[generate-background] Completed in ${duration}ms`);
 
     return NextResponse.json({
       success: true,
@@ -89,7 +88,7 @@ export async function POST(request: Request) {
       duration,
     });
   } catch (error) {
-    console.error('[generate-background] Error:', error);
+    logger.error('[generate-background] Error', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

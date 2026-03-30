@@ -13,6 +13,7 @@
 
 import sharp from 'sharp';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '@/utils/logger';
 
 /**
  * Request to extract an asset from an image
@@ -62,9 +63,9 @@ class AssetExtractionService {
 
     if (sbUrl && sbKey) {
       this.supabase = createClient(sbUrl, sbKey);
-      console.log('[AssetExtractionService] Initialized with Supabase');
+      logger.info('[AssetExtractionService] Initialized with Supabase');
     } else {
-      console.warn('[AssetExtractionService] Supabase not configured - extraction will fail');
+      logger.warn('[AssetExtractionService] Supabase not configured - extraction will fail');
     }
   }
 
@@ -82,7 +83,7 @@ class AssetExtractionService {
     }
 
     try {
-      console.log('[AssetExtractionService] Starting extraction:', {
+      logger.info('[AssetExtractionService] Starting extraction', {
         targetElement: request.targetElement,
         bounds: request.bounds,
       });
@@ -99,7 +100,7 @@ class AssetExtractionService {
         throw new Error('Could not read image dimensions');
       }
 
-      console.log('[AssetExtractionService] Original image:', {
+      logger.info('[AssetExtractionService] Original image', {
         width: metadata.width,
         height: metadata.height,
         format: metadata.format,
@@ -116,7 +117,7 @@ class AssetExtractionService {
       );
       const divisor = maxBound > 200 ? 1000 : 100;
       if (divisor === 1000) {
-        console.log('[AssetExtractionService] Detected 0-1000 scale bounds, converting');
+        logger.info('[AssetExtractionService] Detected 0-1000 scale bounds, converting');
       }
 
       const safeWidth = metadata.width!;
@@ -145,7 +146,7 @@ class AssetExtractionService {
         throw new Error('Invalid crop bounds after clamping - zero or negative dimensions');
       }
 
-      console.log('[AssetExtractionService] Crop region (pixels):', {
+      logger.info('[AssetExtractionService] Crop region (pixels)', {
         x: cropX,
         y: cropY,
         width: cropWidth,
@@ -165,7 +166,7 @@ class AssetExtractionService {
 
       const croppedMetadata = await sharp(croppedBuffer).metadata();
 
-      console.log('[AssetExtractionService] Cropped image:', {
+      logger.info('[AssetExtractionService] Cropped image', {
         width: croppedMetadata.width,
         height: croppedMetadata.height,
         size: `${Math.round(croppedBuffer.length / 1024)}KB`,
@@ -187,7 +188,7 @@ class AssetExtractionService {
       // 7. Get public URL
       const { data: urlData } = this.supabase.storage.from('ai-images').getPublicUrl(data.path);
 
-      console.log('[AssetExtractionService] Upload successful:', urlData.publicUrl);
+      logger.info('[AssetExtractionService] Upload successful', { url: urlData.publicUrl });
 
       return {
         success: true,
@@ -200,7 +201,7 @@ class AssetExtractionService {
         },
       };
     } catch (error) {
-      console.error('[AssetExtractionService] Extraction failed:', error);
+      logger.error('[AssetExtractionService] Extraction failed', error);
       return {
         success: false,
         url: '',
@@ -213,7 +214,7 @@ class AssetExtractionService {
    * Extract multiple assets in parallel
    */
   async extractBatch(requests: ExtractionRequest[]): Promise<ExtractionResult[]> {
-    console.log('[AssetExtractionService] Starting batch extraction:', {
+    logger.info('[AssetExtractionService] Starting batch extraction', {
       count: requests.length,
     });
 
@@ -223,7 +224,7 @@ class AssetExtractionService {
       if (result.status === 'fulfilled') {
         return result.value;
       } else {
-        console.error('[AssetExtractionService] Batch item failed:', {
+        logger.error('[AssetExtractionService] Batch item failed', undefined, {
           index,
           error: result.reason,
         });

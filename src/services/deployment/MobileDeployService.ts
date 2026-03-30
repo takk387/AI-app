@@ -15,6 +15,7 @@ import type {
   MobileBuildStatus as MobileBuildStatusType,
 } from '@/types/deployment/mobile';
 import { triggerMobileBuild, cancelMobileBuild } from '@/inngest/client';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -174,7 +175,7 @@ export class MobileDeployService {
    */
   async getBuildStatus(_projectId: string): Promise<MobileBuildStatusType> {
     // In production, query the deployed_apps table or EAS Build API
-    console.log(`[MobileDeployService] Getting build status`);
+    logger.info(`[MobileDeployService] Getting build status`);
 
     // Placeholder - return pending status
     return {

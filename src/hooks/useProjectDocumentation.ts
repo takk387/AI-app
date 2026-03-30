@@ -30,6 +30,7 @@ import type { AppConcept } from '@/types/appConcept';
 import type { LayoutManifest } from '@/types/schema';
 import type { DynamicPhasePlan } from '@/types/dynamicPhases';
 import type { ChatMessage } from '@/types/aiBuilderTypes';
+import { logger } from '@/utils/logger';
 
 // Auto-capture threshold (capture every N messages)
 const MESSAGE_CAPTURE_THRESHOLD = 15;
@@ -157,7 +158,7 @@ export function useProjectDocumentation(
     const loadDocumentation = async () => {
       // Skip loading if Supabase is not configured (placeholder URL)
       if (!isSupabaseConfigured()) {
-        console.log('[Documentation] Supabase not configured - skipping documentation fetch');
+        logger.info('[Documentation] Supabase not configured - skipping documentation fetch');
         return;
       }
 
@@ -171,10 +172,10 @@ export function useProjectDocumentation(
             lastCapturedMessageCountRef.current = result.data.conceptSnapshot.messageCountAtCapture;
           }
         } else {
-          console.error('Failed to load documentation:', result.error);
+          logger.error('Failed to load documentation', undefined, { error: result.error });
         }
       } catch (error) {
-        console.error('Error loading documentation:', error);
+        logger.error('Error loading documentation', error);
       } finally {
         setIsLoadingDocumentation(false);
       }
@@ -213,7 +214,7 @@ export function useProjectDocumentation(
     // Auto-capture the concept
     const autoCaptureAsync = async () => {
       try {
-        console.log('[Documentation] Auto-capturing concept snapshot...');
+        logger.info('[Documentation] Auto-capturing concept snapshot...');
         const result = await service.captureConceptSnapshot(
           currentDocumentation.id,
           appConcept,
@@ -222,17 +223,19 @@ export function useProjectDocumentation(
         );
 
         if (result.success) {
-          console.log('[Documentation] Concept snapshot captured successfully');
+          logger.info('[Documentation] Concept snapshot captured successfully');
           // Refresh to update local state
           const refreshResult = await service.getByAppId(currentDocumentation.appId);
           if (refreshResult.success) {
             setCurrentDocumentation(refreshResult.data ?? null);
           }
         } else {
-          console.error('[Documentation] Failed to auto-capture concept:', result.error);
+          logger.error('[Documentation] Failed to auto-capture concept', undefined, {
+            error: result.error,
+          });
         }
       } catch (error) {
-        console.error('[Documentation] Error auto-capturing concept:', error);
+        logger.error('[Documentation] Error auto-capturing concept', error);
       }
     };
 
@@ -256,21 +259,23 @@ export function useProjectDocumentation(
     // Auto-capture the plan
     const autoCaptureAsync = async () => {
       try {
-        console.log('[Documentation] Auto-capturing plan snapshot...');
+        logger.info('[Documentation] Auto-capturing plan snapshot...');
         const result = await service.capturePlanSnapshot(currentDocumentation.id, dynamicPhasePlan);
 
         if (result.success) {
-          console.log('[Documentation] Plan snapshot captured successfully');
+          logger.info('[Documentation] Plan snapshot captured successfully');
           // Refresh to update local state
           const refreshResult = await service.getByAppId(currentDocumentation.appId);
           if (refreshResult.success) {
             setCurrentDocumentation(refreshResult.data ?? null);
           }
         } else {
-          console.error('[Documentation] Failed to auto-capture plan:', result.error);
+          logger.error('[Documentation] Failed to auto-capture plan', undefined, {
+            error: result.error,
+          });
         }
       } catch (error) {
-        console.error('[Documentation] Error auto-capturing plan:', error);
+        logger.error('[Documentation] Error auto-capturing plan', error);
       }
     };
 
@@ -280,7 +285,7 @@ export function useProjectDocumentation(
   // Refresh documentation
   const refreshDocumentation = useCallback(async () => {
     if (!effectiveAppId) {
-      console.warn('[Documentation] Cannot refresh: no appId available');
+      logger.warn('[Documentation] Cannot refresh: no appId available');
       return;
     }
 
@@ -291,7 +296,7 @@ export function useProjectDocumentation(
         setCurrentDocumentation(result.data ?? null);
       }
     } catch (error) {
-      console.error('Error refreshing documentation:', error);
+      logger.error('Error refreshing documentation', error);
     } finally {
       setIsLoadingDocumentation(false);
     }
@@ -309,10 +314,10 @@ export function useProjectDocumentation(
           setCurrentDocumentation(result.data);
           return result.data;
         }
-        console.error('Failed to create documentation:', result.error);
+        logger.error('Failed to create documentation', undefined, { error: result.error });
         return null;
       } catch (error) {
-        console.error('Error creating documentation:', error);
+        logger.error('Error creating documentation', error);
         return null;
       } finally {
         setIsSavingDocumentation(false);
@@ -338,10 +343,10 @@ export function useProjectDocumentation(
           setCurrentDocumentation(result.data);
           return result.data;
         }
-        console.error('Failed to get/create documentation:', result.error);
+        logger.error('Failed to get/create documentation', undefined, { error: result.error });
         return null;
       } catch (error) {
-        console.error('Error getting/creating documentation:', error);
+        logger.error('Error getting/creating documentation', error);
         return null;
       } finally {
         setIsSavingDocumentation(false);
@@ -390,10 +395,10 @@ export function useProjectDocumentation(
           }
           await refreshDocumentation();
         } else {
-          console.error('Failed to capture concept:', result.error);
+          logger.error('Failed to capture concept', undefined, { error: result.error });
         }
       } catch (error) {
-        console.error('Error capturing concept:', error);
+        logger.error('Error capturing concept', error);
       } finally {
         setIsSavingDocumentation(false);
       }
@@ -419,10 +424,10 @@ export function useProjectDocumentation(
           lastCapturedMessageCountRef.current = chatMessages.length;
           await refreshDocumentation();
         } else {
-          console.error('Failed to capture builder chat:', result.error);
+          logger.error('Failed to capture builder chat', undefined, { error: result.error });
         }
       } catch (error) {
-        console.error('Error capturing builder chat:', error);
+        logger.error('Error capturing builder chat', error);
       } finally {
         setIsSavingDocumentation(false);
       }
@@ -444,10 +449,10 @@ export function useProjectDocumentation(
         if (result.success) {
           await refreshDocumentation();
         } else {
-          console.error('Failed to capture layout:', result.error);
+          logger.error('Failed to capture layout', undefined, { error: result.error });
         }
       } catch (error) {
-        console.error('Error capturing layout:', error);
+        logger.error('Error capturing layout', error);
       } finally {
         setIsSavingDocumentation(false);
       }
@@ -467,10 +472,10 @@ export function useProjectDocumentation(
         if (result.success) {
           await refreshDocumentation();
         } else {
-          console.error('Failed to capture plan:', result.error);
+          logger.error('Failed to capture plan', undefined, { error: result.error });
         }
       } catch (error) {
-        console.error('Error capturing plan:', error);
+        logger.error('Error capturing plan', error);
       } finally {
         setIsSavingDocumentation(false);
       }
@@ -501,7 +506,7 @@ export function useProjectDocumentation(
         );
         await refreshDocumentation();
       } catch (error) {
-        console.error('Error recording phase start:', error);
+        logger.error('Error recording phase start', error);
       }
     },
     [currentDocumentation, service, refreshDocumentation]
@@ -526,7 +531,7 @@ export function useProjectDocumentation(
         await service.recordPhaseComplete(currentDocumentation.id, phaseNumber, result);
         await refreshDocumentation();
       } catch (error) {
-        console.error('Error recording phase complete:', error);
+        logger.error('Error recording phase complete', error);
       }
     },
     [currentDocumentation, service, refreshDocumentation]
@@ -543,7 +548,7 @@ export function useProjectDocumentation(
       await service.startBuild(currentDocumentation.id);
       await refreshDocumentation();
     } catch (error) {
-      console.error('Error starting build:', error);
+      logger.error('Error starting build', error);
     }
   }, [currentDocumentation, service, refreshDocumentation, setBuildingAppId]);
 
@@ -554,7 +559,7 @@ export function useProjectDocumentation(
       await service.completeBuild(currentDocumentation.id);
       await refreshDocumentation();
     } catch (error) {
-      console.error('Error completing build:', error);
+      logger.error('Error completing build', error);
     } finally {
       // UNLOCK the appId after build completes
       setBuildingAppId(null);
@@ -569,7 +574,7 @@ export function useProjectDocumentation(
         await service.failBuild(currentDocumentation.id, error);
         await refreshDocumentation();
       } catch (err) {
-        console.error('Error failing build:', err);
+        logger.error('Error failing build', err);
       } finally {
         // UNLOCK the appId after build fails
         setBuildingAppId(null);

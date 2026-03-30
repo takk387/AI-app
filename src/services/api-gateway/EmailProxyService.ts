@@ -13,6 +13,7 @@ import type {
   IProxyService,
 } from '@/types/api-gateway';
 import { getUsageTrackingService } from './UsageTrackingService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -212,7 +213,7 @@ export class EmailProxyService implements IProxyService<EmailSendRequest, EmailS
    */
   private async getUserApiKey(userId: string): Promise<string | null> {
     // In production, query from app_api_config table
-    console.log(`[EmailProxyService] Getting user API key for ${userId}`);
+    logger.info(`[EmailProxyService] Getting user API key for ${userId}`);
     return null;
   }
 }

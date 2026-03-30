@@ -12,6 +12,7 @@
 import { useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import type { GeneratedComponent, ChatMessage } from '@/types/aiBuilderTypes';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -136,9 +137,11 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       // CRITICAL: Save to database immediately to prevent data loss
       onSaveComponent(newComponent).then((result) => {
         if (!result.success) {
-          console.error('[useAppCrud] Failed to save new component to database:', result.error);
+          logger.error('[useAppCrud] Failed to save new component to database', undefined, {
+            error: result.error,
+          });
         } else {
-          console.log('[useAppCrud] Component saved to database successfully');
+          logger.info('[useAppCrud] Component saved to database successfully');
         }
       });
 
@@ -152,7 +155,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       }
 
       // Log successful data transfer for debugging
-      console.log('[useAppCrud] Created component with wizard data:', {
+      logger.info('[useAppCrud] Created component with wizard data', {
         id: componentId,
         hasAppConcept: !!appConcept,
         hasDynamicPhasePlan: !!dynamicPhasePlan,
@@ -212,7 +215,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       }
 
       // Log successful data restoration for debugging
-      console.log('[useAppCrud] Loaded component with wizard data:', {
+      logger.info('[useAppCrud] Loaded component with wizard data', {
         id: comp.id,
         hasAppConcept: !!comp.appConcept,
         hasDynamicPhasePlan: !!comp.dynamicPhasePlan,
@@ -268,7 +271,7 @@ export function useAppCrud(options: UseAppCrudOptions): UseAppCrudReturn {
       // Delete from database (await to ensure completion)
       const result = await onDeleteComponent(id);
       if (!result.success) {
-        console.warn(`Failed to delete component ${id} from database:`, result.error);
+        logger.warn(`Failed to delete component ${id} from database`, { error: result.error });
         // Note: UI is already updated. On next login, the component will reappear
         // if the database deletion failed, but this is rare and self-correcting.
       }

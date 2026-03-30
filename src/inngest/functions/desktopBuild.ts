@@ -13,6 +13,7 @@
  */
 
 import { inngest, sendStatusUpdate } from '../client';
+import { logger } from '@/utils/logger';
 
 /**
  * Desktop build background job
@@ -280,5 +281,5 @@ async function updateDeployedApp(
   }
 ): Promise<void> {
   // In production, update the deployed_apps table
-  console.log(`[desktopBuild] Updating deployed_apps for ${projectId}/${platform}:`, data);
+  logger.info(`[desktopBuild] Updating deployed_apps for ${projectId}/${platform}`, { data });
 }

@@ -14,6 +14,7 @@ import type {
   IProxyService,
 } from '@/types/api-gateway';
 import { getUsageTrackingService } from './UsageTrackingService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -197,10 +198,10 @@ export class StorageProxyService implements IProxyService<
         })
       );
 
-      console.log(`[StorageProxyService] Uploaded ${key} to R2 bucket ${config.bucketName}`);
+      logger.info(`[StorageProxyService] Uploaded ${key} to R2 bucket ${config.bucketName}`);
       return { success: true };
     } catch (error) {
-      console.error('[StorageProxyService] Upload failed:', error);
+      logger.error('[StorageProxyService] Upload failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Upload failed',
@@ -248,12 +249,12 @@ export class StorageProxyService implements IProxyService<
         })
       );
 
-      console.log(
+      logger.info(
         `[StorageProxyService] Deleted ${key} from R2 bucket ${storageConfig.bucketName}`
       );
       return { success: true };
     } catch (error) {
-      console.error('[StorageProxyService] Delete failed:', error);
+      logger.error('[StorageProxyService] Delete failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Delete failed',
@@ -396,7 +397,7 @@ export class StorageProxyService implements IProxyService<
     publicUrl: string;
   }> {
     // In production, query from app_api_config table
-    console.log(`[StorageProxyService] Getting user storage config for ${userId}`);
+    logger.info(`[StorageProxyService] Getting user storage config for ${userId}`);
     return {
       accountId: '',
       accessKey: '',

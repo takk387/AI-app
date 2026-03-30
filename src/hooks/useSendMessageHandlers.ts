@@ -24,6 +24,7 @@ import type {
   DynamicBuildPhasesReturn,
 } from './useSendMessageTypes';
 import type { AppConcept } from '@/types/appConcept';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // SHARED HELPER FUNCTIONS
@@ -171,7 +172,7 @@ export async function handleBuildTrigger(
     const files = streamResult.files as Array<{ path: string; content: string }>;
 
     if (process.env.NODE_ENV === 'development') {
-      console.debug('[useSendMessage] handleBuildTrigger result:', {
+      logger.debug('[useSendMessage] handleBuildTrigger result:', {
         name: streamResult.name,
         filesCount: files?.length ?? 0,
         hasFiles: !!(files && files.length > 0),
@@ -286,7 +287,7 @@ export async function handleModifyTrigger(
     const files = streamResult.files as Array<{ path: string; content: string }>;
 
     if (process.env.NODE_ENV === 'development') {
-      console.debug('[useSendMessage] handleModifyTrigger result:', {
+      logger.debug('[useSendMessage] handleModifyTrigger result:', {
         name: streamResult.name,
         filesCount: files?.length ?? 0,
         hasFiles: !!(files && files.length > 0),

@@ -18,6 +18,7 @@ import type {
   TauriBundleConfig,
 } from '@/types/deployment/desktop';
 import { triggerDesktopBuild, cancelDesktopBuild } from '@/inngest/client';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -139,7 +140,7 @@ export class DesktopDeployService {
     message?: string;
   }> {
     // In production, query the deployed_apps table or build service API
-    console.log(`[DesktopDeployService] Getting build status`);
+    logger.info(`[DesktopDeployService] Getting build status`);
 
     // Placeholder - return pending status
     return {

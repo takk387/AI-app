@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { BackendArchitectureAgent } from '@/services/BackendArchitectureAgent';
 import type { AppConcept } from '@/types/appConcept';
 import type { ArchitectureSpec } from '@/types/architectureSpec';
+import { logger } from '@/utils/logger';
 
 // Next.js Route Segment Config
 export const maxDuration = 120;
@@ -73,12 +74,14 @@ export async function POST(request: Request): Promise<NextResponse<GenerateArchi
     }
 
     // Generate architecture using BackendArchitectureAgent
-    console.log('[generate-architecture] Calling BackendArchitectureAgent...');
+    logger.info('[generate-architecture] Calling BackendArchitectureAgent...');
     const agent = new BackendArchitectureAgent();
     const result = await agent.analyze(concept);
 
     if (!result.success || !result.spec) {
-      console.error('[generate-architecture] Architecture generation failed:', result.error);
+      logger.error('[generate-architecture] Architecture generation failed', undefined, {
+        error: result.error,
+      });
       return NextResponse.json(
         {
           success: false,
@@ -89,7 +92,7 @@ export async function POST(request: Request): Promise<NextResponse<GenerateArchi
       );
     }
 
-    console.log(
+    logger.info(
       `[generate-architecture] Success: ${result.spec.database.tables.length} tables, ${result.spec.api.routes.length} routes`
     );
 
@@ -100,7 +103,7 @@ export async function POST(request: Request): Promise<NextResponse<GenerateArchi
       warnings: result.warnings,
     });
   } catch (error) {
-    console.error('[generate-architecture] Unexpected error:', error);
+    logger.error('[generate-architecture] Unexpected error', error);
     return NextResponse.json(
       {
         success: false,

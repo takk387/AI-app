@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 /**
  * DomainPurchaseService
  *
@@ -208,7 +209,7 @@ export class DomainPurchaseService {
     try {
       if (!this.cloudflareAccountId || !this.cloudflareApiToken) {
         // Return mock data for development
-        console.log(`[DomainPurchaseService] Cloudflare not configured, returning mock data`);
+        logger.info(`[DomainPurchaseService] Cloudflare not configured, returning mock data`);
         return this.getMockAvailability(domain, tld, pricing);
       }
 
@@ -252,7 +253,7 @@ export class DomainPurchaseService {
         priceRenewalCents: pricing?.renewal,
       };
     } catch (error) {
-      console.error(`[DomainPurchaseService] Error checking domain:`, error);
+      logger.error('[DomainPurchaseService] Error checking domain', error);
 
       return {
         domain,
@@ -335,7 +336,7 @@ export class DomainPurchaseService {
         totalPaidCents: totalCents,
       };
     } catch (error) {
-      console.error(`[DomainPurchaseService] Error purchasing domain:`, error);
+      logger.error('[DomainPurchaseService] Error purchasing domain', error);
 
       return {
         success: false,
@@ -406,7 +407,7 @@ export class DomainPurchaseService {
         estimatedCompletionDays: 5, // Typical transfer time
       };
     } catch (error) {
-      console.error(`[DomainPurchaseService] Error initiating transfer:`, error);
+      logger.error('[DomainPurchaseService] Error initiating transfer', error);
 
       return {
         success: false,
@@ -468,7 +469,7 @@ export class DomainPurchaseService {
         completedAt: transferStatus === 'complete' ? new Date().toISOString() : undefined,
       };
     } catch (error) {
-      console.error(`[DomainPurchaseService] Error checking transfer status:`, error);
+      logger.error('[DomainPurchaseService] Error checking transfer status', error);
 
       return {
         status: 'pending',
@@ -556,7 +557,7 @@ export class DomainPurchaseService {
         locked: result.locked || false,
       };
     } catch (error) {
-      console.error(`[DomainPurchaseService] Error getting domain info:`, error);
+      logger.error('[DomainPurchaseService] Error getting domain info', error);
       return null;
     }
   }

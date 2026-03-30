@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -85,7 +86,7 @@ async function checkDomainAvailability(domain: string): Promise<{
   const hash = domain.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const isAvailable = hash % 3 !== 0; // ~66% availability for demo
 
-  console.log(`[Domain Search] Checking availability for ${domain}: ${isAvailable}`);
+  logger.info(`[Domain Search] Checking availability for ${domain}: ${isAvailable}`);
 
   return {
     available: isAvailable,
@@ -186,7 +187,7 @@ export async function GET(request: Request) {
       availableCount: results.filter((r) => r.available).length,
     });
   } catch (error) {
-    console.error('Domain search error:', error);
+    logger.error('Domain search error', error);
     return NextResponse.json({ success: false, error: 'Domain search failed' }, { status: 500 });
   }
 }

@@ -20,6 +20,7 @@ import { getUsageTrackingService } from './UsageTrackingService';
 import { getOpenAIProxyService } from './OpenAIProxyService';
 import { getAnthropicProxyService } from './AnthropicProxyService';
 import { getEmailProxyService } from './EmailProxyService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // API GATEWAY SERVICE
@@ -31,7 +32,7 @@ export class APIGatewayService {
    */
   async getAppConfig(appId: string, userId: string): Promise<AppAPIConfig | null> {
     // In production, query from deployed_apps table
-    console.log(`[APIGatewayService] Getting config for app ${appId}`);
+    logger.info(`[APIGatewayService] Getting config for app ${appId}`);
 
     // Return default config
     return {
@@ -293,7 +294,7 @@ export class APIGatewayService {
     updates: Partial<AppAPIConfig>
   ): Promise<AppAPIConfig | null> {
     // In production, update deployed_apps table
-    console.log(`[APIGatewayService] Updating config for app ${appId}:`, updates);
+    logger.info(`[APIGatewayService] Updating config for app ${appId}`, { updates });
 
     const currentConfig = await this.getAppConfig(appId, userId);
     if (!currentConfig) {

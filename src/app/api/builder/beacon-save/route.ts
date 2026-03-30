@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 import type { GeneratedComponent } from '@/types/aiBuilderTypes';
+import { logger } from '@/utils/logger';
 
 // Initialize Supabase client with service role for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
   try {
     // Validate Supabase configuration
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('[beacon-save] Supabase not configured');
+      logger.error('[beacon-save] Supabase not configured');
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       const text = await request.text();
       body = JSON.parse(text);
     } catch {
-      console.error('[beacon-save] Failed to parse request body');
+      logger.error('[beacon-save] Failed to parse request body');
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
@@ -73,12 +74,12 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!component || !userId) {
-      console.error('[beacon-save] Missing component or userId');
+      logger.error('[beacon-save] Missing component or userId');
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     if (!component.id) {
-      console.error('[beacon-save] Component missing id');
+      logger.error('[beacon-save] Component missing id');
       return NextResponse.json({ error: 'Component missing id' }, { status: 400 });
     }
 
@@ -97,16 +98,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (dbError) {
-      console.error('[beacon-save] Database error:', dbError);
+      logger.error('[beacon-save] Database error', dbError);
       return NextResponse.json({ error: 'Failed to save to database' }, { status: 500 });
     }
 
-    console.log('[beacon-save] Successfully saved component:', component.id);
+    logger.info('[beacon-save] Successfully saved component', { componentId: component.id });
 
     // Return success (though sendBeacon doesn't wait for response)
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[beacon-save] Unexpected error:', error);
+    logger.error('[beacon-save] Unexpected error', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

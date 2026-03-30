@@ -67,6 +67,7 @@ import {
   verifyArchitectureImplementation as _verifyArchitectureImplementation,
   runRegressionTests as _runRegressionTests,
 } from './phaseExecution/phaseIntegrity';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // RE-EXPORTS (preserve public API for consumers)
@@ -242,9 +243,11 @@ export class PhaseExecutionManager {
 
     // Log if context was skipped (not an error, just informational)
     if (contextResult.status === 'skipped') {
-      console.log(`[PhaseExecutionManager] Smart context skipped: ${contextResult.reason}`);
+      logger.info(`[PhaseExecutionManager] Smart context skipped: ${contextResult.reason}`);
     } else if (contextResult.status === 'error') {
-      console.error(`[PhaseExecutionManager] Smart context error: ${contextResult.error}`);
+      logger.error('[PhaseExecutionManager] Smart context error', undefined, {
+        error: contextResult.error,
+      });
     }
 
     // Return context with cached smart snapshot
@@ -607,9 +610,9 @@ export class PhaseExecutionManager {
       });
 
       if (updateResult.failures.length > 0) {
-        console.warn(
-          `[PhaseExecutionManager] ${updateResult.failures.length} files failed to parse:`,
-          updateResult.failures.map((f) => f.path)
+        logger.warn(
+          `[PhaseExecutionManager] ${updateResult.failures.length} files failed to parse`,
+          { failedPaths: updateResult.failures.map((f) => f.path) }
         );
       }
     }

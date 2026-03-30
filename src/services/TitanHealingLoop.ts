@@ -27,7 +27,7 @@ export function extractJSXMarkup(reactCode: string): string {
       // Try single-line return
       const singleLineMatch = reactCode.match(/return\s+(<[\s\S]*?>[\s\S]*?<\/[\s\S]*?>)/);
       if (!singleLineMatch) {
-        console.warn('[TitanPipeline] Could not extract JSX from React component');
+        logger.warn('[TitanPipeline] Could not extract JSX from React component');
         return '<div>Error: Could not extract JSX</div>';
       }
       return singleLineMatch[1];
@@ -69,7 +69,7 @@ export function extractJSXMarkup(reactCode: string): string {
 
     return jsx;
   } catch (error) {
-    console.error('[TitanPipeline] JSX extraction error:', error);
+    logger.error('[TitanPipeline] JSX extraction error', error);
     return '<div>Error extracting JSX</div>';
   }
 }
@@ -96,7 +96,7 @@ export async function captureRenderedScreenshot(
       ? { width: canvasConfig.width, height: canvasConfig.height }
       : { width: FALLBACK_CANVAS.width, height: FALLBACK_CANVAS.height };
 
-    console.log(
+    logger.info(
       `[TitanPipeline] Launching headless browser for screenshot (${viewport.width}x${viewport.height}, source: ${canvasConfig?.source ?? 'fallback'})...`
     );
     browser = await puppeteer.launch({
@@ -194,9 +194,9 @@ export async function captureRenderedScreenshot(
       const root = ReactDOM.createRoot(document.getElementById('root'));
       root.render(React.createElement(AppFunction));
       
-      console.log('[Healing Screenshot] React app rendered successfully');
+      logger.info('[Healing Screenshot] React app rendered successfully');
     } catch (error) {
-      console.error('[Healing Screenshot] Render error:', error);
+      logger.error('[Healing Screenshot] Render error', error);
       document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error rendering component: ' + error.message + '</div>';
     }
   </script>
@@ -216,7 +216,7 @@ export async function captureRenderedScreenshot(
     });
 
     if (hasError) {
-      console.warn('[TitanPipeline] Component rendered with errors, screenshot may be incomplete');
+      logger.warn('[TitanPipeline] Component rendered with errors, screenshot may be incomplete');
     }
 
     // Capture screenshot as PNG with base64 encoding
@@ -226,12 +226,12 @@ export async function captureRenderedScreenshot(
       encoding: 'base64',
     });
 
-    console.log('[TitanPipeline] Screenshot captured successfully');
+    logger.info('[TitanPipeline] Screenshot captured successfully');
 
     // Return as data URL (screenshot is already base64 string)
     return `data:image/png;base64,${screenshot}`;
   } catch (error) {
-    console.error('[TitanPipeline] Screenshot capture failed:', error);
+    logger.error('[TitanPipeline] Screenshot capture failed', error);
     return null;
   } finally {
     if (browser) {
@@ -259,6 +259,7 @@ import type {
 import { FALLBACK_CANVAS } from '@/types/titanPipeline';
 import { createVisionLoopEngine } from './VisionLoopEngine';
 import { assembleCode } from './TitanBuilder';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // DOM TREE FLATTENING (bridges nested dom_tree ↔ flat array for AutoFixEngine)
@@ -414,7 +415,7 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       lastFidelity = stepResult.fidelityScore;
       totalFixesApplied += stepResult.changesApplied;
 
-      console.log(`[TitanPipeline] Healing iteration ${iteration}:`, {
+      logger.info(`[TitanPipeline] Healing iteration ${iteration}`, {
         fidelityScore: stepResult.fidelityScore,
         changesApplied: stepResult.changesApplied,
         modifiedComponents: stepResult.modifiedComponentIds.length,
@@ -422,13 +423,13 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
 
       // 4. Stop early if fidelity target reached or no changes
       if (stepResult.fidelityScore >= targetFidelity) {
-        console.log(
+        logger.info(
           `[TitanPipeline] Target fidelity reached (${stepResult.fidelityScore}%), stopping`
         );
         break;
       }
       if (stepResult.changesApplied === 0) {
-        console.log('[TitanPipeline] No fixes applied, stopping healing loop');
+        logger.info('[TitanPipeline] No fixes applied, stopping healing loop');
         break;
       }
 
@@ -488,12 +489,12 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       warnings.push(`Healing loop: No fixes needed (fidelity: ${lastFidelity.toFixed(1)}%)`);
     }
   } catch (error) {
-    console.error('[TitanPipeline] Healing loop error:', error);
+    logger.error('[TitanPipeline] Healing loop error', error);
     warnings.push('Healing loop encountered an error but pipeline continued');
   }
 
   const timingMs = Date.now() - healStart;
-  console.log(`[TitanPipeline] Healing loop completed in ${timingMs}ms`);
+  logger.info(`[TitanPipeline] Healing loop completed in ${timingMs}ms`);
 
   return { files, warnings, timingMs };
 }

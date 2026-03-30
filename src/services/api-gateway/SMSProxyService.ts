@@ -13,6 +13,7 @@ import type {
   IProxyService,
 } from '@/types/api-gateway';
 import { getUsageTrackingService } from './UsageTrackingService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -228,7 +229,7 @@ export class SMSProxyService implements IProxyService<SMSSendRequest, SMSSendRes
     fromNumber: string;
   }> {
     // In production, query from app_api_config table
-    console.log(`[SMSProxyService] Getting user credentials for ${userId}`);
+    logger.info(`[SMSProxyService] Getting user credentials for ${userId}`);
     return {
       accountSid: '',
       authToken: '',

@@ -13,6 +13,7 @@ import type {
   IBillingService,
   APIService,
 } from '@/types/api-gateway';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // CONSTANTS
@@ -42,7 +43,7 @@ export class BillingService implements IBillingService {
     if (stripeSecretKey) {
       this.stripe = new Stripe(stripeSecretKey);
     } else {
-      console.warn('[BillingService] STRIPE_SECRET_KEY not configured');
+      logger.warn('[BillingService] STRIPE_SECRET_KEY not configured');
     }
   }
 
@@ -51,12 +52,12 @@ export class BillingService implements IBillingService {
    */
   async reportUsage(record: MeteredBillingRecord): Promise<void> {
     if (!this.stripe) {
-      console.log('[BillingService] Stripe not configured, skipping usage report');
+      logger.info('[BillingService] Stripe not configured, skipping usage report');
       return;
     }
 
     if (!record.stripeCustomerId) {
-      console.log('[BillingService] No customer ID, skipping usage report');
+      logger.info('[BillingService] No customer ID, skipping usage report');
       return;
     }
 
@@ -71,14 +72,14 @@ export class BillingService implements IBillingService {
         timestamp: Math.floor(new Date(record.timestamp).getTime() / 1000),
       });
 
-      console.log('[BillingService] Reported usage to Stripe:', {
+      logger.info('[BillingService] Reported usage to Stripe', {
         userId: record.userId,
         service: record.service,
         quantity: record.quantity,
         customerId: record.stripeCustomerId,
       });
     } catch (error) {
-      console.error('[BillingService] Failed to report usage:', error);
+      logger.error('[BillingService] Failed to report usage', error);
       throw new Error(
         `Failed to report usage: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -106,7 +107,7 @@ export class BillingService implements IBillingService {
 
       return invoices.data.map((invoice) => this.mapInvoiceToSummary(invoice, userId));
     } catch (error) {
-      console.error('[BillingService] Failed to get invoices:', error);
+      logger.error('[BillingService] Failed to get invoices', error);
       return [];
     }
   }
@@ -135,7 +136,7 @@ export class BillingService implements IBillingService {
       if (error instanceof Stripe.errors.StripeInvalidRequestError) {
         return null;
       }
-      console.error('[BillingService] Failed to get current invoice:', error);
+      logger.error('[BillingService] Failed to get current invoice', error);
       return null;
     }
   }
@@ -155,10 +156,10 @@ export class BillingService implements IBillingService {
         metadata: { userId },
       });
 
-      console.log(`[BillingService] Created Stripe customer ${customer.id} for ${email}`);
+      logger.info(`[BillingService] Created Stripe customer ${customer.id} for ${email}`);
       return customer.id;
     } catch (error) {
-      console.error('[BillingService] Failed to create customer:', error);
+      logger.error('[BillingService] Failed to create customer', error);
       return null;
     }
   }
@@ -191,7 +192,7 @@ export class BillingService implements IBillingService {
       }
 
       if (items.length === 0) {
-        console.warn('[BillingService] No price IDs configured for services');
+        logger.warn('[BillingService] No price IDs configured for services');
         return null;
       }
 
@@ -211,7 +212,7 @@ export class BillingService implements IBillingService {
         }
       }
 
-      console.log(
+      logger.info(
         `[BillingService] Created subscription ${subscription.id} for ${stripeCustomerId}`
       );
       return {
@@ -219,7 +220,7 @@ export class BillingService implements IBillingService {
         itemIds: itemIds as Record<APIService, string>,
       };
     } catch (error) {
-      console.error('[BillingService] Failed to create subscription:', error);
+      logger.error('[BillingService] Failed to create subscription', error);
       return null;
     }
   }
@@ -234,10 +235,10 @@ export class BillingService implements IBillingService {
 
     try {
       await this.stripe.subscriptions.cancel(subscriptionId);
-      console.log(`[BillingService] Cancelled subscription ${subscriptionId}`);
+      logger.info(`[BillingService] Cancelled subscription ${subscriptionId}`);
       return true;
     } catch (error) {
-      console.error('[BillingService] Failed to cancel subscription:', error);
+      logger.error('[BillingService] Failed to cancel subscription', error);
       return false;
     }
   }
@@ -260,12 +261,12 @@ export class BillingService implements IBillingService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('[BillingService] Error fetching Stripe customer ID:', error);
+        logger.error('[BillingService] Error fetching Stripe customer ID', error);
       }
 
       return data?.stripe_customer_id || null;
     } catch (error) {
-      console.error('[BillingService] Error in getStripeCustomerId:', error);
+      logger.error('[BillingService] Error in getStripeCustomerId', error);
       return null;
     }
   }

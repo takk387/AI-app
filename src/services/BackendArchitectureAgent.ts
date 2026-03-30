@@ -21,6 +21,7 @@ import type {
   BackendPhaseSpec,
   ArchitectureReasoning,
 } from '@/types/architectureSpec';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // SYSTEM PROMPT
@@ -99,7 +100,7 @@ export class BackendArchitectureAgent {
       // Build the analysis prompt
       const prompt = this.buildAnalysisPrompt(appConcept, opts, needsBackend);
 
-      console.log('[BackendArchitectureAgent] Analyzing app concept:', appConcept.name);
+      logger.info('[BackendArchitectureAgent] Analyzing app concept', { name: appConcept.name });
 
       // Call Claude with extended thinking for complex decisions
       const response = await this.callClaude(prompt, opts);
@@ -119,11 +120,9 @@ export class BackendArchitectureAgent {
         };
       }
 
-      console.log(
-        '[BackendArchitectureAgent] Generated architecture with',
-        spec.backendPhases.length,
-        'backend phases'
-      );
+      logger.info('[BackendArchitectureAgent] Generated architecture', {
+        backendPhases: spec.backendPhases.length,
+      });
 
       return {
         success: true,
@@ -131,7 +130,7 @@ export class BackendArchitectureAgent {
         warnings,
       };
     } catch (error) {
-      console.error('[BackendArchitectureAgent] Error:', error);
+      logger.error('[BackendArchitectureAgent] Error', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Architecture analysis failed',
@@ -426,12 +425,10 @@ CRITICAL:
     try {
       parsed = JSON.parse(jsonStr);
     } catch (e) {
-      console.error('[BackendArchitectureAgent] JSON parse error:', e);
-      console.error(
-        '[BackendArchitectureAgent] Attempted to parse:',
-        jsonStr.substring(0, 500) + '...'
-      );
-      console.error('[BackendArchitectureAgent] Raw response:', response.substring(0, 200) + '...');
+      logger.error('[BackendArchitectureAgent] JSON parse error', e, {
+        attemptedParse: jsonStr.substring(0, 500),
+        rawResponse: response.substring(0, 200),
+      });
       throw new Error('Failed to parse architecture response as JSON');
     }
 

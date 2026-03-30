@@ -15,6 +15,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useDatabaseSync } from './useDatabaseSync';
 import { useAuth } from '@/contexts/AuthContext';
 import type { GeneratedComponent } from '@/types/aiBuilderTypes';
+import { logger } from '@/utils/logger';
 
 export interface UseAutoSaveOnNavigationOptions {
   /** Enable/disable the hook */
@@ -119,9 +120,9 @@ export function useAutoSaveOnNavigation(options: UseAutoSaveOnNavigationOptions 
       // Save to database
       await saveComponent(syncedComponent);
 
-      console.log('[AutoSaveOnNavigation] Saved component on navigation');
+      logger.info('[AutoSaveOnNavigation] Saved component on navigation');
     } catch (error) {
-      console.error('[AutoSaveOnNavigation] Failed to save:', error);
+      logger.error('[AutoSaveOnNavigation] Failed to save', error);
       onSaveError?.(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       isSavingRef.current = false;
@@ -172,7 +173,7 @@ export function useAutoSaveOnNavigation(options: UseAutoSaveOnNavigationOptions 
             navigator.sendBeacon('/api/builder/beacon-save', payload);
           }
         } catch (error) {
-          console.error('[AutoSaveOnNavigation] Failed to save on unload:', error);
+          logger.error('[AutoSaveOnNavigation] Failed to save on unload', error);
         }
 
         // Don't show confirmation dialog - just save silently

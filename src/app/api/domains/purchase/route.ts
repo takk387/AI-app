@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // TYPES
@@ -99,7 +100,7 @@ async function purchaseDomainFromCloudflare(
   //   })
   // });
 
-  console.log(`[Domain Purchase] Purchasing domain ${domain} from Cloudflare`);
+  logger.info(`[Domain Purchase] Purchasing domain ${domain} from Cloudflare`);
 
   // Simulate purchase - in production, this would be a real API call
   const registrationId = `cf-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -221,7 +222,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      console.error('Failed to create domain record:', insertError);
+      logger.error('Failed to create domain record', insertError);
       // Domain was purchased but record failed - log for manual resolution
       return NextResponse.json(
         {
@@ -244,7 +245,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error('Domain purchase error:', error);
+    logger.error('Domain purchase error', error);
     return NextResponse.json({ success: false, error: 'Domain purchase failed' }, { status: 500 });
   }
 }

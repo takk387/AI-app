@@ -16,6 +16,7 @@ import { DetectedComponentEnhanced } from '@/types/layoutDesign';
 import { GenericComponentRenderer } from './GenericComponentRenderer';
 import { KeyframeInjector } from './KeyframeInjector';
 import { buildComponentTree } from '@/utils/layoutValidation';
+import { logger } from '@/utils/logger';
 
 interface DynamicLayoutRendererProps {
   components: DetectedComponentEnhanced[];
@@ -46,7 +47,7 @@ export const DynamicLayoutRenderer: React.FC<DynamicLayoutRendererProps> = ({
 
   // Debug: Log tree structure in development
   if (process.env.NODE_ENV === 'development' && components.length > 0) {
-    console.log('[DynamicLayoutRenderer] Tree structure:', {
+    logger.debug('[DynamicLayoutRenderer] Tree structure', {
       totalComponents: components.length,
       rootCount: roots.length,
       hasHierarchy: components.some((c) => c.parentId || (c.children && c.children.length > 0)),

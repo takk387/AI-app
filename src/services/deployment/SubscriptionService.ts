@@ -16,6 +16,7 @@ import type {
   SpendLimitCheck,
 } from '@/types/subscription';
 import { TIER_CONFIGS } from '@/types/subscription';
+import { logger } from '@/utils/logger';
 
 // Re-export for convenience
 export { TIER_CONFIGS };
@@ -46,7 +47,7 @@ export class SubscriptionService {
     //   .eq('user_id', userId)
     //   .single();
 
-    console.log(`[SubscriptionService] Getting subscription for user ${userId}`);
+    logger.info(`[SubscriptionService] Getting subscription for user ${userId}`);
 
     // Return default free tier for now
     return {
@@ -270,7 +271,7 @@ export class SubscriptionService {
       // 2. Create Stripe subscription with payment method
       // 3. Insert into user_subscriptions table
 
-      console.log(`[SubscriptionService] Creating ${tier} subscription for user ${userId}`);
+      logger.info(`[SubscriptionService] Creating ${tier} subscription for user ${userId}`);
 
       const subscription: UserSubscription = {
         id: `sub-${Date.now()}`,
@@ -286,7 +287,7 @@ export class SubscriptionService {
 
       return { success: true, subscription };
     } catch (error) {
-      console.error('[SubscriptionService] Failed to create subscription:', error);
+      logger.error('[SubscriptionService] Failed to create subscription', error);
       return {
         success: false,
         error: `Failed to create subscription: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -321,7 +322,7 @@ export class SubscriptionService {
       // 2. Handle proration
       // 3. Update user_subscriptions table
 
-      console.log(
+      logger.info(
         `[SubscriptionService] Changing subscription for user ${userId}: ${currentSub.tier} → ${newTier}`
       );
 
@@ -340,7 +341,7 @@ export class SubscriptionService {
         proratedAmountCents,
       };
     } catch (error) {
-      console.error('[SubscriptionService] Failed to change subscription:', error);
+      logger.error('[SubscriptionService] Failed to change subscription', error);
       return {
         success: false,
         error: `Failed to change subscription: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -365,7 +366,7 @@ export class SubscriptionService {
       // 1. Cancel Stripe subscription (immediately or at period end)
       // 2. Update user_subscriptions table
 
-      console.log(
+      logger.info(
         `[SubscriptionService] Canceling subscription for user ${userId} (immediate: ${_immediate})`
       );
 
@@ -378,7 +379,7 @@ export class SubscriptionService {
 
       return { success: true, subscription };
     } catch (error) {
-      console.error('[SubscriptionService] Failed to cancel subscription:', error);
+      logger.error('[SubscriptionService] Failed to cancel subscription', error);
       return {
         success: false,
         error: `Failed to cancel subscription: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -404,7 +405,7 @@ export class SubscriptionService {
       // 1. Reactivate Stripe subscription
       // 2. Update user_subscriptions table
 
-      console.log(`[SubscriptionService] Reactivating subscription for user ${userId}`);
+      logger.info(`[SubscriptionService] Reactivating subscription for user ${userId}`);
 
       const subscription: UserSubscription = {
         ...currentSub,
@@ -415,7 +416,7 @@ export class SubscriptionService {
 
       return { success: true, subscription };
     } catch (error) {
-      console.error('[SubscriptionService] Failed to reactivate subscription:', error);
+      logger.error('[SubscriptionService] Failed to reactivate subscription', error);
       return {
         success: false,
         error: `Failed to reactivate subscription: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -432,7 +433,7 @@ export class SubscriptionService {
    */
   private async countDeployedApps(userId: string): Promise<number> {
     // In production, query deployed_apps table
-    console.log(`[SubscriptionService] Counting deployed apps for user ${userId}`);
+    logger.info(`[SubscriptionService] Counting deployed apps for user ${userId}`);
     return 0;
   }
 
@@ -441,7 +442,7 @@ export class SubscriptionService {
    */
   private async countCustomDomains(userId: string): Promise<number> {
     // In production, query deployed_apps where custom_domain is not null
-    console.log(`[SubscriptionService] Counting custom domains for user ${userId}`);
+    logger.info(`[SubscriptionService] Counting custom domains for user ${userId}`);
     return 0;
   }
 
@@ -451,7 +452,7 @@ export class SubscriptionService {
   private async getCurrentMonthSpend(userId: string): Promise<number> {
     // In production, query api_usage_monthly for current month
     const now = new Date();
-    console.log(
+    logger.info(
       `[SubscriptionService] Getting spend for user ${userId} for ${now.getFullYear()}-${now.getMonth() + 1}`
     );
     return 0;

@@ -23,6 +23,7 @@ import type { FinalValidatedArchitecture } from '@/types/dualPlanning';
 import type { AppFile } from '@/types/railway';
 import { extractContextForAllPhases, type PhaseContext } from '@/utils/phaseContextExtractor';
 import { convertToArchitectureSpec } from '@/utils/architectureToPhaseContext';
+import { logger } from '@/utils/logger';
 
 // Next.js Route Segment Config
 export const maxDuration = 120;
@@ -161,11 +162,13 @@ export async function POST(request: Request) {
           normalizedConcept.name,
           normalizedConcept.technical
         );
-        console.log(
+        logger.info(
           '[generate-phases] Using dual AI architecture result (converted to ArchitectureSpec)'
         );
       } catch (convertError) {
-        console.warn('[generate-phases] Failed to convert dual architecture:', convertError);
+        logger.warn('[generate-phases] Failed to convert dual architecture', {
+          error: convertError,
+        });
         // Fall through to single-AI generation
       }
     }
@@ -178,12 +181,11 @@ export async function POST(request: Request) {
           normalizedConcept.name,
           normalizedConcept.technical
         );
-        console.log('[generate-phases] Using embedded dual AI architecture from concept');
+        logger.info('[generate-phases] Using embedded dual AI architecture from concept');
       } catch (convertError) {
-        console.warn(
-          '[generate-phases] Failed to convert embedded dual architecture:',
-          convertError
-        );
+        logger.warn('[generate-phases] Failed to convert embedded dual architecture', {
+          error: convertError,
+        });
       }
     }
 
@@ -196,25 +198,27 @@ export async function POST(request: Request) {
     // Only generate architecture if not pre-generated and backend is needed
     if (!architectureSpec && needsBackend) {
       try {
-        console.log('[generate-phases] App needs backend, calling BackendArchitectureAgent...');
+        logger.info('[generate-phases] App needs backend, calling BackendArchitectureAgent...');
         const agent = new BackendArchitectureAgent();
         const archResult = await agent.analyze(normalizedConcept);
 
         if (archResult.success && archResult.spec) {
           architectureSpec = archResult.spec;
-          console.log(
+          logger.info(
             `[generate-phases] Architecture spec generated: ${archResult.spec.database.tables.length} tables, ${archResult.spec.api.routes.length} routes`
           );
         } else if (archResult.error) {
-          console.warn('[generate-phases] Architecture generation failed:', archResult.error);
+          logger.warn('[generate-phases] Architecture generation failed', {
+            error: archResult.error,
+          });
           // Continue without architecture spec - non-critical
         }
       } catch (agentError) {
-        console.error('[generate-phases] BackendArchitectureAgent error:', agentError);
+        logger.error('[generate-phases] BackendArchitectureAgent error', agentError);
         // Continue without architecture spec - non-critical
       }
     } else if (architectureSpec) {
-      console.log('[generate-phases] Using pre-generated architecture spec');
+      logger.info('[generate-phases] Using pre-generated architecture spec');
     }
 
     // Generate phase plan (with or without architecture)
@@ -224,7 +228,7 @@ export async function POST(request: Request) {
       : generator.generatePhasePlan(normalizedConcept);
 
     if (!result.success) {
-      console.error(`Phase generation failed:`, result.error);
+      logger.error('Phase generation failed', undefined, { error: result.error });
       return NextResponse.json(
         {
           error: result.error,
@@ -237,7 +241,7 @@ export async function POST(request: Request) {
 
     // Validate that plan exists (defensive check)
     if (!result.plan) {
-      console.error('Phase generation succeeded but no plan was created');
+      logger.error('Phase generation succeeded but no plan was created');
       return NextResponse.json(
         {
           error: 'Phase generation succeeded but no plan was created',
@@ -267,9 +271,9 @@ export async function POST(request: Request) {
         // Attach to plan
         result.plan.phaseContexts = phaseContexts;
 
-        console.log(`[generate-phases] Extracted context for ${phaseDomains.length} phase domains`);
+        logger.info(`[generate-phases] Extracted context for ${phaseDomains.length} phase domains`);
       } catch (extractionError) {
-        console.warn('[generate-phases] Context extraction failed:', extractionError);
+        logger.warn('[generate-phases] Context extraction failed', { error: extractionError });
         // Continue without phase contexts - non-critical
       }
     }
@@ -287,7 +291,7 @@ export async function POST(request: Request) {
       analysisDetails: result.analysisDetails,
     });
   } catch (error) {
-    console.error('Phase generation error:', error);
+    logger.error('Phase generation error', error);
 
     return NextResponse.json(
       {
