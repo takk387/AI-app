@@ -252,10 +252,18 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   // 1. Streaming generation (no hook deps)
   const streaming = useStreamingGeneration();
 
-  // 2. Dynamic build phases
+  // 2. Dynamic build phases — run quality review after each phase completes
+  const dynamicPhasesRef = useRef<ReturnType<typeof useDynamicBuildPhases> | null>(null);
   const dynamicPhases = useDynamicBuildPhases({
     autoAdvance: buildSettings.autoAdvance,
+    onPhaseComplete: (_phase, result) => {
+      if (result.success && result.phaseNumber > 1) {
+        // Run light quality review after each phase (skip Phase 1 layout injection)
+        dynamicPhasesRef.current?.runPhaseQualityCheck(result.phaseNumber);
+      }
+    },
   });
+  dynamicPhasesRef.current = dynamicPhases;
 
   // 3. Database sync (needs userId)
   const databaseSync = useDatabaseSync({ userId });
