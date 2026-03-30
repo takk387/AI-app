@@ -173,7 +173,7 @@ AI App Builder is a conversational tool that lets users **build complete web app
 
 **Files:**
 
-- `src/middleware.ts` - Route protection
+- `src/proxy.ts` - Route protection
 - `src/app/login/` and `src/app/signup/` - Auth pages
 - `/api/auth/` - Auth endpoints
 

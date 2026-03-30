@@ -211,7 +211,7 @@ npm run test:services # Service tests (Node)
 - `TitanPipelineService.ts` ← Core pipeline: Router → Surveyor → Photographer → Builder
 - `GeminiLayoutCritique.ts` ← Vision critique for healing loop
 - `VisionLoopEngine.ts` ← Self-healing vision loop orchestrator
-- `middleware.ts` ← Auth flow, all API routes depend on this
+- `proxy.ts` ← Auth flow, all API routes depend on this
 
 ### Important Patterns
 

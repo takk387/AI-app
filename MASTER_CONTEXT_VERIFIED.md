@@ -179,7 +179,7 @@ CREATE mode shortcut: Router → Surveyor → Builder → Healing Loop
 | `NaturalConversationWizard.tsx` | **751**    | Conversation wizard UI                      | Planning breaks        |
 | `DynamicPhaseGenerator.ts`      | **685**    | Phase planning engine                       | Build system breaks    |
 | `TitanPipelineService.ts`       | **497**    | Titan Pipeline orchestrator                 | Pipeline breaks        |
-| `middleware.ts`                 | **87**     | Auth flow for all routes                    | Auth breaks            |
+| `proxy.ts`                      | **87**     | Auth flow for all routes                    | Auth breaks            |
 
 ---
 

@@ -93,7 +93,7 @@ Items ordered easiest → hardest within each section.
 
 - [ ] **`next`** 15.5 → 16.2
   - Async APIs (`params`, `cookies()`, `headers()` return Promises)
-  - `middleware.ts` renamed to `proxy.ts`, edge runtime removed
+  - `proxy.ts` renamed to `proxy.ts`, edge runtime removed
   - Turbopack default (ignores custom webpack config)
   - Caching is opt-in (no more implicit caching)
   - Has codemod: `npx @next/codemod@canary upgrade latest`

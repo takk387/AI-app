@@ -76,7 +76,7 @@ USER: yeah go ahead
   │  • LoginPage.tsx                                     │
   │  • SignupPage.tsx                                    │
   │  • authService.ts                                    │
-  │  • middleware.ts                                     │
+  │  • proxy.ts                                     │
   │                                                      │
   │ ████████████████████████████████████████░░░░ 85%     │
   └──────────────────────────────────────────────────────┘

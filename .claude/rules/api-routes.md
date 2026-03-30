@@ -1,7 +1,7 @@
 ---
 paths:
   - src/app/api/**
-  - src/middleware.ts
+  - src/proxy.ts
 ---
 
 # API Routes Domain
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
 
 ## Auth Middleware
 
-**Location:** `src/middleware.ts`
+**Location:** `src/proxy.ts`
 
 Protects routes using Supabase session:
 
@@ -162,7 +162,7 @@ Image generation routes have built-in rate limiting:
 
 ## Critical Dependencies
 
-- `middleware.ts` ← All protected routes depend on this
+- `proxy.ts` ← All protected routes depend on this
 - Supabase client ← Auth session management
 - Anthropic SDK ← Claude API calls (code generation + architecture planning)
 - Google GenAI SDK ← Gemini API calls (vision, layout, architecture planning)
