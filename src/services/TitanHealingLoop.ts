@@ -405,10 +405,11 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       // can find ANY node by id (not just the root). Nodes are references, so mutations
       // from the fix engine propagate back into the nested tree automatically.
       const domTree = manifests[0].global_theme?.dom_tree as Record<string, unknown> | undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const flatComponents = flattenDomTree(
         domTree as any
       ) as unknown as DetectedComponentEnhanced[];
+      /* eslint-enable @typescript-eslint/no-explicit-any */
       const stepResult = await visionEngine.executeStep(
         originalImage,
         flatComponents,
