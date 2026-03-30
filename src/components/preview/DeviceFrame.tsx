@@ -159,19 +159,19 @@ const SideButtons = React.memo(function SideButtons({
     >
       {/* Power button */}
       <div
-        className="bg-slate-600 rounded-sm"
+        className="bg-slate-600 rounded-xs"
         style={{ width: 3, height: Math.min(height * 0.06, 40) }}
       />
       {side === 'left' && (
         <>
           {/* Volume up */}
           <div
-            className="bg-slate-600 rounded-sm"
+            className="bg-slate-600 rounded-xs"
             style={{ width: 3, height: Math.min(height * 0.08, 50) }}
           />
           {/* Volume down */}
           <div
-            className="bg-slate-600 rounded-sm"
+            className="bg-slate-600 rounded-xs"
             style={{ width: 3, height: Math.min(height * 0.08, 50) }}
           />
         </>
