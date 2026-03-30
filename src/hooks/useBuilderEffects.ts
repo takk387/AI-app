@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+
 /**
  * useBuilderEffects - Data loading, app restoration, auto-save, localStorage persistence
  *
@@ -131,12 +133,10 @@ export function useBuilderEffects(options: UseBuilderEffectsOptions): void {
           const apps = await loadComponentsFromDb();
           setComponents(apps);
           if (apps.length === 0) {
-            console.warn(
-              '[MainBuilderView] No apps loaded from database. User may need to create a new app.'
-            );
+            logger.warn('No apps loaded from database. User may need to create a new app.');
           }
         } catch (err) {
-          console.error('[MainBuilderView] Failed to load apps from database:', err);
+          logger.error('Failed to load apps from database', err instanceof Error ? err : undefined);
         } finally {
           setLoadingApps(false);
         }

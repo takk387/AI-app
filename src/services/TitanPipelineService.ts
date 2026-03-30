@@ -13,6 +13,7 @@
  */
 
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
+import { logger } from '@/utils/logger';
 import type {
   PipelineInput,
   MergeStrategy,
@@ -92,7 +93,7 @@ export async function extractPhysics(
   const parts: any[] = [{ text: PHYSICIST_PROMPT }];
   for (const f of files) {
     const up = await _uploadFileToGemini(apiKey, f);
-    parts.push(createPartFromUri(up.uri!, up.mimeType!));
+    parts.push(createPartFromUri(up.uri ?? '', up.mimeType ?? ''));
   }
 
   const result = await ai.models.generateContent({
@@ -103,7 +104,7 @@ export async function extractPhysics(
     const jsonMatch = (result.text ?? '').match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { component_motions: [] };
   } catch (error) {
-    console.warn('[TitanPipeline] Physicist JSON parse failed:', error);
+    logger.warn('Physicist JSON parse failed', { error: String(error) });
     return { component_motions: [] };
   }
 }
@@ -205,7 +206,7 @@ async function extractCustomVisualAssets(
     if (node.hasCustomVisual === true && node.extractionAction === 'crop') {
       customVisualCount++;
       if (!node.extractionBounds || typeof node.id !== 'string') {
-        console.warn(`[TitanPipeline] Node flagged for extraction but missing bounds or id:`, {
+        logger.warn('Node flagged for extraction but missing bounds or id', {
           id: node.id,
           hasCustomVisual: node.hasCustomVisual,
           hasBounds: !!node.extractionBounds,
@@ -229,13 +230,15 @@ async function extractCustomVisualAssets(
             .then((result) => {
               if (result.success) {
                 extractedAssets[nodeId] = result.url;
-                console.log(`[AssetExtraction] Extracted: ${nodeId} → ${result.url}`);
+                logger.info('Asset extracted', { nodeId, url: result.url });
               } else {
-                console.warn(`[AssetExtraction] Failed for ${nodeId}: ${result.error}`);
+                logger.warn('Asset extraction failed', { nodeId, error: result.error });
               }
             })
             .catch((e) => {
-              console.error(`[AssetExtraction] Error extracting ${nodeId}:`, e);
+              logger.error('Asset extraction error', e instanceof Error ? e : undefined, {
+                nodeId,
+              });
             })
         );
       }
@@ -258,14 +261,14 @@ async function extractCustomVisualAssets(
   }
 
   // Log diagnostic summary
-  console.log(`[TitanPipeline] Icon detection summary:`, {
+  logger.info('Icon detection summary', {
     hasCustomVisual: customVisualCount,
     iconName: iconNameCount,
     iconSvgPath: iconSvgPathCount,
     note:
       iconNameCount > customVisualCount
-        ? '⚠️ More iconName than hasCustomVisual — Surveyor may be using Lucide fallbacks'
-        : '✅ Custom visual extraction preferred',
+        ? 'More iconName than hasCustomVisual — Surveyor may be using Lucide fallbacks'
+        : 'Custom visual extraction preferred',
   });
 
   await Promise.all(tasks);
@@ -281,9 +284,7 @@ async function extractCustomVisualAssets(
     ) {
       node.iconName = node._originalIconName;
       delete node._originalIconName;
-      console.warn(
-        `[AssetExtraction] Restoring fallback iconName "${node.iconName}" for ${nodeId}`
-      );
+      logger.warn('Restoring fallback iconName', { iconName: node.iconName, nodeId });
     }
     const children = node.children as Record<string, unknown>[] | undefined;
     if (Array.isArray(children)) {
@@ -315,19 +316,16 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const routeStart = Date.now();
   const strategy = await _routeIntent(input);
   stepTimings.router = Date.now() - routeStart;
-  console.log(
-    '[TitanPipeline] Router strategy:',
-    JSON.stringify({
-      mode: strategy.mode,
-      measure_pixels: strategy.execution_plan.measure_pixels,
-      generate_assets: strategy.execution_plan.generate_assets?.length ?? 0,
-      hasFiles: input.files.length,
-    })
-  );
+  logger.info('Router strategy', {
+    mode: strategy.mode,
+    measure_pixels: strategy.execution_plan.measure_pixels,
+    generate_assets: strategy.execution_plan.generate_assets?.length ?? 0,
+    hasFiles: input.files.length,
+  });
 
   // GENERATE MODE: skip all vision steps, go straight to Builder with concept data
   if (strategy.mode === 'GENERATE') {
-    console.log('[TitanPipeline] GENERATE mode — building full layout from concept');
+    logger.info('GENERATE mode — building full layout from concept');
     const buildStart = Date.now();
     const files = await _assembleCode(
       null, // no structure
@@ -355,9 +353,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   if (input.files.length > 0) {
     const metadata = await extractImageMetadata(input.files[0]);
     canvasConfig = buildCanvasConfig(metadata);
-    console.log(
-      `[TitanPipeline] Canvas config: ${canvasConfig.width}x${canvasConfig.height} (${canvasConfig.source})`
-    );
+    logger.info('Canvas config', {
+      width: canvasConfig.width,
+      height: canvasConfig.height,
+      source: canvasConfig.source,
+    });
   }
 
   await Promise.all([
@@ -410,14 +410,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     try {
       extractedAssets = await extractCustomVisualAssets(manifests, input.files[0].base64);
       if (Object.keys(extractedAssets).length > 0) {
-        console.log(
-          `[TitanPipeline] Extracted ${Object.keys(extractedAssets).length} custom visual assets`
-        );
+        logger.info('Extracted custom visual assets', {
+          count: Object.keys(extractedAssets).length,
+        });
       }
     } catch (e) {
-      console.error(
-        '[TitanPipeline] Asset extraction failed, continuing with generated assets:',
-        e
+      logger.error(
+        'Asset extraction failed, continuing with generated assets',
+        e instanceof Error ? e : undefined
       );
     }
   }
@@ -444,7 +444,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
 
   // HEALING LOOP: Compare rendered output vs original and apply fixes iteratively
   if (input.files.length > 0 && manifests.length > 0 && manifests[0]?.global_theme?.dom_tree) {
-    console.log('[TitanPipeline] Starting healing loop (up to 3 iterations)...');
+    logger.info('Starting healing loop (up to 3 iterations)');
 
     const healResult = await runHealingLoop({
       files,

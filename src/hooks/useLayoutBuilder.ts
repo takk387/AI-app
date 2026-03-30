@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+
 /**
  * useLayoutBuilder Hook
  *
@@ -564,13 +566,13 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
 
     navigator.clipboard.writeText(output).then(
       () => {
-        console.log('[useLayoutBuilder] Code exported to clipboard');
+        logger.info('Code exported to clipboard');
         setSuccessMessage('Code copied to clipboard!');
         // Auto-clear success message after 3 seconds
         setTimeout(() => setSuccessMessage(null), 3000);
       },
       (err) => {
-        console.error('[useLayoutBuilder] Clipboard write failed:', err);
+        logger.error('Clipboard write failed', err instanceof Error ? err : undefined);
         setErrors(['Failed to copy code to clipboard']);
       }
     );
