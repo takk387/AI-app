@@ -31,7 +31,7 @@ export function subscribeToTable(
   const supabase = createBrowserClient();
 
   // Type assertion required - see function JSDoc for explanation
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const subscription = supabase.channel(`table-${table}`).on(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     'postgres_changes' as any,

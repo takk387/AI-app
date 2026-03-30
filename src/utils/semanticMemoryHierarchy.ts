@@ -6,8 +6,6 @@
  * Extracted from SemanticMemoryManager for modularity.
  */
 
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { MemoryCategory, SemanticMemory, SupabaseClient } from './semanticMemoryTypes';
 
 // ============================================================================

@@ -171,7 +171,6 @@ export function usePhaseLifecycle(deps: UsePhaseLifecycleDeps, options: UsePhase
       onBuildComplete,
       onError,
       autoAdvance,
-      startPhase,
     ]
   );
 

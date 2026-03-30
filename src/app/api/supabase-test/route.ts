@@ -265,7 +265,6 @@ export async function GET() {
           }
         }
       } catch (storageError) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         testResults.tests.storageOperations = {
           status: 'FAIL',
           message: `Storage operations test failed: ${storageError instanceof Error ? storageError.message : 'Unknown error'}`,
@@ -293,7 +292,7 @@ export async function GET() {
         cleanupMessage = `Successfully cleaned up ${cleanupTasks.length} test file(s)`;
       } catch (cleanupError) {
         cleanupStatus = 'WARNING';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         cleanupMessage = `Cleanup partially failed: ${cleanupError instanceof Error ? cleanupError.message : 'Unknown error'}`;
       }
     }

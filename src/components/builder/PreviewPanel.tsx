@@ -155,7 +155,6 @@ class SandpackErrorBoundary extends Component<{ children: ReactNode }, ErrorBoun
     return { hasError: true, error };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
     // Error already captured in getDerivedStateFromError
   }

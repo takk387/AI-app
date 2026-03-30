@@ -234,7 +234,6 @@ export class DeploymentOrchestrator {
     this.options.onProgress?.(this.getProgress());
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async simulateDelay(ms: number): Promise<void> {
     if (this.options.dryRun) return;
     await new Promise((resolve) => setTimeout(resolve, ms));
