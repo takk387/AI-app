@@ -45,6 +45,16 @@ import { usePhaseExecution } from '@/hooks/usePhaseExecution';
 import { StorageService } from '@/services/StorageService';
 import { StorageAnalyticsService } from '@/services/StorageAnalytics';
 
+// Utility imports
+import {
+  generateId,
+  detectIntent,
+  isPhaseReference,
+  extractPhaseNumber,
+  buildProjectSummary,
+  safeParseJSON,
+} from '@/utils/builderHelpers';
+
 // Type imports
 import type { ChatMessage, GeneratedComponent } from '@/types/aiBuilderTypes';
 import type { DynamicPhase, DynamicPhasePlan } from '@/types/dynamicPhases';
@@ -143,66 +153,6 @@ export interface BuilderContextValue {
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-}
-
-function detectIntent(text: string, errors: string[]): IntentType {
-  const lower = text.toLowerCase();
-
-  // Phase references
-  if (/build phase \d|start phase \d|execute phase \d/i.test(lower)) return 'BUILD';
-  if (/^(build|create|generate|make)\s/i.test(lower)) return 'BUILD';
-
-  // Modify
-  if (/^(change|fix|update|modify|replace|move|add .* to)\s/i.test(lower)) return 'MODIFY';
-
-  // Debug
-  if (errors.length > 0 && /(error|broken|not working|crash|blank|white screen)/i.test(lower))
-    return 'DEBUG';
-  if (/^(why is|debug|what's wrong|investigate)\s/i.test(lower)) return 'DEBUG';
-
-  // Concept
-  if (/^(add .* feature|rename|change the name|update the description)/i.test(lower))
-    return 'CONCEPT';
-
-  return 'QUESTION';
-}
-
-function isPhaseReference(text: string): boolean {
-  return /(?:build|start|execute) phase (\d+)/i.test(text);
-}
-
-function extractPhaseNumber(text: string): number {
-  const match = text.match(/(?:build|start|execute) phase (\d+)/i);
-  return match ? parseInt(match[1], 10) : 1;
-}
-
-function buildProjectSummary(concept: AppConcept | null): string {
-  if (!concept) return 'No project loaded.';
-  return [
-    concept.name && `Project: ${concept.name}`,
-    concept.description && `Description: ${concept.description}`,
-    concept.purpose && `Purpose: ${concept.purpose}`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
-
-function safeParseJSON(code: string | undefined): Record<string, unknown> | undefined {
-  if (!code) return undefined;
-  try {
-    return JSON.parse(code);
-  } catch {
-    return undefined;
-  }
-}
-
-// ============================================================================
 // CONTEXT
 // ============================================================================
 
@@ -296,9 +246,6 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
   const _phasePlanGeneratedAt = useAppStore((s) => s.phasePlanGeneratedAt);
   const setPhasePlanGeneratedAt = useAppStore((s) => s.setPhasePlanGeneratedAt);
   const buildSettings = useAppStore((s) => s.buildSettings);
-  // Version control (store-level for direct push/clear)
-  const pushToUndoStack = useAppStore((s) => s.pushToUndoStack);
-  const clearRedoStack = useAppStore((s) => s.clearRedoStack);
 
   // ---- Hooks (ordered by dependency chain) ----
 
@@ -849,8 +796,6 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
       setComponents,
       setActiveTab,
       updateAppConceptField,
-      pushToUndoStack,
-      clearRedoStack,
       trackDebug,
       setPendingDiff,
       setShowDiffPreview,
