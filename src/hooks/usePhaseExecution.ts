@@ -10,15 +10,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { PhaseExecutionResult } from '@/types/dynamicPhases';
 import type { AppConcept } from '@/types/appConcept';
 import type { ChatMessage, GeneratedComponent, ActiveTab } from '../types/aiBuilderTypes';
+import { generateId } from '@/utils/builderHelpers';
 
-// Helper function (same as in MainBuilderView)
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-}
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface UsePhaseExecutionOptions {
   currentMode: string;
   isReviewed: boolean;
@@ -55,6 +49,7 @@ export interface UsePhaseExecutionOptions {
   ) => GeneratedComponent;
   saveComponentToDb: (component: GeneratedComponent) => Promise<any>;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export interface UsePhaseExecutionReturn {
   tryStartPhase1: () => boolean;
@@ -103,6 +98,7 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
   const tryStartPhase1 = useCallback(() => {
     if (!dynamicBuildPhases.plan) return false;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const phase1 = dynamicBuildPhases.plan.phases.find((p: any) => p.number === 1);
     const isPhase1Done = phase1?.status === 'completed' || phase1?.status === 'skipped';
 
@@ -253,6 +249,7 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
             phaseNumber,
             phaseName: executionContext.phaseName,
             previousPhaseCode: executionContext.previousPhaseCode,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             allPhases: executionContext.allPhases?.map((p: any) => ({
               number: p.number,
               name: p.name,

@@ -342,7 +342,7 @@ ${instructions}`
   `;
 
   // Build multimodal content: original image (if available) + text prompt
-  const contentParts: any[] = [];
+  const contentParts: Array<{ text: string } | ReturnType<typeof createPartFromUri>> = [];
   if (originalImageRef) {
     contentParts.push(createPartFromUri(originalImageRef.fileUri, originalImageRef.mimeType));
   }

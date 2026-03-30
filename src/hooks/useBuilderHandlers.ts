@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+
 /**
  * useBuilderHandlers - UI event handlers for the builder
  *
@@ -8,7 +10,13 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import type { GeneratedComponent, ChatMessage, Phase, BuilderMode } from '../types/aiBuilderTypes';
+import type {
+  GeneratedComponent,
+  ChatMessage,
+  Phase,
+  BuilderMode,
+  StagePlan,
+} from '../types/aiBuilderTypes';
 
 // Helper function (same as in MainBuilderView)
 function generateId(): string {
@@ -29,7 +37,9 @@ export interface UseBuilderHandlersOptions {
   setShowExportModal: (show: boolean) => void;
   currentComponent: GeneratedComponent | null;
   setUserInput: (value: string) => void;
-  setNewAppStagePlan: (fn: (prev: any) => any) => void;
+  setNewAppStagePlan: (
+    fn: StagePlan | null | ((prev: StagePlan | null) => StagePlan | null)
+  ) => void;
   currentAppId: string | null;
   setPendingDeployAfterSave: (pending: boolean) => void;
   setShowNameAppModal: (show: boolean) => void;
@@ -138,7 +148,7 @@ export function useBuilderHandlers(options: UseBuilderHandlersOptions): UseBuild
           break;
         default:
           // Handle unknown actions
-          console.log('[MainBuilderView] Unknown plan action:', action);
+          logger.warn('[MainBuilderView] Unknown plan action', { action });
       }
       clearSuggestedActions();
     },
@@ -189,12 +199,12 @@ export function useBuilderHandlers(options: UseBuilderHandlersOptions): UseBuild
     (phase: Phase) => {
       const buildPrompt = `Build ${phase.name}: ${phase.description}. Features to implement: ${phase.features.join(', ')}`;
       setUserInput(buildPrompt);
-      setNewAppStagePlan((prev: any) =>
+      setNewAppStagePlan((prev: StagePlan | null) =>
         prev
           ? {
               ...prev,
               currentPhase: phase.number,
-              phases: prev.phases.map((p: any) =>
+              phases: prev.phases?.map((p: Phase) =>
                 p.number === phase.number ? { ...p, status: 'building' as const } : p
               ),
             }

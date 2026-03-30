@@ -24,7 +24,7 @@ export interface UISpecNode {
   styles: {
     tailwindClasses: string;
     customCSS?: string;
-    motion?: { initial: any; animate: any };
+    motion?: { initial: Record<string, unknown>; animate: Record<string, unknown> };
   };
 
   // DATA LAYER (For Content)
@@ -78,7 +78,7 @@ export interface LayoutManifest {
 
 // --- ZOD VALIDATION (Self-Healing Triggers) ---
 
-export const UISpecNodeSchema: z.ZodType<any> = z.lazy(() =>
+export const UISpecNodeSchema: z.ZodType<UISpecNode> = z.lazy(() =>
   z.object({
     id: z.string(),
     type: z.enum([

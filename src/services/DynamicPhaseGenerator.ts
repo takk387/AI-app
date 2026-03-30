@@ -74,7 +74,10 @@ export class DynamicPhaseGenerator {
       const classifications = classifyFeatures(concept.coreFeatures, this.config);
 
       // Step 2: Add implicit features from technical requirements
-      const implicitFeatures = getImplicitFeatures(concept.technical, concept);
+      const implicitFeatures = getImplicitFeatures(
+        concept.technical,
+        concept as unknown as Parameters<typeof getImplicitFeatures>[1]
+      );
       const allClassifications = [...classifications, ...implicitFeatures];
 
       // Step 2.5: Add features from layoutManifest if present

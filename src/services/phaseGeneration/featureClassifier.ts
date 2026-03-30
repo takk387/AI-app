@@ -100,12 +100,12 @@ export function classifyFeatures(
  */
 export function getImplicitFeatures(
   tech: TechnicalRequirements,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   concept?: {
-    roles?: Array<{ name: string }>;
-    coreFeatures?: Array<{ name: string; description?: string }>;
+    roles?: Array<{ name: string; [key: string]: unknown }>;
+    coreFeatures?: Array<{ name: string; description?: string; [key: string]: unknown }>;
     appType?: string;
-    technical?: any;
+    technical?: Record<string, unknown>;
+    [key: string]: unknown;
   }
 ): FeatureClassification[] {
   const implicit: FeatureClassification[] = [];
@@ -393,7 +393,7 @@ export function getImplicitFeatures(
  */
 export function extractFeaturesFromLayout(manifest: LayoutManifest): FeatureClassification[] {
   const features: FeatureClassification[] = [];
-  const analysis = analyzeLayoutComplexity(manifest.root);
+  const analysis = analyzeLayoutComplexity(manifest.root as unknown as LayoutTreeNode);
 
   // 1. explicit features from detection tags
   if (manifest.detectedFeatures.includes('Authentication') || analysis.hasAuthComponents) {
@@ -481,7 +481,14 @@ export function extractFeaturesFromLayout(manifest: LayoutManifest): FeatureClas
 /**
  * Recursive analysis of the visual node tree
  */
-export function analyzeLayoutComplexity(root: any): {
+interface LayoutTreeNode {
+  type?: string;
+  semanticTag?: string;
+  children?: LayoutTreeNode[];
+  [key: string]: unknown;
+}
+
+export function analyzeLayoutComplexity(root: LayoutTreeNode): {
   totalNodes: number;
   maxDepth: number;
   hasAuthComponents: boolean;
@@ -496,7 +503,7 @@ export function analyzeLayoutComplexity(root: any): {
 
   const MAX_DEPTH = 50;
 
-  const traverse = (node: any, currentDepth: number) => {
+  const traverse = (node: LayoutTreeNode, currentDepth: number) => {
     if (currentDepth > MAX_DEPTH) return;
     count++;
     depth = Math.max(depth, currentDepth);
@@ -513,7 +520,7 @@ export function analyzeLayoutComplexity(root: any): {
     }
 
     if (node.children && Array.isArray(node.children)) {
-      node.children.forEach((child: any) => traverse(child, currentDepth + 1));
+      node.children.forEach((child: LayoutTreeNode) => traverse(child, currentDepth + 1));
     }
   };
 

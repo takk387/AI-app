@@ -43,10 +43,13 @@ export interface UseBuilderEffectsOptions {
   setPendingDeployAfterSave: (value: boolean) => void;
   currentAppId: string | null;
   appConcept: AppConcept | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dynamicPhasePlan: any;
   isGenerating: boolean;
   chatMessages: ChatMessage[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   implementationPlan: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   saveComponentToDb: (component: GeneratedComponent) => Promise<any>;
   setCurrentComponent: (component: GeneratedComponent | null) => void;
   activeTab: string;

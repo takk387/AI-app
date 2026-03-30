@@ -10,6 +10,7 @@
 
 import puppeteer from 'puppeteer';
 import { UI_CHROME_ICONS } from './iconConstants';
+import type { DetectedComponentEnhanced } from '@/types/layoutDesign';
 
 // ============================================================================
 // JSX MARKUP EXTRACTION
@@ -403,8 +404,11 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       // Flatten the nested dom_tree into a flat array so AutoFixEngine.applyCritique()
       // can find ANY node by id (not just the root). Nodes are references, so mutations
       // from the fix engine propagate back into the nested tree automatically.
-      const domTree = manifests[0].global_theme?.dom_tree as Record<string, unknown>;
-      const flatComponents = flattenDomTree(domTree) as any;
+      const domTree = manifests[0].global_theme?.dom_tree as Record<string, unknown> | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const flatComponents = flattenDomTree(
+        domTree as any
+      ) as unknown as DetectedComponentEnhanced[];
       const stepResult = await visionEngine.executeStep(
         originalImage,
         flatComponents,
@@ -437,7 +441,10 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       // 5. Write fixes back into the nested dom_tree.
       // AutoFixEngine returns shallow copies (not references), so we match by id
       // and copy modified properties back into the original tree.
-      applyFixesToDomTree(domTree, stepResult.components as unknown as Record<string, unknown>[]);
+      applyFixesToDomTree(
+        domTree as Record<string, unknown>,
+        stepResult.components as unknown as Record<string, unknown>[]
+      );
 
       // NOTE: Describe what was ALREADY FIXED, not what needs fixing.
       // The manifest now contains the corrected components, so telling the AI

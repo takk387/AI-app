@@ -3,6 +3,28 @@
  * Includes: Vision DNA, Physics, Assets, and UI State Management
  */
 
+/** Recursive DOM tree node used in vision manifests and physics blueprints */
+export interface DomTreeNode {
+  type: string;
+  id?: string;
+  styles?: Record<string, string>;
+  children?: DomTreeNode[];
+  text?: string;
+  hasIcon?: boolean;
+  iconSvgPath?: string;
+  iconViewBox?: string;
+  iconName?: string;
+  iconColor?: string;
+  iconPosition?: string;
+  iconSize?: string;
+  iconContainerStyle?: Record<string, string>;
+  interactionStates?: {
+    hover?: Record<string, string>;
+    active?: Record<string, string>;
+    focus?: Record<string, string>;
+  };
+}
+
 import type { AppFile } from '@/types/railway';
 
 // ============================================================================
@@ -178,27 +200,7 @@ export interface VisualManifest {
     fonts?: string[];
     gradients?: Array<{ type: string; css: string; usage: string }>;
     effects?: { glassmorphism?: boolean; neumorphism?: boolean; animations?: string[] };
-    dom_tree?: {
-      type: string;
-      id?: string;
-      styles?: Record<string, string>;
-      children?: any[];
-      text?: string;
-      // Icon fields
-      hasIcon?: boolean;
-      iconSvgPath?: string;
-      iconViewBox?: string;
-      iconName?: string;
-      iconColor?: string;
-      iconPosition?: string;
-      iconSize?: string;
-      iconContainerStyle?: Record<string, string>;
-      interactionStates?: {
-        hover?: Record<string, string>;
-        active?: Record<string, string>;
-        focus?: Record<string, string>;
-      };
-    };
+    dom_tree?: DomTreeNode;
     assets?: string[];
   };
   measured_components: Array<{
@@ -223,8 +225,8 @@ export interface ComponentStructure {
   tree: Array<{
     type: string;
     id: string;
-    props: Record<string, any>;
-    children?: any[];
+    props: Record<string, unknown>;
+    children?: DomTreeNode[];
   }>;
 }
 

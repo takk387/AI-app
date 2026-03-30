@@ -90,7 +90,8 @@ export async function extractPhysics(
   const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
-  const parts: any[] = [{ text: PHYSICIST_PROMPT }];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parts: Array<Record<string, any>> = [{ text: PHYSICIST_PROMPT }];
   for (const f of files) {
     const up = await _uploadFileToGemini(apiKey, f);
     parts.push(createPartFromUri(up.uri ?? '', up.mimeType ?? ''));
