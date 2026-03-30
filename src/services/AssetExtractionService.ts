@@ -120,8 +120,8 @@ class AssetExtractionService {
         logger.info('[AssetExtractionService] Detected 0-1000 scale bounds, converting');
       }
 
-      const safeWidth = metadata.width!;
-      const safeHeight = metadata.height!;
+      const safeWidth = metadata.width ?? 0;
+      const safeHeight = metadata.height ?? 0;
 
       // Clamp to image dimensions instead of throwing on overflow
       const cropX = Math.max(

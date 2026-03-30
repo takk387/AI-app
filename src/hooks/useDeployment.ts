@@ -212,7 +212,7 @@ export function useDeployment(options?: UseDeploymentOptions): UseDeploymentRetu
         // Start polling for status updates
         if (result.deploymentId && result.status !== 'ready') {
           pollIntervalRef.current = setInterval(() => {
-            checkDeploymentStatus(result.deploymentId!);
+            checkDeploymentStatus(result.deploymentId ?? '');
           }, pollInterval);
         } else if (result.status === 'ready' && result.url) {
           setIsDeploying(false);

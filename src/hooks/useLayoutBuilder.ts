@@ -528,7 +528,8 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     if (history.length === 0) return;
 
     const newHistory = [...history];
-    const previousState = newHistory.pop()!;
+    const previousState = newHistory.pop();
+    if (!previousState) return;
     const currentState = generatedFiles;
 
     // Apply all state updates
@@ -544,7 +545,8 @@ export function useLayoutBuilder(): UseLayoutBuilderReturn {
     if (future.length === 0) return;
 
     const newFuture = [...future];
-    const nextState = newFuture.shift()!;
+    const nextState = newFuture.shift();
+    if (!nextState) return;
     const currentState = generatedFiles;
 
     // Apply all state updates

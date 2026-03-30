@@ -629,11 +629,11 @@ export const GenericComponentRenderer: React.FC<GenericComponentRendererProps> =
     >
       <ContentRenderer
         component={component}
-        iconElement={<IconRenderer content={content!} style={style} />}
+        iconElement={<IconRenderer content={content} style={style} />}
       />
       {renderChildren()}
       {hasVisualEffects && (
-        <VisualEffectRenderer effects={component.visualEffects!} componentId={id} />
+        <VisualEffectRenderer effects={component.visualEffects ?? []} componentId={id} />
       )}
       {component.locked && (
         <div

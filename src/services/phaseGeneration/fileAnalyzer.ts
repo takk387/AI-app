@@ -231,7 +231,7 @@ export function extractImportsRich(content: string): ImportInfo[] {
   let defaultMatch: RegExpExecArray | null;
   while ((defaultMatch = defaultImportRegex.exec(content)) !== null) {
     // Skip if already captured by named import regex
-    if (!imports.some((i) => i.from === defaultMatch![2])) {
+    if (!imports.some((i) => i.from === defaultMatch?.[2])) {
       imports.push({
         symbols: [`default:${defaultMatch[1]}`],
         from: defaultMatch[2],

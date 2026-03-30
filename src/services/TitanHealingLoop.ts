@@ -301,7 +301,8 @@ function applyFixesToDomTree(
   function walkAndApply(node: Record<string, unknown>): void {
     const nodeId = node.id as string | undefined;
     if (nodeId && fixMap.has(nodeId)) {
-      const fixed = fixMap.get(nodeId)!;
+      const fixed = fixMap.get(nodeId);
+      if (!fixed) return;
       // Copy back style, bounds, and content (the properties AutoFixEngine modifies)
       if (fixed.style) node.style = fixed.style;
       if (fixed.bounds) node.bounds = fixed.bounds;
@@ -402,7 +403,7 @@ export async function runHealingLoop(params: HealingLoopParams): Promise<Healing
       // Flatten the nested dom_tree into a flat array so AutoFixEngine.applyCritique()
       // can find ANY node by id (not just the root). Nodes are references, so mutations
       // from the fix engine propagate back into the nested tree automatically.
-      const domTree = manifests[0].global_theme!.dom_tree as Record<string, unknown>;
+      const domTree = manifests[0].global_theme?.dom_tree as Record<string, unknown>;
       const flatComponents = flattenDomTree(domTree) as any;
       const stepResult = await visionEngine.executeStep(
         originalImage,

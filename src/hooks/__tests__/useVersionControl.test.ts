@@ -464,9 +464,9 @@ describe('useVersionControl', () => {
       });
 
       expect(component.versions).toHaveLength(3);
-      expect(component.versions![0].versionNumber).toBe(1);
-      expect(component.versions![1].versionNumber).toBe(2);
-      expect(component.versions![2].versionNumber).toBe(3);
+      expect(component.versions?.[0].versionNumber).toBe(1);
+      expect(component.versions?.[1].versionNumber).toBe(2);
+      expect(component.versions?.[2].versionNumber).toBe(3);
     });
 
     it('should preserve existing versions when saving new one', () => {
@@ -520,8 +520,8 @@ describe('useVersionControl', () => {
         component = result.current.saveVersion(component, 'MINOR_CHANGE', 'v2');
       });
 
-      const id1 = component.versions![0].id;
-      const id2 = component.versions![1].id;
+      const id1 = component.versions?.[0].id;
+      const id2 = component.versions?.[1].id;
 
       expect(id1).not.toBe(id2);
       expect(id1).toBeTruthy();
@@ -758,8 +758,8 @@ describe('useVersionControl', () => {
       const forkedComponent = result.current.forkFromVersion(sourceComponent);
 
       expect(forkedComponent.versions).toHaveLength(1);
-      expect(forkedComponent.versions![0].versionNumber).toBe(1);
-      expect(forkedComponent.versions![0].changeType).toBe('NEW_APP');
+      expect(forkedComponent.versions?.[0].versionNumber).toBe(1);
+      expect(forkedComponent.versions?.[0].changeType).toBe('NEW_APP');
     });
 
     it('should reset favorite status on fork', () => {

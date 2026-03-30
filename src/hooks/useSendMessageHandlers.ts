@@ -316,7 +316,7 @@ export async function handleModifyTrigger(
       updatedComponent = ctx.saveVersion(updatedComponent, 'MAJOR_CHANGE', prompt);
       ctx.setCurrentComponent(updatedComponent);
       ctx.setComponents((prev) =>
-        prev.map((c) => (c.id === ctx.currentComponent!.id ? updatedComponent : c))
+        prev.map((c) => (c.id === ctx.currentComponent?.id ? updatedComponent : c))
       );
       await ctx.onSaveComponent(updatedComponent);
 
@@ -431,7 +431,7 @@ export async function handleFullAppResponse(
 
     if (isMod && ctx.currentComponent) {
       ctx.setComponents((prev) =>
-        prev.map((comp) => (comp.id === ctx.currentComponent!.id ? newComponent : comp))
+        prev.map((comp) => (comp.id === ctx.currentComponent?.id ? newComponent : comp))
       );
     } else {
       ctx.setComponents((prev) => [newComponent, ...prev].slice(0, 50));

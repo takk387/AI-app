@@ -413,12 +413,10 @@ export function checkColorContrast(
   background: string
 ): { ratio: number; passAA: boolean; passAAA: boolean; passLargeAA: boolean } {
   const getLuminance = (hex: string): number => {
-    const rgb = hex
-      .replace('#', '')
-      .match(/.{2}/g)!
+    const rgb = (hex.replace('#', '').match(/.{2}/g) ?? [])
       .map((x) => parseInt(x, 16) / 255)
       .map((x) => (x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)));
-    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    return 0.2126 * (rgb[0] ?? 0) + 0.7152 * (rgb[1] ?? 0) + 0.0722 * (rgb[2] ?? 0);
   };
 
   const l1 = getLuminance(foreground);

@@ -148,7 +148,7 @@ export async function uploadFileToGemini(apiKey: string, file: FileInput) {
 
   while (uploadedFile.state === 'PROCESSING') {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    uploadedFile = await ai.files.get({ name: uploadedFile.name! });
+    uploadedFile = await ai.files.get({ name: uploadedFile.name ?? '' });
   }
 
   if (uploadedFile.state === 'FAILED') throw new Error(`Upload failed: ${file.filename}`);
@@ -475,7 +475,7 @@ export async function surveyLayout(
   const result = await ai.models.generateContent({
     model: GEMINI_FLASH_MODEL,
     contents: [
-      createPartFromUri(fileState.uri!, fileState.mimeType!),
+      createPartFromUri(fileState.uri ?? '', fileState.mimeType ?? ''),
       { text: canvasPreamble + SURVEYOR_PROMPT },
     ],
     config: {
@@ -505,7 +505,7 @@ export async function surveyLayout(
 
     return {
       file_index: fileIndex,
-      originalImageRef: { fileUri: fileState.uri!, mimeType: fileState.mimeType! },
+      originalImageRef: { fileUri: fileState.uri ?? '', mimeType: fileState.mimeType ?? '' },
       canvas: data.canvas || fallbackCanvas,
       global_theme: { dom_tree: data.dom_tree, assets: data.assets_needed },
       measured_components: [],
@@ -515,7 +515,7 @@ export async function surveyLayout(
     return {
       file_index: fileIndex,
       originalImageRef: fileState?.uri
-        ? { fileUri: fileState.uri, mimeType: fileState.mimeType! }
+        ? { fileUri: fileState.uri, mimeType: fileState.mimeType ?? '' }
         : undefined,
       measured_components: [],
       canvas: fallbackCanvas,

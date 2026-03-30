@@ -115,12 +115,12 @@ export function createSetupPhase(
  * directly (no AI call), auto-completing this phase instantly.
  */
 export function createLayoutInjectionPhase(phaseNumber: number, concept: AppConcept): DynamicPhase {
-  const layoutManifest = concept.layoutManifest!;
-  const designSystem = layoutManifest.designSystem || {
+  const layoutManifest = concept.layoutManifest;
+  const designSystem = layoutManifest?.designSystem ?? {
     colors: {},
     fonts: { heading: 'Inter', body: 'Inter' },
   };
-  const detectedFeatures = layoutManifest.detectedFeatures || [];
+  const detectedFeatures = layoutManifest?.detectedFeatures ?? [];
 
   return {
     number: phaseNumber,

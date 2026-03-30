@@ -134,7 +134,7 @@ export class LayoutAutoFixEngine {
     }
 
     if (this.config.allowedIssueTypes && this.config.allowedIssueTypes.length > 0) {
-      discrepancies = discrepancies.filter((d) => this.config.allowedIssueTypes!.includes(d.issue));
+      discrepancies = discrepancies.filter((d) => this.config.allowedIssueTypes?.includes(d.issue));
     }
 
     if (this.config.maxFixes && discrepancies.length > this.config.maxFixes) {

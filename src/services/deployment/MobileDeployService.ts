@@ -229,15 +229,17 @@ export class MobileDeployService {
     };
 
     // Platform-specific production config
+    const production = easConfig.build.production ?? {};
+    easConfig.build.production = production;
     if (config.platform === 'ios' || config.platform === 'both') {
-      easConfig.build.production!.ios = {
+      production.ios = {
         buildConfiguration: 'Release',
         image: 'latest',
       };
     }
 
     if (config.platform === 'android' || config.platform === 'both') {
-      easConfig.build.production!.android = {
+      production.android = {
         buildType: 'apk', // or 'app-bundle' for Play Store
         gradleCommand: ':app:assembleRelease',
       };

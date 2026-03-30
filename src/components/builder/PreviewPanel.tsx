@@ -124,7 +124,7 @@ function toSandpackFiles(files: AppFile[]): Record<string, { code: string; hidde
   // but those support files aren't in the bundle, replace with clean entry
   const entryPath = result['/index.tsx'] ? '/index.tsx' : result['/index.ts'] ? '/index.ts' : null;
   if (entryPath) {
-    const entryCode = result[entryPath]!.code;
+    const entryCode = result[entryPath]?.code ?? '';
     const needsPreflight =
       entryCode.includes('preflight-undo') &&
       !result['/preflight-undo.ts'] &&

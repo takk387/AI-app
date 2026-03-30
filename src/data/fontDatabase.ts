@@ -918,13 +918,13 @@ export function getRecommendedPairing(
   // Default pairing based on category
   if (heading.category === 'serif') {
     return {
-      body: getFontByFamily('Open Sans')!,
+      body: getFontByFamily('Open Sans') ?? heading,
       mono: getFontByFamily('Source Code Pro'),
     };
   }
 
   return {
-    body: getFontByFamily('Inter')!,
+    body: getFontByFamily('Inter') ?? heading,
     mono: getFontByFamily('JetBrains Mono'),
   };
 }
