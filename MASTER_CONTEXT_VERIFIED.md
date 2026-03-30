@@ -1,20 +1,20 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: This file provides full project context for Antigravity, Claude Code, and other AI tools.
-> **Status**: VERIFIED (Mar 15, 2026 — 5 builder state bugs fixed, store v6 migration, mode persistence, streaming timeouts, stale session cleanup)
+> **Status**: VERIFIED (Mar 30, 2026 — Builder page rebuild, 12+ bug fixes, massive cleanup/refactoring, 28 orphaned files removed, 6 monolithic files split into modules, 229 console→logger migration, agents removed, structured codeParser/layoutValidation/dynamicPhases/deployment/full-app-stream modules)
 
 ---
 
 ## Quick Stats
 
-| Metric               | Previous | Verified (Actual) |
-| -------------------- | -------- | ----------------- |
-| TypeScript/TSX Files | 613      | **621**           |
-| API Route Handlers   | 66       | **66**            |
-| Custom Hooks         | 43       | **42**            |
-| Service Classes      | 86       | **86**            |
-| Type Definitions     | ~13,930  | **~14,200 lines** |
-| Utilities            | ~25,047  | **~25,068 lines** |
+| Metric               | Mar 15  | Verified (Mar 30) |
+| -------------------- | ------- | ----------------- |
+| TypeScript/TSX Files | 621     | **638**           |
+| API Route Handlers   | 66      | **66**            |
+| Custom Hooks         | 42      | **45**            |
+| Service Classes      | 86      | **~100**          |
+| Type Definitions     | ~14,200 | **modularized**   |
+| Utilities            | ~25,068 | **modularized**   |
 
 **Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
 
@@ -109,7 +109,7 @@ CREATE mode shortcut: Router → Surveyor → Builder → Healing Loop
 - `src/services/LayoutAutoFixEngine.ts` (~576 lines) - Auto-fix from AI critique
 - `src/types/titanPipeline.ts` (~267 lines) - Pipeline types
 - `src/types/layoutAnalysis.ts` (~191 lines) - Critique/healing types
-- `src/utils/layoutValidation.ts` (~1,144 lines) - Zod schema validation
+- `src/utils/layoutValidation/` (6 files, ~1,214 lines) - Zod schema validation (split from single file Mar 30)
 
 **Pipeline Steps:**
 | Step | Model | Purpose |
@@ -123,20 +123,11 @@ CREATE mode shortcut: Router → Surveyor → Builder → Healing Loop
 
 ---
 
-## Agents Architecture (Added Feb 1, 2026)
+## Agents Architecture (Added Feb 1, REMOVED Mar 29, 2026)
 
-New agentic architecture for code transformation and deployment workflows.
+~~Previously at `src/agents/` with CodeTransformAgent (437 lines), DeploymentAgent (444 lines), types (393 lines).~~
 
-**Key Files:**
-
-| File                    | Lines | Purpose                          |
-| ----------------------- | ----- | -------------------------------- |
-| `CodeTransformAgent.ts` | 437   | AST-based code transformations   |
-| `DeploymentAgent.ts`    | 444   | Deployment workflow orchestrator |
-| `types.ts`              | 393   | Agent type definitions           |
-| `index.ts`              | 46    | Agent exports                    |
-
-**Location:** `src/agents/`
+**Status**: DELETED during Mar 29 dead code cleanup. The 1,320 lines were orphaned — never imported by any other file.
 
 ---
 
@@ -147,7 +138,7 @@ New animation and visual effects infrastructure.
 **Services:**
 
 - `src/services/MotionMapper.ts` (350 lines) - Maps motion configurations to CSS/animations
-- `src/services/SourceMergeEngine.ts` (322 lines) - Merges multiple visual sources
+- ~~`src/services/SourceMergeEngine.ts` (322 lines)~~ - DELETED Mar 29 (orphaned)
 
 **Components:**
 
@@ -179,7 +170,7 @@ New animation and visual effects infrastructure.
 | `types/appConcept.ts`     | **51 files** | **CRITICAL** - Foundation of the entire app (38 direct imports) |
 | `useAppStore.ts`          | **24 files** | CRITICAL - breaks centralized state                             |
 | `types/aiBuilderTypes.ts` | 33 files     | HIGH                                                            |
-| `types/dynamicPhases.ts`  | 31 files     | HIGH                                                            |
+| `types/dynamicPhases/`    | 31 files     | HIGH (now 9-file module directory)                              |
 
 ### TIER 2: MAJOR SERVICES (5-19 dependents)
 
@@ -194,16 +185,16 @@ New animation and visual effects infrastructure.
 
 ### TIER 3: PIPELINE & PLANNING SERVICES (1-3 dependents each)
 
-| File                                | Lines | Notes                             |
-| ----------------------------------- | ----- | --------------------------------- |
-| `TitanPipelineService.ts`           | 497   | Titan Pipeline orchestrator       |
-| `BackgroundPlanningOrchestrator.ts` | 640   | Dual AI 5-stage pipeline          |
-| `LiveIntelligenceGatherer.ts`       | 606   | Web search + AI intelligence      |
-| `ConsensusNegotiator.ts`            | 571   | Claude-Gemini consensus           |
-| `DualValidationOrchestrator.ts`     | 300   | Cross-validation of architectures |
-| `MotionMapper.ts`                   | 350   | Animation mapping                 |
-| `SourceMergeEngine.ts`              | 322   | Multi-source merging              |
-| `GeminiLayoutCritique.ts`           | 286   | Vision critique (new SDK)         |
+| File                                | Lines   | Notes                             |
+| ----------------------------------- | ------- | --------------------------------- |
+| `TitanPipelineService.ts`           | 497     | Titan Pipeline orchestrator       |
+| `BackgroundPlanningOrchestrator.ts` | 640     | Dual AI 5-stage pipeline          |
+| `LiveIntelligenceGatherer.ts`       | 606     | Web search + AI intelligence      |
+| `ConsensusNegotiator.ts`            | 571     | Claude-Gemini consensus           |
+| `DualValidationOrchestrator.ts`     | 300     | Cross-validation of architectures |
+| `MotionMapper.ts`                   | 350     | Animation mapping                 |
+| ~~`SourceMergeEngine.ts`~~          | ~~322~~ | DELETED Mar 29                    |
+| `GeminiLayoutCritique.ts`           | 286     | Vision critique (new SDK)         |
 
 ### TIER 4: HOOKS & COMPONENTS (1-3 dependents each)
 
@@ -219,19 +210,20 @@ Lower risk, but still follow patterns.
 
 ## Critical Files — DO NOT BREAK
 
-| File                            | Lines     | Purpose                                      | Risk                 |
-| ------------------------------- | --------- | -------------------------------------------- | -------------------- |
-| `useAppStore.ts`                | **977**   | Centralized Zustand state (10 slices, v6)    | 24+ files break      |
-| `types/layoutDesign/` (dir)     | **3,343** | Design type system (8 files, split from 3k)  | 14+ files break      |
-| `middleware.ts`                 | **87**    | Auth flow for all routes                     | Auth breaks          |
-| `CodeParser.ts`                 | **1,070** | AST parsing engine                           | Code analysis breaks |
-| `BuilderContext.tsx`            | **977**   | Builder provider — 16 hooks, intent routing  | Builder UI breaks    |
-| `MainBuilderView.tsx`           | **940**   | Legacy orchestrator (kept as reference)      | Unused               |
-| `PhaseExecutionManager.ts`      | **832**   | Phase execution orchestrator (from 2.1k)     | Build system breaks  |
-| `NaturalConversationWizard.tsx` | **751**   | Conversation wizard UI                       | Planning breaks      |
-| `DynamicPhaseGenerator.ts`      | **685**   | Phase planning engine (refactored from 2.7k) | Build system breaks  |
-| `useDynamicBuildPhases.ts`      | **700**   | Phase execution hook                         | Build UI breaks      |
-| `TitanPipelineService.ts`       | **497**   | Titan Pipeline orchestrator                  | Pipeline breaks      |
+| File                            | Lines      | Purpose                                        | Risk                   |
+| ------------------------------- | ---------- | ---------------------------------------------- | ---------------------- |
+| `BuilderContext.tsx`            | **960**    | Builder provider — 16 hooks, intent routing    | Builder UI breaks      |
+| `types/layoutDesign/` (dir)     | **3,343**  | Design type system (8 files, split from 3k)    | 14+ files break        |
+| `middleware.ts`                 | **87**     | Auth flow for all routes                       | Auth breaks            |
+| `codeParser/` (dir)             | **~1,115** | AST parsing engine (8 files, split from 1,070) | Code analysis breaks   |
+| `useAppStore.ts` + `slices/`    | **~1,070** | Zustand state (385 + 9 slices, v6)             | 24+ files break        |
+| `PhaseExecutionManager.ts`      | **832**    | Phase execution orchestrator (from 2.1k)       | Build system breaks    |
+| `NaturalConversationWizard.tsx` | **751**    | Conversation wizard UI                         | Planning breaks        |
+| `DynamicPhaseGenerator.ts`      | **685**    | Phase planning engine (refactored from 2.7k)   | Build system breaks    |
+| `useDynamicBuildPhases.ts`      | **700**    | Phase execution hook                           | Build UI breaks        |
+| `TitanPipelineService.ts`       | **497**    | Titan Pipeline orchestrator                    | Pipeline breaks        |
+| `deployment/` (dir)             | **~1,397** | Deployment orchestrator (260 + 4 pipelines)    | Deploy system breaks   |
+| `full-app-stream/` (dir)        | **~1,339** | AI streaming route (285 + 6 modules)           | Build streaming breaks |
 
 ---
 
@@ -291,6 +283,7 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 | Agentic Pipelines | `TitanPipelineService` — multi-agent orchestration                                                           |
 | SSE Responses     | `createSSEResponse()` — centralized headers incl. `X-Accel-Buffering: no` for Railway/Nginx                  |
 | Base URL          | `getBaseUrl()` — single source of truth for app URL, no Vercel hosting references                            |
+| Structured Logger | All console.log migrated to structured logger (229 statements across 39 files, Mar 29)                       |
 
 ---
 
@@ -298,11 +291,7 @@ Hooks       → Other Hooks               ⚠️ CAUTION (allowed if no circular
 
 ```
 src/
-├── agents/           # Agentic architecture (1,320 lines)
-│   ├── CodeTransformAgent.ts   # Code transformations
-│   ├── DeploymentAgent.ts      # Deployment workflows
-│   └── types.ts                # Agent types
-├── app/              # Next.js App Router + API routes (66 handlers, 29 API dirs)
+├── app/              # Next.js App Router + API routes (66 handlers)
 │   ├── (protected)/app/
 │   │   ├── wizard/             # Step 1: Conversation planning
 │   │   ├── design/             # Step 2: Visual layout design
@@ -311,47 +300,46 @@ src/
 │   │   └── page.tsx            # Step 5: Main builder view
 │   └── api/
 │       ├── ai/                 # AI proxy routes (Claude, Gemini)
+│       ├── ai-builder/
+│       │   └── full-app-stream/ # Modular SSE route (7 files, ~1,339 lines — split Mar 29)
 │       ├── planning/           # Dual AI planning (start, stream, intelligence)
 │       ├── web-search/         # Live web search for intelligence
 │       └── wizard/             # Wizard phase generation
-├── components/       # 176 .tsx files (top-level + sub-components)
+├── components/       # .tsx files (cleaned up — 28 orphaned components removed Mar 29)
 │   ├── ai-plan/      # AI Plan step (PipelineStagesView, ConsensusResultView, AISelectionPanel)
+│   ├── builder/      # NEW: Rebuilt builder UI (10 files — BuilderPage, LeftPanel, PreviewPanel, etc.)
 │   ├── effects/      # Visual effects (CSS particles, renderers)
 │   ├── layout-builder/  # Layout builder components
 │   ├── review/       # Review step (14 files, includes AIPlanCard)
-│   ├── ConsensusEscalationDialog.tsx  # Dual AI escalation modal
 │   └── ...
-├── hooks/            # 43 custom hooks
+├── contexts/         # React Context providers
+│   └── BuilderContext.tsx      # Builder provider (960 lines — wraps 16 hooks, intent detection)
+├── hooks/            # 45 custom hooks
 │   ├── useDualAIPlan.ts           # Dual AI planning pipeline
 │   ├── useBackgroundIntelligence.ts # Background intelligence pre-caching
 │   └── ...
-├── services/         # 86 business logic services
-│   ├── TitanPipelineService.ts           # Agentic pipeline
+├── services/         # ~100 business logic services (modularized Mar 29-30)
+│   ├── codeParser/             # AST parsing (8 files, ~1,115 lines — split from CodeParser.ts Mar 30)
+│   ├── deployment/             # Deployment (5 files, ~1,397 lines — split from Orchestrator Mar 30)
+│   ├── TitanPipelineService.ts # Agentic pipeline
 │   ├── BackgroundPlanningOrchestrator.ts # Dual AI 5-stage pipeline
-│   ├── ConsensusNegotiator.ts            # Claude-Gemini consensus
-│   ├── DualValidationOrchestrator.ts     # Cross-validation
-│   ├── LiveIntelligenceGatherer.ts       # Web search + AI intelligence
-│   ├── LayoutBackendAnalyzer.ts          # Layout-to-backend analysis
+│   ├── ConsensusNegotiator.ts  # Claude-Gemini consensus
 │   └── ...
-├── store/            # Zustand centralized state (10 slices, v6 migrations)
-├── types/            # ~14,200 lines of TypeScript types (48 files)
-│   ├── layoutDesign/      # Design type system (8 files, 3,343 lines — split from single file)
-│   ├── titanPipeline.ts   # Pipeline types (incl. expanded AppContext)
-│   ├── dualPlanning.ts    # Dual AI planning types (stages, SSE, escalation)
-│   ├── motionConfig.ts    # Motion types
+├── store/            # Zustand centralized state (modularized Mar 30)
+│   ├── useAppStore.ts          # Main store (385 lines — down from 977)
+│   └── slices/                 # 9 slice files (~685 lines total)
+├── types/            # TypeScript types (modularized)
+│   ├── layoutDesign/           # Design type system (8 files, 3,343 lines)
+│   ├── dynamicPhases/          # Phase types (9 files, ~1,105 lines — split Mar 29)
+│   ├── titanPipeline.ts        # Pipeline types
+│   ├── dualPlanning.ts         # Dual AI planning types
+│   └── ...
+├── utils/            # Utilities (cleaned — 12 orphaned utils removed Mar 29)
+│   ├── layoutValidation/       # Zod validation (6 files, ~1,214 lines — split Mar 30)
+│   ├── astModifier.ts + 5 modules # AST modification
 │   └── ...
 ├── lib/              # Server-side utilities (4 files)
-│   ├── planningSessionStore.ts  # In-memory planning session store (TTL)
-│   ├── getBaseUrl.ts            # Centralized app URL resolution (Railway/dev)
-│   └── createSSEResponse.ts     # SSE response helper with required proxy headers
-├── utils/            # ~25,068 lines of utilities (79 files)
-│   ├── astModifier.ts + 5 modules # AST modification (split from single 61KB file)
-│   ├── architectureToPhaseContext.ts # Architecture → phase context converter
-│   ├── snapEngine.ts           # Alignment engine
-│   ├── inspectorBridge.ts      # Inspector bridge
-│   └── ...
 ├── data/             # Presets and templates (14 files)
-├── contexts/         # React Context providers (3 files)
 └── prompts/          # AI system prompts (8 files)
 ```
 
@@ -362,18 +350,26 @@ src/
 | Risk                                     | Severity | Mitigation                                                                                      |
 | ---------------------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
 | `appConcept` dependency explosion        | HIGH     | 51 dependencies; any change is expensive. Freeze this interface.                                |
-| `CodeParser.ts` is 1,070 lines           | MEDIUM   | Consider splitting by parser type                                                               |
+| ~~`CodeParser.ts` is 1,070 lines~~       | RESOLVED | **Split into `codeParser/` directory (8 files, ~1,115 lines) Mar 30**                           |
 | Browser memory with large file histories | MEDIUM   | Move historical versions to IndexedDB                                                           |
 | AI rate limits at scale                  | HIGH     | Enterprise quotas, multiple keys, Inngest queueing                                              |
 | Titan Pipeline complexity                | MEDIUM   | Maturing system; ensure proper error handling across agents                                     |
 | In-memory stores (single-instance only)  | MEDIUM   | `planningSessionStore`, Railway deploy Map, CodeContextService — needs Redis for multi-instance |
 
-**Resolved Risks (as of Mar 2026):**
+**Resolved Risks (as of Mar 30, 2026):**
 
 - ~~`DynamicPhaseGenerator.ts` 2.6k lines~~ → **Refactored to 685 lines**
 - ~~`layoutDesign.ts` 3k lines~~ → **Split into `types/layoutDesign/` directory (8 files, 3,343 lines)**
 - ~~`PhaseExecutionManager.ts` 2.1k lines~~ → **Refactored to 779 lines**
-- ~~`MainBuilderView.tsx` 1.6k lines~~ → **Refactored to 872 lines** (now 940 with hydration fix)
+- ~~`MainBuilderView.tsx` 1.6k lines~~ → **DELETED** — replaced by `components/builder/` + `BuilderContext.tsx`
+- ~~`CodeParser.ts` 1,070 lines~~ → **Split into `services/codeParser/` directory (8 files, ~1,115 lines)**
+- ~~`useAppStore.ts` 977 lines~~ → **Split into 385-line store + 9 slice files (~685 lines)**
+- ~~`DeploymentOrchestrator.ts` 1,212 lines~~ → **Split into 260-line orchestrator + 4 pipeline modules**
+- ~~`full-app-stream/route.ts` 1,279 lines~~ → **Split into 285-line route + 6 focused modules**
+- ~~`dynamicPhases.ts` 1,015 lines~~ → **Split into `types/dynamicPhases/` directory (9 files, ~1,105 lines)**
+- ~~`layoutValidation.ts` 1,146 lines~~ → **Split into `utils/layoutValidation/` directory (6 files, ~1,214 lines)**
+- ~~229 console.log statements~~ → **Migrated to structured logger across 39 files**
+- ~~28 orphaned files (~10,100 lines dead code)~~ → **DELETED**
 
 ---
 
@@ -391,20 +387,20 @@ Phase-by-phase code generation → quality checks → live preview. Phase plan g
 
 ## Key Entry Points
 
-| File                                | Lines | Purpose                                                       |
-| ----------------------------------- | ----- | ------------------------------------------------------------- |
-| `useAppStore.ts`                    | 977   | Centralized state (10 slices, v6 migrations)                  |
-| `MainBuilderView.tsx`               | 940   | Main orchestrator — Titan Pipeline integration, phase control |
-| `NaturalConversationWizard.tsx`     | 751   | Conversation wizard UI (AppConcept building)                  |
-| `DynamicPhaseGenerator.ts`          | 685   | Phase planning                                                |
-| `PhaseExecutionManager.ts`          | 832   | Phase execution                                               |
-| `useDynamicBuildPhases.ts`          | 700   | Phase execution hook                                          |
-| `BackgroundPlanningOrchestrator.ts` | 640   | Dual AI 5-stage pipeline orchestrator                         |
-| `useLayoutBuilder.ts`               | 599   | Layout builder state + GENERATE mode                          |
-| `TitanPipelineService.ts`           | 497   | Titan Pipeline orchestrator                                   |
-| `useDualAIPlan.ts`                  | 489   | Dual AI planning hook (SSE, escalation)                       |
-| `GeminiLayoutCritique.ts`           | 286   | Vision critique for healing loop (new SDK + code execution)   |
-| `useBackgroundIntelligence.ts`      | 115   | Background intelligence pre-caching                           |
+| File                                | Lines   | Purpose                                                       |
+| ----------------------------------- | ------- | ------------------------------------------------------------- |
+| `BuilderContext.tsx`                | 960     | Builder provider — 16 hooks, intent routing, context assembly |
+| `NaturalConversationWizard.tsx`     | 751     | Conversation wizard UI (AppConcept building)                  |
+| `PhaseExecutionManager.ts`          | 832     | Phase execution                                               |
+| `useDynamicBuildPhases.ts`          | 700     | Phase execution hook                                          |
+| `DynamicPhaseGenerator.ts`          | 685     | Phase planning                                                |
+| `BackgroundPlanningOrchestrator.ts` | 640     | Dual AI 5-stage pipeline orchestrator                         |
+| `useLayoutBuilder.ts`               | 599     | Layout builder state + GENERATE mode                          |
+| `TitanPipelineService.ts`           | 497     | Titan Pipeline orchestrator                                   |
+| `useDualAIPlan.ts`                  | 489     | Dual AI planning hook (SSE, escalation)                       |
+| `useAppStore.ts` + `slices/`        | 385+685 | Zustand state (modularized into 10 files)                     |
+| `GeminiLayoutCritique.ts`           | 286     | Vision critique for healing loop (new SDK + code execution)   |
+| `useBackgroundIntelligence.ts`      | 115     | Background intelligence pre-caching                           |
 
 ---
 
@@ -483,6 +479,72 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 ---
 
 ## Recent Changes Log
+
+### Mar 30, 2026 - Continued Modularization (3 commits)
+
+- **Split**: `useAppStore.ts` 977 → 385 lines + 9 Zustand slice files in `store/slices/` (~685 lines total)
+  - `chatSlice.ts` (43), `componentsSlice.ts` (56), `dataSlice.ts` (195), `documentationSlice.ts` (55), `dualPlanningSlice.ts` (65), `fileStorageSlice.ts` (78), `modeSlice.ts` (25), `uiSlice.ts` (118), `versionControlSlice.ts` (50)
+- **Split**: `DeploymentOrchestrator.ts` 1,212 → 260 lines + 4 focused pipeline modules
+  - `WebDeploymentPipeline.ts` (458), `DesktopDeploymentPipeline.ts` (279), `MobileDeploymentPipeline.ts` (246), `deploymentTypes.ts` (154)
+- **Split**: `layoutValidation.ts` 1,146 → 6 files in `utils/layoutValidation/`
+  - `schemas.ts` (382), `inference.ts` (311), `hierarchy.ts` (234), `sanitization.ts` (195), `rendering.ts` (61), `index.ts` (31)
+- **Split**: `CodeParser.ts` 1,071 → 8 files in `services/codeParser/`
+  - `CodeParser.ts` (202), `fileClassifier.ts` (195), `componentExtractor.ts` (189), `importExportExtractor.ts` (181), `apiExtractor.ts` (143), `hookExtractor.ts` (99), `parserHelpers.ts` (99), `index.ts` (7)
+
+### Mar 29, 2026 - Major Code Cleanup & Refactoring (11 commits)
+
+- **Deleted**: 28 orphaned files (~10,100 lines of dead code) including:
+  - Components: `MainBuilderView`, `AnalysisProgressIndicator`, `AnimationTimeline`, `ArchitectureTemplatePicker`, `ComponentLibraryPanel`, `EasingCurveEditor`, `KeyframeEditor`, `LayerPanel`, `ReferenceMediaPanel`, `TemplateSelector`, `ValidationMessage`, `ArchitectureReviewPanel`, `DragDropCanvas`
+  - Services: `CodeParser.ts` (monolith), `SourceMergeEngine.ts`, `modelRouter.ts`
+  - Hooks: `useBrowserSupport.ts`, `usePlanRegeneration.ts`
+  - Utils: `colorExtraction`, `imageCache`, `mockContentGenerator`, `videoProcessor`, `codeExporter`, `darkModeGenerator`, `documentationCapture`, `elementSelection`, `escapeHtml`, `layoutConverter`, `specSheetExport`, `variantGenerator`
+  - Agents: entire `src/agents/` directory (1,320 lines — CodeTransformAgent, DeploymentAgent, types)
+- **Fixed**: 59 unused-var and prefer-const lint warnings
+- **Updated**: 27 safe dependencies to latest minor/patch versions
+- **Fixed**: anonymous default exports, replaced `<img>` with `next/image`
+- **Migrated**: 229 console.log/warn/error statements → structured logger across 39 files
+- **Fixed**: 36 non-null assertion (`!`) warnings across 14 files
+- **Fixed**: 10 straggler console and non-null assertion warnings
+- **Split**: `full-app-stream/route.ts` 1,279 → 285 lines + 6 focused modules
+  - `promptAssembler.ts` (249), `responseParser.ts` (234), `streamProcessor.ts` (224), `requestValidator.ts` (168), `agenticProcessor.ts` (90), `types.ts` (89)
+- **Split**: `dynamicPhases.ts` 1,015 → 9 files in `types/dynamicPhases/`
+  - `structures.ts` (280), `integrity.ts` (220), `patterns.ts` (199), `execution.ts` (116), `classification.ts` (90), `config.ts` (73), `manager.ts` (65), `analysis.ts` (35), `index.ts` (27)
+- **Extracted**: `BuilderContext` helpers + fixed lint warnings
+- **Added**: `utils/builderHelpers.ts` (67 lines), `utils/messageUtils.ts` (39 lines)
+- **Added**: `prompts/production-standards.ts`, `prompts/quality-standards.ts`, `prompts/full-app/examples-compressed.ts`
+- **Stats**: 229 files changed, 17,242 insertions, 19,004 deletions (net -1,762 lines)
+
+### Mar 22, 2026 - Builder Pipeline Bug Fixes (2 commits)
+
+- **Fixed**: 5 builder pipeline bugs — export default, code context, auth override, state reset, conversation leak
+- **Fixed**: Wired `autoAdvance` to `BuilderContext` + filtered assistant messages from `conversationContext`
+
+### Mar 16, 2026 - Full Builder Page Rebuild + Bug Fix Rounds (20 commits)
+
+**Builder Page Rebuild (8 sessions):**
+
+- **Session 0**: Cleaned up dead code, created builder placeholders, added CSS aliases in `globals.css`
+- **Session 1**: Built `BuilderContext.tsx` (960 lines) — single provider wrapping 16 hooks, intent detection engine
+- **Session 2**: Built `BuilderPage.tsx` shell + `ModalManager.tsx` with overlay system
+- **Session 3-6**: Built `LeftPanel`, `PhaseStatusBar`, `PreviewPanel` (393 lines), `ConceptDrawer` (362 lines), `InputBar` (121 lines), `MessageList` (171 lines), `PanelHeader`, `PreviewToolbar` (188 lines)
+- **Session 7**: Route swap integration, MODIFY fix, Sandpack + Nodebox preview
+- **Session 8**: Polish — theme modal interiors, docs update
+- **New**: `src/components/builder/` directory (10 files) + `src/contexts/BuilderContext.tsx`
+- **Deleted**: `MainBuilderView.tsx` (940 lines) — replaced by new builder system
+
+**Post-Rebuild Bug Fixes (4 rounds, 7 commits):**
+
+- Round 1: Fixed 4 bugs — stale data, phase execution, Sandpack, scroll
+- Round 2: Fixed 3 bugs — concept sync, Sandpack App.tsx, null result
+- Round 3: Fixed API timeout, preview sizing, phase naming
+- Round 4: Auth gating, error messages, prompt optimization, message sanitization
+- Round 4 follow-ups: Agentic NO_FILES snippet, PLAN branch removal
+
+**Documentation:**
+
+- Added comprehensive Builder page test report (18 → 30 bugs, orphaned systems, full feature audit)
+- Added TODO.md, BUGFIX_ROUND4.md, rebuild workflow docs (8 session docs)
+- Added rebuild blueprints and session plans
 
 ### Mar 15, 2026 (PM) - 5 Builder State Management Bug Fixes
 
