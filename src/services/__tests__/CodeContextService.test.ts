@@ -12,7 +12,7 @@ import { CodeContextService } from '../CodeContextService';
 import type { FileContent, CodeContextSnapshot } from '@/types/codeContext';
 
 // Mock dependencies
-jest.mock('../CodeParser', () => ({
+jest.mock('../codeParser', () => ({
   getCodeParser: jest.fn(() => ({
     analyzeFile: jest.fn((path: string, content: string) => ({
       path,

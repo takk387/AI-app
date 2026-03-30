@@ -33,7 +33,7 @@ import {
   FileType,
   CodeParserConfig,
 } from '../types/codeContext';
-import { CodeParser, getCodeParser } from './CodeParser';
+import { CodeParser, getCodeParser } from './codeParser';
 import { DependencyGraphBuilder, getDependencyGraphBuilder } from './DependencyGraphBuilder';
 import { ContextSelector, getContextSelector } from './ContextSelector';
 import { ContextCache, getContextCache } from './ContextCache';
