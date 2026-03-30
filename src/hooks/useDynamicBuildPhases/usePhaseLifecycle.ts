@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { DynamicPhase, DynamicPhasePlan, PhaseExecutionResult } from '@/types/dynamicPhases';
 import { PhaseExecutionManager } from '@/services/PhaseExecutionManager';
 import { logger } from '@/utils/logger';
@@ -109,6 +109,10 @@ export function usePhaseLifecycle(deps: UsePhaseLifecycleDeps, options: UsePhase
     [plan, manager, mountedRef, setPlan, setIsBuilding, onPhaseStart, onError]
   );
 
+  // Ref to hold latest startPhase — prevents stale closure in setTimeout
+  const startPhaseRef = useRef(startPhase);
+  startPhaseRef.current = startPhase;
+
   /**
    * Record phase completion
    */
@@ -142,7 +146,7 @@ export function usePhaseLifecycle(deps: UsePhaseLifecycleDeps, options: UsePhase
             // Use a timeout to allow UI update before starting next phase
             setTimeout(() => {
               if (mountedRef.current && !isPausedRef.current) {
-                startPhase(nextPhaseNumber);
+                startPhaseRef.current(nextPhaseNumber);
               }
             }, 1500);
           } else {

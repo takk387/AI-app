@@ -104,9 +104,21 @@ export function usePhaseExecution(options: UsePhaseExecutionOptions): UsePhaseEx
 
     // Layout Injection: if Phase 1 is layout injection, inject pre-built code directly
     // Guard: skip if currentComponent already has injected code (prevents re-injection on refresh).
-    // The review page sets currentComponent with code: '' (empty shell), so we check for
-    // non-empty code to detect a previously-injected component.
     const hasInjectedCode = currentComponent?.code && currentComponent.code.length > 2;
+
+    // Graceful degradation: warn user if layout data is missing
+    if (phase1?.isLayoutInjection && !layoutBuilderFiles?.length && !isPhase1Done) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: 'system' as const,
+          content: `**Warning:** Layout data is missing (Design step may have failed). Phase 1 will use AI generation instead of layout injection — this may be slower.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+
     if (
       phase1?.isLayoutInjection &&
       layoutBuilderFiles?.length &&

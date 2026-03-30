@@ -56,15 +56,17 @@ export async function parseResponse(
   }
 
   if (files.length === 0) {
-    const responseSnippet = responseText.slice(0, 300).trim();
+    const snippetLimit = 800;
+    const responseSnippet = responseText.slice(0, snippetLimit).trim();
     await sse.writeEvent({
       type: 'error',
       timestamp: Date.now(),
       message: responseSnippet
-        ? `AI responded but generated no code files. AI said: "${responseSnippet}${responseText.length > 300 ? '...' : ''}"`
+        ? `AI responded but generated no code files. AI said: "${responseSnippet}${responseText.length > snippetLimit ? '...' : ''}"`
         : 'No files generated in response',
       code: 'NO_FILES',
       recoverable: true,
+      detail: responseText.slice(0, 2000),
     } as StreamEvent);
     await sse.closeWriter();
     return null;
