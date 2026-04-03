@@ -26,6 +26,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Bun (not used — prevent Nixpacks from auto-detecting bun)
+bun.lock
+bun.lockb
+
 # Local development
 .DS_Store
 
