@@ -28,3 +28,8 @@ _Last updated: 2026-03-30_
 - [ ] **Shell output panel** (depends on Nodebox)
   - Capture stdout/stderr with `useSandpackShellStdout()`
   - Display in collapsible panel below preview
+
+- [ ] **Switch Railway to full bun installs** (blocked on tree-sitter migration)
+  - Currently Railway uses npm for installs (`packageManager` field removed from package.json) because native `tree-sitter` triggers node-gyp ENOENT when installed with bun on Railway
+  - Fix: migrate `tree-sitter` → `web-tree-sitter` (WASM-based, no native compilation)
+  - Once migrated: re-add `"packageManager": "bun@1.2.0"` to package.json and commit bun.lock
