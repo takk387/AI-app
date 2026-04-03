@@ -2,4 +2,4 @@
 nixPkgs = ["chromium"]
 
 [deploy]
-startCommand = "bunx next start -p ${PORT:-3000}"
+startCommand = "node_modules/.bin/next start -p ${PORT:-3000}"
