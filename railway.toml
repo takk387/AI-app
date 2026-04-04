@@ -1,7 +1,5 @@
 [build]
-builder = "dockerfile"
-dockerfilePath = "./Dockerfile"
 nixPkgs = ["chromium"]
 
 [deploy]
-startCommand = "node_modules/.bin/next start -p ${PORT:-3000}"
+startCommand = "npx next start -p ${PORT:-3000}"
