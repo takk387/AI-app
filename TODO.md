@@ -28,3 +28,5 @@ _Last updated: 2026-03-30_
 - [ ] **Shell output panel** (depends on Nodebox)
   - Capture stdout/stderr with `useSandpackShellStdout()`
   - Display in collapsible panel below preview
+
+- [ ] **Improve error messaging** — surface clearer, actionable error messages to users when AI generation fails
