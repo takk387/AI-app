@@ -1,4 +1,6 @@
 [build]
+builder = "dockerfile"
+dockerfilePath = "./Dockerfile"
 nixPkgs = ["chromium"]
 
 [deploy]
