@@ -9,7 +9,7 @@
     "dev": "next dev",
     "dev:mock": "set NEXT_PUBLIC_MOCK_AI=true && next dev",
     "dev:debug": "set NEXT_PUBLIC_DEBUG_PANEL=true && set NEXT_PUBLIC_DEBUG_STATE=true && set NEXT_PUBLIC_DEBUG_API=true && next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "postinstall": "npx puppeteer browsers install chrome",
     "test": "jest tests/ src/hooks/__tests__/ src/services/__tests__/ src/components/__tests__/ src/components/conversation-wizard/__tests__/",
