@@ -60,8 +60,12 @@ const nextConfig = {
 module.exports = withSentryConfig(nextConfig, {
   silent: true,
   hideSourceMaps: true,
-  disableLogger: true,
   widenClientFileUpload: true,
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
