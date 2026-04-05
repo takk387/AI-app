@@ -61,6 +61,11 @@ class Logger {
   private minLevel: LogLevel = 'info';
   private context: LogContext = {};
   private isDevelopment = process.env.NODE_ENV === 'development';
+  private errorHooks: Array<(entry: LogEntry) => void> = [];
+
+  registerErrorHook(hook: (entry: LogEntry) => void): void {
+    this.errorHooks.push(hook);
+  }
 
   /**
    * Set the minimum log level (logs below this level are ignored)
@@ -187,6 +192,17 @@ class Logger {
       // JSON format in production (for log aggregation)
       console[level](JSON.stringify(entry));
     }
+
+    // Fire error hooks (e.g., Sentry integration)
+    if (level === 'error' && this.errorHooks.length > 0) {
+      for (const hook of this.errorHooks) {
+        try {
+          hook(entry);
+        } catch {
+          // Never let a hook crash the logger
+        }
+      }
+    }
   }
 
   /**
@@ -252,7 +268,7 @@ class Logger {
  * Instead, it merges its own context with the parent's context at log time.
  * This ensures thread-safety for concurrent requests.
  */
-class ChildLogger {
+export class ChildLogger {
   constructor(
     private parent: Logger,
     private childContext: LogContext

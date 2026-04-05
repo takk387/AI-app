@@ -13,6 +13,7 @@ import {
   categorizeError,
   PerformanceTracker,
 } from '@/utils/analytics';
+import { createObservableRequest } from '@/lib/observability';
 import { type StreamEvent, formatSSE } from '@/types/streaming';
 import type { SSEWriter } from './types';
 import { validateRequest } from './requestValidator';
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   const requestId = generateRequestId();
   const perfTracker = new PerformanceTracker();
   const startTime = Date.now();
+  const obs = createObservableRequest('/api/ai-builder/full-app-stream');
 
   // Create a TransformStream for SSE
   const stream = new TransformStream();
@@ -141,6 +143,12 @@ export async function POST(request: Request) {
       if (writerClosed) return;
 
       // Step 3: Generate response (agentic or streaming path)
+      const gen = obs.startGeneration('full-app-stream', {
+        model: assembled.modelName,
+        input: `[${assembled.messages.length} messages]`,
+        modelParameters: { tokenBudget: assembled.tokenBudget },
+      });
+
       let streamResult;
 
       if (validatedRequest.useAgenticValidation) {
@@ -192,6 +200,14 @@ export async function POST(request: Request) {
       }
 
       perfTracker.checkpoint('ai_response_received');
+
+      gen.end({
+        output: `[${streamResult.responseText.length} chars]`,
+        usage: {
+          input: streamResult.inputTokens,
+          output: streamResult.outputTokens,
+        },
+      });
 
       // Step 4: Parse response
       const parsed = await parseResponse(streamResult.responseText, sse);
@@ -257,7 +273,7 @@ export async function POST(request: Request) {
         }
       }
     } catch (error) {
-      console.error('Streaming error:', error);
+      obs.captureError(error);
 
       // Log error (wrapped to avoid masking original error)
       try {
@@ -275,6 +291,7 @@ export async function POST(request: Request) {
       });
     } finally {
       clearTimeout(globalTimeoutId);
+      await obs.finish();
       await closeWriter();
     }
   })();

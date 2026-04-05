@@ -152,6 +152,21 @@ class ErrorBoundary extends Component<Props, State> {
       storeSnapshot: report.storeSnapshot,
     });
 
+    // Report to Sentry
+    try {
+      import('@sentry/nextjs').then((Sentry) => {
+        Sentry.captureException(error, {
+          contexts: {
+            react: { componentStack: errorInfo.componentStack },
+            appState: report.storeSnapshot as Record<string, unknown>,
+          },
+          tags: { errorId: report.id },
+        });
+      });
+    } catch {
+      // Sentry not available
+    }
+
     // Persist to localStorage
     this.persistError(report);
 

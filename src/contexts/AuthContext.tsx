@@ -143,6 +143,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Sync user context to Sentry for error attribution
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    import('@sentry/nextjs')
+      .then((Sentry) => {
+        if (user) {
+          Sentry.setUser({ id: user.id, email: user.email ?? undefined });
+        } else {
+          Sentry.setUser(null);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
   const signIn = async (email: string, password: string) => {
     if (DEV_BYPASS_AUTH) {
       return { error: null };

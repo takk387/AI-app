@@ -15,6 +15,7 @@ import { getBaseUrl } from '@/lib/getBaseUrl';
 import { createSSEResponse } from '@/lib/createSSEResponse';
 import { BackgroundPlanningOrchestratorService } from '@/services/BackgroundPlanningOrchestrator';
 import type { DualPlanProgress, DualPlanSSEEvent } from '@/types/dualPlanning';
+import { createObservableRequest } from '@/lib/observability';
 
 export const maxDuration = 600; // 10 minutes
 export const dynamic = 'force-dynamic';
@@ -106,6 +107,8 @@ export async function GET(
   };
 
   // Run pipeline in background
+  const obs = createObservableRequest('/api/planning/stream', { sessionId });
+
   (async () => {
     try {
       const baseUrl = getBaseUrl();
@@ -179,7 +182,7 @@ export async function GET(
       deleteSession(sessionId);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown pipeline error';
-      console.error('[planning/stream] Pipeline error:', errorMessage);
+      obs.captureError(error);
 
       await writeEvent({
         type: 'error',
@@ -194,6 +197,7 @@ export async function GET(
       updateSessionStatus(sessionId, 'error');
       deleteSession(sessionId);
     } finally {
+      await obs.finish();
       await closeWriter();
     }
   })();

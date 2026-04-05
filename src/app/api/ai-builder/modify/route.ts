@@ -7,6 +7,7 @@ import {
   categorizeError,
   PerformanceTracker,
 } from '@/utils/analytics';
+import { createObservableRequest } from '@/lib/observability';
 import { generateRetryStrategy, type RetryContext, DEFAULT_RETRY_CONFIG } from '@/utils/retryLogic';
 import {
   generateModifications,
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
   // ============================================================================
   const requestId = generateRequestId();
   const perfTracker = new PerformanceTracker();
+  const obs = createObservableRequest('/api/ai-builder/modify');
 
   try {
     const { prompt, currentAppState, conversationHistory, image, hasImage } = await request.json();
@@ -439,7 +441,7 @@ ${JSON.stringify(currentAppState, null, 2)}`;
       ...(validationWarnings && { validationWarnings }),
     });
   } catch (error) {
-    console.error('Error in modify route:', error);
+    obs.captureError(error);
 
     // Log error to analytics
     analytics.logRequestError(requestId, error as Error, categorizeError(error as Error));

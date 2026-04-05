@@ -19,6 +19,7 @@ const config = {
         '^js-tiktoken$': '<rootDir>/tests/__mocks__/js-tiktoken.ts',
         '^tree-sitter$': '<rootDir>/tests/__mocks__/tree-sitter.ts',
         '^tree-sitter-typescript$': '<rootDir>/tests/__mocks__/tree-sitter-typescript.ts',
+        '^langfuse$': '<rootDir>/tests/__mocks__/langfuse.ts',
       },
       transform: {
         '^.+\\.tsx?$': ['ts-jest', {
@@ -46,6 +47,7 @@ const config = {
         '^js-tiktoken$': '<rootDir>/tests/__mocks__/js-tiktoken.ts',
         '^tree-sitter$': '<rootDir>/tests/__mocks__/tree-sitter.ts',
         '^tree-sitter-typescript$': '<rootDir>/tests/__mocks__/tree-sitter-typescript.ts',
+        '^langfuse$': '<rootDir>/tests/__mocks__/langfuse.ts',
       },
       transform: {
         '^.+\\.tsx?$': ['ts-jest', {

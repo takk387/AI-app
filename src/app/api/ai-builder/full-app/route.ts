@@ -7,6 +7,7 @@ import {
   categorizeError,
   PerformanceTracker,
 } from '@/utils/analytics';
+import { createObservableRequest } from '@/lib/observability';
 import { generateRetryStrategy, type RetryContext, DEFAULT_RETRY_CONFIG } from '@/utils/retryLogic';
 import {
   generateFullApp,
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
   // ============================================================================
   const requestId = generateRequestId();
   const perfTracker = new PerformanceTracker();
+  const obs = createObservableRequest('/api/ai-builder/full-app');
 
   try {
     const {
@@ -452,7 +454,7 @@ MODIFICATION MODE for "${currentAppName}":
 
     return NextResponse.json(appData);
   } catch (error) {
-    console.error('Error in full app builder route:', error);
+    obs.captureError(error);
 
     // Log error to analytics
     analytics.logRequestError(requestId, error as Error, categorizeError(error as Error));

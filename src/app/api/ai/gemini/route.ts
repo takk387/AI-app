@@ -9,11 +9,14 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { MODEL_IDS } from '@/constants/aiModels';
+import { createObservableRequest } from '@/lib/observability';
 
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const obs = createObservableRequest('/api/ai/gemini');
+
   try {
     const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -33,12 +36,29 @@ export async function POST(request: Request) {
 
     const genAI = new GoogleGenAI({ apiKey });
 
+    const gen = obs.startGeneration('gemini-proxy', {
+      model: modelId,
+      input: prompt,
+    });
+
     const response = await genAI.models.generateContent({
       model: modelId,
       contents: prompt,
     });
 
     const content = response.text ?? '';
+
+    gen.end({
+      output: content,
+      usage: response.usageMetadata
+        ? {
+            input: response.usageMetadata.promptTokenCount ?? 0,
+            output: response.usageMetadata.candidatesTokenCount ?? 0,
+          }
+        : undefined,
+    });
+
+    await obs.finish();
 
     return NextResponse.json({
       content,
@@ -51,7 +71,7 @@ export async function POST(request: Request) {
         : undefined,
     });
   } catch (error) {
-    console.error('[ai/gemini] Error:', error);
+    obs.captureError(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Gemini API call failed' },
       { status: 500 }

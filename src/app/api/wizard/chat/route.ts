@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { WIZARD_SYSTEM_PROMPT } from '@/prompts/wizardSystemPrompt';
 import type { WizardState } from '@/types/wizardState';
+import { createObservableRequest } from '@/lib/observability';
 
 // Next.js Route Segment Config
 export const maxDuration = 120;
@@ -199,6 +200,8 @@ function isConfirmingCompletion(message: string): boolean {
 // ============================================================================
 
 export async function POST(request: Request) {
+  const obs = createObservableRequest('/api/wizard/chat');
+
   try {
     const body: WizardRequest = await request.json();
     const {
@@ -309,6 +312,12 @@ Continue the conversation naturally.`;
     const isComplete = safeState.isComplete || isConfirmingCompletion(message);
 
     // Call Claude API with extended thinking for deeper reasoning
+    const gen = obs.startGeneration('wizard-conversation', {
+      model: 'claude-sonnet-4-6',
+      input: message,
+      modelParameters: { max_tokens: 16000, thinking_budget: 8000 },
+    });
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 16000, // Increased to accommodate thinking budget + response
@@ -399,9 +408,19 @@ Continue the conversation naturally.`;
       },
     };
 
+    gen.end({
+      output: assistantMessage,
+      usage: {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+      },
+    });
+
+    await obs.finish();
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Wizard chat error:', error);
+    obs.captureError(error);
 
     return NextResponse.json(
       {

@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { MODEL_IDS } from '@/constants/aiModels';
+import { createObservableRequest } from '@/lib/observability';
 
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,8 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(request: Request) {
+  const obs = createObservableRequest('/api/ai/claude');
+
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: 'Anthropic API key not configured' }, { status: 500 });
@@ -48,6 +51,12 @@ export async function POST(request: Request) {
       };
     }
 
+    const gen = obs.startGeneration('claude-proxy', {
+      model: modelId,
+      input: prompt,
+      modelParameters: { max_tokens: 16000, extendedThinking },
+    });
+
     const response = await anthropic.messages.create(params);
 
     // Extract text content (skip thinking blocks)
@@ -58,6 +67,16 @@ export async function POST(request: Request) {
       }
     }
 
+    gen.end({
+      output: content,
+      usage: {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+      },
+    });
+
+    await obs.finish();
+
     return NextResponse.json({
       content,
       model: response.model,
@@ -67,7 +86,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error('[ai/claude] Error:', error);
+    obs.captureError(error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Claude API call failed' },
       { status: 500 }

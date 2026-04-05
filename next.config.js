@@ -1,5 +1,7 @@
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
 
   // Next.js 16: Turbopack is default. Empty config silences webpack/turbopack conflict.
@@ -53,4 +55,14 @@ module.exports = {
 
     return config;
   },
-}
+};
+
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+  widenClientFileUpload: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+});

@@ -8,6 +8,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { AppConcept, Feature, UserRole, Workflow } from '@/types/appConcept';
+import { traceAICall } from '@/lib/langfuse';
 import type {
   ArchitectureSpec,
   ArchitectureGenerationResult,
@@ -355,6 +356,19 @@ CRITICAL:
     prompt: string,
     options: Required<ArchitectureGenerationOptions>
   ): Promise<string> {
+    const trace = traceAICall({
+      name: 'backend-architecture-agent',
+      requestId: `arch_${Date.now()}`,
+    });
+    const gen = trace.startGeneration('architecture-analysis', {
+      model: 'claude-opus-4-6',
+      input: prompt.slice(0, 500),
+      modelParameters: {
+        max_tokens: options.maxTokenBudget,
+        enableThinking: options.enableThinking,
+      },
+    });
+
     const response = await this.anthropic.messages.create({
       model: 'claude-opus-4-6',
       max_tokens: options.maxTokenBudget,
@@ -387,6 +401,15 @@ CRITICAL:
         responseText += block.text;
       }
     }
+
+    gen.end({
+      output: responseText.slice(0, 500),
+      usage: {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+      },
+    });
+    await trace.flush();
 
     return responseText;
   }

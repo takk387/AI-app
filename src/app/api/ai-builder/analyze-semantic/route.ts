@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { createObservableRequest } from '@/lib/observability';
 
 // ============================================================================
 // TYPES
@@ -28,6 +29,8 @@ interface SemanticAnalysisResponse {
 // ============================================================================
 
 export async function POST(request: NextRequest): Promise<NextResponse<SemanticAnalysisResponse>> {
+  const obs = createObservableRequest('/api/ai-builder/analyze-semantic');
+
   try {
     const body: SemanticAnalysisRequest = await request.json();
 
@@ -49,6 +52,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<SemanticA
     const anthropic = new Anthropic({ apiKey });
 
     // Call Claude for semantic analysis
+    const gen = obs.startGeneration('semantic-analysis', {
+      model: 'claude-sonnet-4-6',
+      input: body.prompt,
+      modelParameters: { max_tokens: 4096 },
+    });
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
@@ -99,12 +108,22 @@ export async function POST(request: NextRequest): Promise<NextResponse<SemanticA
       };
     }
 
+    gen.end({
+      output: analysis,
+      usage: {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+      },
+    });
+
+    await obs.finish();
+
     return NextResponse.json({
       success: true,
       analysis,
     });
   } catch (error) {
-    console.error('Semantic analysis error:', error);
+    obs.captureError(error);
     return NextResponse.json(
       {
         success: false,
