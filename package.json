@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "stats": "npx tsx scripts/repo-stats.ts",
     "generate:versions": "tsx scripts/generate-versions.ts",
     "predev": "npm run generate:versions",
     "prebuild": "npm run generate:versions",
