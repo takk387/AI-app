@@ -1,10 +1,20 @@
 # TODO — AI App Builder
 
-_Last updated: 2026-03-30_
+_Last updated: 2026-04-09_
 
 ---
 
-## Completed This Session (Mar 30, 2026)
+## Completed (Apr 9, 2026)
+
+- ✅ Langfuse + Sentry observability (LLM tracing, error tracking, 10 AI routes instrumented)
+- ✅ WebContainers migration (replaced Sandpack with real Node.js runtime in browser)
+  - Real `npm install`, real dev server, real terminal output
+  - 3 preview tiers: Instant (esbuild) / Full (WebContainer) / Deploy (Railway)
+  - Safari fallback to esbuild with detection
+  - Shell output panel built into WebContainerPreview (stdout/stderr from npm + dev server)
+- ✅ Railway deploy fix (Builder changed from Dockerfile to Railpack)
+
+## Completed (Mar 30, 2026)
 
 - ✅ 8 builder pipeline bugs fixed
 - ✅ 28 orphaned files removed (-9,248 lines)
@@ -19,14 +29,6 @@ _Last updated: 2026-03-30_
 
 ## Remaining
 
-- [ ] **Nodebox Runtime Migration** (LARGE)
-  - Switch Sandpack from browser bundler to Nodebox for full-stack preview
-  - Enables: SSR, API routes, database connections, Node.js stdlib
-  - Blockers: code gen produces flat React files, need Next.js conventions
-  - Depends on updating Titan Pipeline output format + system prompts
-
-- [ ] **Shell output panel** (depends on Nodebox)
-  - Capture stdout/stderr with `useSandpackShellStdout()`
-  - Display in collapsible panel below preview
+- [ ] **Full-stack prompt engineering** — teach Claude to generate Next.js App Router file structures (app/page.tsx, app/api/route.ts) for FULL_STACK apps. WebContainers runtime is ready, prompts need updating.
 
 - [ ] **Improve error messaging** — surface clearer, actionable error messages to users when AI generation fails

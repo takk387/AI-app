@@ -6,10 +6,6 @@ import type { PreviewMode } from '@/types/railway';
 // Re-export for backward compatibility
 export type { PreviewMode } from '@/types/railway';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface PreviewModeSelectorProps {
   mode: PreviewMode;
   onModeChange: (mode: PreviewMode) => void;
@@ -17,15 +13,32 @@ interface PreviewModeSelectorProps {
   className?: string;
 }
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
+const MODES: Array<{
+  key: PreviewMode;
+  label: string;
+  title: string;
+  icon: string;
+}> = [
+  {
+    key: 'browser',
+    label: 'Instant',
+    title: 'Frontend-only preview (instant, runs in browser via esbuild-wasm)',
+    icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+  },
+  {
+    key: 'webcontainer',
+    label: 'Full',
+    title: 'Full Node.js runtime in browser (real npm install, real dev server)',
+    icon: 'M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2',
+  },
+  {
+    key: 'railway',
+    label: 'Deploy',
+    title: 'Full-stack deployment preview via Railway (real backend + database)',
+    icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  },
+];
 
-/**
- * Toggle between Browser (frontend-only) and Railway (full-stack) preview modes.
- * Browser uses esbuild-wasm for instant in-browser bundling.
- * Railway deploys to real infrastructure for full-stack support.
- */
 export function PreviewModeSelector({
   mode,
   onModeChange,
@@ -34,51 +47,55 @@ export function PreviewModeSelector({
 }: PreviewModeSelectorProps) {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <span className="text-slate-400 text-xs">Preview:</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Preview:</span>
 
-      <div className="flex bg-slate-800 rounded-lg p-0.5">
-        {/* Browser option - Frontend only */}
-        <button
-          onClick={() => onModeChange('browser')}
-          disabled={disabled}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${
-            mode === 'browser' ? 'bg-garden-600 text-white' : 'text-slate-400 hover:text-slate-200'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title="Frontend-only preview (instant, runs in browser via esbuild-wasm)"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
-          </svg>
-          Frontend
-        </button>
-
-        {/* Railway option - Full-stack */}
-        <button
-          onClick={() => onModeChange('railway')}
-          disabled={disabled}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${
-            mode === 'railway'
-              ? 'bg-gradient-to-r from-gold-600 to-pink-600 text-white'
-              : 'text-slate-400 hover:text-slate-200'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title="Full-stack preview via Railway (deploys with real backend)"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
-          Full-Stack
-        </button>
+      <div
+        className="flex rounded-lg p-0.5"
+        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}
+      >
+        {MODES.map(({ key, label, title, icon }) => (
+          <button
+            key={key}
+            onClick={() => onModeChange(key)}
+            disabled={disabled}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+              disabled ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            style={{
+              backgroundColor: mode === key ? 'var(--accent-primary)' : 'transparent',
+              color: mode === key ? 'white' : 'var(--text-muted)',
+            }}
+            title={title}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+            </svg>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Mode indicator */}
+      {mode === 'webcontainer' && (
+        <span
+          style={{ color: 'var(--accent-primary)', fontSize: '12px' }}
+          className="flex items-center gap-1"
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ backgroundColor: 'var(--accent-primary)' }}
+          />
+          WebContainer
+        </span>
+      )}
       {mode === 'railway' && (
-        <span className="text-gold-400 text-xs flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold-500 animate-pulse" />
+        <span
+          style={{ color: 'var(--gold-primary)', fontSize: '12px' }}
+          className="flex items-center gap-1"
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ backgroundColor: 'var(--gold-primary)' }}
+          />
           Railway
         </span>
       )}

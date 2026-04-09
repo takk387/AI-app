@@ -4,7 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { RailwayPreview } from './preview/RailwayPreview';
 import { BrowserPreview } from './preview/BrowserPreview';
+import { WebContainerPreview } from './preview/WebContainerPreview';
 import { PreviewModeSelector } from './preview/PreviewModeSelector';
+import { getWebContainerService } from '@/lib/WebContainerService';
 import { DeviceFrame } from './preview/DeviceFrame';
 import type { PreviewMode, AppFile } from '@/types/railway';
 import type { DeviceType } from './preview/DeviceFrame';
@@ -196,11 +198,13 @@ export function PreviewContainer({
   useEffect(() => {
     if (hasAutoSelected) return;
 
-    // Auto-select Railway for full-stack apps, Browser for frontend-only
+    // Auto-select: WebContainer if supported, else Browser. Railway for full-stack if no WC.
+    const wcSupported =
+      getWebContainerService.constructor && typeof SharedArrayBuffer !== 'undefined';
     if (detectedAppType === 'FULL_STACK') {
-      setPreviewMode('railway');
+      setPreviewMode(wcSupported ? 'webcontainer' : 'railway');
     } else {
-      setPreviewMode('browser');
+      setPreviewMode(wcSupported ? 'webcontainer' : 'browser');
     }
 
     setHasAutoSelected(true);
@@ -284,6 +288,14 @@ export function PreviewContainer({
               showLogs={true}
               onReady={(url) => log.info('Railway preview ready', { url })}
               onError={(error) => log.error('Railway preview error', error)}
+              className="h-full"
+            />
+          ) : previewMode === 'webcontainer' ? (
+            <WebContainerPreview
+              files={appData.files}
+              dependencies={appData.dependencies || {}}
+              onReady={(url) => log.info('WebContainer preview ready', { url })}
+              onError={(error) => log.error('WebContainer preview error', undefined, { error })}
               className="h-full"
             />
           ) : (

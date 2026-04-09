@@ -8,15 +8,16 @@ const nextConfig = {
   turbopack: {},
 
   // COOP/COEP headers required for WebContainers (SharedArrayBuffer)
-  // Only applied to Railway API routes that need SharedArrayBuffer
+  // Applied to all routes — needed for WebContainer preview to work
+  // Using 'credentialless' for COEP to avoid breaking third-party resources
   async headers() {
     return [
       {
-        source: '/api/railway/:path*',
+        source: '/:path*',
         headers: [
           {
             key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
+            value: 'credentialless',
           },
           {
             key: 'Cross-Origin-Opener-Policy',

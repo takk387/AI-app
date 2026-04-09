@@ -138,9 +138,10 @@ export const DeploymentIdSchema = z
 /**
  * Preview mode - centralized type
  * - 'browser': Fast in-browser preview using esbuild-wasm (frontend-only)
- * - 'railway': Full-stack preview with real backend via Railway
+ * - 'webcontainer': Full Node.js runtime in browser via WebContainers (real npm, real server)
+ * - 'railway': Full-stack deployment preview with real backend via Railway
  */
-export type PreviewMode = 'browser' | 'railway';
+export type PreviewMode = 'browser' | 'webcontainer' | 'railway';
 
 // ============================================================================
 // RAILWAY PROJECT MAPPING
