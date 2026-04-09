@@ -33,6 +33,31 @@ export function toFileSystemTree(files: AppFile[]): FileSystemTree {
   return tree;
 }
 
+/**
+ * Detect if the file list represents a Next.js project (app/page.tsx, app/layout.tsx).
+ */
+export function isNextJsProject(files: AppFile[]): boolean {
+  return files.some(
+    (f) =>
+      f.path.includes('app/page.tsx') ||
+      f.path.includes('app/page.ts') ||
+      f.path.includes('app/layout.tsx') ||
+      f.path.includes('app/layout.ts')
+  );
+}
+
+const DEFAULT_NEXTJS_DEPS: Record<string, string> = {
+  next: '^15.1.0',
+  react: '^18.3.1',
+  'react-dom': '^18.3.1',
+};
+
+const DEFAULT_NEXTJS_DEV_DEPS: Record<string, string> = {
+  '@types/react': '^18.3.0',
+  '@types/react-dom': '^18.3.0',
+  typescript: '^5.5.0',
+};
+
 const DEFAULT_VITE_DEPS: Record<string, string> = {
   react: '^18.3.1',
   'react-dom': '^18.3.1',
@@ -63,16 +88,74 @@ export function ensurePackageJson(files: AppFile[], deps: Record<string, string>
   const hasPackageJson = files.some((f) => f.path === '/package.json' || f.path === 'package.json');
   if (hasPackageJson) return files;
 
-  const mergedDeps = { ...DEFAULT_VITE_DEPS, ...deps };
+  if (isNextJsProject(files)) {
+    return scaffoldNextJsProject(files, deps);
+  }
+  return scaffoldViteProject(files, deps);
+}
 
+function scaffoldNextJsProject(files: AppFile[], deps: Record<string, string>): AppFile[] {
+  const mergedDeps = { ...DEFAULT_NEXTJS_DEPS, ...deps };
+  const packageJson = {
+    name: 'preview-app',
+    private: true,
+    scripts: { dev: 'next dev', build: 'next build', start: 'next start' },
+    dependencies: mergedDeps,
+    devDependencies: DEFAULT_NEXTJS_DEV_DEPS,
+  };
+
+  const scaffoldFiles: AppFile[] = [
+    { path: '/package.json', content: JSON.stringify(packageJson, null, 2) },
+  ];
+
+  if (!files.some((f) => f.path.includes('next.config'))) {
+    scaffoldFiles.push({
+      path: '/next.config.js',
+      content: `/** @type {import('next').NextConfig} */\nmodule.exports = { reactStrictMode: true };\n`,
+    });
+  }
+
+  if (!files.some((f) => f.path.includes('tsconfig'))) {
+    scaffoldFiles.push({
+      path: '/tsconfig.json',
+      content: JSON.stringify(
+        {
+          compilerOptions: {
+            target: 'es5',
+            lib: ['dom', 'dom.iterable', 'esnext'],
+            allowJs: true,
+            skipLibCheck: true,
+            strict: true,
+            noEmit: true,
+            esModuleInterop: true,
+            module: 'esnext',
+            moduleResolution: 'bundler',
+            resolveJsonModule: true,
+            isolatedModules: true,
+            jsx: 'preserve',
+            incremental: true,
+            plugins: [{ name: 'next' }],
+            paths: { '@/*': ['./*'] },
+          },
+          include: ['next-env.d.ts', '**/*.ts', '**/*.tsx'],
+          exclude: ['node_modules'],
+        },
+        null,
+        2
+      ),
+    });
+  }
+
+  return [...scaffoldFiles, ...files];
+}
+
+function scaffoldViteProject(files: AppFile[], deps: Record<string, string>): AppFile[] {
+  const mergedDeps = { ...DEFAULT_VITE_DEPS, ...deps };
   const packageJson = {
     name: 'preview-app',
     private: true,
     type: 'module',
-    scripts: {
-      dev: 'vite',
-      build: 'vite build',
-    },
+    scripts: { dev: 'vite', build: 'vite build' },
     dependencies: mergedDeps,
     devDependencies: DEFAULT_VITE_DEV_DEPS,
   };
@@ -81,60 +164,29 @@ export function ensurePackageJson(files: AppFile[], deps: Record<string, string>
     { path: '/package.json', content: JSON.stringify(packageJson, null, 2) },
   ];
 
-  // Add vite config if not present
-  const hasViteConfig = files.some((f) => f.path.includes('vite.config'));
-  if (!hasViteConfig) {
+  if (!files.some((f) => f.path.includes('vite.config'))) {
     scaffoldFiles.push({
       path: '/vite.config.ts',
-      content: `import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-});
-`,
+      content: `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});\n`,
     });
   }
 
-  // Add index.html if not present (Vite entry point)
-  const hasIndexHtml = files.some((f) => f.path === '/index.html' || f.path === 'index.html');
-  if (!hasIndexHtml) {
+  if (!files.some((f) => f.path === '/index.html' || f.path === 'index.html')) {
     scaffoldFiles.push({
       path: '/index.html',
-      content: `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Preview</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
-`,
+      content: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>Preview</title>\n    <script src="https://cdn.tailwindcss.com"></script>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n`,
     });
   }
 
-  // Add main.tsx entry if not present
-  const hasMain = files.some(
-    (f) => f.path.includes('main.tsx') || f.path.includes('main.ts') || f.path.includes('index.tsx')
-  );
-  if (!hasMain) {
+  if (
+    !files.some(
+      (f) =>
+        f.path.includes('main.tsx') || f.path.includes('main.ts') || f.path.includes('index.tsx')
+    )
+  ) {
     scaffoldFiles.push({
       path: '/src/main.tsx',
-      content: `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-`,
+      content: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n`,
     });
   }
 

@@ -163,11 +163,11 @@ react: ${VERSIONS.react}
 Frontend-only, runs in preview. Uses localStorage.
 ===END===
 
-2. FULL-STACK Blog:
+2. FULL-STACK Blog (runs in WebContainers with real API routes):
 ===NAME===
 Next.js Blog Platform
 ===DESCRIPTION===
-Blog with auth, database, API routes. Preview shows mock data.
+Blog with API routes and in-memory data store. Runs fully in preview.
 ===APP_TYPE===
 FULL_STACK
 ===CHANGE_TYPE===
@@ -197,12 +197,11 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 export default ErrorBoundary;
 ===FILE:app/layout.tsx===
 import type { Metadata } from 'next';
-import './globals.css';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: 'Next.js Blog Platform',
-  description: 'A full-stack blog with posts, authentication, and database storage.',
+  description: 'A full-stack blog with posts and API routes.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -216,10 +215,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 
-const Skeleton = ({ className = '' }: { className?: string }) => (
-  <div className={\`animate-pulse bg-[var(--color-border)] rounded \${className}\`} aria-hidden="true" />
-);
-
 export default function HomePage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -229,13 +224,9 @@ export default function HomePage() {
     setLoading(true);
     setError(null);
     try {
-      // Mock for preview
-      await new Promise(r => setTimeout(r, 500));
-      setPosts([
-        { id: '1', title: 'Getting Started', excerpt: 'Learn basics...', createdAt: new Date() },
-        { id: '2', title: 'Full-Stack Apps', excerpt: 'Complete guide...', createdAt: new Date() }
-      ]);
-      // For local: const res = await fetch('/api/posts'); setPosts(await res.json());
+      const res = await fetch('/api/posts');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      setPosts(await res.json());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load posts');
     } finally {
@@ -248,28 +239,16 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[var(--color-background)] p-8">
       <div className="container mx-auto max-w-4xl">
-        <header><h1 className="text-4xl font-bold text-[var(--color-text)] mb-8">Blog Posts</h1></header>
+        <h1 className="text-4xl font-bold text-[var(--color-text)] mb-8">Blog Posts</h1>
         {error ? (
           <div className="bg-red-900/50 border border-red-500 p-6 rounded-lg text-center" role="alert">
             <p className="text-red-400 mb-4">{error}</p>
-            <button onClick={fetchPosts} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:ring-2 focus:ring-red-500">
-              Try Again
-            </button>
+            <button onClick={fetchPosts} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Try Again</button>
           </div>
         ) : loading ? (
-          <section aria-label="Loading posts" className="grid gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-[var(--color-surface)] p-6 rounded-lg">
-                <Skeleton className="h-8 w-3/4 mb-4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3 mt-2" />
-              </div>
-            ))}
-          </section>
-        ) : posts.length === 0 ? (
-          <p className="text-[var(--color-text-muted)] text-center py-12">No posts yet. Create your first post!</p>
+          <p className="text-[var(--color-text-muted)]">Loading...</p>
         ) : (
-          <section aria-label="Blog posts" className="grid gap-6">
+          <section className="grid gap-6">
             {posts.map(post => (
               <article key={post.id} className="bg-[var(--color-surface)] p-6 rounded-lg">
                 <h2 className="text-2xl font-bold text-[var(--color-text)]">{post.title}</h2>
@@ -284,33 +263,29 @@ export default function HomePage() {
 }
 ===FILE:app/api/posts/route.ts===
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+
+const posts = [
+  { id: '1', title: 'Getting Started with Next.js', excerpt: 'Learn the basics of building full-stack apps.', createdAt: new Date().toISOString() },
+  { id: '2', title: 'API Routes in Practice', excerpt: 'How to build RESTful endpoints with Next.js.', createdAt: new Date().toISOString() },
+];
 
 export async function GET() {
-  const posts = await prisma.post.findMany({ orderBy: { createdAt: 'desc' } });
   return NextResponse.json(posts);
 }
-===FILE:prisma/schema.prisma===
-datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
-model Post {
-  id String @id @default(cuid())
-  title String
-  content String
-  createdAt DateTime @default(now())
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  const newPost = { id: String(Date.now()), ...body, createdAt: new Date().toISOString() };
+  posts.push(newPost);
+  return NextResponse.json(newPost, { status: 201 });
 }
-===FILE:.env.example===
-DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 ===DEPENDENCIES===
 next: ${VERSIONS.next}
 react: ${VERSIONS.react}
 typescript: ${VERSIONS.typescript}
-prisma: ${VERSIONS.prisma}
 ===SETUP===
-1. npm install
-2. Copy .env.example to .env
-3. npx prisma migrate dev
-4. npm run dev
+npm install && npm run dev
 ===END===
 
-KEY: Frontend apps run in preview immediately. Full-stack needs local setup but preview shows mock data.
+KEY: Frontend apps use Vite. Full-stack apps use Next.js App Router with real API routes.
 `.trim();
