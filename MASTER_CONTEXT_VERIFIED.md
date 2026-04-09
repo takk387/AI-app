@@ -1,7 +1,7 @@
 # AI-APP-BUILDER - Master Context (Verified)
 
 > **Purpose**: Full project context for AI tools (Claude Code, Antigravity, etc.).
-> **Status**: VERIFIED — Mar 30, 2026
+> **Status**: VERIFIED — Apr 9, 2026
 
 ---
 
@@ -15,7 +15,11 @@
 | Service Classes      | ~94                                    |
 | Lint Warnings        | 11 (all intentional `exhaustive-deps`) |
 
-**Stack**: Next.js 15.5 / React 19 / TypeScript / Tailwind CSS / Zustand 4.5 / Supabase / Tree-sitter
+**Stack**: Next.js 16.2 / React 19 / TypeScript 6 / Tailwind CSS 4 / Zustand 5 / Supabase / Tree-sitter
+
+**Observability**: Langfuse (LLM tracing) + Sentry (error tracking) — 10 AI routes instrumented
+
+**Preview Runtime**: WebContainers (`@webcontainer/api`) — real Node.js in browser, 3 tiers: Instant (esbuild) / Full (WebContainer) / Deploy (Railway)
 
 ---
 
@@ -56,7 +60,8 @@ Step 5: /app (BuilderPage + BuilderContext)
     → BuilderPage.tsx: CSS grid shell (40/60) with LeftPanel + PreviewPanel
     → Intent routing: BUILD → full-app-stream, MODIFY → /api/ai-builder/modify (diff preview)
     → Phase execution via useDynamicBuildPhases + usePhaseExecution
-    → Sandpack + Nodebox preview with error boundary
+    → WebContainers preview (real Node.js in browser) with Safari esbuild fallback
+    → 3 preview modes: Instant (esbuild) / Full (WebContainer) / Deploy (Railway)
     → Version history, undo/redo, ConceptDrawer, ModalManager
 ```
 
@@ -211,6 +216,9 @@ Hooks       → Other Hooks               ⚠️ CAUTION (no circular, prefer co
 8. **Agentic pipelines** — TitanPipeline for multi-step AI orchestration
 9. **Railway deployment** — use `getBaseUrl()` for internal URLs, `createSSEResponse()` for all SSE routes. Vercel routes are a user feature, not infrastructure.
 10. **Structured logging** — all logs use `@/utils/logger`, no raw `console.*`
+11. **Observability** — Langfuse for LLM tracing, Sentry for error tracking, unified via `@/lib/observability`
+12. **WebContainers preview** — real Node.js in browser via `@webcontainer/api`, COOP/COEP headers on all routes
+13. **User-friendly errors** — all AI generation errors pass through `@/utils/errorMessages` for actionable messages
 
 ---
 
@@ -220,7 +228,8 @@ Hooks       → Other Hooks               ⚠️ CAUTION (no circular, prefer co
 | ----------------- | ------------------------------------------------------------------------------------------------------------ |
 | State Management  | Zustand + Immer middleware, 10 slices, v6 migrations                                                         |
 | Context Selection | `CodeContextService` — smart file selection to reduce tokens                                                 |
-| Live Preview      | Sandpack                                                                                                     |
+| Live Preview      | WebContainers (real Node.js) + esbuild-wasm fallback (Safari)                                                |
+| Observability     | Langfuse (LLM tracing) + Sentry (error tracking) — all behind env var feature flags                          |
 | Code Parsing      | Tree-sitter for AST analysis                                                                                 |
 | Background Jobs   | Inngest                                                                                                      |
 | AI Providers      | Claude (logic/code/architecture), Gemini (vision/layout/images/architecture), OpenAI (embeddings/proxy only) |
@@ -279,7 +288,7 @@ src/
 │   ├── layoutValidation/       # Zod validation (6 files, ~1,214 lines)
 │   ├── astModifier.ts + 5 modules # AST modification
 │   └── ...
-├── lib/              # Server-side utilities (4 files)
+├── lib/              # Server-side utilities (7 files — incl. WebContainerService, langfuse, observability)
 ├── data/             # Presets and templates (14 files)
 └── prompts/          # AI system prompts (8 files)
 ```
@@ -352,14 +361,39 @@ Stage 5: Dual Validation (DualValidationOrchestrator)
 
 ## Layout Builder System
 
-| File                           | Lines | Purpose                      |
-| ------------------------------ | ----- | ---------------------------- |
-| `useLayoutBuilder.ts`          | 599   | Layout builder hook          |
-| `LayoutCanvas.tsx`             | ~512  | Canvas rendering/interaction |
-| `LayoutBuilderView.tsx`        | 374   | Main layout builder view     |
-| `DynamicLayoutRenderer.tsx`    | ~200  | Dynamic component rendering  |
-| `GenericComponentRenderer.tsx` | ~300  | Generic component rendering  |
-| `FloatingEditBubble.tsx`       | ~150  | Inline editing UI            |
+| File                           | Lines | Purpose                                      |
+| ------------------------------ | ----- | -------------------------------------------- |
+| `useLayoutBuilder.ts`          | 599   | Layout builder hook                          |
+| `LayoutCanvas.tsx`             | ~450  | Canvas rendering/interaction (WebContainers) |
+| `LayoutBuilderView.tsx`        | 374   | Main layout builder view                     |
+| `DynamicLayoutRenderer.tsx`    | ~200  | Dynamic component rendering                  |
+| `GenericComponentRenderer.tsx` | ~300  | Generic component rendering                  |
+| `FloatingEditBubble.tsx`       | ~150  | Inline editing UI                            |
+
+---
+
+## Observability Stack (Apr 9, 2026)
+
+| Tool           | Purpose                                         | Key Files                                         |
+| -------------- | ----------------------------------------------- | ------------------------------------------------- |
+| Langfuse       | LLM tracing (tokens, cost, latency per AI call) | `src/lib/langfuse.ts`, `src/lib/observability.ts` |
+| Sentry         | Error tracking (client + server + edge)         | `sentry.*.config.ts`, `src/instrumentation.ts`    |
+| Logger hooks   | All `logger.error()` auto-forwards to Sentry    | `src/utils/logger.ts` (registerErrorHook)         |
+| Error messages | User-friendly error text for AI failures        | `src/utils/errorMessages.ts`                      |
+
+**All behind env var feature flags** — no keys = no-op stubs, zero overhead.
+
+## Preview System (Apr 9, 2026)
+
+| Mode    | Runtime                               | Use Case                                        |
+| ------- | ------------------------------------- | ----------------------------------------------- |
+| Instant | esbuild-wasm (`BrowserPreview`)       | Simple frontend apps, Safari fallback           |
+| Full    | WebContainers (`WebContainerPreview`) | Real npm, real Node.js, real Next.js dev server |
+| Deploy  | Railway (`RailwayPreview`)            | Full deployment with real database              |
+
+**Key Files**: `src/lib/WebContainerService.ts`, `src/utils/webContainerFS.ts`, `src/components/preview/WebContainerPreview.tsx`
+
+**Headers**: COOP/COEP (`credentialless`) on all routes for SharedArrayBuffer support.
 
 ---
 
