@@ -10,6 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { WIZARD_SYSTEM_PROMPT } from '@/prompts/wizardSystemPrompt';
 import type { WizardState } from '@/types/wizardState';
 import { createObservableRequest } from '@/lib/observability';
+import { friendlyErrorMessage } from '@/utils/errorMessages';
 
 // Next.js Route Segment Config
 export const maxDuration = 120;
@@ -18,6 +19,27 @@ export const dynamic = 'force-dynamic';
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [2000, 4000, 8000];
+
+async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      const shouldRetry = status === 529 || status === 503 || status === 500;
+      if (!shouldRetry || attempt === MAX_RETRIES - 1) throw error;
+      const delay = RETRY_DELAYS[attempt];
+      console.warn(
+        `[${label}] Retrying after ${status} (attempt ${attempt + 1}/${MAX_RETRIES}, waiting ${delay}ms)`
+      );
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error('Retry exhausted');
+}
 
 // ============================================================================
 // TYPES
@@ -136,12 +158,16 @@ ${conversationHistory.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('
 Return ONLY the JSON object, no other text.`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      temperature: 0,
-      messages: [{ role: 'user', content: extractionPrompt }],
-    });
+    const response = await withRetry(
+      () =>
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          temperature: 0,
+          messages: [{ role: 'user', content: extractionPrompt }],
+        }),
+      'wizard/state-extraction'
+    );
 
     const textBlock = response.content.find((block) => block.type === 'text');
     if (textBlock && textBlock.type === 'text') {
@@ -318,23 +344,27 @@ Continue the conversation naturally.`;
       modelParameters: { max_tokens: 16000, thinking_budget: 8000 },
     });
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 16000, // Increased to accommodate thinking budget + response
-      temperature: 1, // Required for extended thinking
-      thinking: {
-        type: 'enabled',
-        budget_tokens: 8000, // Allow deep reasoning for planning conversations
-      },
-      system: [
-        {
-          type: 'text',
-          text: systemPrompt,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
-      messages,
-    });
+    const response = await withRetry(
+      () =>
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 16000,
+          temperature: 1,
+          thinking: {
+            type: 'enabled',
+            budget_tokens: 8000,
+          },
+          system: [
+            {
+              type: 'text',
+              text: systemPrompt,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
+          messages,
+        }),
+      'wizard/conversation'
+    );
 
     // Extract response text (skip thinking blocks)
     const textBlock = response.content.find((block) => block.type === 'text');
@@ -422,12 +452,11 @@ Continue the conversation naturally.`;
   } catch (error) {
     obs.captureError(error);
 
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Failed to process wizard message',
-      },
-      { status: 500 }
-    );
+    const rawMessage = error instanceof Error ? error.message : 'Failed to process wizard message';
+    const status = (error as { status?: number }).status;
+    const friendly = friendlyErrorMessage(status === 529 ? 'OVERLOADED' : undefined, rawMessage);
+
+    return NextResponse.json({ error: friendly.message }, { status: status === 529 ? 503 : 500 });
   }
 }
 

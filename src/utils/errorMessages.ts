@@ -13,6 +13,11 @@ interface ErrorPattern {
 
 const ERROR_PATTERNS: ErrorPattern[] = [
   {
+    test: (code, raw) => code === 'OVERLOADED' || /overloaded|529/i.test(raw),
+    message: "Claude's servers are busy right now. Please wait a minute and try again.",
+    action: 'wait',
+  },
+  {
     test: (code) => code === 'NO_API_KEY',
     message: 'AI service is not configured. Contact the administrator.',
     action: 'none',
