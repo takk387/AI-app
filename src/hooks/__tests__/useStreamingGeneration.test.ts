@@ -512,7 +512,10 @@ describe('useStreamingGeneration', () => {
         await result.current.generate({});
       });
 
-      expect(mockOnError).toHaveBeenCalledWith('Generation failed', false);
+      expect(mockOnError).toHaveBeenCalledWith(
+        'Something unexpected happened. Please try again.',
+        false
+      );
       expect(result.current.progress.phase).toBe('error');
     });
 
@@ -774,7 +777,9 @@ describe('useStreamingGeneration', () => {
       });
 
       expect(result.current.progress.phase).toBe('error');
-      expect(result.current.progress.message).toBe('Failed immediately');
+      expect(result.current.progress.message).toBe(
+        'Something unexpected happened. Please try again.'
+      );
     });
 
     it('should handle recoverable error', async () => {
@@ -789,7 +794,10 @@ describe('useStreamingGeneration', () => {
         await result.current.generate({});
       });
 
-      expect(mockOnError).toHaveBeenCalledWith('Temporary failure', true);
+      expect(mockOnError).toHaveBeenCalledWith(
+        'Something unexpected happened. Please try again.',
+        true
+      );
     });
 
     it('should handle network timeout', async () => {
@@ -802,7 +810,10 @@ describe('useStreamingGeneration', () => {
         await result.current.generate({});
       });
 
-      expect(mockOnError).toHaveBeenCalledWith('Network timeout', false);
+      expect(mockOnError).toHaveBeenCalledWith(
+        'Generation took too long. Try a simpler app or fewer features.',
+        false
+      );
       expect(result.current.progress.phase).toBe('error');
     });
 

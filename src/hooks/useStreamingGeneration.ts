@@ -13,6 +13,7 @@ import {
   initialStreamingProgress,
   parseStreamEvent,
 } from '@/types/streaming';
+import { friendlyErrorMessage } from '@/utils/errorMessages';
 
 export interface StreamingGenerationOptions {
   onStart?: () => void;
@@ -125,14 +126,16 @@ export function useStreamingGeneration(
           options.onComplete?.(event.data, event.stats);
           return event.data;
 
-        case 'error':
+        case 'error': {
+          const friendly = friendlyErrorMessage(event.code, event.message);
           updateProgress({
             isStreaming: false,
             phase: 'error',
-            message: event.message,
+            message: friendly.message,
           });
-          options.onError?.(event.message, event.recoverable);
+          options.onError?.(friendly.message, event.recoverable);
           break;
+        }
       }
       return null;
     },
@@ -222,31 +225,31 @@ export function useStreamingGeneration(
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           if (userAbortedRef.current) {
-            // User clicked cancel
             updateProgress({
               isStreaming: false,
               phase: 'idle',
               message: 'Generation cancelled',
             });
           } else {
-            // Timeout-triggered abort
+            const friendly = friendlyErrorMessage(undefined, 'timeout');
             updateProgress({
               isStreaming: false,
               phase: 'error',
-              message: 'Generation timed out — the AI took too long to respond. Please retry.',
+              message: friendly.message,
             });
-            options.onError?.('Generation timed out', true);
+            options.onError?.(friendly.message, true);
           }
           return null;
         }
 
-        const message = error instanceof Error ? error.message : 'Generation failed';
+        const rawMessage = error instanceof Error ? error.message : 'Generation failed';
+        const friendly = friendlyErrorMessage(undefined, rawMessage);
         updateProgress({
           isStreaming: false,
           phase: 'error',
-          message,
+          message: friendly.message,
         });
-        options.onError?.(message, false);
+        options.onError?.(friendly.message, false);
         return null;
       } finally {
         clearTimeout(totalTimer);

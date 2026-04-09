@@ -132,6 +132,7 @@ export interface ErrorEvent extends BaseStreamEvent {
   message: string;
   code?: string;
   recoverable: boolean;
+  action?: 'retry' | 'simplify' | 'wait' | 'none';
 }
 
 /**

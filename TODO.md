@@ -13,6 +13,7 @@ _Last updated: 2026-04-09_
   - Safari fallback to esbuild with detection
   - Shell output panel built into WebContainerPreview (stdout/stderr from npm + dev server)
 - ✅ Railway deploy fix (Builder changed from Dockerfile to Railpack)
+- ✅ Improved error messaging — user-friendly messages with actionable hints for all AI generation errors
 
 ## Completed (Mar 30, 2026)
 
@@ -29,6 +30,4 @@ _Last updated: 2026-04-09_
 
 ## Remaining
 
-- [ ] **Full-stack prompt engineering** — teach Claude to generate Next.js App Router file structures (app/page.tsx, app/api/route.ts) for FULL_STACK apps. WebContainers runtime is ready, prompts need updating.
-
-- [ ] **Improve error messaging** — surface clearer, actionable error messages to users when AI generation fails
+No outstanding items. All TODO items complete.
